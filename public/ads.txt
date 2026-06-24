@@ -1,0 +1,3 @@
+# AdSense ads.txt Vorlage.
+# Nach Freigabe durch AdSense die pub-ID ersetzen und die Zeile aktiv lassen:
+# google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
