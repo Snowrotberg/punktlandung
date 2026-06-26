@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { categoryOptions } from "@/lib/categories";
 import { useLocalGame } from "@/hooks/useLocalGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
-import type { GameSettings, LatLng, TeamId } from "@/types/game";
+import type { GameSettings, LatLng, RoundStatus, TeamId } from "@/types/game";
 import { AdContainer } from "./AdContainer";
 import { GameView } from "./GameView";
 import { LobbyView } from "./LobbyView";
@@ -31,6 +31,7 @@ const legalLinks = [
 ];
 
 export type InitialGameMode = "home" | GameSettings["localMode"] | "online";
+export type RequiredGameStatus = Extract<RoundStatus, "guessing" | "results" | "finished">;
 
 function SvgPin({ className, color }: { className?: string; color: string }) {
   return (
@@ -89,7 +90,52 @@ function appPathWithMode(mode: GameSettings["localMode"] | "online"): string {
   return "/online-modus";
 }
 
-export function GameApp({ initialMode = "home" }: { initialMode?: InitialGameMode }) {
+function statusLabel(status: RequiredGameStatus) {
+  if (status === "guessing") return "laufende Runde";
+  if (status === "results") return "Rundenauswertung";
+  return "Endergebnis";
+}
+
+function GameStateLoading() {
+  return (
+    <main className="grid min-h-dvh place-items-center bg-slate-950 p-4 text-slate-50">
+      <section className="arcade-panel w-full max-w-md rounded-md border-slate-700/80 p-5">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Punktlandung</p>
+        <h1 className="mt-2 text-3xl font-black leading-tight">Spielrunde wird geladen</h1>
+      </section>
+    </main>
+  );
+}
+
+function GameStateGuard({ requiredStatus, currentStatus }: { requiredStatus: RequiredGameStatus; currentStatus?: RoundStatus }) {
+  return (
+    <main className="grid min-h-dvh place-items-center bg-slate-950 p-4 text-slate-50">
+      <section className="arcade-panel w-full max-w-md rounded-md border-slate-700/80 p-5">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Punktlandung</p>
+        <h1 className="mt-2 text-3xl font-black leading-tight">Keine passende Spielrunde</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-300">
+          Fuer diese Seite brauchst du eine {statusLabel(requiredStatus)} im aktuellen Browser. Aktueller Status: {currentStatus ?? "keine aktive Runde"}.
+        </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <a
+            href="/solo-modus"
+            className="inline-flex min-h-12 items-center justify-center rounded-md bg-emerald-400/14 px-4 text-sm font-black uppercase tracking-[0.1em] text-emerald-100 ring-1 ring-emerald-300/65 transition hover:bg-emerald-400/20"
+          >
+            Solo-Modus
+          </a>
+          <a
+            href="/"
+            className="inline-flex min-h-12 items-center justify-center rounded-md bg-slate-950/70 px-4 text-sm font-black uppercase tracking-[0.1em] text-slate-100 ring-1 ring-slate-700 transition hover:bg-slate-900"
+          >
+            Startseite
+          </a>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+export function GameApp({ initialMode = "home", requiredStatus }: { initialMode?: InitialGameMode; requiredStatus?: RequiredGameStatus }) {
   const localGame = useLocalGame();
   const onlineGame = useOnlineRoomSocket();
   const { playSelect } = useSound();
@@ -98,6 +144,7 @@ export function GameApp({ initialMode = "home" }: { initialMode?: InitialGameMod
   const [pendingJoinCode, setPendingJoinCode] = useState<string | null>(null);
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [pendingOnlineSettings, setPendingOnlineSettings] = useState<GameSettings | null>(null);
+  const [routeGuardReady, setRouteGuardReady] = useState(!requiredStatus);
   const initialModeHandledRef = useRef(false);
 
   const isOnlineFlow = Boolean(onlineGame.room) || Boolean(pendingJoinCode);
@@ -206,6 +253,10 @@ export function GameApp({ initialMode = "home" }: { initialMode?: InitialGameMod
     setPendingOnlineSettings(null);
   }, [pendingOnlineSettings, onlineGame]);
 
+  useEffect(() => {
+    if (requiredStatus) setRouteGuardReady(true);
+  }, [requiredStatus]);
+
   const handleCreateLiveOnlineRoom = () => {
     if (localGame.room?.kind === "online") setPendingOnlineSettings(localGame.room.settings);
     const hostParticipation = localGame.room?.hostParticipation ?? "host_only";
@@ -231,6 +282,14 @@ export function GameApp({ initialMode = "home" }: { initialMode?: InitialGameMod
   const handleStartRound = () => startRound();
   const handleSubmitGuess = (guess: LatLng & { countryCode?: string }, targetPlayerId?: string) => submitGuess(guess, targetPlayerId);
   const handleSetTeam = (team: TeamId) => setTeam(team);
+
+  if (requiredStatus && !routeGuardReady) {
+    return <GameStateLoading />;
+  }
+
+  if (requiredStatus && room?.status !== requiredStatus) {
+    return <GameStateGuard requiredStatus={requiredStatus} currentStatus={room?.status} />;
+  }
 
   if (pendingJoinCode && !onlineGame.room) {
     return (

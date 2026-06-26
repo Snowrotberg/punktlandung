@@ -203,10 +203,10 @@ const targets = [
     path: "/warteraum",
     note: "TODO: aktuell kein echter Pfad; ein Live-Warteraum benoetigt den Online-Raum-Flow/Server"
   },
-  { name: "spielen", access: "state", status: "guessing", note: "interner Spielzustand per QA-Session" },
-  { name: "aufloesung", access: "state", status: "results", note: "interner Ergebniszustand per QA-Session" },
+  { name: "spielen", access: "state", path: "/spielen", status: "guessing", note: "echter URL-Pfad mit QA-Session" },
+  { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", note: "echter URL-Pfad mit QA-Session" },
   { name: "nochmal-ansehen", access: "state-click", status: "results", buttonText: "Bild nochmal ansehen", note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
-  { name: "endergebnis", access: "state-click", status: "finished", buttonText: "Endstand ansehen", note: "interner Endzustand plus Klick auf Endstand ansehen" },
+  { name: "endergebnis", access: "state", path: "/endergebnis", status: "finished", note: "echter URL-Pfad mit QA-Session" },
   { name: "infos", access: "route", path: "/infos", note: "echter URL-Pfad" },
   { name: "impressum", access: "route", path: "/impressum", note: "echter URL-Pfad" },
   { name: "datenschutz", access: "route", path: "/datenschutz", note: "echter URL-Pfad" },
@@ -284,7 +284,7 @@ async function gotoFresh(page, url) {
   return response;
 }
 
-async function loadState(page, status) {
+async function loadState(page, status, targetPath = "/") {
   await gotoFresh(page, targetUrl("/"));
   await page.evaluate((nextRoom) => {
     localStorage.setItem(
@@ -300,7 +300,9 @@ async function loadState(page, status) {
     );
     localStorage.setItem("punktlandung-name", "Responsive QA");
   }, roomState(status));
-  await gotoFresh(page, `${targetUrl("/")}?responsive=${status}-${Date.now()}`);
+  const url = new URL(targetUrl(targetPath));
+  url.searchParams.set("responsive", `${status}-${Date.now()}`);
+  await gotoFresh(page, url.toString());
 }
 
 async function clickButtonByVisibleText(page, text) {
@@ -349,7 +351,7 @@ async function openTarget(page, target) {
   }
 
   if (target.access === "state" || target.access === "state-click") {
-    await loadState(page, target.status);
+    await loadState(page, target.status, target.path);
     if (target.access === "state-click") {
       await clickButtonByVisibleText(page, target.buttonText);
       await page.waitForTimeout(700);
