@@ -194,9 +194,33 @@ function roomState(status) {
 
 const targets = [
   { name: "home", access: "route", path: "/", resetSession: true, note: "echter URL-Pfad" },
-  { name: "solo-modus", access: "route", path: "/solo-modus", resetSession: true, note: "echter URL-Pfad" },
-  { name: "party-modus", access: "route", path: "/party-modus", resetSession: true, note: "echter URL-Pfad" },
-  { name: "online-modus", access: "route", path: "/online-modus", resetSession: true, note: "echter URL-Pfad" },
+  {
+    name: "solo-modus",
+    access: "route",
+    path: "/solo-modus",
+    resetSession: true,
+    expectedText: "Was willst du erraten?",
+    expectedRoom: { kind: "solo", localMode: "solo" },
+    note: "echter URL-Pfad"
+  },
+  {
+    name: "party-modus",
+    access: "route",
+    path: "/party-modus",
+    resetSession: true,
+    expectedText: "Was wollt ihr erraten?",
+    expectedRoom: { kind: "solo", localMode: "couch" },
+    note: "echter URL-Pfad"
+  },
+  {
+    name: "online-modus",
+    access: "route",
+    path: "/online-modus",
+    resetSession: true,
+    expectedText: "Gemeinsam im virtuellen Raum",
+    expectedRoom: { kind: "online" },
+    note: "echter URL-Pfad"
+  },
   {
     name: "warteraum",
     access: "todo",
@@ -368,6 +392,21 @@ async function collectLayoutMetrics(page) {
     const body = document.body;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
+    let roomState = null;
+    try {
+      const rawSession = window.localStorage.getItem("punktlandung-active-session-v1");
+      const storedSession = rawSession ? JSON.parse(rawSession) : null;
+      if (storedSession?.room) {
+        roomState = {
+          kind: storedSession.room.kind ?? null,
+          status: storedSession.room.status ?? null,
+          localMode: storedSession.room.settings?.localMode ?? null,
+          players: Array.isArray(storedSession.room.players) ? storedSession.room.players.length : null
+        };
+      }
+    } catch {
+      roomState = null;
+    }
     const visible = (el) => {
       const style = window.getComputedStyle(el);
       const rect = el.getBoundingClientRect();
@@ -403,6 +442,8 @@ async function collectLayoutMetrics(page) {
       bodyWidth: body?.scrollWidth ?? 0,
       horizontalOverflow: Math.max(doc.scrollWidth, body?.scrollWidth ?? 0) > viewportWidth + 2,
       bodyTextLength: (body?.innerText ?? "").trim().length,
+      bodyText: (body?.innerText ?? "").replace(/\s+/g, " ").trim(),
+      roomState,
       visibleElementCount: visibleElements.length,
       overflowingElements,
       applicationError: (body?.innerText ?? "").includes("Application error")
@@ -443,6 +484,20 @@ async function runTargetViewport(browser, target, viewport) {
     }
     if (metrics.applicationError) problems.push("Die Ansicht zeigt einen Application error.");
     if (metrics.bodyTextLength === 0 || metrics.visibleElementCount === 0) problems.push("Der Body hat keinen sichtbaren Inhalt.");
+    if (target.expectedText && !metrics.bodyText.includes(target.expectedText)) {
+      problems.push(`Erwarteter Ansichtstext fehlt: "${target.expectedText}".`);
+    }
+    if (target.expectedRoom) {
+      if (!metrics.roomState) {
+        problems.push("Erwarteter Spielzustand fehlt im Browser-State.");
+      } else {
+        for (const [key, value] of Object.entries(target.expectedRoom)) {
+          if (metrics.roomState[key] !== value) {
+            problems.push(`Erwarteter Spielzustand passt nicht: ${key}=${metrics.roomState[key] ?? "null"} statt ${value}.`);
+          }
+        }
+      }
+    }
     if (metrics.horizontalOverflow) {
       problems.push(`Horizontaler Overflow: Dokument ${metrics.documentWidth}px bei Viewport ${metrics.viewportWidth}px.`);
     }

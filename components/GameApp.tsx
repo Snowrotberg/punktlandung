@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { categoryOptions } from "@/lib/categories";
 import { useLocalGame } from "@/hooks/useLocalGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
-import type { GameSettings, LatLng, RoundStatus, TeamId } from "@/types/game";
+import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
+import type { GameSettings, LatLng, RoomState, RoundStatus, TeamId } from "@/types/game";
 import { AdContainer } from "./AdContainer";
 import { GameView } from "./GameView";
 import { LobbyView } from "./LobbyView";
@@ -32,6 +33,9 @@ const legalLinks = [
 
 export type InitialGameMode = "home" | GameSettings["localMode"] | "online";
 export type RequiredGameStatus = Extract<RoundStatus, "guessing" | "results" | "finished">;
+const activeSessionStorageKey = "punktlandung-active-session-v1";
+const sessionResetStorageKey = "punktlandung-reset-session-v1";
+const historyStateKey = "punktlandung-history-v1";
 
 function SvgPin({ className, color }: { className?: string; color: string }) {
   return (
@@ -90,6 +94,19 @@ function appPathWithMode(mode: GameSettings["localMode"] | "online"): string {
   return "/online-modus";
 }
 
+function modeFromPathname(pathname: string): Exclude<InitialGameMode, "home"> | null {
+  if (pathname === "/solo-modus") return "solo";
+  if (pathname === "/party-modus") return "couch";
+  if (pathname === "/online-modus") return "online";
+  return null;
+}
+
+function roomMatchesInitialMode(room: RoomState | null, mode: Exclude<InitialGameMode, "home">) {
+  if (!room) return false;
+  if (mode === "online") return room.kind === "online";
+  return room.kind === "solo" && room.settings.localMode === mode;
+}
+
 function statusLabel(status: RequiredGameStatus) {
   if (status === "guessing") return "laufende Runde";
   if (status === "results") return "Rundenauswertung";
@@ -136,7 +153,8 @@ function GameStateGuard({ requiredStatus, currentStatus }: { requiredStatus: Req
 }
 
 export function GameApp({ initialMode = "home", requiredStatus }: { initialMode?: InitialGameMode; requiredStatus?: RequiredGameStatus }) {
-  const localGame = useLocalGame();
+  const routeInitialMode: InitialLocalGameMode | undefined = initialMode === "home" ? undefined : initialMode;
+  const localGame = useLocalGame(routeInitialMode);
   const onlineGame = useOnlineRoomSocket();
   const { playSelect } = useSound();
   const [name, setName] = useState("Geo-Gast");
@@ -219,16 +237,28 @@ export function GameApp({ initialMode = "home", requiredStatus }: { initialMode?
   }, []);
 
   useEffect(() => {
-    if (initialModeHandledRef.current) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("room")) return;
     const queryMode = params.get("mode");
-    const routeMode = initialMode === "home" ? null : initialMode;
+    const pathMode = modeFromPathname(window.location.pathname);
+    const routeMode = initialMode === "home" ? pathMode : initialMode;
     const mode = queryMode ?? routeMode;
     if (mode !== "solo" && mode !== "couch" && mode !== "online") return;
+    if (roomMatchesInitialMode(localGame.room, mode)) {
+      initialModeHandledRef.current = true;
+      return;
+    }
+    if (initialModeHandledRef.current) return;
 
     initialModeHandledRef.current = true;
     setPendingJoinCode(null);
+    if (routeMode) {
+      try {
+        window.localStorage.removeItem(activeSessionStorageKey);
+      } catch {
+        // Ignore storage restrictions; the route-owned mode still opens in memory.
+      }
+    }
     let playerName = name;
     try {
       playerName = window.localStorage.getItem("punktlandung-name") || name;
@@ -282,6 +312,19 @@ export function GameApp({ initialMode = "home", requiredStatus }: { initialMode?
   const handleStartRound = () => startRound();
   const handleSubmitGuess = (guess: LatLng & { countryCode?: string }, targetPlayerId?: string) => submitGuess(guess, targetPlayerId);
   const handleSetTeam = (team: TeamId) => setTeam(team);
+  const handleLeaveToHome = () => {
+    initialModeHandledRef.current = true;
+    setPendingJoinCode(null);
+    try {
+      window.sessionStorage.setItem(sessionResetStorageKey, "1");
+      window.localStorage.removeItem(activeSessionStorageKey);
+      window.history.replaceState({ appState: historyStateKey, room: null }, "");
+    } catch {
+      // The in-memory leave still works when browser storage is unavailable.
+    }
+    leaveRoom();
+    window.location.href = "/";
+  };
 
   if (requiredStatus && !routeGuardReady) {
     return <GameStateLoading />;
@@ -334,7 +377,7 @@ export function GameApp({ initialMode = "home", requiredStatus }: { initialMode?
         onGuess={handleSubmitGuess}
         onCancelRound={cancelRound}
         onSkipLocation={skipLocation}
-        onLeave={leaveRoom}
+        onLeave={handleLeaveToHome}
       />
     );
   }
@@ -347,7 +390,7 @@ export function GameApp({ initialMode = "home", requiredStatus }: { initialMode?
         onNext={handleStartRound}
         onBackToLobby={cancelRound}
         onRestart={restart}
-        onLeave={leaveRoom}
+        onLeave={handleLeaveToHome}
       />
     );
   }
@@ -368,7 +411,7 @@ export function GameApp({ initialMode = "home", requiredStatus }: { initialMode?
           onRenamePlayer={renamePlayer}
           onStart={handleStartRound}
           onTeam={handleSetTeam}
-          onLeave={leaveRoom}
+          onLeave={handleLeaveToHome}
           canStart={room.kind !== "online" || Boolean(onlineGame.room)}
           isRoomOnline={room.kind !== "online" || Boolean(onlineGame.room)}
           connectionStatus={onlineGame.status}

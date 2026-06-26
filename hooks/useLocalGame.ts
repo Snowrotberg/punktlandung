@@ -22,6 +22,7 @@ import type {
 const playerColors = ["#2563eb", "#f43f5e", "#f59e0b", "#06b6d4", "#7c3aed", "#f97316", "#ec4899", "#eab308", "#0ea5e9", "#dc2626"];
 const recentLocationsStorageKey = "punktlandung-recent-location-ids";
 const sessionStorageKey = "punktlandung-active-session-v1";
+const sessionResetStorageKey = "punktlandung-reset-session-v1";
 const recentLocationLimit = 120;
 const sessionTtlMs = 1000 * 60 * 60 * 6;
 const locationCategories = new Set(["mixed", "landmarks", "cities", "landscapes", "flags", "capitals", "streetview"]);
@@ -91,6 +92,8 @@ type BrowserHistoryState = {
   room: RoomState | null;
 };
 
+export type InitialLocalGameMode = GameSettings["localMode"] | "online";
+
 function readStoredSession(fallbackHostId: string): StoredSession | null {
   if (typeof window === "undefined") return null;
   try {
@@ -133,6 +136,17 @@ function writeStoredSession(session: Omit<StoredSession, "savedAt">): void {
 function clearStoredSession(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(sessionStorageKey);
+}
+
+function consumeSessionResetFlag(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const shouldReset = window.sessionStorage.getItem(sessionResetStorageKey) === "1";
+    if (shouldReset) window.sessionStorage.removeItem(sessionResetStorageKey);
+    return shouldReset;
+  } catch {
+    return false;
+  }
 }
 
 function readBrowserHistoryState(): BrowserHistoryState | null {
@@ -451,9 +465,62 @@ function evaluateRound(room: RoomState): RoomState {
   };
 }
 
-export function useLocalGame() {
+function createInitialRoom(playerId: string, playerName: string, mode: InitialLocalGameMode): RoomState {
+  if (mode === "online") {
+    return syncLocalPlayers({
+      code: "ONLINE",
+      kind: "online",
+      hostId: playerId,
+      hostParticipation: "host_player",
+      hostPlayerName: sanitizeName(playerName),
+      status: "lobby",
+      settings: {
+        ...defaultSettings,
+        localMode: "solo",
+        localPlayerCount: 1
+      },
+      players: [],
+      currentRound: 0,
+      location: null,
+      guesses: [],
+      timedOutPlayerIds: [],
+      roundEndsAt: null,
+      roundStartedAt: null,
+      summaries: [],
+      emojiEvents: [],
+      adGateUntil: null
+    });
+  }
+
+  const normalizedLocalMode = mode === "couch" ? "couch" : "solo";
+  return syncLocalPlayers({
+    code: "LOKAL",
+    kind: "solo",
+    hostId: playerId,
+    hostParticipation: "host_player",
+    hostPlayerName: sanitizeName(playerName),
+    status: "lobby",
+    settings: {
+      ...defaultSettings,
+      localMode: normalizedLocalMode,
+      localPlayerCount: normalizedLocalMode === "couch" ? 2 : 1
+    },
+    players: [makePlayer(playerId, playerName, true, 0)],
+    currentRound: 0,
+    location: null,
+    guesses: [],
+    timedOutPlayerIds: [],
+    roundEndsAt: null,
+    roundStartedAt: null,
+    summaries: [],
+    emojiEvents: [],
+    adGateUntil: null
+  });
+}
+
+export function useLocalGame(initialMode?: InitialLocalGameMode) {
   const [playerId] = useState("local_host");
-  const [room, setRoom] = useState<RoomState | null>(null);
+  const [room, setRoom] = useState<RoomState | null>(() => (initialMode ? createInitialRoom("local_host", "Geo-Gast", initialMode) : null));
   const [error, setError] = useState<string | null>(null);
   const [recentLocationIds, setRecentLocationIds] = useState<string[]>([]);
   const locationQueueRef = useRef<string[]>([]);
@@ -483,6 +550,22 @@ export function useLocalGame() {
   );
 
   useEffect(() => {
+    if (consumeSessionResetFlag()) {
+      clearStoredSession();
+      writeBrowserHistoryState(null, "replace");
+      previousRoomRef.current = null;
+      setRoom(null);
+      setRecentLocationIds(readStoredRecentLocationIds());
+      return;
+    }
+
+    if (initialMode) {
+      clearStoredSession();
+      previousRoomRef.current = room;
+      setRecentLocationIds(readStoredRecentLocationIds());
+      return;
+    }
+
     const browserState = readBrowserHistoryState();
     const storedSession = readStoredSession(playerId);
     if (browserState?.room) {
@@ -827,6 +910,9 @@ export function useLocalGame() {
   const unlockCosmetic = useCallback((_cosmetic: Cosmetic) => undefined, []);
   const leaveRoom = useCallback(() => {
     clearStoredSession();
+    writeBrowserHistoryState(null, "replace");
+    previousRoomRef.current = null;
+    isRestoringHistoryRef.current = false;
     setRoom(null);
   }, []);
 
