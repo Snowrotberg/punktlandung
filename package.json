@@ -10,7 +10,7 @@
     "ws": "tsx server/index.ts",
     "share:proxy": "tsx server/share-proxy.ts",
     "build": "next build",
-    "build:static": "cross-env STATIC_EXPORT=true NEXT_PUBLIC_DISABLE_IMAGE_PROXY=true next build",
+    "build:static": "cross-env PUNKTLANDUNG_STATIC_EXPORT=true NEXT_PUBLIC_DISABLE_IMAGE_PROXY=true next build",
     "start": "next start -H localhost -p 3000",
     "catalog:generate": "node scripts/generate-wikimedia-catalog.mjs",
     "boundaries:generate": "node scripts/generate-location-boundaries.mjs",

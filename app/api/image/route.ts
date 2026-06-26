@@ -75,7 +75,7 @@ async function resolveThumbUrl(sourceUrl: URL, width: number): Promise<string> {
 }
 
 export async function GET(request: NextRequest) {
-  if (process.env.STATIC_EXPORT === "true") {
+  if (process.env.PUNKTLANDUNG_STATIC_EXPORT === "true") {
     return new NextResponse("Image proxy disabled in static export", { status: 404 });
   }
 

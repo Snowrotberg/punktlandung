@@ -1,10 +1,12 @@
+const isStaticExport = process.env.PUNKTLANDUNG_STATIC_EXPORT === "true";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: process.env.STATIC_EXPORT === "true" ? "export" : undefined,
-  trailingSlash: process.env.STATIC_EXPORT === "true",
+  output: isStaticExport ? "export" : undefined,
+  trailingSlash: isStaticExport,
   images: {
-    unoptimized: process.env.STATIC_EXPORT === "true",
+    unoptimized: isStaticExport,
     remotePatterns: [
       { protocol: "https", hostname: "upload.wikimedia.org" },
       { protocol: "https", hostname: "images.unsplash.com" },
