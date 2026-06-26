@@ -8,3 +8,8 @@ coverage/
 .env
 .env.local
 .env.*.local
+# Responsive-Test
+test-artifacts/
+
+# Temporäre lokale Dateien
+Textdokument (neu).txt
