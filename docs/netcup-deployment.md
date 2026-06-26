@@ -57,6 +57,19 @@ npm run build:static
 
 Die fertigen Dateien liegen danach in `out/`.
 
+Wichtige Routen muessen als Ordner mit `index.html` vorhanden sein, zum Beispiel:
+
+```text
+out/solo-modus/index.html
+out/party-modus/index.html
+out/online-modus/index.html
+out/spielen/index.html
+out/aufloesung/index.html
+out/endergebnis/index.html
+```
+
+Der FTPS-Upload muss den kompletten Inhalt von `out/` inklusive aller Unterordner hochladen.
+
 ## Spaeter mit Accounts oder Online-Raeumen
 
 Wenn spaeter Accounts, gespeicherte Spielstaende oder Online-Raeume dazukommen sollen, braucht Punktlandung wieder einen Backend-Dienst. Das kann dann z. B. ein kleiner VPS, Supabase, Firebase oder ein anderer Hosted-Service sein.

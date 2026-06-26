@@ -152,7 +152,43 @@ function GameStateGuard({ requiredStatus, currentStatus }: { requiredStatus: Req
   );
 }
 
-export function GameApp({ initialMode = "home", requiredStatus }: { initialMode?: InitialGameMode; requiredStatus?: RequiredGameStatus }) {
+function OnlineWaitingRoomGuard() {
+  return (
+    <main className="grid min-h-dvh place-items-center bg-slate-950 p-4 text-slate-50">
+      <section className="arcade-panel w-full max-w-md rounded-md border-slate-700/80 p-5">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Online-Warteraum</p>
+        <h1 className="mt-2 text-3xl font-black leading-tight">Kein aktiver Warteraum</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-300">
+          Oeffne zuerst im Online-Modus einen Raum. Danach ist der Warteraum mit QR-Code und Raumcode hier erreichbar.
+        </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <a
+            href="/online-modus"
+            className="inline-flex min-h-12 items-center justify-center rounded-md bg-emerald-400/14 px-4 text-sm font-black uppercase tracking-[0.1em] text-emerald-100 ring-1 ring-emerald-300/65 transition hover:bg-emerald-400/20"
+          >
+            Online-Modus
+          </a>
+          <a
+            href="/"
+            className="inline-flex min-h-12 items-center justify-center rounded-md bg-slate-950/70 px-4 text-sm font-black uppercase tracking-[0.1em] text-slate-100 ring-1 ring-slate-700 transition hover:bg-slate-900"
+          >
+            Startseite
+          </a>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+export function GameApp({
+  initialMode = "home",
+  requiredStatus,
+  requireOnlineWaitingRoom = false
+}: {
+  initialMode?: InitialGameMode;
+  requiredStatus?: RequiredGameStatus;
+  requireOnlineWaitingRoom?: boolean;
+}) {
   const routeInitialMode: InitialLocalGameMode | undefined = initialMode === "home" ? undefined : initialMode;
   const localGame = useLocalGame(routeInitialMode);
   const onlineGame = useOnlineRoomSocket();
@@ -332,6 +368,10 @@ export function GameApp({ initialMode = "home", requiredStatus }: { initialMode?
 
   if (requiredStatus && room?.status !== requiredStatus) {
     return <GameStateGuard requiredStatus={requiredStatus} currentStatus={room?.status} />;
+  }
+
+  if (requireOnlineWaitingRoom && !onlineGame.room) {
+    return <OnlineWaitingRoomGuard />;
   }
 
   if (pendingJoinCode && !onlineGame.room) {

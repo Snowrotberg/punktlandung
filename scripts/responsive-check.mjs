@@ -192,6 +192,35 @@ function roomState(status) {
   };
 }
 
+function onlineWaitingRoomState() {
+  return {
+    code: "ABC123",
+    kind: "online",
+    hostId: "local_host",
+    hostParticipation: "host_player",
+    hostPlayerName: "QA Host",
+    status: "lobby",
+    settings,
+    players: [
+      {
+        ...hostPlayer,
+        id: "local_host",
+        name: "QA Host",
+        isHost: true
+      }
+    ],
+    currentRound: 0,
+    location: null,
+    guesses: [],
+    timedOutPlayerIds: [],
+    roundEndsAt: null,
+    roundStartedAt: null,
+    summaries: [],
+    emojiEvents: [],
+    adGateUntil: null
+  };
+}
+
 const targets = [
   { name: "home", access: "route", path: "/", resetSession: true, note: "echter URL-Pfad" },
   {
@@ -223,9 +252,11 @@ const targets = [
   },
   {
     name: "warteraum",
-    access: "todo",
+    access: "online-room-state",
     path: "/warteraum",
-    note: "TODO: aktuell kein echter Pfad; ein Live-Warteraum benoetigt den Online-Raum-Flow/Server"
+    expectedText: "QR-Code scannen und beitreten",
+    expectedOnlineRoom: { kind: "online", code: "ABC123" },
+    note: "echter URL-Pfad mit QA-Online-Raum"
   },
   { name: "spielen", access: "state", path: "/spielen", status: "guessing", note: "echter URL-Pfad mit QA-Session" },
   { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", note: "echter URL-Pfad mit QA-Session" },
@@ -329,6 +360,18 @@ async function loadState(page, status, targetPath = "/") {
   await gotoFresh(page, url.toString());
 }
 
+async function loadOnlineWaitingRoom(page) {
+  await gotoFresh(page, targetUrl("/"));
+  await page.evaluate((room) => {
+    localStorage.removeItem("punktlandung-active-session-v1");
+    sessionStorage.setItem("punktlandung-online-room-v1", JSON.stringify(room));
+    localStorage.setItem("punktlandung-name", "Responsive QA");
+  }, onlineWaitingRoomState());
+  const url = new URL(targetUrl("/warteraum"));
+  url.searchParams.set("responsive", `warteraum-${Date.now()}`);
+  await gotoFresh(page, url.toString());
+}
+
 async function clickButtonByVisibleText(page, text) {
   const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const roleMatch = page.getByRole("button", { name: new RegExp(escaped, "i") }).first();
@@ -383,6 +426,11 @@ async function openTarget(page, target) {
     return null;
   }
 
+  if (target.access === "online-room-state") {
+    await loadOnlineWaitingRoom(page);
+    return null;
+  }
+
   throw new Error(`Unsupported target access: ${target.access}`);
 }
 
@@ -393,6 +441,7 @@ async function collectLayoutMetrics(page) {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     let roomState = null;
+    let onlineRoomState = null;
     try {
       const rawSession = window.localStorage.getItem("punktlandung-active-session-v1");
       const storedSession = rawSession ? JSON.parse(rawSession) : null;
@@ -406,6 +455,20 @@ async function collectLayoutMetrics(page) {
       }
     } catch {
       roomState = null;
+    }
+    try {
+      const rawOnlineRoom = window.sessionStorage.getItem("punktlandung-online-room-v1");
+      const storedOnlineRoom = rawOnlineRoom ? JSON.parse(rawOnlineRoom) : null;
+      if (storedOnlineRoom) {
+        onlineRoomState = {
+          code: storedOnlineRoom.code ?? null,
+          kind: storedOnlineRoom.kind ?? null,
+          status: storedOnlineRoom.status ?? null,
+          players: Array.isArray(storedOnlineRoom.players) ? storedOnlineRoom.players.length : null
+        };
+      }
+    } catch {
+      onlineRoomState = null;
     }
     const visible = (el) => {
       const style = window.getComputedStyle(el);
@@ -444,6 +507,7 @@ async function collectLayoutMetrics(page) {
       bodyTextLength: (body?.innerText ?? "").trim().length,
       bodyText: (body?.innerText ?? "").replace(/\s+/g, " ").trim(),
       roomState,
+      onlineRoomState,
       visibleElementCount: visibleElements.length,
       overflowingElements,
       applicationError: (body?.innerText ?? "").includes("Application error")
@@ -494,6 +558,17 @@ async function runTargetViewport(browser, target, viewport) {
         for (const [key, value] of Object.entries(target.expectedRoom)) {
           if (metrics.roomState[key] !== value) {
             problems.push(`Erwarteter Spielzustand passt nicht: ${key}=${metrics.roomState[key] ?? "null"} statt ${value}.`);
+          }
+        }
+      }
+    }
+    if (target.expectedOnlineRoom) {
+      if (!metrics.onlineRoomState) {
+        problems.push("Erwarteter Online-Raum-State fehlt im Browser-State.");
+      } else {
+        for (const [key, value] of Object.entries(target.expectedOnlineRoom)) {
+          if (metrics.onlineRoomState[key] !== value) {
+            problems.push(`Erwarteter Online-Raum-State passt nicht: ${key}=${metrics.onlineRoomState[key] ?? "null"} statt ${value}.`);
           }
         }
       }

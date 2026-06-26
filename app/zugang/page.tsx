@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { hasAccessPassword, safeNextPath } from "@/lib/accessGate";
-
 export const metadata: Metadata = {
   title: "Zugang | Punktlandung",
   robots: {
@@ -11,24 +8,7 @@ export const metadata: Metadata = {
   }
 };
 
-export const dynamic = "force-dynamic";
-
-type AccessPageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
-};
-
-function firstParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-export default function AccessPage({ searchParams }: AccessPageProps) {
-  const nextPath = safeNextPath(firstParam(searchParams?.next));
-  const hasError = firstParam(searchParams?.error) === "1";
-
-  if (!hasAccessPassword()) {
-    redirect(nextPath);
-  }
-
+export default function AccessPage() {
   return (
     <main className="relative min-h-dvh overflow-hidden bg-slate-950 px-4 py-6 text-slate-50 sm:px-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(52,211,153,0.16),transparent_28rem),radial-gradient(circle_at_82%_32%,rgba(99,102,241,0.18),transparent_30rem)]" />
@@ -49,7 +29,7 @@ export default function AccessPage({ searchParams }: AccessPageProps) {
           </div>
 
           <form action="/api/access" method="post" className="space-y-4">
-            <input type="hidden" name="next" value={nextPath} />
+            <input type="hidden" name="next" value="/" />
             <div>
               <label
                 htmlFor="password"
@@ -67,12 +47,6 @@ export default function AccessPage({ searchParams }: AccessPageProps) {
                 className="mt-2 w-full rounded-md border border-slate-500/60 bg-slate-950/70 px-4 py-4 text-lg text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-300/25"
               />
             </div>
-
-            {hasError ? (
-              <p className="rounded-md border border-rose-300/45 bg-rose-500/10 px-4 py-3 text-sm font-bold text-rose-200">
-                Das Passwort stimmt nicht. Bitte versuche es noch einmal.
-              </p>
-            ) : null}
 
             <button
               type="submit"

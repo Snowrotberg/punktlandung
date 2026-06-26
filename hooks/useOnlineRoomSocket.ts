@@ -4,6 +4,31 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ClientMessage, GameSettings, HostParticipation, LatLng, RoomState, ServerMessage, TeamId } from "@/types/game";
 
 type ConnectionStatus = "connecting" | "open" | "closed";
+const onlineRoomStorageKey = "punktlandung-online-room-v1";
+
+function readStoredOnlineRoom(): RoomState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(onlineRoomStorageKey);
+    const room = raw ? (JSON.parse(raw) as Partial<RoomState>) : null;
+    return room?.kind === "online" && room.status === "lobby" ? (room as RoomState) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredOnlineRoom(room: RoomState | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (room?.kind === "online") {
+      window.sessionStorage.setItem(onlineRoomStorageKey, JSON.stringify(room));
+      return;
+    }
+    window.sessionStorage.removeItem(onlineRoomStorageKey);
+  } catch {
+    // Online rooms still work in memory when sessionStorage is unavailable.
+  }
+}
 
 export function useOnlineRoomSocket() {
   const [playerId, setPlayerId] = useState<string | null>(null);
@@ -15,6 +40,8 @@ export function useOnlineRoomSocket() {
   useEffect(() => {
     let reconnectTimer: number | null = null;
     let stopped = false;
+    const restoredRoom = readStoredOnlineRoom();
+    if (restoredRoom) setRoom(restoredRoom);
 
     const params = new URLSearchParams(window.location.search);
     const sharedWsUrl = params.get("ws");
@@ -59,8 +86,14 @@ export function useOnlineRoomSocket() {
       socket.addEventListener("message", (event) => {
         const message = JSON.parse(event.data) as ServerMessage;
         if (message.type === "hello") setPlayerId(message.playerId);
-        if (message.type === "room_state") setRoom(message.state);
-        if (message.type === "left_room") setRoom(null);
+        if (message.type === "room_state") {
+          writeStoredOnlineRoom(message.state);
+          setRoom(message.state);
+        }
+        if (message.type === "left_room") {
+          writeStoredOnlineRoom(null);
+          setRoom(null);
+        }
         if (message.type === "error") setError(message.message);
       });
     };
@@ -104,7 +137,10 @@ export function useOnlineRoomSocket() {
     cancelRound: () => send({ type: "cancel_round" }),
     skipLocation: (locationId?: string) => send({ type: "skip_location", locationId }),
     restart: () => send({ type: "restart" }),
-    leaveRoom: () => send({ type: "leave_room" }),
+    leaveRoom: () => {
+      writeStoredOnlineRoom(null);
+      send({ type: "leave_room" });
+    },
     setTeam: (team: TeamId) => send({ type: "set_team", team }),
     send
   };
