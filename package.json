@@ -15,6 +15,7 @@
     "catalog:generate": "node scripts/generate-wikimedia-catalog.mjs",
     "boundaries:generate": "node scripts/generate-location-boundaries.mjs",
     "boundaries:fetch": "node scripts/generate-location-boundaries.mjs --fetch-osm",
+    "check:responsive": "node scripts/responsive-check.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "next lint"
   },
@@ -39,6 +40,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "cross-env": "^7.0.3",
     "ngrok": "^5.0.0-beta.2"
   }

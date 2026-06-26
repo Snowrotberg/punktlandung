@@ -114,8 +114,8 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   const primaryMapActionDisabled = expanded ? !readyToSubmit : alreadySubmitted || currentPlayerTimedOut;
   const taskText = categoryTaskText[room.location?.category ?? "mixed"] ?? categoryTaskText.mixed;
   const viewerLayout = expanded
-    ? "absolute inset-0 overflow-hidden"
-    : "absolute inset-x-0 top-0 bottom-[23rem] overflow-hidden sm:bottom-[18rem] lg:bottom-0";
+    ? "punktlandung-game-viewer punktlandung-game-viewer--map-open absolute inset-0 overflow-hidden"
+    : "punktlandung-game-viewer punktlandung-game-viewer--map-closed absolute inset-x-0 top-0 bottom-[23rem] overflow-hidden sm:bottom-[18rem] lg:bottom-0";
   const chromeSuppressed = chromeHidden || chromeHoverHidden;
 
   useEffect(() => {
@@ -211,25 +211,25 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   if (!room.location) return null;
 
   return (
-    <main className="fixed inset-0 overflow-hidden bg-slate-950">
+    <main className="punktlandung-game-shell fixed inset-0 overflow-hidden bg-slate-950">
       <div className={viewerLayout}>
         <PanoramaViewer location={room.location} settings={room.settings} isHost={isHost} onSkipLocation={onSkipLocation} chromeHidden={chromeSuppressed} />
 
         {!chromeSuppressed && (
-        <div className="absolute inset-x-3 top-3 z-40 sm:inset-x-4 sm:top-4">
-          <div className="grid grid-cols-[auto_1fr_auto] items-start gap-2 xl:gap-3">
-            <div className="pointer-events-none order-1 col-span-1 flex min-w-0 flex-wrap gap-1.5 sm:gap-2">
-              <div className="flex min-h-10 w-fit flex-col justify-center rounded-md bg-slate-950/52 px-3 py-1 shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-indigo-300/30 backdrop-blur-md sm:min-h-11 sm:px-3.5">
+        <div className="punktlandung-game-hud absolute inset-x-3 top-3 z-40 sm:inset-x-4 sm:top-4">
+          <div className="punktlandung-game-hud-grid grid grid-cols-[auto_1fr_auto] items-start gap-2 xl:gap-3">
+            <div className="punktlandung-game-stats pointer-events-none order-1 col-span-1 flex min-w-0 flex-wrap gap-1.5 sm:gap-2">
+              <div className="punktlandung-game-stat flex min-h-10 w-fit flex-col justify-center rounded-md bg-slate-950/52 px-3 py-1 shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-indigo-300/30 backdrop-blur-md sm:min-h-11 sm:px-3.5">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Runde</p>
                 <p className="text-[18px] font-black leading-tight sm:text-[20px]">
                   {room.currentRound}/{room.settings.rounds}
                 </p>
               </div>
-              <div className="flex min-h-10 w-fit flex-col justify-center rounded-md bg-slate-950/52 px-3 py-1 shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-emerald-300/40 backdrop-blur-md sm:min-h-11 sm:px-3.5">
+              <div className="punktlandung-game-stat flex min-h-10 w-fit flex-col justify-center rounded-md bg-slate-950/52 px-3 py-1 shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-emerald-300/40 backdrop-blur-md sm:min-h-11 sm:px-3.5">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Zeit</p>
                 <p className="text-[18px] font-black leading-tight sm:text-[20px]">{secondsLeft === null ? "frei" : `${secondsLeft}s`}</p>
               </div>
-              <div className="flex min-h-10 w-fit flex-col justify-center rounded-md bg-slate-950/52 px-3 py-1 shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-slate-600/50 backdrop-blur-md sm:min-h-11 sm:px-3.5">
+              <div className="punktlandung-game-stat flex min-h-10 w-fit flex-col justify-center rounded-md bg-slate-950/52 px-3 py-1 shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-slate-600/50 backdrop-blur-md sm:min-h-11 sm:px-3.5">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Tipps</p>
                 <p className="text-[18px] font-black leading-tight sm:text-[20px]">
                   {resolvedPlayerIds.size}/{activePlayers}
@@ -243,11 +243,11 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
                 <p className="punktlandung-task-card-title text-[18px] font-black leading-none text-white sm:text-[20px] xl:text-[22px]">{taskText}</p>
               </div>
             </div>
-            <div className="pointer-events-auto order-3 col-span-1 flex justify-end gap-2">
+            <div className="punktlandung-game-actions pointer-events-auto order-3 col-span-1 flex justify-end gap-2">
                 {isHost && (
                   <Button
                     sound="click"
-                    className="min-h-10 w-fit px-4 py-2 text-[10px] leading-tight text-center normal-case sm:min-h-11 sm:text-[11px] xl:px-5 xl:text-xs"
+                    className="punktlandung-game-back-button min-h-10 w-fit px-4 py-2 text-[10px] leading-tight text-center normal-case sm:min-h-11 sm:text-[11px] xl:px-5 xl:text-xs"
                     tone="ghost"
                     onClick={onCancelRound}
                     title={"Zur\u00fcck zum Spielmodus"}
@@ -296,12 +296,12 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
         }}
       >
         <div className="flex h-full flex-col gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="min-w-0 text-xs font-black uppercase tracking-[0.2em] text-indigo-300">Karte öffnen</p>
-            <div className="flex shrink-0 items-center gap-2">
+          <div className="punktlandung-map-panel-header flex items-center justify-between gap-3">
+            <p className="punktlandung-map-panel-title min-w-0 text-xs font-black uppercase tracking-[0.2em] text-indigo-300">Karte öffnen</p>
+            <div className="punktlandung-map-panel-actions flex shrink-0 items-center gap-2">
               {expanded && (
                 <Button
-                  className="min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
+                  className="punktlandung-map-size-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
                   tone="ghost"
                   onClick={(event) => {
                     event.stopPropagation();
@@ -313,7 +313,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
                 </Button>
               )}
               <Button
-                className="min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
+                className="punktlandung-map-primary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
                 tone={expanded || readyToSubmit ? primaryMapActionTone : "ghost"}
                 sound="select"
                 disabled={primaryMapActionDisabled}
@@ -326,7 +326,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
               </Button>
               {expanded && (
                 <Button
-                  className="min-h-10 min-w-10 px-0 py-0 text-sm sm:min-h-11 sm:min-w-11"
+                  className="punktlandung-map-close-button min-h-10 min-w-10 px-0 py-0 text-sm sm:min-h-11 sm:min-w-11"
                   tone="ghost"
                   onClick={(event) => {
                     event.stopPropagation();

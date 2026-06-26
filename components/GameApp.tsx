@@ -30,6 +30,8 @@ const legalLinks = [
   { href: "/lizenzen", label: "Lizenzen" }
 ];
 
+export type InitialGameMode = "home" | GameSettings["localMode"] | "online";
+
 function SvgPin({ className, color }: { className?: string; color: string }) {
   return (
     <svg viewBox="0 0 64 84" aria-hidden="true" className={className}>
@@ -81,15 +83,13 @@ function SoundToggle() {
   );
 }
 
-function appUrlWithMode(mode: GameSettings["localMode"] | "online"): string {
-  if (typeof window === "undefined") return "/";
-  const url = new URL(window.location.href);
-  url.searchParams.delete("room");
-  url.searchParams.set("mode", mode);
-  return url.toString();
+function appPathWithMode(mode: GameSettings["localMode"] | "online"): string {
+  if (mode === "solo") return "/solo-modus";
+  if (mode === "couch") return "/party-modus";
+  return "/online-modus";
 }
 
-export function GameApp() {
+export function GameApp({ initialMode = "home" }: { initialMode?: InitialGameMode }) {
   const localGame = useLocalGame();
   const onlineGame = useOnlineRoomSocket();
   const { playSelect } = useSound();
@@ -175,7 +175,9 @@ export function GameApp() {
     if (initialModeHandledRef.current) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("room")) return;
-    const mode = params.get("mode");
+    const queryMode = params.get("mode");
+    const routeMode = initialMode === "home" ? null : initialMode;
+    const mode = queryMode ?? routeMode;
     if (mode !== "solo" && mode !== "couch" && mode !== "online") return;
 
     initialModeHandledRef.current = true;
@@ -196,7 +198,7 @@ export function GameApp() {
       hostParticipation: "host_player",
       playerName
     });
-  }, [localGame, name]);
+  }, [initialMode, localGame, name]);
 
   useEffect(() => {
     if (!pendingOnlineSettings || !onlineGame.room || !onlineGame.isHost || onlineGame.room.status !== "lobby") return;
@@ -204,19 +206,6 @@ export function GameApp() {
     setPendingOnlineSettings(null);
   }, [pendingOnlineSettings, onlineGame]);
 
-  const handleCreateLocal = (localMode: GameSettings["localMode"]) => {
-    playSelect();
-    setPendingJoinCode(null);
-    localGame.createSolo(name, localMode);
-  };
-  const handlePrepareOnlineRoom = () => {
-    playSelect();
-    setPendingJoinCode(null);
-    localGame.createOnlineSetup({
-      hostParticipation: "host_player",
-      playerName: name
-    });
-  };
   const handleCreateLiveOnlineRoom = () => {
     if (localGame.room?.kind === "online") setPendingOnlineSettings(localGame.room.settings);
     const hostParticipation = localGame.room?.hostParticipation ?? "host_only";
@@ -488,10 +477,10 @@ export function GameApp() {
                       key={mode.id}
                       type="button"
                       disabled={isDisabled}
-                      data-new-tab-href={mode.available ? appUrlWithMode(mode.id) : undefined}
+                      data-new-tab-href={mode.available ? appPathWithMode(mode.id) : undefined}
                       onClick={() => {
-                        if (mode.id === "solo" || mode.id === "couch") handleCreateLocal(mode.id);
-                        if (mode.id === "online") handlePrepareOnlineRoom();
+                        playSelect();
+                        window.location.href = appPathWithMode(mode.id);
                       }}
                       className={`punktlandung-home-mode-card group relative min-h-[46px] rounded-md px-3.5 py-1.5 text-left transition lg:min-h-[clamp(40px,4.5vh,52px)] ${
                         mode.available

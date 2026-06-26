@@ -446,7 +446,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
       {!chromeHidden && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.18)_58%,rgba(2,6,23,0.7)_100%)]" />}
 
       {!chromeHidden && (
-        <div className="absolute bottom-3 left-1/2 z-10 w-fit max-w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-slate-950/58 px-3 py-2 text-center shadow-[0_16px_36px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/50 backdrop-blur sm:bottom-4">
+        <div className="punktlandung-source-chip absolute bottom-3 left-1/2 z-10 w-fit max-w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-slate-950/58 px-3 py-2 text-center shadow-[0_16px_36px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/50 backdrop-blur sm:bottom-4">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-300">Quelle</p>
           <h1 className="mt-0.5 text-sm font-black leading-tight text-white">{location.source === "wikimedia" ? "Wikimedia Commons" : location.source}</h1>
           {location.source !== "wikimedia" && location.attribution && <p className="mt-0.5 text-[10px] leading-tight text-slate-300">{location.attribution}</p>}
