@@ -66,6 +66,7 @@ const accessPasswordSource = accessPasswordKey
   ? loadedEnvSources.get(accessPasswordKey) ?? "Umgebungsvariable"
   : null;
 const chromePath = "C:/Program Files/Google/Chrome/Application/chrome.exe";
+const onlineRoomStorageKey = "punktlandung-online-room-v1";
 
 const viewports = [
   { name: "phone-small", width: 360, height: 800 },
@@ -362,14 +363,54 @@ async function loadState(page, status, targetPath = "/") {
 
 async function loadOnlineWaitingRoom(page) {
   await gotoFresh(page, targetUrl("/"));
-  await page.evaluate((room) => {
-    localStorage.removeItem("punktlandung-active-session-v1");
-    sessionStorage.setItem("punktlandung-online-room-v1", JSON.stringify(room));
-    localStorage.setItem("punktlandung-name", "Responsive QA");
-  }, onlineWaitingRoomState());
+  await seedOnlineWaitingRoom(page);
   const url = new URL(targetUrl("/warteraum"));
   url.searchParams.set("responsive", `warteraum-${Date.now()}`);
   await gotoFresh(page, url.toString());
+  await ensureOnlineWaitingRoom(page);
+}
+
+async function seedOnlineWaitingRoom(page) {
+  await page.evaluate(({ storageKey, room }) => {
+    localStorage.removeItem("punktlandung-active-session-v1");
+    sessionStorage.setItem(storageKey, JSON.stringify(room));
+    localStorage.setItem("punktlandung-name", "Responsive QA");
+  }, { storageKey: onlineRoomStorageKey, room: onlineWaitingRoomState() });
+}
+
+async function ensureOnlineWaitingRoom(page) {
+  const waitForWaitingRoom = () =>
+    page.waitForFunction(
+      ({ storageKey }) => {
+        const text = document.body?.innerText ?? "";
+        let storedRoom = null;
+        try {
+          const raw = window.sessionStorage.getItem(storageKey);
+          storedRoom = raw ? JSON.parse(raw) : null;
+        } catch {
+          storedRoom = null;
+        }
+
+        return (
+          text.includes("QR-Code scannen und beitreten") &&
+          storedRoom?.kind === "online" &&
+          storedRoom?.code === "ABC123" &&
+          storedRoom?.status === "lobby"
+        );
+      },
+      { storageKey: onlineRoomStorageKey },
+      { timeout: 5000 }
+    );
+
+  try {
+    await waitForWaitingRoom();
+    return;
+  } catch {
+    await seedOnlineWaitingRoom(page);
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
+    await waitForApp(page);
+    await waitForWaitingRoom();
+  }
 }
 
 async function clickButtonByVisibleText(page, text) {
@@ -529,7 +570,7 @@ async function runTargetViewport(browser, target, viewport) {
   });
   page.on("pageerror", (error) => consoleErrors.push(`pageerror: ${error.message}`));
 
-  const screenshot = path.join(outDir, `${target.name}-${viewport.name}.png`);
+  let screenshot = path.join(outDir, `${target.name}-${viewport.name}.png`);
   const problems = [];
   let responseStatus = null;
 
@@ -577,7 +618,7 @@ async function runTargetViewport(browser, target, viewport) {
       problems.push(`Horizontaler Overflow: Dokument ${metrics.documentWidth}px bei Viewport ${metrics.viewportWidth}px.`);
     }
 
-    await page.screenshot({ path: screenshot, fullPage: false });
+    screenshot = await saveViewportScreenshot(page, screenshot);
 
     return {
       target: target.name,
@@ -590,7 +631,11 @@ async function runTargetViewport(browser, target, viewport) {
       consoleErrors: [...new Set(consoleErrors)]
     };
   } catch (error) {
-    await page.screenshot({ path: screenshot, fullPage: false }).catch(() => {});
+    try {
+      screenshot = await saveViewportScreenshot(page, screenshot);
+    } catch {
+      // Keep the original test failure visible even when the artifact cannot be written.
+    }
     return {
       target: target.name,
       viewport: viewport.name,
@@ -651,6 +696,41 @@ function renderReport({ selectedTargets, skippedTargets, results }) {
 
 async function removeIfExists(filePath) {
   await fs.rm(filePath, { force: true }).catch(() => {});
+}
+
+function fallbackArtifactPath(filePath) {
+  const parsed = path.parse(filePath);
+  return path.join(parsed.dir, `${parsed.name}-${Date.now()}${parsed.ext}`);
+}
+
+function isLockedArtifactError(error) {
+  return error?.code === "EPERM" || error?.code === "EACCES";
+}
+
+async function saveViewportScreenshot(page, filePath) {
+  try {
+    await page.screenshot({ path: filePath, fullPage: false });
+    return filePath;
+  } catch (error) {
+    if (!isLockedArtifactError(error)) throw error;
+    const fallbackPath = fallbackArtifactPath(filePath);
+    await page.screenshot({ path: fallbackPath, fullPage: false });
+    console.warn(`  - Screenshot-Datei war gesperrt, Ersatz gespeichert: ${path.basename(fallbackPath)}`);
+    return fallbackPath;
+  }
+}
+
+async function writeTextArtifact(filePath, contents) {
+  try {
+    await fs.writeFile(filePath, contents, "utf8");
+    return filePath;
+  } catch (error) {
+    if (!isLockedArtifactError(error)) throw error;
+    const fallbackPath = fallbackArtifactPath(filePath);
+    await fs.writeFile(fallbackPath, contents, "utf8");
+    console.warn(`Report-Datei war gesperrt, Ersatz gespeichert: ${path.basename(fallbackPath)}`);
+    return fallbackPath;
+  }
 }
 
 async function cleanPreviousArtifacts(selectedTargets) {
@@ -717,12 +797,12 @@ try {
 }
 
 const reportPath = path.join(outDir, "report.md");
-await fs.writeFile(reportPath, renderReport({ selectedTargets, skippedTargets, results }), "utf8");
+const writtenReportPath = await writeTextArtifact(reportPath, renderReport({ selectedTargets, skippedTargets, results }));
 
 const failed = results.filter((result) => result.status === "failed");
 console.log("");
 console.log(`Screenshots: ${outDir}`);
-console.log(`Report: ${reportPath}`);
+console.log(`Report: ${writtenReportPath}`);
 console.log(`Ergebnis: ${results.length - failed.length}/${results.length} Checks ok, ${failed.length} Fehler, ${skippedTargets.length} TODO/uebersprungen.`);
 
 if (failed.length > 0) {
