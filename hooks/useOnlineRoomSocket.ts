@@ -5,6 +5,7 @@ import type { ClientMessage, GameSettings, HostParticipation, LatLng, RoomState,
 
 type ConnectionStatus = "connecting" | "open" | "closed";
 const onlineRoomStorageKey = "punktlandung-online-room-v1";
+const wsUrlStorageKey = "punktlandung-ws-url";
 
 function readStoredOnlineRoom(): RoomState | null {
   if (typeof window === "undefined") return null;
@@ -45,20 +46,25 @@ export function useOnlineRoomSocket() {
 
     const params = new URLSearchParams(window.location.search);
     const sharedWsUrl = params.get("ws");
-    if (sharedWsUrl?.startsWith("ws://") || sharedWsUrl?.startsWith("wss://")) {
-      window.localStorage.setItem("punktlandung-ws-url", sharedWsUrl);
-    }
-    const storedWsUrl = window.localStorage.getItem("punktlandung-ws-url");
     const hostname = window.location.hostname;
     const isLocalHost = hostname === "127.0.0.1" || hostname === "localhost";
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
     const defaultWsUrl = isLocalHost ? `${protocol}://${window.location.hostname}:3001` : `${protocol}://${window.location.host}/ws`;
+    const configuredWsUrl = process.env.NEXT_PUBLIC_WS_URL;
+    const isValidWsUrl = (value: string | null | undefined): value is string => value?.startsWith("ws://") || value?.startsWith("wss://") || false;
+
+    if (isValidWsUrl(sharedWsUrl)) {
+      window.localStorage.setItem(wsUrlStorageKey, sharedWsUrl);
+    } else if (!isLocalHost) {
+      window.localStorage.removeItem(wsUrlStorageKey);
+    }
+
     const wsUrl =
-      sharedWsUrl?.startsWith("ws://") || sharedWsUrl?.startsWith("wss://")
+      isValidWsUrl(sharedWsUrl)
         ? sharedWsUrl
-        : storedWsUrl && !isLocalHost
-          ? storedWsUrl
-          : process.env.NEXT_PUBLIC_WS_URL ?? defaultWsUrl;
+        : isLocalHost && isValidWsUrl(configuredWsUrl)
+          ? configuredWsUrl
+          : defaultWsUrl;
 
     const scheduleReconnect = () => {
       if (stopped || reconnectTimer !== null) return;
