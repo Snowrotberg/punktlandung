@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import type { Guess, LatLng, LocationCategory, Player, RoomState } from "@/types/game";
 import { findCountryCodeAtPoint } from "@/lib/countryLookup";
 import { AdContainer } from "./AdContainer";
+import { BackButton } from "./BackButton";
 import { Button } from "./Button";
 import { GuessMap } from "./GuessMap";
 import { PanoramaViewer } from "./PanoramaViewer";
@@ -44,11 +45,15 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   const [localPlayerId, setLocalPlayerId] = useState<string | null>(null);
   const [chromeHidden, setChromeHidden] = useState(false);
   const [chromeHoverHidden, setChromeHoverHidden] = useState(false);
+  const [isMobilePortrait, setIsMobilePortrait] = useState(false);
   const [mapResetNonce, setMapResetNonce] = useState(0);
   const mapCloseTimer = useRef<number | null>(null);
   const countdownTimersRef = useRef<number[]>([]);
   const expanded = mapSize !== "closed";
   const fullMap = mapSize === "full";
+  const mapInteractive = expanded || isMobilePortrait;
+  const showMapSizeButton = (expanded || isMobilePortrait) && !fullMap;
+  const showMapCloseButton = expanded && (!isMobilePortrait || fullMap);
 
   useEffect(() => {
     setGuess(null);
@@ -57,6 +62,14 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   useEffect(() => {
     const timer = window.setInterval(() => forceTick((value) => value + 1), 250);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 879px) and (orientation: portrait)");
+    const update = () => setIsMobilePortrait(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
   }, []);
 
   useEffect(() => {
@@ -111,7 +124,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   const collapsedMapActionLabel =
     readyToSubmit || alreadySubmitted || currentPlayerTimedOut ? primaryMapActionLabel : "Pin setzen";
   const primaryMapActionTone = readyToSubmit ? "selected" : alreadySubmitted ? "good" : "ghost";
-  const primaryMapActionDisabled = expanded ? !readyToSubmit : alreadySubmitted || currentPlayerTimedOut;
+  const primaryMapActionDisabled = mapInteractive ? !readyToSubmit : alreadySubmitted || currentPlayerTimedOut;
   const taskText = categoryTaskText[room.location?.category ?? "mixed"] ?? categoryTaskText.mixed;
   const viewerLayout = expanded
     ? "punktlandung-game-viewer punktlandung-game-viewer--map-open absolute inset-0 overflow-hidden"
@@ -168,6 +181,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
         await submitCurrentGuess();
         return;
       }
+      if (isMobilePortrait) return;
       setMapSize("open");
       return;
     }
@@ -175,8 +189,9 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
     await submitCurrentGuess();
   };
 
-  const toggleMapSize = () => setMapSize((value) => (value === "full" ? "open" : "full"));
+  const toggleMapSize = () => setMapSize((value) => (value === "full" ? (isMobilePortrait ? "closed" : "open") : "full"));
   const openMapByHover = () => {
+    if (isMobilePortrait) return;
     if (fullMap) return;
     if (mapCloseTimer.current !== null) {
       window.clearTimeout(mapCloseTimer.current);
@@ -185,6 +200,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
     setMapSize("open");
   };
   const closeMapByHover = () => {
+    if (isMobilePortrait) return;
     if (fullMap) return;
     if (mapCloseTimer.current !== null) window.clearTimeout(mapCloseTimer.current);
     mapCloseTimer.current = window.setTimeout(() => {
@@ -214,8 +230,9 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
     <main className="punktlandung-game-shell fixed inset-0 overflow-hidden bg-slate-950">
       <div className={viewerLayout}>
         <PanoramaViewer location={room.location} settings={room.settings} isHost={isHost} onSkipLocation={onSkipLocation} chromeHidden={chromeSuppressed} />
+      </div>
 
-        {!chromeSuppressed && (
+      {!chromeSuppressed && (
         <div className="punktlandung-game-hud absolute inset-x-3 top-3 z-40 sm:inset-x-4 sm:top-4">
           <div className="punktlandung-game-hud-grid grid grid-cols-[auto_1fr_auto] items-start gap-2 xl:gap-3">
             <div className="punktlandung-game-stats pointer-events-none order-1 col-span-1 flex min-w-0 flex-wrap gap-1.5 sm:gap-2">
@@ -229,12 +246,6 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Zeit</p>
                 <p className="text-[18px] font-black leading-tight sm:text-[20px]">{secondsLeft === null ? "frei" : `${secondsLeft}s`}</p>
               </div>
-              <div className="punktlandung-game-stat flex min-h-10 w-fit flex-col justify-center rounded-md bg-slate-950/52 px-3 py-1 shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-slate-600/50 backdrop-blur-md sm:min-h-11 sm:px-3.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Tipps</p>
-                <p className="text-[18px] font-black leading-tight sm:text-[20px]">
-                  {resolvedPlayerIds.size}/{activePlayers}
-                </p>
-              </div>
             </div>
 
             <div className="pointer-events-none order-2 col-span-1 flex justify-center px-1 xl:px-2">
@@ -245,21 +256,12 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
             </div>
             <div className="punktlandung-game-actions pointer-events-auto order-3 col-span-1 flex justify-end gap-2">
                 {isHost && (
-                  <Button
-                    sound="click"
-                    className="punktlandung-game-back-button min-h-10 w-fit px-4 py-2 text-[10px] leading-tight text-center normal-case sm:min-h-11 sm:text-[11px] xl:px-5 xl:text-xs"
-                    tone="ghost"
-                    onClick={onCancelRound}
-                    title={"Zur\u00fcck zum Spielmodus"}
-                  >
-                    <span>{"Zur\u00fcck zum Spielmodus"}</span>
-                  </Button>
+                  <BackButton className="punktlandung-game-back-button" onClick={onCancelRound} label="Zurueck" />
                 )}
             </div>
           </div>
         </div>
-        )}
-      </div>
+      )}
 
       <button
         type="button"
@@ -292,14 +294,14 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
         onMouseEnter={openMapByHover}
         onMouseLeave={closeMapByHover}
         onClick={() => {
-          if (!expanded) setMapSize("open");
+          if (!expanded && !isMobilePortrait) setMapSize("open");
         }}
       >
         <div className="flex h-full flex-col gap-3">
           <div className="punktlandung-map-panel-header flex items-center justify-between gap-3">
             <p className="punktlandung-map-panel-title min-w-0 text-xs font-black uppercase tracking-[0.2em] text-indigo-300">Karte öffnen</p>
             <div className="punktlandung-map-panel-actions flex shrink-0 items-center gap-2">
-              {expanded && (
+              {showMapSizeButton && (
                 <Button
                   className="punktlandung-map-size-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
                   tone="ghost"
@@ -314,7 +316,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
               )}
               <Button
                 className="punktlandung-map-primary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
-                tone={expanded || readyToSubmit ? primaryMapActionTone : "ghost"}
+                tone={mapInteractive || readyToSubmit ? primaryMapActionTone : "ghost"}
                 sound="select"
                 disabled={primaryMapActionDisabled}
                 onClick={async (event) => {
@@ -322,9 +324,9 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
                   await handlePrimaryMapAction();
                 }}
               >
-                {expanded ? primaryMapActionLabel : collapsedMapActionLabel}
+                {mapInteractive ? primaryMapActionLabel : collapsedMapActionLabel}
               </Button>
-              {expanded && (
+              {showMapCloseButton && (
                 <Button
                   className="punktlandung-map-close-button min-h-10 min-w-10 px-0 py-0 text-sm sm:min-h-11 sm:min-w-11"
                   tone="ghost"
@@ -340,7 +342,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
             </div>
           </div>
 
-          {isLocalRoom && activePlayers > 1 && expanded && (
+          {isLocalRoom && activePlayers > 1 && mapInteractive && (
             <div className="flex flex-wrap gap-1.5">
               {activePlayerList.map((player) => {
                 const submitted = room.guesses.some((item) => item.playerId === player.id);
@@ -383,7 +385,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
 
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-md ring-1 ring-slate-700/70">
             <div
-              className={expanded ? "pin-cursor h-full" : "pointer-events-none h-full"}
+              className={mapInteractive ? "pin-cursor h-full" : "pointer-events-none h-full"}
               style={{ "--pin-cursor": pinCursorUrl(currentPlayerColor) } as CSSProperties}
             >
               <GuessMap
@@ -391,9 +393,9 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
                 players={room.players}
                 currentPlayerColor={currentPlayerColor}
                 onGuess={handleMapGuess}
-                disabled={alreadySubmitted || !expanded}
-                noZoom={!expanded}
-                noPan={!expanded}
+                disabled={alreadySubmitted || !mapInteractive}
+                noZoom={!mapInteractive}
+                noPan={!mapInteractive}
                 resizeSignal={`${mapSize}-${targetPlayerId ?? "none"}-${alreadySubmitted ? "submitted" : "live"}`}
                 resetSignal={`${room.location.id}-${targetPlayerId ?? "none"}-${mapResetNonce}`}
               />

@@ -7,12 +7,14 @@ import {
   adConfig,
   type AdPlacement,
   type AdVariant,
+  isAdPlacementConsentRequired,
   isAdPlacementConfigured
 } from "@/lib/ads";
 
 type AdContainerProps = {
   placement?: AdPlacement;
   variant?: AdVariant;
+  adFormat?: "auto" | "vertical";
   label?: string;
   className?: string;
   position?: "relative" | "absolute";
@@ -25,22 +27,10 @@ declare global {
   }
 }
 
-function hasAdConsent() {
-  if (!adConfig.requireConsent) return true;
+function hasAdConsent(placement: AdPlacement) {
+  if (!isAdPlacementConsentRequired(placement)) return true;
   if (typeof window === "undefined") return false;
   return window.localStorage.getItem(AD_CONSENT_STORAGE_KEY) === "accepted";
-}
-
-function ensureAdSenseScript() {
-  if (typeof document === "undefined" || !adConfig.clientId) return;
-  if (document.getElementById("punktlandung-adsense")) return;
-
-  const script = document.createElement("script");
-  script.id = "punktlandung-adsense";
-  script.async = true;
-  script.crossOrigin = "anonymous";
-  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adConfig.clientId)}`;
-  document.head.appendChild(script);
 }
 
 function variantShape(variant: AdVariant) {
@@ -57,6 +47,7 @@ function variantFormat(variant: AdVariant) {
 export function AdContainer({
   placement = "home-left-rail",
   variant = "banner",
+  adFormat,
   label = "Anzeige",
   className = "",
   position = "relative",
@@ -66,12 +57,13 @@ export function AdContainer({
   const requestedRef = useRef(false);
   const slotId = adConfig.slots[placement];
   const placementConfigured = isAdPlacementConfigured(placement);
+  const consentRequired = isAdPlacementConsentRequired(placement);
   const canRequestAd = placementConfigured && consentGranted;
   const shape = variantShape(variant);
   const positionClass = position === "absolute" ? "absolute" : "relative";
 
   useEffect(() => {
-    const syncConsent = () => setConsentGranted(hasAdConsent());
+    const syncConsent = () => setConsentGranted(hasAdConsent(placement));
     syncConsent();
     window.addEventListener(AD_CONSENT_EVENT, syncConsent);
     window.addEventListener("storage", syncConsent);
@@ -79,12 +71,11 @@ export function AdContainer({
       window.removeEventListener(AD_CONSENT_EVENT, syncConsent);
       window.removeEventListener("storage", syncConsent);
     };
-  }, []);
+  }, [placement]);
 
   useEffect(() => {
     if (!canRequestAd || requestedRef.current) return;
     requestedRef.current = true;
-    ensureAdSenseScript();
 
     const timeout = window.setTimeout(() => {
       try {
@@ -113,7 +104,7 @@ export function AdContainer({
           className="adsbygoogle block h-full w-full"
           style={{ display: "block" }}
           data-ad-client={adConfig.clientId}
-          data-ad-format={variantFormat(variant)}
+          data-ad-format={adFormat ?? variantFormat(variant)}
           data-ad-slot={slotId}
           data-adtest={adConfig.testMode ? "on" : undefined}
           data-full-width-responsive={fullWidthResponsive ? "true" : "false"}
@@ -127,7 +118,7 @@ export function AdContainer({
             <p className="mt-2 text-xs leading-5 text-slate-400">
               {placementConfigured ? "Wird erst nach Zustimmung geladen." : "AdSense-ready Fläche."}
             </p>
-            {placementConfigured && adConfig.requireConsent && (
+            {placementConfigured && consentRequired && (
               <button
                 type="button"
                 onClick={allowAds}

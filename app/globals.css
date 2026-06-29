@@ -5886,9 +5886,81 @@ textarea {
   height: 1.55rem;
 }
 
+.punktlandung-back-button,
+.punktlandung-back-link {
+  align-items: center !important;
+  display: inline-flex !important;
+  height: 2.75rem !important;
+  justify-content: center !important;
+  min-height: 2.75rem !important;
+  min-width: 2.75rem !important;
+  padding: 0 !important;
+  width: 2.75rem !important;
+}
+
+.punktlandung-back-link {
+  border: 3px solid rgba(71, 85, 105, 0.8);
+  border-radius: 0.375rem;
+  background: rgba(2, 6, 23, 0.45);
+  color: rgb(241, 245, 249);
+  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+
+.punktlandung-back-link:hover {
+  border-color: rgba(148, 163, 184, 0.9);
+  background: rgba(30, 41, 59, 0.7);
+  transform: translateY(-0.125rem);
+}
+
+.punktlandung-back-button svg,
+.punktlandung-back-link svg {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+@media (min-width: 880px) {
+  .punktlandung-lobby-header-back {
+    height: 3rem !important;
+    min-height: 3rem !important;
+    min-width: 3rem !important;
+    width: 3rem !important;
+  }
+}
+
+@media (min-width: 640px) {
+  .punktlandung-results-mobile-header-back {
+    display: none !important;
+  }
+}
+
+.punktlandung-tv-home .punktlandung-home-login-block input,
+.punktlandung-tv-home .punktlandung-home-room-card input {
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.punktlandung-tv-home .punktlandung-home-login-block input::placeholder,
+.punktlandung-tv-home .punktlandung-home-room-card input::placeholder {
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.punktlandung-tv-home .punktlandung-home-room-card .punktlandung-home-mode-text {
+  line-height: 1.25;
+  margin-top: 0.25rem;
+}
+
+.punktlandung-tv-home .punktlandung-home-room-card .punktlandung-home-room-controls {
+  margin-top: 0.65rem;
+}
+
 .punktlandung-preview-dash {
   position: relative;
   border: 0;
+}
+
+.punktlandung-replay-map-next {
+  display: none !important;
 }
 
 .punktlandung-preview-dash::after {
@@ -5953,6 +6025,7 @@ textarea {
   gap: 0.28rem;
   padding-top: 0.45rem !important;
   padding-bottom: 0.42rem !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24), 0 0 28px rgba(52, 211, 153, 0.12) !important;
 }
 
 .punktlandung-task-card-title {
@@ -6011,6 +6084,18 @@ textarea {
 
   .punktlandung-touch-only-grid {
     display: grid !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  .punktlandung-results-map .punktlandung-map-label {
+    max-width: 10rem !important;
+    font-size: 12px !important;
+    padding: 7px 10px 7px 12px !important;
+  }
+
+  .punktlandung-results-map .punktlandung-map-label-actual {
+    max-width: 10.5rem !important;
   }
 }
 
@@ -6229,9 +6314,31 @@ textarea {
   display: none;
 }
 
+.punktlandung-lobby-mobile-back {
+  display: none;
+}
+
+.punktlandung-lobby-header {
+  position: relative;
+}
+
 @media (min-width: 880px) {
   .punktlandung-desktop-only {
     display: flex;
+  }
+}
+
+@media (max-width: 879px) {
+  .punktlandung-lobby-mobile-back {
+    display: block;
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    z-index: 20;
+  }
+
+  .punktlandung-lobby-header > div:first-child {
+    padding-right: 3.4rem;
   }
 }
 
@@ -7339,8 +7446,17 @@ textarea {
 @media (max-width: 879px) and (orientation: portrait) {
   .punktlandung-game-shell {
     --mobile-game-pad: clamp(0.75rem, 3.5vw, 1rem);
-    --mobile-game-hud-h: clamp(5rem, 11.5dvh, 6.25rem);
-    --mobile-game-map-closed-h: clamp(12.25rem, 28dvh, 15rem);
+    --mobile-game-hud-h: clamp(4.85rem, 10.5dvh, 5.85rem);
+    --mobile-game-image-gap: clamp(0.45rem, 1.6dvh, 0.85rem);
+    --mobile-game-map-closed-h: clamp(18rem, 38dvh, 22rem);
+    --mobile-game-map-open-h: clamp(20rem, 45dvh, 25rem);
+  }
+
+  .punktlandung-image-replay {
+    --mobile-game-pad: clamp(0.75rem, 3.5vw, 1rem);
+    --mobile-game-hud-h: clamp(5.9rem, 12dvh, 7rem);
+    --mobile-game-image-gap: clamp(0.45rem, 1.6dvh, 0.85rem);
+    --mobile-game-map-closed-h: clamp(18rem, 38dvh, 22rem);
     --mobile-game-map-open-h: clamp(20rem, 45dvh, 25rem);
   }
 
@@ -7354,21 +7470,24 @@ textarea {
     align-items: stretch !important;
     display: grid !important;
     gap: 0.5rem !important;
-    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    grid-template-columns: minmax(0, 1fr) minmax(6rem, auto) 2.7rem !important;
     height: 100% !important;
   }
 
   .punktlandung-game-stats {
     align-content: stretch !important;
     display: grid !important;
-    gap: 0.35rem !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     min-width: 0 !important;
   }
 
   .punktlandung-game-stat {
+    align-items: center !important;
     min-height: 0 !important;
-    padding: 0.35rem 0.45rem !important;
+    gap: 0.24rem !important;
+    padding: 0.42rem 0.45rem !important;
+    text-align: center !important;
     width: 100% !important;
   }
 
@@ -7385,9 +7504,13 @@ textarea {
 
   .punktlandung-task-card {
     align-self: stretch !important;
-    max-width: 8.4rem !important;
-    min-height: 0 !important;
-    padding: 0.45rem 0.65rem !important;
+    background: linear-gradient(180deg, rgba(49, 46, 129, 0.42), rgba(2, 6, 23, 0.78)) !important;
+    border: 1px solid rgba(129, 140, 248, 0.72) !important;
+    max-width: 9.4rem !important;
+    min-height: 100% !important;
+    padding: 0.5rem 0.75rem !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), 0 0 28px rgba(129, 140, 248, 0.2) !important;
+    width: 100% !important;
   }
 
   .punktlandung-task-card p:first-child {
@@ -7396,7 +7519,7 @@ textarea {
   }
 
   .punktlandung-task-card-title {
-    font-size: clamp(1.05rem, 4.6vw, 1.35rem) !important;
+    font-size: clamp(1.12rem, 5.1vw, 1.5rem) !important;
     line-height: 1.05 !important;
   }
 
@@ -7412,20 +7535,54 @@ textarea {
     width: 2.7rem !important;
   }
 
-  .punktlandung-game-back-button::before {
-    content: "\2190";
-    font-size: 1.35rem;
-    line-height: 1;
-  }
-
   .punktlandung-game-viewer--map-closed {
-    bottom: calc(var(--mobile-game-map-closed-h) + var(--mobile-game-pad) * 1.35) !important;
-    top: var(--mobile-game-hud-h) !important;
+    bottom: calc(var(--mobile-game-map-closed-h) + var(--mobile-game-pad) + var(--mobile-game-image-gap)) !important;
+    top: calc(var(--mobile-game-hud-h) + var(--mobile-game-image-gap)) !important;
   }
 
   .punktlandung-game-viewer--map-open {
     bottom: 0 !important;
     top: var(--mobile-game-hud-h) !important;
+  }
+
+  .punktlandung-replay-viewer {
+    bottom: calc(var(--mobile-game-map-closed-h) + var(--mobile-game-pad) + var(--mobile-game-image-gap)) !important;
+    top: calc(var(--mobile-game-hud-h) + var(--mobile-game-image-gap)) !important;
+  }
+
+  .punktlandung-replay-info {
+    left: var(--mobile-game-pad) !important;
+    max-width: none !important;
+    padding: 0.75rem 0.9rem !important;
+    right: calc(var(--mobile-game-pad) + 3.35rem) !important;
+    top: var(--mobile-game-pad) !important;
+  }
+
+  .punktlandung-replay-info p {
+    font-size: 0.56rem !important;
+    letter-spacing: 0.22em !important;
+    line-height: 1 !important;
+  }
+
+  .punktlandung-replay-info h1 {
+    font-size: clamp(1.25rem, 6vw, 1.65rem) !important;
+    line-height: 1.05 !important;
+    margin-top: 0.35rem !important;
+  }
+
+  .punktlandung-replay-info > p:last-child {
+    font-size: 0.82rem !important;
+    line-height: 1.1 !important;
+    margin-top: 0.35rem !important;
+  }
+
+  .punktlandung-replay-top-actions {
+    right: var(--mobile-game-pad) !important;
+    top: var(--mobile-game-pad) !important;
+  }
+
+  .punktlandung-replay-top-actions .punktlandung-command-button {
+    display: none !important;
   }
 
   .punktlandung-source-chip {
@@ -7459,12 +7616,12 @@ textarea {
     border-top-left-radius: 0.375rem !important;
     border-top-right-radius: 0 !important;
     padding: 0.9rem 0.55rem !important;
-    transform: translateY(-50%) !important;
+    transform: translateY(-50%) rotate(180deg) !important;
     writing-mode: vertical-rl;
   }
 
   .punktlandung-focus-tab:hover {
-    transform: translateY(-50%) translateX(-2px) !important;
+    transform: translateY(-50%) translateX(-2px) rotate(180deg) !important;
   }
 
   .punktlandung-guess-map-panel {
@@ -7485,10 +7642,10 @@ textarea {
 
   .punktlandung-guess-map-panel--full {
     bottom: var(--mobile-game-pad) !important;
-    height: var(--mobile-game-map-open-h) !important;
+    height: auto !important;
     left: var(--mobile-game-pad) !important;
     right: var(--mobile-game-pad) !important;
-    top: auto !important;
+    top: calc(var(--mobile-game-hud-h) + var(--mobile-game-image-gap)) !important;
     width: auto !important;
   }
 
@@ -7497,22 +7654,43 @@ textarea {
   }
 
   .punktlandung-map-panel-title {
-    font-size: 0.68rem !important;
-    letter-spacing: 0.18em !important;
+    display: none !important;
   }
 
   .punktlandung-map-panel-actions {
     gap: 0.45rem !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  .punktlandung-guess-map-panel--full .punktlandung-map-panel-actions {
+    justify-content: flex-end !important;
   }
 
   .punktlandung-map-size-button {
-    display: none !important;
+    align-items: center !important;
+    display: inline-flex !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    min-height: 2.9rem !important;
+    min-width: 6.6rem !important;
+    padding: 0.5rem 0.7rem !important;
+    text-align: center !important;
   }
 
   .punktlandung-map-primary-button {
+    align-items: center !important;
+    display: inline-flex !important;
+    justify-content: center !important;
+    line-height: 1 !important;
     min-height: 2.9rem !important;
-    min-width: 7.25rem !important;
+    min-width: 6.9rem !important;
     padding: 0.5rem 0.75rem !important;
+    text-align: center !important;
+  }
+
+  .punktlandung-image-replay .punktlandung-replay-map-next {
+    display: inline-flex !important;
   }
 
   .punktlandung-map-close-button {
@@ -7848,19 +8026,30 @@ textarea {
   content: "";
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: calc(50% + 1.72rem);
   z-index: 0;
-  height: 0.34rem;
-  width: 9.5rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(167, 243, 208, 0.9), rgba(110, 231, 183, 0.3) 42%, rgba(110, 231, 183, 0));
-  box-shadow:
-    0 0 20px rgba(52, 211, 153, 0.48),
-    0 0 44px rgba(52, 211, 153, 0.22);
-  opacity: 0.74;
-  transform: translate(0, -50%);
-  transform-origin: center;
+  height: 6.2rem;
+  width: 14.2rem;
+  border-radius: 0;
+  background:
+    radial-gradient(ellipse at 0% 50%, rgba(167, 243, 208, 0.52), rgba(110, 231, 183, 0.24) 20%, rgba(52, 211, 153, 0.1) 46%, transparent 72%),
+    linear-gradient(90deg, rgba(167, 243, 208, 0.44), rgba(110, 231, 183, 0.18) 34%, rgba(52, 211, 153, 0.07) 62%, transparent 88%);
+  clip-path: polygon(0 46%, 100% 0, 100% 100%, 0 54%);
+  filter:
+    blur(5px)
+    drop-shadow(0 0 22px rgba(52, 211, 153, 0.28));
+  opacity: 0.76;
+  transform: translate(0.45rem, -50%);
+  transform-origin: left center;
   animation: punktlandung-loader-beam 3.2s linear infinite;
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent 0%, #000 7%, #000 62%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent 0%, #000 7%, #000 62%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+  mask-composite: intersect;
 }
 
 .punktlandung-loader-ring {
@@ -7887,72 +8076,78 @@ textarea {
   animation: punktlandung-loader-spin 1.8s linear infinite reverse;
 }
 
-.punktlandung-image-loader:not(.punktlandung-image-loader-framed) .punktlandung-loader-ring {
-  left: 50%;
-  top: 76%;
-  border-radius: 50%;
-  border: 2px solid rgba(52, 211, 153, 0.42);
-  background: transparent;
-  box-shadow:
-    0 0 20px rgba(52, 211, 153, 0.24),
-    inset 0 0 16px rgba(52, 211, 153, 0.1);
-  transform: translate(-50%, -50%);
-  transform-origin: center;
-}
-
-.punktlandung-image-loader:not(.punktlandung-image-loader-framed) .punktlandung-loader-ring::after {
-  content: "";
+.punktlandung-loader-ellipses {
   position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  background:
-    conic-gradient(
-      from var(--punktlandung-loader-ring-angle, 0deg),
-      transparent 0deg 248deg,
-      rgba(52, 211, 153, 0.34) 266deg,
-      rgba(167, 243, 208, 1) 294deg,
-      rgba(52, 211, 153, 0.36) 322deg,
-      transparent 342deg 360deg
-    );
-  filter: drop-shadow(0 0 10px rgba(110, 231, 183, 0.78));
-  animation: punktlandung-loader-ellipse-trace 2.7s linear infinite;
-  -webkit-mask-image: radial-gradient(ellipse at center, transparent 0 55%, #000 58% 67%, transparent 70%);
-  mask-image: radial-gradient(ellipse at center, transparent 0 55%, #000 58% 67%, transparent 70%);
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  height: 6rem;
+  width: 8rem;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+  filter:
+    drop-shadow(0 0 7px rgba(52, 211, 153, 0.36))
+    drop-shadow(0 0 18px rgba(52, 211, 153, 0.2));
 }
 
-.punktlandung-image-loader:not(.punktlandung-image-loader-framed) .punktlandung-loader-ring-outer {
-  inset: auto;
-  width: 5.9rem;
-  height: 1.55rem;
+.punktlandung-loader-ellipse {
+  fill: none;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
 }
 
-.punktlandung-image-loader:not(.punktlandung-image-loader-framed) .punktlandung-loader-ring-inner {
-  inset: auto;
-  top: 76%;
-  width: 3.65rem;
-  height: 0.82rem;
-  border-color: rgba(52, 211, 153, 0.36);
+.punktlandung-loader-ellipse-base {
+  filter: drop-shadow(0 0 5px rgba(52, 211, 153, 0.32));
 }
 
-.punktlandung-image-loader:not(.punktlandung-image-loader-framed) .punktlandung-loader-ring-inner::after {
-  animation-direction: reverse;
-  animation-delay: 260ms;
+.punktlandung-loader-ellipse-base-outer {
+  stroke: rgba(52, 211, 153, 0.36);
+  stroke-width: 1.15;
+}
+
+.punktlandung-loader-ellipse-base-inner {
+  stroke: rgba(110, 231, 183, 0.34);
+  stroke-width: 1.05;
+}
+
+.punktlandung-loader-ellipse-highlight {
+  filter:
+    drop-shadow(0 0 6px rgba(167, 243, 208, 0.52))
+    drop-shadow(0 0 14px rgba(52, 211, 153, 0.34));
+}
+
+.punktlandung-loader-ellipse-highlight-outer {
+  stroke: rgba(167, 243, 208, 0.94);
+  stroke-width: 1.45;
+  stroke-dasharray: 54 238;
+  animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
+}
+
+.punktlandung-loader-ellipse-highlight-inner {
+  stroke: rgba(110, 231, 183, 0.88);
+  stroke-width: 1.25;
+  stroke-dasharray: 34 142;
+  animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
+  animation-delay: 180ms;
 }
 
 .punktlandung-loader-sweep {
   position: absolute;
   z-index: 2;
   left: 50%;
-  top: 50%;
-  height: 0.28rem;
-  width: 4.6rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(167, 243, 208, 0.98), rgba(110, 231, 183, 0.45) 42%, rgba(110, 231, 183, 0));
-  box-shadow:
-    0 0 20px rgba(52, 211, 153, 0.9),
-    0 0 44px rgba(52, 211, 153, 0.42);
+  top: calc(50% + 1.72rem);
+  height: 2.8rem;
+  width: 6.2rem;
+  background:
+    linear-gradient(90deg, rgba(167, 243, 208, 0.32), rgba(110, 231, 183, 0.12) 48%, transparent 86%);
+  clip-path: polygon(0 47%, 100% 12%, 100% 88%, 0 53%);
+  filter: blur(2px);
+  opacity: 0.34;
+  transform: translate(0.55rem, -50%);
   transform-origin: left center;
-  animation: punktlandung-loader-spin 1.55s linear infinite reverse;
+  animation: punktlandung-loader-core-beam 3.2s linear infinite;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 10%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 10%, #000 55%, transparent 100%);
 }
 
 .punktlandung-loader-pin {
@@ -8023,25 +8218,9 @@ textarea {
   }
 }
 
-@property --punktlandung-loader-ring-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-
-@keyframes punktlandung-loader-ellipse-trace {
-  0% {
-    --punktlandung-loader-ring-angle: 0deg;
-    opacity: 0.76;
-  }
-
-  50% {
-    opacity: 0.95;
-  }
-
-  100% {
-    --punktlandung-loader-ring-angle: 360deg;
-    opacity: 0.72;
+@keyframes punktlandung-loader-ellipse-dash {
+  to {
+    stroke-dashoffset: 292;
   }
 }
 
@@ -8067,11 +8246,21 @@ textarea {
 
 @keyframes punktlandung-loader-beam {
   0% {
-    transform: rotate(0deg) translateX(0.95rem) translateY(-50%);
+    transform: translate(0.45rem, -50%) rotate(0deg);
   }
 
   100% {
-    transform: rotate(-360deg) translateX(0.95rem) translateY(-50%);
+    transform: translate(0.45rem, -50%) rotate(-360deg);
+  }
+}
+
+@keyframes punktlandung-loader-core-beam {
+  0% {
+    transform: translate(0.55rem, -50%) rotate(0deg);
+  }
+
+  100% {
+    transform: translate(0.55rem, -50%) rotate(-360deg);
   }
 }
 
@@ -8083,6 +8272,7 @@ textarea {
   .punktlandung-spark,
   .punktlandung-image-loader::before,
   .punktlandung-loader-mark::before,
+  .punktlandung-loader-ellipse,
   .punktlandung-loader-ring,
   .punktlandung-loader-sweep,
   .punktlandung-loader-pin {
@@ -8092,7 +8282,7 @@ textarea {
 
 @media (min-width: 2200px) and (min-height: 1200px) {
   .punktlandung-tv-home {
-    grid-template-columns: minmax(0, 1fr) 560px;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   }
 
   .punktlandung-tv-home > section {
@@ -12636,6 +12826,57 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   .punktlandung-home-mode-text {
     font-size: clamp(0.68rem, 0.72vw, 0.84rem) !important;
     line-height: 1.18 !important;
+  }
+}
+
+@media (max-width: 640px) and (orientation: portrait) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash {
+    min-height: 5.45rem !important;
+    padding-bottom: 1.55rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash > span.rounded-sm {
+    bottom: 0.55rem !important;
+    font-size: 0.56rem !important;
+    letter-spacing: 0.04em !important;
+    line-height: 1 !important;
+    padding: 0.12rem 0.34rem !important;
+    right: 0.55rem !important;
+    top: auto !important;
+  }
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+  body .punktlandung-tv-home .punktlandung-home-hero-copy > div:first-child {
+    gap: 0.45rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy h1 {
+    font-size: clamp(2.05rem, 9.7vw, 2.18rem) !important;
+    line-height: 1.08 !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy > div:first-child > svg {
+    height: 2.15rem !important;
+    width: 1.72rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card:not(.punktlandung-preview-dash) > span.absolute {
+    bottom: 0.55rem !important;
+    font-size: 0.62rem !important;
+    line-height: 1 !important;
+    right: 0.55rem !important;
+    top: auto !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash > span.rounded-sm {
+    bottom: 0.5rem !important;
+    font-size: 0.52rem !important;
+    letter-spacing: 0.04em !important;
+    line-height: 1 !important;
+    padding: 0.12rem 0.32rem !important;
+    right: 0.5rem !important;
+    top: auto !important;
   }
 }
 

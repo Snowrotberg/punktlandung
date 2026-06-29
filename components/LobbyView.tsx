@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { categoryOptions } from "@/lib/categories";
 import type { GameMode, GameSettings, HostParticipation, Player, RoomKind, TeamId } from "@/types/game";
 import { AdContainer } from "./AdContainer";
+import { BackButton } from "./BackButton";
 import { Button } from "./Button";
 
 type LobbyViewProps = {
@@ -88,6 +89,10 @@ export function LobbyView({
   const isSolo = roomKind === "solo";
   const isOnlineRoom = roomKind === "online";
   const isCouchMode = isSolo && settings.localMode === "couch";
+  const isSoloMode = isSolo && !isCouchMode;
+  const usesModeSidebarAd = isSoloMode || isCouchMode || isOnlineRoom;
+  const leftRailPlacement = isSoloMode ? "solo-left-rail" : isCouchMode ? "party-left-rail" : isOnlineRoom ? "online-left-rail" : "lobby-left-rail";
+  const rightRailPlacement = isSoloMode ? "solo-right-rail" : isCouchMode ? "party-right-rail" : isOnlineRoom ? "online-right-rail" : "lobby-right-rail";
   const inviteLink = useMemo(() => {
     if (typeof window === "undefined") return "";
     const url = new URL(window.location.origin);
@@ -194,11 +199,12 @@ export function LobbyView({
       <main className="punktlandung-lobby h-dvh overflow-hidden bg-slate-950 p-2 text-slate-50 md:p-4">
         <div className="mx-auto grid h-full min-h-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-2 md:gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px]">
           <AdContainer
-            placement="lobby-left-rail"
+            placement="online-left-rail"
             variant="rail"
+            adFormat="auto"
             label="Anzeige"
             className="hidden h-full min-h-0 xl:block"
-            fullWidthResponsive={false}
+            fullWidthResponsive
           />
           <div className="flex min-h-0 min-w-0 flex-col gap-2 md:gap-4">
             <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-md bg-slate-900/70 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-5">
@@ -208,9 +214,7 @@ export function LobbyView({
                 <p className="mt-1 text-sm text-slate-400">Großer Bildschirm: Raumleitung und Ergebnisanzeige.</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <Button sound="click" tone="ghost" className="punktlandung-command-button min-h-12 normal-case" onClick={onLeave}>
-                  Zurück zur Startseite
-                </Button>
+                <BackButton className="punktlandung-lobby-header-back" onClick={onLeave} label="Zurueck" />
                 <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 normal-case" disabled={!isHost || players.length === 0 || !canStart} onClick={onStart}>
                   Starten
                 </Button>
@@ -330,11 +334,12 @@ export function LobbyView({
             </section>
           </div>
           <AdContainer
-            placement="lobby-right-rail"
+            placement="online-right-rail"
             variant="rail"
+            adFormat="auto"
             label="Anzeige"
             className="hidden h-full min-h-0 xl:block"
-            fullWidthResponsive={false}
+            fullWidthResponsive
           />
         </div>
       </main>
@@ -345,14 +350,15 @@ export function LobbyView({
     <main className="punktlandung-lobby h-dvh overflow-hidden bg-slate-950 p-2 text-slate-50 md:p-4">
       <div className="mx-auto grid h-full min-h-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-2 md:gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px]">
         <AdContainer
-          placement="lobby-left-rail"
+          placement={leftRailPlacement}
           variant="rail"
+          adFormat={usesModeSidebarAd ? "auto" : undefined}
           label="Anzeige"
           className="hidden h-full min-h-0 xl:block"
-          fullWidthResponsive={false}
+          fullWidthResponsive={usesModeSidebarAd}
         />
         <div className="flex min-h-0 min-w-0 flex-col gap-2 md:gap-4">
-          <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-md bg-slate-900/70 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-5 min-[2200px]:p-6">
+          <header className="punktlandung-lobby-header flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-md bg-slate-900/70 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-5 min-[2200px]:p-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="min-w-0">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">{headerKicker}</p>
@@ -377,12 +383,13 @@ export function LobbyView({
                 <span className="block text-lg font-black tracking-[0.18em] text-white">{copied ? "KOPIERT" : code}</span>
               </button>
             )}
-            <Button sound="click" tone="ghost" className="punktlandung-command-button min-h-12 normal-case" onClick={onLeave}>
-              Zurück zur Startseite
-            </Button>
+            <BackButton className="punktlandung-lobby-header-back" onClick={onLeave} label="Zurueck" />
             <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
               {primaryActionLabel}
             </Button>
+          </div>
+          <div className="punktlandung-lobby-mobile-back shrink-0">
+            <BackButton onClick={onLeave} label="Zurueck" />
           </div>
         </header>
 
@@ -871,21 +878,19 @@ export function LobbyView({
             </div>
           </div>
         )}
-        <div className="punktlandung-touch-only-grid fixed inset-x-2 bottom-2 z-50 grid grid-cols-2 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md lg:hidden">
-          <Button sound="click" tone="ghost" className="punktlandung-command-button min-h-12 text-xs normal-case" onClick={onLeave}>
-            Zurück zur Startseite
-          </Button>
+        <div className="punktlandung-touch-only-grid fixed inset-x-2 bottom-2 z-50 grid grid-cols-1 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md lg:hidden">
           <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
             {primaryActionLabel}
           </Button>
         </div>
         </div>
         <AdContainer
-          placement="lobby-right-rail"
+          placement={rightRailPlacement}
           variant="rail"
+          adFormat={usesModeSidebarAd ? "auto" : undefined}
           label="Anzeige"
           className="hidden h-full min-h-0 xl:block"
-          fullWidthResponsive={false}
+          fullWidthResponsive={usesModeSidebarAd}
         />
       </div>
     </main>

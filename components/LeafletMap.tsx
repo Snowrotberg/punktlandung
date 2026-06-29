@@ -319,9 +319,11 @@ function overlapArea(a: LabelRect, b: LabelRect) {
   return Math.max(0, width) * Math.max(0, height);
 }
 
-function labelSize(label: string, actual = false) {
-  const width = Math.min(actual ? 286 : 244, Math.max(actual ? 110 : 154, Math.round(label.length * (actual ? 9.4 : 8.2)) + 42));
-  return { width, height: actual ? 46 : 44 };
+function labelSize(label: string, actual = false, compact = false) {
+  const maxWidth = compact ? (actual ? 168 : 160) : actual ? 286 : 244;
+  const minWidth = compact ? (actual ? 104 : 132) : actual ? 110 : 154;
+  const width = Math.min(maxWidth, Math.max(minWidth, Math.round(label.length * (actual ? 9.4 : 8.2)) + 42));
+  return { width, height: compact ? 40 : actual ? 46 : 44 };
 }
 
 function paddedRect(rect: LabelRect, padding: number): LabelRect {
@@ -337,12 +339,13 @@ function placementCandidates(
   width: number,
   height: number,
   actual = false,
-  preferredVector?: PixelPoint
+  preferredVector?: PixelPoint,
+  compact = false
 ): Array<{ dx: number; dy: number }> {
   const horizontal = width / 2 + (actual ? 6 : 9);
   const vertical = height / 2 + (actual ? 8 : 10);
-  const rings = actual ? [0, 5, 10] : [0, 6, 12, 20];
-  const laneShifts = actual ? [0, -5, 5] : [0, -6, 6, -12, 12];
+  const rings = compact ? (actual ? [0, 8, 18, 30] : [0, 8, 18, 30, 44]) : actual ? [0, 5, 10] : [0, 6, 12, 20];
+  const laneShifts = compact ? (actual ? [0, -8, 8, -16, 16] : [0, -8, 8, -18, 18]) : actual ? [0, -5, 5] : [0, -6, 6, -12, 12];
   const quadrants = [
     { x: 1, y: -1 },
     { x: -1, y: -1 },
@@ -361,6 +364,21 @@ function placementCandidates(
         if (seen.has(key)) continue;
         seen.add(key);
         all.push({ dx, dy });
+      }
+    }
+
+    if (compact) {
+      const straight = [
+        { dx: horizontal + ring, dy: 0 },
+        { dx: -(horizontal + ring), dy: 0 },
+        { dx: 0, dy: vertical + ring },
+        { dx: 0, dy: -(vertical + ring) }
+      ];
+      for (const candidate of straight) {
+        const key = `${Math.round(candidate.dx)}:${Math.round(candidate.dy)}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        all.push(candidate);
       }
     }
   }
@@ -394,6 +412,33 @@ function viewportOverflow(rect: LabelRect, width: number, height: number, margin
     Math.max(0, margin - rect.top) +
     Math.max(0, rect.bottom - (height - margin))
   );
+}
+
+function clampLabelPlacementToViewport(
+  anchor: PixelPoint,
+  placement: LabelPlacement,
+  viewportWidth: number,
+  viewportHeight: number,
+  margin = 30
+): { placement: LabelPlacement; rect: LabelRect } {
+  const { width, height } = placement.size;
+  const centerX = anchor.x + placement.offset[0];
+  const centerY = anchor.y + placement.offset[1];
+  const minCenterX = margin + width / 2;
+  const maxCenterX = Math.max(minCenterX, viewportWidth - margin - width / 2);
+  const minCenterY = margin + height / 2;
+  const maxCenterY = Math.max(minCenterY, viewportHeight - margin - height / 2);
+  const clampedCenterX = Math.min(Math.max(centerX, minCenterX), maxCenterX);
+  const clampedCenterY = Math.min(Math.max(centerY, minCenterY), maxCenterY);
+  const nextPlacement = {
+    offset: [clampedCenterX - anchor.x, clampedCenterY - anchor.y] as [number, number],
+    size: placement.size
+  };
+
+  return {
+    placement: nextPlacement,
+    rect: labelRectFor(anchor, width, height, nextPlacement.offset[0], nextPlacement.offset[1])
+  };
 }
 
 function pointInRect(point: PixelPoint, rect: LabelRect) {
@@ -490,8 +535,10 @@ function resultTooltipPlacement(
 ): { placement: LabelPlacement; rect: LabelRect } {
   const pixel = map.latLngToContainerPoint([point.lat, point.lng]);
   const size = map.getSize();
-  const dimensions = labelSize(label, actual);
-  const candidates = placementCandidates(dimensions.width, dimensions.height, actual, preferredVector);
+  const compact = size.x <= 520 && size.y >= size.x;
+  const dimensions = labelSize(label, actual, compact);
+  const candidates = placementCandidates(dimensions.width, dimensions.height, actual, preferredVector, compact);
+  const viewportMargin = compact ? 12 : 30;
   const pinRect: LabelRect = {
     left: pixel.x - 18,
     top: pixel.y - 44,
@@ -515,14 +562,20 @@ function resultTooltipPlacement(
     | undefined;
 
   for (const [index, candidate] of candidates.entries()) {
-    const rect = labelRectFor(pixel, dimensions.width, dimensions.height, candidate.dx, candidate.dy);
-    const overflow = viewportOverflow(rect, size.x, size.y, 30);
+    const { placement, rect } = clampLabelPlacementToViewport(
+      pixel,
+      { offset: [candidate.dx, candidate.dy], size: dimensions },
+      size.x,
+      size.y,
+      viewportMargin
+    );
+    const overflow = viewportOverflow(rect, size.x, size.y, viewportMargin);
     const overlap = occupied.reduce((sum, other) => sum + overlapArea(rect, other), 0);
     const pinOverlap = overlapArea(rect, pinRect);
     const linePenalty = blockedSegments.reduce((sum, segment) => sum + rectLinePenalty(rect, segment), 0);
-    const anchorDistance = Math.hypot(candidate.dx, candidate.dy);
+    const anchorDistance = Math.hypot(placement.offset[0], placement.offset[1]);
     const preferredPenalty = preferredVector
-      ? Math.max(0, -(candidate.dx * preferredVector.x + candidate.dy * preferredVector.y)) * (actual ? 6 : 10)
+      ? Math.max(0, -(placement.offset[0] * preferredVector.x + placement.offset[1] * preferredVector.y)) * (actual ? 6 : 10)
       : 0;
     const hasHardConflict = overflow > 0 || overlap > 0 || pinOverlap > 0 || linePenalty > 0;
     const cleanNearBonus = !hasHardConflict && anchorDistance < (actual ? 96 : 112) ? -3600 : 0;
@@ -533,10 +586,9 @@ function resultTooltipPlacement(
       linePenalty +
       preferredPenalty * (actual ? 0.35 : 2.4) +
       anchorDistance * (actual ? 3.2 : 3.6) +
-      (actual && candidate.dy > 0 ? candidate.dy * 0.38 : Math.abs(candidate.dy) * 0.12) +
+      (actual && placement.offset[1] > 0 ? placement.offset[1] * 0.38 : Math.abs(placement.offset[1]) * 0.12) +
       index * 2 +
       cleanNearBonus;
-    const placement = { offset: [candidate.dx, candidate.dy] as [number, number], size: dimensions };
 
     if (!best || score < best.score) {
       best = {

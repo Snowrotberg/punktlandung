@@ -193,7 +193,7 @@ export function GameApp({
   const localGame = useLocalGame(routeInitialMode);
   const onlineGame = useOnlineRoomSocket();
   const { playSelect } = useSound();
-  const [name, setName] = useState("Geo-Gast");
+  const [name, setName] = useState("Spieler 1");
   const [password, setPassword] = useState("");
   const [pendingJoinCode, setPendingJoinCode] = useState<string | null>(null);
   const [joinCodeInput, setJoinCodeInput] = useState("");
@@ -476,9 +476,10 @@ export function GameApp({
         <AdContainer
           placement="home-left-rail"
           variant="rail"
+          adFormat="auto"
           label="Anzeige"
           className="hidden h-full min-h-0 xl:block"
-          fullWidthResponsive={false}
+          fullWidthResponsive
         />
         <div className="punktlandung-tv-home flex min-h-0 min-w-0 flex-col gap-4 lg:grid lg:grid-cols-[1fr_420px] min-[1900px]:grid-cols-[minmax(0,1fr)_480px] min-[2200px]:grid-cols-[minmax(0,1fr)_520px]">
         <section className="arcade-panel relative z-10 order-1 overflow-hidden rounded-md border-slate-700/80 lg:order-none lg:min-h-0">
@@ -588,12 +589,7 @@ export function GameApp({
                 </label>
 
                 <label className="block cursor-not-allowed">
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-slate-500">Passwort</span>
-                    <span className="rounded-sm border border-slate-600/80 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-400">
-                      Später
-                    </span>
-                  </span>
+                  <span className="text-xs font-bold text-slate-500">Passwort</span>
                   <input
                     type="password"
                     value={password}
@@ -602,7 +598,7 @@ export function GameApp({
                     disabled
                     aria-disabled="true"
                     placeholder="Noch nicht verfügbar"
-                    className="mt-1 h-9 w-full cursor-not-allowed rounded-md border-0 bg-slate-950/35 px-3.5 text-sm text-slate-500 outline-none ring-1 ring-slate-700/70 placeholder:text-slate-600 md:text-base"
+                    className="mt-1 h-9 w-full cursor-not-allowed rounded-md border-0 bg-slate-950/35 px-3.5 text-sm text-slate-500 outline-none ring-1 ring-slate-700/70 placeholder:text-slate-500 disabled:opacity-100 md:text-base"
                   />
                 </label>
               </div>
@@ -654,8 +650,7 @@ export function GameApp({
                 <label className="block">
                   <span className="punktlandung-home-mode-title block text-lg font-black leading-tight text-white">Online-Raum</span>
                   <span className="punktlandung-home-mode-text mt-0.5 block text-xs leading-tight text-slate-300">Online-Raum beitreten</span>
-                  <span className="mt-1 block text-xs font-bold text-slate-400">Raumcode</span>
-                  <div className="mt-1.5 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                  <div className="punktlandung-home-room-controls mt-1.5 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
                     <input
                       value={joinCodeInput}
                       onChange={(event) => setJoinCodeInput(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
@@ -663,8 +658,8 @@ export function GameApp({
                         if (event.key === "Enter") handleJoinByCode();
                       }}
                       maxLength={6}
-                      placeholder="ABC123"
-                      className="h-10 min-w-0 rounded-md border-0 bg-slate-950/70 px-3 text-sm font-black uppercase tracking-[0.14em] text-white outline-none ring-1 ring-slate-700 transition placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-300"
+                      placeholder="Raumcode"
+                      className="h-10 min-w-0 rounded-md border-0 bg-slate-950/70 px-3 text-sm text-white outline-none ring-1 ring-slate-700 transition placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-300 md:text-base"
                     />
                     <button
                       type="button"
@@ -692,9 +687,10 @@ export function GameApp({
         <AdContainer
           placement="home-right-rail"
           variant="rail"
+          adFormat="auto"
           label="Anzeige"
           className="hidden h-full min-h-0 xl:block"
-          fullWidthResponsive={false}
+          fullWidthResponsive
         />
       </div>
 

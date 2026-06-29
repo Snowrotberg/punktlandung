@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { LocationCategory, Player, RoomState, RoundResult, RoundSummary } from "@/types/game";
 import { formatDistance, rankResults } from "@/lib/geo";
+import { BackButton } from "./BackButton";
 import { Button } from "./Button";
 import { GuessMap } from "./GuessMap";
 import { PanoramaViewer } from "./PanoramaViewer";
@@ -334,6 +335,7 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
   const [replayMapSize, setReplayMapSize] = useState<"closed" | "open" | "full">("closed");
   const [replayChromeHidden, setReplayChromeHidden] = useState(false);
   const [replayChromeHoverHidden, setReplayChromeHoverHidden] = useState(false);
+  const [isReplayMobilePortrait, setIsReplayMobilePortrait] = useState(false);
   const replayMapCloseTimer = useRef<number | null>(null);
   const summary = room.summaries?.[room.summaries.length - 1] ?? null;
   const location = summary?.location ?? null;
@@ -368,6 +370,9 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
   const hasModePanel = room.settings.mode === "crew" || room.settings.mode === "duel";
   const replayMapExpanded = replayMapSize !== "closed";
   const replayMapFull = replayMapSize === "full";
+  const replayMapInteractive = replayMapExpanded || isReplayMobilePortrait;
+  const showReplayMapSizeButton = (replayMapExpanded || isReplayMobilePortrait) && !replayMapFull;
+  const showReplayMapCloseButton = replayMapExpanded && (!isReplayMobilePortrait || replayMapFull);
   const replayChromeSuppressed = replayChromeHidden || replayChromeHoverHidden;
   const countryLabel = displayCountryName(location);
   const continentLabel = displayContinent(location?.continent ?? "");
@@ -396,6 +401,14 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
   }, [replayChromeHidden]);
 
   useEffect(() => {
+    const query = window.matchMedia("(max-width: 879px) and (orientation: portrait)");
+    const update = () => setIsReplayMobilePortrait(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (replayMapCloseTimer.current !== null) window.clearTimeout(replayMapCloseTimer.current);
     };
@@ -421,6 +434,7 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
   };
 
   const openReplayMapByHover = () => {
+    if (isReplayMobilePortrait) return;
     if (replayMapFull) return;
     if (replayMapCloseTimer.current !== null) {
       window.clearTimeout(replayMapCloseTimer.current);
@@ -430,6 +444,7 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
   };
 
   const closeReplayMapByHover = () => {
+    if (isReplayMobilePortrait) return;
     if (replayMapFull) return;
     if (replayMapCloseTimer.current !== null) window.clearTimeout(replayMapCloseTimer.current);
     replayMapCloseTimer.current = window.setTimeout(() => {
@@ -490,19 +505,21 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
       )}
 
       {showImageReplay && (
-        <div className="fixed inset-0 z-[100] overflow-hidden bg-slate-950">
-          <PanoramaViewer
-            location={location}
-            settings={room.settings}
-            isHost={false}
-            onSkipLocation={() => undefined}
-            chromeHidden={replayChromeSuppressed}
-          />
+        <div className="punktlandung-image-replay fixed inset-0 z-[100] overflow-hidden bg-slate-950">
+          <div className="punktlandung-replay-viewer absolute inset-0 overflow-hidden">
+            <PanoramaViewer
+              location={location}
+              settings={room.settings}
+              isHost={false}
+              onSkipLocation={() => undefined}
+              chromeHidden={replayChromeSuppressed}
+            />
+          </div>
 
           {!replayChromeSuppressed && <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.42)_0%,rgba(2,6,23,0)_28%,rgba(2,6,23,0.04)_68%,rgba(2,6,23,0.36)_100%)]" />}
 
           {!replayChromeSuppressed && (
-            <div className="absolute left-3 top-3 z-30 max-w-[min(36rem,calc(100vw-1.5rem))] rounded-md bg-slate-950/58 px-4 py-3 shadow-[0_18px_46px_rgba(0,0,0,0.34)] ring-1 ring-slate-600/60 backdrop-blur-md sm:left-4 sm:top-4 sm:px-5">
+            <div className="punktlandung-replay-info absolute left-3 top-3 z-30 max-w-[min(36rem,calc(100vw-1.5rem))] rounded-md bg-slate-950/58 px-4 py-3 shadow-[0_18px_46px_rgba(0,0,0,0.34)] ring-1 ring-slate-600/60 backdrop-blur-md sm:left-4 sm:top-4 sm:px-5">
               <p className="text-[11px] font-black uppercase tracking-[0.28em] text-indigo-300">Bild nochmal ansehen</p>
               <h1 className="mt-2 text-2xl font-black leading-tight text-white sm:text-3xl">{location.title}</h1>
               <p className="mt-1 text-sm font-semibold text-slate-200">
@@ -512,18 +529,15 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
           )}
 
           {!replayChromeSuppressed && (
-          <div className="absolute right-3 top-3 z-30 grid gap-2 sm:right-4 sm:top-4 sm:flex">
-            <Button
-              sound="click"
-              tone="ghost"
-              className="punktlandung-command-button min-h-12 text-xs normal-case"
+          <div className="punktlandung-replay-top-actions absolute right-3 top-3 z-30 grid gap-2 sm:right-4 sm:top-4 sm:flex">
+            <BackButton
+              className="min-h-12"
               onClick={() => {
                 setReplayMapSize("closed");
                 setShowImageReplay(false);
               }}
-            >
-              {showFinalStandings ? "Zurück zum Endstand" : "Zurück zur Auflösung"}
-            </Button>
+              label={showFinalStandings ? "Zurueck zum Endstand" : "Zurueck zur Aufloesung"}
+            />
             {finished ? (
               showFinalStandings ? (
                 <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={!isHost} onClick={onRestart}>
@@ -551,6 +565,7 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
           </div>
           )}
 
+          {!replayMapFull && (
           <button
             type="button"
             onClick={replayChromeHidden ? () => setReplayChromeHidden(false) : hideReplayChrome}
@@ -565,6 +580,7 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
           >
             {replayChromeSuppressed ? "Einblenden" : "Bild frei"}
           </button>
+          )}
 
           {!replayChromeSuppressed && (
           <section
@@ -572,27 +588,53 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
             onMouseEnter={openReplayMapByHover}
             onMouseLeave={closeReplayMapByHover}
             onClick={() => {
-              if (!replayMapExpanded) setReplayMapSize("open");
+              if (!replayMapExpanded && !isReplayMobilePortrait) setReplayMapSize("open");
             }}
           >
             <div className="flex h-full flex-col gap-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="min-w-0 text-xs font-black uppercase tracking-[0.2em] text-indigo-300">Karte öffnen</p>
-                {replayMapExpanded && (
-                  <div className="flex shrink-0 gap-2">
+              <div className="punktlandung-map-panel-header flex items-center justify-between gap-3">
+                <p className="punktlandung-map-panel-title min-w-0 text-xs font-black uppercase tracking-[0.2em] text-indigo-300">Karte öffnen</p>
+                <div className="punktlandung-map-panel-actions flex shrink-0 gap-2">
+                  {showReplayMapSizeButton && (
                     <Button
-                      className="min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
+                      className="punktlandung-map-size-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
                       tone="ghost"
                       onClick={(event) => {
                         event.stopPropagation();
-                        setReplayMapSize((value) => (value === "full" ? "open" : "full"));
+                        setReplayMapSize((value) => (value === "full" ? (isReplayMobilePortrait ? "closed" : "open") : "full"));
                       }}
                       title={replayMapFull ? "Karte verkleinern" : "Karte maximieren"}
                     >
                       {replayMapFull ? "Minimieren" : "Maximieren"}
                     </Button>
+                  )}
+                  {finished ? (
+                    showFinalStandings ? (
+                      <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={!isHost} onClick={onRestart}>
+                        Neue Partie
+                      </Button>
+                    ) : (
+                      <Button
+                        sound="select"
+                        tone="selected"
+                        className="punktlandung-replay-map-next punktlandung-map-primary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
+                        onClick={() => {
+                          setReplayMapSize("closed");
+                          setShowImageReplay(false);
+                          setShowFinalStandings(true);
+                        }}
+                      >
+                        Endstand ansehen
+                      </Button>
+                    )
+                  ) : (
+                    <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={!isHost} onClick={onNext}>
+                      Nächste Runde
+                    </Button>
+                  )}
+                  {showReplayMapCloseButton && (
                     <Button
-                      className="min-h-10 min-w-10 px-0 py-0 text-sm sm:min-h-11 sm:min-w-11"
+                      className="punktlandung-map-close-button min-h-10 min-w-10 px-0 py-0 text-sm sm:min-h-11 sm:min-w-11"
                       tone="ghost"
                       onClick={(event) => {
                         event.stopPropagation();
@@ -602,24 +644,24 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
                     >
                       X
                     </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               <div className="relative min-h-0 flex-1 overflow-hidden rounded-md ring-1 ring-slate-700/70">
-                <div className={replayMapExpanded ? "h-full w-full" : "pointer-events-none h-full w-full"}>
+                <div className={replayMapInteractive ? "h-full w-full" : "pointer-events-none h-full w-full"}>
                   <GuessMap
                     mode="results"
                     players={room.players}
                     summary={summary}
                     guesses={room.guesses}
-                    noPan={!replayMapExpanded}
-                    noZoom={!replayMapExpanded}
-                    showLabels={replayMapExpanded}
+                    noPan={!replayMapInteractive}
+                    noZoom={!replayMapInteractive}
+                    showLabels={replayMapInteractive}
                     resizeSignal={replayMapSize}
                   />
                 </div>
-                {!replayMapExpanded && <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0)_0%,rgba(2,6,23,0.06)_100%)]" />}
+                {!replayMapInteractive && <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0)_0%,rgba(2,6,23,0.06)_100%)]" />}
               </div>
             </div>
           </section>
@@ -717,9 +759,7 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
               <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setShowFinalStandings(false)}>
                 Letzte Auflösung
               </Button>
-              <Button sound="click" tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" disabled={!isHost} onClick={onBackToLobby}>
-                Zum Spielmodus
-              </Button>
+              <BackButton className="min-h-11" disabled={!isHost} onClick={onBackToLobby} label="Zurueck" />
               <Button tone="selected" className="punktlandung-command-button min-h-11 text-xs normal-case" disabled={!isHost} onClick={onRestart}>
                 Neue Partie
               </Button>
@@ -782,7 +822,8 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
           }`}
         >
         <section className="grid min-h-0 grid-rows-[auto_minmax(300px,1fr)_auto] gap-2 md:gap-3">
-          <div className="punktlandung-results-hero rounded-md bg-slate-900/72 p-3 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-4">
+          <div className="punktlandung-results-hero relative rounded-md bg-slate-900/72 p-3 pr-14 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 sm:pr-3 md:p-4 md:pr-4">
+            <BackButton className="punktlandung-results-mobile-header-back absolute right-3 top-3" disabled={!isHost} onClick={onBackToLobby} label="Zurueck" />
             <p className="text-xs font-black uppercase tracking-[0.35em] text-indigo-300">Auflösung</p>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -799,13 +840,9 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
                   Bild nochmal ansehen
                 </Button>
                 {!finished ? (
-                  <Button sound="click" tone="ghost" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={!isHost} onClick={onBackToLobby}>
-                    Zurück zum Spielmodus
-                  </Button>
+                  <BackButton className="min-h-12" disabled={!isHost} onClick={onBackToLobby} label="Zurueck" />
                 ) : (
-                  <Button sound="click" tone="ghost" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={!isHost} onClick={onBackToLobby}>
-                    Zum Spielmodus
-                  </Button>
+                  <BackButton className="min-h-12" disabled={!isHost} onClick={onBackToLobby} label="Zurueck" />
                 )}
                 {!finished ? (
                   <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={!isHost} onClick={onNext}>
@@ -825,24 +862,15 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:hidden">
-            <Button tone="ghost" className="min-h-12 w-full px-4 py-2 text-xs normal-case" onClick={openImageReplay}>
+            <Button tone="ghost" className="min-h-12 w-full px-3 py-2 text-xs normal-case" onClick={openImageReplay}>
               Bild nochmal ansehen
             </Button>
             {!finished ? (
-              <Button sound="click" tone="ghost" className="min-h-12 w-full px-4 py-2 text-xs normal-case" disabled={!isHost} onClick={onBackToLobby}>
-                Zurück zum Spielmodus
-              </Button>
-            ) : (
-              <Button sound="click" tone="ghost" className="min-h-12 w-full px-4 py-2 text-xs normal-case" disabled={!isHost} onClick={onBackToLobby}>
-                Zum Spielmodus
-              </Button>
-            )}
-            {!finished ? (
-              <Button sound="select" tone="selected" className="col-span-2 min-h-12 w-full px-4 py-2 text-xs normal-case" disabled={!isHost} onClick={onNext}>
+              <Button sound="select" tone="selected" className="min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={!isHost} onClick={onNext}>
                 Nächste Runde
               </Button>
             ) : (
-              <Button sound="select" tone="selected" className="col-span-2 min-h-12 w-full px-4 py-2 text-xs normal-case" onClick={() => setShowFinalStandings(true)}>
+              <Button sound="select" tone="selected" className="min-h-12 w-full px-3 py-2 text-xs normal-case" onClick={() => setShowFinalStandings(true)}>
                 Endstand ansehen
               </Button>
             )}

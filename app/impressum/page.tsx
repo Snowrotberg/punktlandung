@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { BackIcon } from "@/components/BackIcon";
 
 export default function ImpressumPage() {
   return (
     <main className="min-h-dvh bg-slate-950 p-4 text-slate-100">
       <section className="mx-auto max-w-3xl rounded-md bg-slate-900/78 p-5 ring-1 ring-slate-700">
-        <Link href="/" className="text-sm font-black uppercase tracking-[0.18em] text-emerald-300 hover:text-emerald-200">
-          Zurueck zur Startseite
+        <Link href="/" aria-label="Zurueck" title="Zurueck" className="punktlandung-back-link">
+          <BackIcon />
         </Link>
         <h1 className="mt-5 text-4xl font-black text-white">Impressum</h1>
 
