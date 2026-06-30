@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   ACCESS_COOKIE_MAX_AGE,
   ACCESS_COOKIE_NAME,
+  accessRedirectUrl,
   getAccessPasswords,
   safeNextPath
 } from "@/lib/accessGate";
@@ -11,15 +12,6 @@ export const runtime = "nodejs";
 
 function accessToken(password: string) {
   return createHash("sha256").update(password).digest("hex");
-}
-
-function redirectResponse(location: string) {
-  return new NextResponse(null, {
-    status: 303,
-    headers: {
-      Location: location
-    }
-  });
 }
 
 function accessPagePath(nextPath: string) {
@@ -37,20 +29,22 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const submittedPassword = String(formData.get("password") ?? "").trim();
   const nextPath = safeNextPath(formData.get("next"));
+  const redirectUrl = (path: string) =>
+    accessRedirectUrl(path, request.headers, request.nextUrl.origin);
   const accessPasswords = getAccessPasswords();
   const password = accessPasswords.find(
     (accessPassword) => submittedPassword === accessPassword
   );
 
   if (accessPasswords.length === 0) {
-    return redirectResponse(nextPath);
+    return NextResponse.redirect(redirectUrl(nextPath), 303);
   }
 
   if (!password) {
-    return redirectResponse(accessPagePath(nextPath));
+    return NextResponse.redirect(redirectUrl(accessPagePath(nextPath)), 303);
   }
 
-  const response = redirectResponse(nextPath);
+  const response = NextResponse.redirect(redirectUrl(nextPath), 303);
 
   response.cookies.set({
     name: ACCESS_COOKIE_NAME,

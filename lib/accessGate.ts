@@ -26,6 +26,22 @@ export function getAccessPasswords() {
   ].filter((password): password is string => Boolean(password));
 }
 
+export function accessRedirectUrl(
+  path: string,
+  headers: Headers,
+  requestOrigin: string
+) {
+  const configuredOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
+  const forwardedHost = headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const forwardedProto =
+    headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+  const forwardedOrigin = forwardedHost
+    ? `${forwardedProto}://${forwardedHost}`
+    : undefined;
+
+  return new URL(path, configuredOrigin || forwardedOrigin || requestOrigin);
+}
+
 export function isAccessPublicPath(pathname: string) {
   return (
     PUBLIC_PATHS.has(pathname) ||

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   ACCESS_COOKIE_NAME,
+  accessRedirectUrl,
   getAccessPasswords,
   isAccessPublicPath
 } from "@/lib/accessGate";
@@ -12,15 +13,6 @@ async function sha256(value: string) {
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
-}
-
-function redirectResponse(location: string) {
-  return new NextResponse(null, {
-    status: 307,
-    headers: {
-      Location: location
-    }
-  });
 }
 
 function accessPagePath(nextPath: string) {
@@ -50,7 +42,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  return redirectResponse(accessPagePath(`${pathname}${search}`));
+  return NextResponse.redirect(
+    accessRedirectUrl(
+      accessPagePath(`${pathname}${search}`),
+      request.headers,
+      request.nextUrl.origin
+    )
+  );
 }
 
 export const config = {
