@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ACCESS_COOKIE_NAME, isAccessPublicPath } from "@/lib/accessGate";
+import {
+  ACCESS_COOKIE_NAME,
+  getAccessPasswords,
+  isAccessPublicPath
+} from "@/lib/accessGate";
 
 async function sha256(value: string) {
   const data = new TextEncoder().encode(value);
@@ -10,10 +14,26 @@ async function sha256(value: string) {
     .join("");
 }
 
-export async function middleware(request: NextRequest) {
-  const password = process.env.APP_ACCESS_PASSWORD?.trim();
+function redirectResponse(location: string) {
+  return new NextResponse(null, {
+    status: 307,
+    headers: {
+      Location: location
+    }
+  });
+}
 
-  if (!password) {
+function accessPagePath(nextPath: string) {
+  const url = new URL("/zugang", "https://punktlandung.local");
+  url.searchParams.set("next", nextPath);
+
+  return `${url.pathname}${url.search}`;
+}
+
+export async function middleware(request: NextRequest) {
+  const accessPasswords = getAccessPasswords();
+
+  if (accessPasswords.length === 0) {
     return NextResponse.next();
   }
 
@@ -24,17 +44,13 @@ export async function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get(ACCESS_COOKIE_NAME)?.value;
+  const accessTokens = await Promise.all(accessPasswords.map(sha256));
 
-  if (token === (await sha256(password))) {
+  if (token && accessTokens.includes(token)) {
     return NextResponse.next();
   }
 
-  const url = request.nextUrl.clone();
-  url.pathname = "/zugang";
-  url.search = "";
-  url.searchParams.set("next", `${pathname}${search}`);
-
-  return NextResponse.redirect(url);
+  return redirectResponse(accessPagePath(`${pathname}${search}`));
 }
 
 export const config = {

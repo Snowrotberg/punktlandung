@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { safeNextPath } from "@/lib/accessGate";
+
 export const metadata: Metadata = {
   title: "Zugang | Punktlandung",
   robots: {
@@ -8,7 +10,17 @@ export const metadata: Metadata = {
   }
 };
 
-export default function AccessPage() {
+type AccessPageProps = {
+  searchParams?: {
+    error?: string;
+    next?: string;
+  };
+};
+
+export default function AccessPage({ searchParams }: AccessPageProps) {
+  const showError = searchParams?.error === "1";
+  const nextPath = safeNextPath(searchParams?.next);
+
   return (
     <main className="relative min-h-dvh overflow-hidden bg-slate-950 px-4 py-6 text-slate-50 sm:px-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(52,211,153,0.16),transparent_28rem),radial-gradient(circle_at_82%_32%,rgba(99,102,241,0.18),transparent_30rem)]" />
@@ -24,12 +36,20 @@ export default function AccessPage() {
               Punktlandung
             </h1>
             <p className="mt-3 text-base text-slate-300">
-              Gib das Passwort ein, um das Spiel zu öffnen.
+              Gib das Passwort ein, um zu spielen.
             </p>
           </div>
 
           <form action="/api/access" method="post" className="space-y-4">
-            <input type="hidden" name="next" value="/" />
+            <input type="hidden" name="next" value={nextPath} />
+            {showError ? (
+              <p
+                aria-live="polite"
+                className="rounded-md border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm font-bold text-amber-100"
+              >
+                Der Zugang wurde nicht freigeschaltet. Versuch es bitte nochmal.
+              </p>
+            ) : null}
             <div>
               <label
                 htmlFor="password"

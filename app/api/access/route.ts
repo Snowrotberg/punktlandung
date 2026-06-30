@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   ACCESS_COOKIE_MAX_AGE,
   ACCESS_COOKIE_NAME,
+  getAccessPasswords,
   safeNextPath
 } from "@/lib/accessGate";
 
@@ -12,37 +13,44 @@ function accessToken(password: string) {
   return createHash("sha256").update(password).digest("hex");
 }
 
-function accessPageUrl(request: NextRequest, nextPath: string) {
-  const url = new URL("/zugang", request.url);
+function redirectResponse(location: string) {
+  return new NextResponse(null, {
+    status: 303,
+    headers: {
+      Location: location
+    }
+  });
+}
+
+function accessPagePath(nextPath: string) {
+  const url = new URL("/zugang", "https://punktlandung.local");
   url.searchParams.set("error", "1");
 
   if (nextPath !== "/") {
     url.searchParams.set("next", nextPath);
   }
 
-  return url;
+  return `${url.pathname}${url.search}`;
 }
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
-  const submittedPassword = String(formData.get("password") ?? "");
+  const submittedPassword = String(formData.get("password") ?? "").trim();
   const nextPath = safeNextPath(formData.get("next"));
-  const password = process.env.APP_ACCESS_PASSWORD?.trim();
+  const accessPasswords = getAccessPasswords();
+  const password = accessPasswords.find(
+    (accessPassword) => submittedPassword === accessPassword
+  );
+
+  if (accessPasswords.length === 0) {
+    return redirectResponse(nextPath);
+  }
 
   if (!password) {
-    return NextResponse.redirect(new URL(nextPath, request.url), 303);
+    return redirectResponse(accessPagePath(nextPath));
   }
 
-  if (submittedPassword !== password) {
-    return NextResponse.redirect(accessPageUrl(request, nextPath), 303);
-  }
-
-  const response = new NextResponse(null, {
-    status: 303,
-    headers: {
-      Location: nextPath
-    }
-  });
+  const response = redirectResponse(nextPath);
 
   response.cookies.set({
     name: ACCESS_COOKIE_NAME,

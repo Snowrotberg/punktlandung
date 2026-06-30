@@ -16,7 +16,14 @@ const PUBLIC_FILE_PATTERN =
   /\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|map|txt|xml|json|woff|woff2)$/i;
 
 export function hasAccessPassword() {
-  return Boolean(process.env.APP_ACCESS_PASSWORD?.trim());
+  return getAccessPasswords().length > 0;
+}
+
+export function getAccessPasswords() {
+  return [
+    process.env.APP_ACCESS_PASSWORD?.trim(),
+    process.env.APP_TEST_ACCESS_PASSWORD?.trim()
+  ].filter((password): password is string => Boolean(password));
 }
 
 export function isAccessPublicPath(pathname: string) {
