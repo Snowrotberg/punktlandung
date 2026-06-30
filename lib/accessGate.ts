@@ -14,6 +14,7 @@ const PUBLIC_PREFIXES = [
 
 const PUBLIC_FILE_PATTERN =
   /\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|map|txt|xml|json|woff|woff2)$/i;
+const FALLBACK_ACCESS_REDIRECT_ORIGIN = "https://punktlandung.app";
 
 export function hasAccessPassword() {
   return getAccessPasswords().length > 0;
@@ -38,8 +39,26 @@ export function accessRedirectUrl(
   const forwardedOrigin = forwardedHost
     ? `${forwardedProto}://${forwardedHost}`
     : undefined;
+  const origins = [
+    configuredOrigin,
+    forwardedOrigin,
+    requestOrigin,
+    FALLBACK_ACCESS_REDIRECT_ORIGIN
+  ];
 
-  return new URL(path, configuredOrigin || forwardedOrigin || requestOrigin);
+  for (const origin of origins) {
+    if (!origin) {
+      continue;
+    }
+
+    try {
+      return new URL(path, origin);
+    } catch {
+      continue;
+    }
+  }
+
+  return new URL(path, FALLBACK_ACCESS_REDIRECT_ORIGIN);
 }
 
 export function isAccessPublicPath(pathname: string) {
