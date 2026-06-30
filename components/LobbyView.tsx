@@ -878,8 +878,9 @@ export function LobbyView({
             </div>
           </div>
         )}
-        <div className="punktlandung-touch-only-grid fixed inset-x-2 bottom-2 z-50 grid grid-cols-1 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md lg:hidden">
-          <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
+        <div className="punktlandung-touch-only-grid punktlandung-lobby-touch-actions fixed inset-x-2 bottom-2 z-50 grid grid-cols-1 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md lg:hidden">
+          <BackButton className="punktlandung-lobby-touch-back" onClick={onLeave} label="Zurueck" />
+          <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-lobby-touch-primary min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
             {primaryActionLabel}
           </Button>
         </div>

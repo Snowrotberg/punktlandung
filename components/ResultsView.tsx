@@ -658,7 +658,7 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
                     noPan={!replayMapInteractive}
                     noZoom={!replayMapInteractive}
                     showLabels={replayMapInteractive}
-                    resizeSignal={replayMapSize}
+                    resizeSignal={`${replayMapSize}-${replayMapInteractive ? "interactive" : "locked"}-${showImageReplay ? "replay" : "hidden"}`}
                   />
                 </div>
                 {!replayMapInteractive && <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0)_0%,rgba(2,6,23,0.06)_100%)]" />}

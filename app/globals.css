@@ -6330,15 +6330,44 @@ textarea {
 
 @media (max-width: 879px) {
   .punktlandung-lobby-mobile-back {
-    display: block;
-    position: absolute;
-    right: 1rem;
-    top: 1rem;
-    z-index: 20;
+    display: none;
   }
 
   .punktlandung-lobby-header > div:first-child {
-    padding-right: 3.4rem;
+    padding-right: 0;
+  }
+}
+
+.punktlandung-lobby-touch-actions .punktlandung-lobby-touch-back {
+  display: none !important;
+}
+
+@media (max-width: 879px), (max-width: 1023px) and (orientation: landscape) {
+  .punktlandung-lobby .punktlandung-lobby-mobile-back,
+  .punktlandung-lobby .punktlandung-desktop-only {
+    display: none !important;
+  }
+
+  .punktlandung-lobby-touch-actions {
+    align-items: center;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    padding-inline: clamp(0.9rem, 8vw, 4rem) !important;
+  }
+
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-back {
+    display: inline-flex !important;
+    grid-column: 1;
+    height: 3rem !important;
+    justify-self: end;
+    min-height: 3rem !important;
+    min-width: 3rem !important;
+    width: 3rem !important;
+  }
+
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-primary {
+    grid-column: 3;
+    justify-self: start;
   }
 }
 
@@ -7455,7 +7484,7 @@ textarea {
   .punktlandung-image-replay {
     --mobile-game-pad: clamp(0.75rem, 3.5vw, 1rem);
     --mobile-game-hud-h: clamp(5.9rem, 12dvh, 7rem);
-    --mobile-game-image-gap: clamp(0.45rem, 1.6dvh, 0.85rem);
+    --mobile-game-image-gap: clamp(1.65rem, 4.2dvh, 2.3rem);
     --mobile-game-map-closed-h: clamp(18rem, 38dvh, 22rem);
     --mobile-game-map-open-h: clamp(20rem, 45dvh, 25rem);
   }
@@ -7550,6 +7579,14 @@ textarea {
     top: calc(var(--mobile-game-hud-h) + var(--mobile-game-image-gap)) !important;
   }
 
+  .punktlandung-image-replay .punktlandung-panorama-viewport {
+    overflow: visible !important;
+  }
+
+  .punktlandung-image-replay .punktlandung-source-chip {
+    bottom: -1.15rem !important;
+  }
+
   .punktlandung-replay-info {
     left: var(--mobile-game-pad) !important;
     max-width: none !important;
@@ -7586,25 +7623,31 @@ textarea {
   }
 
   .punktlandung-source-chip {
+    align-items: center !important;
     background: rgba(15, 23, 42, 0.52) !important;
-    bottom: 0.65rem !important;
-    max-width: min(15rem, calc(100vw - 5rem)) !important;
-    padding: 0.42rem 0.65rem !important;
+    bottom: 0.28rem !important;
+    display: inline-flex !important;
+    gap: 0.38rem !important;
+    max-width: min(14rem, calc(100vw - 5rem)) !important;
+    min-height: 1.55rem !important;
+    padding: 0.22rem 0.55rem !important;
     -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;
     backdrop-filter: blur(14px) saturate(1.15) !important;
     border: 1px solid rgba(148, 163, 184, 0.28) !important;
     box-shadow: 0 12px 32px rgba(2, 6, 23, 0.36) !important;
+    white-space: nowrap !important;
   }
 
   .punktlandung-source-chip p {
-    font-size: 0.52rem !important;
-    letter-spacing: 0.18em !important;
+    font-size: 0.45rem !important;
+    letter-spacing: 0.16em !important;
     line-height: 1 !important;
   }
 
   .punktlandung-source-chip h1 {
-    font-size: 0.78rem !important;
-    line-height: 1.05 !important;
+    font-size: 0.66rem !important;
+    line-height: 1 !important;
+    margin-top: 0 !important;
   }
 
   .punktlandung-focus-tab {
@@ -7616,12 +7659,12 @@ textarea {
     border-top-left-radius: 0.375rem !important;
     border-top-right-radius: 0 !important;
     padding: 0.9rem 0.55rem !important;
-    transform: translateY(-50%) rotate(180deg) !important;
+    transform: translateY(-50%) !important;
     writing-mode: vertical-rl;
   }
 
   .punktlandung-focus-tab:hover {
-    transform: translateY(-50%) translateX(-2px) rotate(180deg) !important;
+    transform: translateY(-50%) translateX(-2px) !important;
   }
 
   .punktlandung-guess-map-panel {
@@ -7647,6 +7690,10 @@ textarea {
     right: var(--mobile-game-pad) !important;
     top: calc(var(--mobile-game-hud-h) + var(--mobile-game-image-gap)) !important;
     width: auto !important;
+  }
+
+  .punktlandung-image-replay .punktlandung-guess-map-panel--full {
+    top: calc(var(--mobile-game-pad) + var(--mobile-game-hud-h) + var(--mobile-game-image-gap)) !important;
   }
 
   .punktlandung-map-panel-header {
@@ -7975,17 +8022,7 @@ textarea {
 }
 
 .punktlandung-image-loader:not(.punktlandung-image-loader-framed)::before {
-  left: 50%;
-  top: 50%;
-  inset: auto;
-  width: 31rem;
-  height: 31rem;
-  border-radius: 999px;
-  background: radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.28), rgba(52, 211, 153, 0.15) 22%, rgba(52, 211, 153, 0.07) 42%, transparent 66%);
-  opacity: 0.95;
-  filter: blur(2px);
-  animation: none;
-  transform: translate(-50%, -50%);
+  display: none;
 }
 
 .punktlandung-image-loader:not(.punktlandung-image-loader-framed) {
@@ -8000,6 +8037,9 @@ textarea {
 }
 
 .punktlandung-loader-mark {
+  --punktlandung-loader-origin-y: calc(50% + 1.875rem);
+  --punktlandung-loader-orbit-scale-y: 0.54;
+  --punktlandung-loader-orbit-unscale-y: 1.85;
   position: relative;
   display: grid;
   height: 7rem;
@@ -8011,44 +8051,58 @@ textarea {
   content: "";
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: var(--punktlandung-loader-origin-y);
   z-index: 0;
-  height: 13.5rem;
-  width: 13.5rem;
+  height: 24rem;
+  width: 24rem;
   border-radius: 999px;
-  background: radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.3), rgba(52, 211, 153, 0.14) 42%, transparent 72%);
-  filter: blur(3px);
+  background: radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.26), rgba(52, 211, 153, 0.14) 22%, rgba(52, 211, 153, 0.06) 44%, transparent 70%);
+  filter: blur(4px);
   opacity: 0.86;
   transform: translate(-50%, -50%);
 }
 
 .punktlandung-loader-mark::after {
+  display: none;
+}
+
+.punktlandung-loader-beam-orbit {
   content: "";
   position: absolute;
   left: 50%;
-  top: calc(50% + 1.72rem);
+  top: var(--punktlandung-loader-origin-y);
   z-index: 0;
-  height: 6.2rem;
+  height: 0;
+  width: 0;
+  transform: translateY(-50%);
+  transform-origin: left center;
+  animation: punktlandung-loader-beam-orbit 3.2s linear infinite;
+}
+
+.punktlandung-loader-beam {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 8.6rem;
   width: 14.2rem;
   border-radius: 0;
   background:
-    radial-gradient(ellipse at 0% 50%, rgba(167, 243, 208, 0.52), rgba(110, 231, 183, 0.24) 20%, rgba(52, 211, 153, 0.1) 46%, transparent 72%),
-    linear-gradient(90deg, rgba(167, 243, 208, 0.44), rgba(110, 231, 183, 0.18) 34%, rgba(52, 211, 153, 0.07) 62%, transparent 88%);
-  clip-path: polygon(0 46%, 100% 0, 100% 100%, 0 54%);
+    radial-gradient(ellipse at 18% 50%, rgba(167, 243, 208, 0.44), rgba(110, 231, 183, 0.24) 24%, rgba(52, 211, 153, 0.1) 54%, transparent 82%),
+    linear-gradient(90deg, transparent 0 11%, rgba(167, 243, 208, 0.32) 18%, rgba(110, 231, 183, 0.16) 42%, rgba(52, 211, 153, 0.055) 70%, transparent 94%);
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
   filter:
-    blur(5px)
-    drop-shadow(0 0 22px rgba(52, 211, 153, 0.28));
-  opacity: 0.76;
-  transform: translate(0.45rem, -50%);
+    blur(10px)
+    drop-shadow(0 0 22px rgba(52, 211, 153, 0.22));
+  opacity: 0.86;
+  transform: translateY(-50%) scaleY(var(--punktlandung-loader-orbit-unscale-y));
   transform-origin: left center;
-  animation: punktlandung-loader-beam 3.2s linear infinite;
   -webkit-mask-image:
-    linear-gradient(90deg, transparent 0%, #000 7%, #000 62%, transparent 100%),
-    linear-gradient(180deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+    linear-gradient(90deg, transparent 0%, transparent 12%, #000 19%, #000 66%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.12) 16%, rgba(0, 0, 0, 0.62) 32%, #000 50%, rgba(0, 0, 0, 0.62) 68%, rgba(0, 0, 0, 0.12) 84%, transparent 100%);
   -webkit-mask-composite: source-in;
   mask-image:
-    linear-gradient(90deg, transparent 0%, #000 7%, #000 62%, transparent 100%),
-    linear-gradient(180deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+    linear-gradient(90deg, transparent 0%, transparent 12%, #000 19%, #000 66%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.12) 16%, rgba(0, 0, 0, 0.62) 32%, #000 50%, rgba(0, 0, 0, 0.62) 68%, rgba(0, 0, 0, 0.12) 84%, transparent 100%);
   mask-composite: intersect;
 }
 
@@ -8114,40 +8168,46 @@ textarea {
   filter:
     drop-shadow(0 0 6px rgba(167, 243, 208, 0.52))
     drop-shadow(0 0 14px rgba(52, 211, 153, 0.34));
+  opacity: 0.86;
+  stroke-dashoffset: 17;
 }
 
 .punktlandung-loader-ellipse-highlight-outer {
   stroke: rgba(167, 243, 208, 0.94);
   stroke-width: 1.45;
-  stroke-dasharray: 54 238;
+  stroke-dasharray: 34 66;
   animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
 }
 
 .punktlandung-loader-ellipse-highlight-inner {
   stroke: rgba(110, 231, 183, 0.88);
   stroke-width: 1.25;
-  stroke-dasharray: 34 142;
+  stroke-dasharray: 34 66;
   animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
-  animation-delay: 180ms;
 }
 
-.punktlandung-loader-sweep {
+.punktlandung-loader-core-beam {
   position: absolute;
   z-index: 2;
-  left: 50%;
-  top: calc(50% + 1.72rem);
-  height: 2.8rem;
+  left: 0;
+  top: 0;
+  height: 4.2rem;
   width: 6.2rem;
   background:
-    linear-gradient(90deg, rgba(167, 243, 208, 0.32), rgba(110, 231, 183, 0.12) 48%, transparent 86%);
-  clip-path: polygon(0 47%, 100% 12%, 100% 88%, 0 53%);
-  filter: blur(2px);
-  opacity: 0.34;
-  transform: translate(0.55rem, -50%);
+    linear-gradient(90deg, transparent 0 16%, rgba(167, 243, 208, 0.2) 26%, rgba(110, 231, 183, 0.1) 52%, transparent 90%);
+  clip-path: polygon(0 50%, 100% 8%, 100% 92%);
+  filter: blur(6px);
+  opacity: 0.26;
+  transform: translateY(-50%) scaleY(var(--punktlandung-loader-orbit-unscale-y));
   transform-origin: left center;
-  animation: punktlandung-loader-core-beam 3.2s linear infinite;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 10%, #000 55%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0%, #000 10%, #000 55%, transparent 100%);
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent 0%, transparent 16%, #000 26%, #000 62%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.4) 28%, #000 50%, rgba(0, 0, 0, 0.4) 72%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent 0%, transparent 16%, #000 26%, #000 62%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.4) 28%, #000 50%, rgba(0, 0, 0, 0.4) 72%, transparent 100%);
+  mask-composite: intersect;
 }
 
 .punktlandung-loader-pin {
@@ -8220,7 +8280,7 @@ textarea {
 
 @keyframes punktlandung-loader-ellipse-dash {
   to {
-    stroke-dashoffset: 292;
+    stroke-dashoffset: 117;
   }
 }
 
@@ -8244,23 +8304,13 @@ textarea {
   }
 }
 
-@keyframes punktlandung-loader-beam {
+@keyframes punktlandung-loader-beam-orbit {
   0% {
-    transform: translate(0.45rem, -50%) rotate(0deg);
+    transform: translateY(-50%) scaleY(var(--punktlandung-loader-orbit-scale-y)) rotate(0deg);
   }
 
   100% {
-    transform: translate(0.45rem, -50%) rotate(-360deg);
-  }
-}
-
-@keyframes punktlandung-loader-core-beam {
-  0% {
-    transform: translate(0.55rem, -50%) rotate(0deg);
-  }
-
-  100% {
-    transform: translate(0.55rem, -50%) rotate(-360deg);
+    transform: translateY(-50%) scaleY(var(--punktlandung-loader-orbit-scale-y)) rotate(-360deg);
   }
 }
 
@@ -8274,6 +8324,7 @@ textarea {
   .punktlandung-loader-mark::before,
   .punktlandung-loader-ellipse,
   .punktlandung-loader-ring,
+  .punktlandung-loader-beam-orbit,
   .punktlandung-loader-sweep,
   .punktlandung-loader-pin {
     animation-duration: 1ms;

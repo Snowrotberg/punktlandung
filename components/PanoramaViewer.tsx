@@ -418,10 +418,13 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
               <svg className="punktlandung-loader-ellipses" viewBox="0 0 128 96" aria-hidden="true">
                 <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-outer" cx="64" cy="78" rx="48" ry="15" />
                 <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-inner" cx="64" cy="78" rx="28" ry="8" />
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-outer" cx="64" cy="78" rx="48" ry="15" />
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-inner" cx="64" cy="78" rx="28" ry="8" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-outer" cx="64" cy="78" rx="48" ry="15" pathLength="100" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-inner" cx="64" cy="78" rx="28" ry="8" pathLength="100" />
               </svg>
-              <span className="punktlandung-loader-sweep" />
+              <span className="punktlandung-loader-beam-orbit">
+                <span className="punktlandung-loader-beam" />
+                <span className="punktlandung-loader-core-beam" />
+              </span>
               <span className="punktlandung-loader-pin" />
             </div>
             {showSlowLoadHint && (

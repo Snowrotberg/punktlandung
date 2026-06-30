@@ -260,11 +260,13 @@ function resultBoundsPadding(map: LeafletMapInstance, showLabels: boolean): [num
 function ResultBounds({
   summary,
   players,
-  showLabels
+  showLabels,
+  resizeSignal
 }: {
   summary?: RoundSummary | null;
   players?: Player[];
   showLabels: boolean;
+  resizeSignal?: number | string | boolean;
 }) {
   const map = useMap();
 
@@ -293,7 +295,7 @@ function ResultBounds({
     fit();
     const timers = [window.setTimeout(fit, 90), window.setTimeout(fit, 320), window.setTimeout(fit, 700)];
     return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [map, summary, players?.length, showLabels]);
+  }, [map, summary, players?.length, showLabels, resizeSignal]);
 
   return null;
 }
@@ -890,7 +892,7 @@ export function LeafletMap({
       <MapInteractionState noPan={noPan} noZoom={noZoom} />
       <MapResizer resizeSignal={resizeSignal} />
       {mode === "guess" && <GuessViewportReset center={center} zoom={guessOverviewZoom} resetSignal={resetSignal} />}
-      {mode === "results" && <ResultBounds summary={summary} players={players} showLabels={showLabels} />}
+      {mode === "results" && <ResultBounds summary={summary} players={players} showLabels={showLabels} resizeSignal={resizeSignal} />}
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | Tiles: <a href="https://www.openstreetmap.de/">OSM Deutschland</a>'
         url="https://tile.openstreetmap.de/{z}/{x}/{y}.png"
