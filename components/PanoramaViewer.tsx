@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { GeoLocation, GameSettings } from "@/types/game";
 
 type PanoramaViewerProps = {
@@ -9,6 +9,7 @@ type PanoramaViewerProps = {
   isHost: boolean;
   onSkipLocation: (locationId: string) => void;
   chromeHidden?: boolean;
+  sourceVariant?: "compact" | "detail";
 };
 
 const imageLoadTimeoutMs: Record<GeoLocation["category"], number> = {
@@ -70,6 +71,13 @@ function wikimediaSizedImageUrl(rawUrl: string, width: number) {
   const thumbnailUrl = new URL(`https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(fileTitle)}`);
   thumbnailUrl.searchParams.set("width", String(width));
   return thumbnailUrl.toString();
+}
+
+function wikimediaFilePageUrl(rawUrl: string) {
+  const fileTitle = extractWikimediaFileTitle(rawUrl);
+  if (!fileTitle) return rawUrl;
+
+  return `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(fileTitle).replace(/%20/g, "_")}`;
 }
 
 function isImageLargeEnough(width: number, height: number, category: GeoLocation["category"]) {
@@ -164,7 +172,7 @@ function isLikelyImageCollage(image: HTMLImageElement, category: GeoLocation["ca
   }
 }
 
-export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chromeHidden = false }: PanoramaViewerProps) {
+export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chromeHidden = false, sourceVariant = "compact" }: PanoramaViewerProps) {
   const [zoom, setZoom] = useState(100);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -178,6 +186,9 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
   const viewportRef = useRef<HTMLElement | null>(null);
   const dragging = useRef(false);
   const lastPointer = useRef({ x: 0, y: 0 });
+  const activePointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinchStart = useRef<{ distance: number; pan: { x: number; y: number }; zoom: number } | null>(null);
+  const lastTap = useRef({ time: 0, x: 0, y: 0, pointerType: "" });
   const skippedLocationIds = useRef(new Set<string>());
   const autoSkipStreak = useRef(0);
 
@@ -187,6 +198,8 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
   }, [location.panoramaUrl, location.panoramaUrls]);
 
   const currentImageUrl = imageUrls[imageIndex] ?? location.panoramaUrl;
+  const sourceHref = location.sourceUrl ?? (location.source === "wikimedia" ? wikimediaFilePageUrl(currentImageUrl) : currentImageUrl);
+  const sourceName = location.source === "wikimedia" ? "Wikimedia Commons" : location.attribution || location.source;
   const imageProxyDisabled = process.env.NEXT_PUBLIC_DISABLE_IMAGE_PROXY === "true";
   const proxyWidth = 1800;
   const displayedImageUrl = imageProxyDisabled
@@ -274,6 +287,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
 
   const scale = zoom / 100;
   const canPanImage = !settings.noPan && zoom > 100;
+  const clampZoom = (value: number) => Math.max(100, Math.min(220, value));
 
   const clampPan = (nextPan: { x: number; y: number }, nextZoom = zoom) => {
     const viewport = viewportRef.current;
@@ -300,7 +314,101 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
     setZoom(100);
     setPan({ x: 0, y: 0 });
     dragging.current = false;
+    activePointers.current.clear();
+    pinchStart.current = null;
     setIsDragging(false);
+  };
+
+  const stopDragging = () => {
+    dragging.current = false;
+    setIsDragging(false);
+  };
+
+  const pointerDistance = (points: { x: number; y: number }[]) => {
+    const [first, second] = points;
+    if (!first || !second) return 0;
+    return Math.hypot(second.x - first.x, second.y - first.y);
+  };
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.button !== 0) return;
+
+    const point = { x: event.clientX, y: event.clientY };
+    const previousTap = lastTap.current;
+    const isDoublePointerDown =
+      previousTap.pointerType === event.pointerType &&
+      window.performance.now() - previousTap.time < 320 &&
+      Math.hypot(point.x - previousTap.x, point.y - previousTap.y) < 24;
+    lastTap.current = {
+      time: window.performance.now(),
+      x: point.x,
+      y: point.y,
+      pointerType: event.pointerType
+    };
+
+    if (isDoublePointerDown && zoom > 100) {
+      event.preventDefault();
+      resetView();
+      return;
+    }
+
+    activePointers.current.set(event.pointerId, point);
+    if (event.pointerType === "touch" && event.currentTarget.setPointerCapture) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    const points = Array.from(activePointers.current.values());
+    if (points.length >= 2 && !settings.noZoom) {
+      event.preventDefault();
+      event.currentTarget.focus();
+      stopDragging();
+      pinchStart.current = {
+        distance: pointerDistance(points),
+        pan,
+        zoom
+      };
+      return;
+    }
+
+    if (!canPanImage) return;
+    event.preventDefault();
+    event.currentTarget.focus();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragging.current = true;
+    setIsDragging(true);
+    lastPointer.current = point;
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    if (activePointers.current.has(event.pointerId)) {
+      activePointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
+
+    const points = Array.from(activePointers.current.values());
+    if (pinchStart.current && points.length >= 2 && !settings.noZoom) {
+      event.preventDefault();
+      const startDistance = Math.max(1, pinchStart.current.distance);
+      const nextZoom = clampZoom(pinchStart.current.zoom * (pointerDistance(points) / startDistance));
+      setZoom(nextZoom);
+      setPan(clampPan(pinchStart.current.pan, nextZoom));
+      return;
+    }
+
+    if (!dragging.current || !canPanImage) return;
+    event.preventDefault();
+    const deltaX = event.clientX - lastPointer.current.x;
+    const deltaY = event.clientY - lastPointer.current.y;
+    lastPointer.current = { x: event.clientX, y: event.clientY };
+    setPan((value) => clampPan({ x: value.x + deltaX, y: value.y + deltaY }));
+  };
+
+  const handlePointerEnd = (event: ReactPointerEvent<HTMLElement>) => {
+    activePointers.current.delete(event.pointerId);
+    pinchStart.current = null;
+    stopDragging();
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
 
   return (
@@ -308,34 +416,10 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
       ref={viewportRef}
       tabIndex={0}
       className={`punktlandung-panorama-viewport absolute inset-0 overflow-hidden bg-slate-950 outline-none ${canPanImage ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
-      onPointerDown={(event) => {
-        if (!canPanImage || event.button !== 0) return;
-        event.preventDefault();
-        event.currentTarget.focus();
-        event.currentTarget.setPointerCapture(event.pointerId);
-        dragging.current = true;
-        setIsDragging(true);
-        lastPointer.current = { x: event.clientX, y: event.clientY };
-      }}
-      onPointerMove={(event) => {
-        if (!dragging.current || !canPanImage) return;
-        event.preventDefault();
-        const deltaX = event.clientX - lastPointer.current.x;
-        const deltaY = event.clientY - lastPointer.current.y;
-        lastPointer.current = { x: event.clientX, y: event.clientY };
-        setPan((value) => clampPan({ x: value.x + deltaX, y: value.y + deltaY }));
-      }}
-      onPointerUp={(event) => {
-        dragging.current = false;
-        setIsDragging(false);
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-          event.currentTarget.releasePointerCapture(event.pointerId);
-        }
-      }}
-      onPointerCancel={() => {
-        dragging.current = false;
-        setIsDragging(false);
-      }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
       onDoubleClick={(event) => {
         if (zoom <= 100) return;
         event.preventDefault();
@@ -359,7 +443,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
         if (settings.noZoom) return;
         event.preventDefault();
         setZoom((value) => {
-          const nextZoom = Math.max(100, Math.min(220, value + event.deltaY * -0.04));
+          const nextZoom = clampZoom(value + event.deltaY * -0.04);
           setPan((currentPan) => clampPan(currentPan, nextZoom));
           return nextZoom;
         });
@@ -416,10 +500,10 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
           >
             <div className="punktlandung-loader-mark mx-auto">
               <svg className="punktlandung-loader-ellipses" viewBox="0 0 128 96" aria-hidden="true">
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-outer" cx="64" cy="78" rx="48" ry="15" />
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-inner" cx="64" cy="78" rx="28" ry="8" />
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-outer" cx="64" cy="78" rx="48" ry="15" pathLength="100" />
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-inner" cx="64" cy="78" rx="28" ry="8" pathLength="100" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-outer" cx="64" cy="78" rx="38.5" ry="12" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-inner" cx="64" cy="78" rx="22.5" ry="6.5" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-outer" cx="64" cy="78" rx="38.5" ry="12" pathLength="100" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-inner" cx="64" cy="78" rx="22.5" ry="6.5" pathLength="100" />
               </svg>
               <span className="punktlandung-loader-beam-orbit">
                 <span className="punktlandung-loader-beam" />
@@ -452,12 +536,25 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
 
       {!chromeHidden && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.18)_58%,rgba(2,6,23,0.7)_100%)]" />}
 
-      {!chromeHidden && (
-        <div className="punktlandung-source-chip absolute bottom-3 left-1/2 z-10 w-fit max-w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-slate-950/58 px-3 py-2 text-center shadow-[0_16px_36px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/50 backdrop-blur sm:bottom-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-300">Quelle</p>
-          <h1 className="mt-0.5 text-sm font-black leading-tight text-white">{location.source === "wikimedia" ? "Wikimedia Commons" : location.source}</h1>
-          {location.source !== "wikimedia" && location.attribution && <p className="mt-0.5 text-[10px] leading-tight text-slate-300">{location.attribution}</p>}
+      {!chromeHidden && sourceVariant === "compact" && (
+        <div className="punktlandung-source-chip punktlandung-source-chip--compact absolute bottom-3 left-1/2 z-10 w-fit max-w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-slate-950/44 px-3 py-2 text-center shadow-[0_16px_36px_rgba(0,0,0,0.18)] ring-1 ring-slate-700/35 backdrop-blur sm:bottom-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Quelle</p>
+          <h1 className="mt-0.5 text-sm font-semibold leading-tight text-slate-200">{sourceName}</h1>
         </div>
+      )}
+
+      {!chromeHidden && sourceVariant === "detail" && (
+        <a
+          className="punktlandung-source-chip punktlandung-source-chip--detail absolute bottom-3 left-1/2 z-10 w-fit max-w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-slate-950/68 px-3.5 py-2.5 text-center shadow-[0_18px_44px_rgba(0,0,0,0.30)] ring-1 ring-indigo-300/35 backdrop-blur sm:bottom-4"
+          href={sourceHref}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-200">Quelle</p>
+          <h1 className="mt-0.5 text-sm font-black leading-tight text-white">{sourceName}</h1>
+          <p className="mt-1 text-[10px] font-semibold leading-tight text-slate-300">Lizenz und Urheberinfos auf der Commons-Dateiseite</p>
+        </a>
       )}
 
       {!chromeHidden && (

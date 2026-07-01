@@ -5,11 +5,11 @@ import type { CSSProperties } from "react";
 import type { Guess, LatLng, LocationCategory, Player, RoomState } from "@/types/game";
 import { findCountryCodeAtPoint } from "@/lib/countryLookup";
 import { AdContainer } from "./AdContainer";
-import { BackButton } from "./BackButton";
 import { Button } from "./Button";
 import { GuessMap } from "./GuessMap";
 import { PanoramaViewer } from "./PanoramaViewer";
 import { useSound } from "./SoundProvider";
+import { TriangleIcon } from "./TriangleIcon";
 
 const categoryTaskText: Record<LocationCategory, string> = {
   mixed: "Gemischter Ort",
@@ -46,13 +46,15 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   const [chromeHidden, setChromeHidden] = useState(false);
   const [chromeHoverHidden, setChromeHoverHidden] = useState(false);
   const [isMobilePortrait, setIsMobilePortrait] = useState(false);
+  const [isMobileLandscape, setIsMobileLandscape] = useState(false);
   const [mapResetNonce, setMapResetNonce] = useState(0);
   const mapCloseTimer = useRef<number | null>(null);
   const countdownTimersRef = useRef<number[]>([]);
   const expanded = mapSize !== "closed";
   const fullMap = mapSize === "full";
-  const mapInteractive = expanded || isMobilePortrait;
-  const showMapSizeButton = (expanded || isMobilePortrait) && !fullMap;
+  const isMobileTouchMap = isMobilePortrait || isMobileLandscape;
+  const mapInteractive = expanded || isMobileTouchMap;
+  const showMapSizeButton = (expanded || isMobileTouchMap) && !fullMap;
   const showMapCloseButton = expanded && (!isMobilePortrait || fullMap);
 
   useEffect(() => {
@@ -67,6 +69,14 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   useEffect(() => {
     const query = window.matchMedia("(max-width: 879px) and (orientation: portrait)");
     const update = () => setIsMobilePortrait(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1024px) and (max-height: 520px) and (orientation: landscape)");
+    const update = () => setIsMobileLandscape(query.matches);
     update();
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
@@ -126,9 +136,11 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   const primaryMapActionTone = readyToSubmit ? "selected" : alreadySubmitted ? "good" : "ghost";
   const primaryMapActionDisabled = mapInteractive ? !readyToSubmit : alreadySubmitted || currentPlayerTimedOut;
   const taskText = categoryTaskText[room.location?.category ?? "mixed"] ?? categoryTaskText.mixed;
-  const viewerLayout = expanded
-    ? "punktlandung-game-viewer punktlandung-game-viewer--map-open absolute inset-0 overflow-hidden"
-    : "punktlandung-game-viewer punktlandung-game-viewer--map-closed absolute inset-x-0 top-0 bottom-[23rem] overflow-hidden sm:bottom-[18rem] lg:bottom-0";
+  const viewerLayout = fullMap
+    ? "punktlandung-game-viewer punktlandung-game-viewer--map-full absolute inset-x-0 top-0 bottom-[23rem] overflow-hidden sm:bottom-[18rem] lg:bottom-0"
+    : expanded
+      ? "punktlandung-game-viewer punktlandung-game-viewer--map-open absolute inset-0 overflow-hidden"
+      : "punktlandung-game-viewer punktlandung-game-viewer--map-closed absolute inset-x-0 top-0 bottom-[23rem] overflow-hidden sm:bottom-[18rem] lg:bottom-0";
   const chromeSuppressed = chromeHidden || chromeHoverHidden;
 
   useEffect(() => {
@@ -181,7 +193,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
         await submitCurrentGuess();
         return;
       }
-      if (isMobilePortrait) return;
+      if (isMobileTouchMap) return;
       setMapSize("open");
       return;
     }
@@ -189,9 +201,9 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
     await submitCurrentGuess();
   };
 
-  const toggleMapSize = () => setMapSize((value) => (value === "full" ? (isMobilePortrait ? "closed" : "open") : "full"));
+  const toggleMapSize = () => setMapSize((value) => (value === "full" ? (isMobileTouchMap ? "closed" : "open") : "full"));
   const openMapByHover = () => {
-    if (isMobilePortrait) return;
+    if (isMobileTouchMap) return;
     if (fullMap) return;
     if (mapCloseTimer.current !== null) {
       window.clearTimeout(mapCloseTimer.current);
@@ -200,7 +212,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
     setMapSize("open");
   };
   const closeMapByHover = () => {
-    if (isMobilePortrait) return;
+    if (isMobileTouchMap) return;
     if (fullMap) return;
     if (mapCloseTimer.current !== null) window.clearTimeout(mapCloseTimer.current);
     mapCloseTimer.current = window.setTimeout(() => {
@@ -238,31 +250,47 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
             <div className="punktlandung-game-stats pointer-events-none order-1 col-span-1 flex min-w-0 flex-wrap gap-1.5 sm:gap-2">
               <div className="punktlandung-game-stat flex min-h-10 w-fit flex-col justify-center rounded-md bg-slate-950/52 px-3 py-1 shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-indigo-300/30 backdrop-blur-md sm:min-h-11 sm:px-3.5">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Runde</p>
-                <p className="text-[18px] font-black leading-tight sm:text-[20px]">
+                <p className="punktlandung-game-stat-value punktlandung-game-stat-value-round text-[18px] font-black leading-tight sm:text-[20px]">
                   {room.currentRound}/{room.settings.rounds}
                 </p>
               </div>
               <div className="punktlandung-game-stat flex min-h-10 w-fit flex-col justify-center rounded-md bg-slate-950/52 px-3 py-1 shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-emerald-300/40 backdrop-blur-md sm:min-h-11 sm:px-3.5">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Zeit</p>
-                <p className="text-[18px] font-black leading-tight sm:text-[20px]">{secondsLeft === null ? "frei" : `${secondsLeft}s`}</p>
+                <p className="punktlandung-game-stat-value punktlandung-game-stat-value-time text-[18px] font-black leading-tight sm:text-[20px]">{secondsLeft === null ? "frei" : `${secondsLeft}s`}</p>
               </div>
             </div>
 
-            <div className="pointer-events-none order-2 col-span-1 flex justify-center px-1 xl:px-2">
+            <div className="punktlandung-game-task-slot pointer-events-none order-2 col-span-1 flex justify-center px-1 xl:px-2">
               <div className="punktlandung-task-card inline-flex min-h-10 w-fit max-w-[min(100%,20rem)] flex-col items-center justify-center rounded-md bg-slate-950/46 px-4 py-1 text-center shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-emerald-300/40 backdrop-blur-md sm:min-h-11 sm:px-5">
                 <p className="text-[10px] font-black uppercase leading-none tracking-[0.22em] text-emerald-300">Gesucht</p>
-                <p className="punktlandung-task-card-title text-[18px] font-black leading-none text-white sm:text-[20px] xl:text-[22px]">{taskText}</p>
+                <p className="punktlandung-task-card-title text-[18px] font-black leading-none text-white sm:text-[20px] xl:text-[22px]">
+                  <span aria-hidden="true" className="punktlandung-task-card-title-line" />
+                  <span>{taskText}</span>
+                </p>
               </div>
             </div>
             <div className="punktlandung-game-actions pointer-events-auto order-3 col-span-1 flex justify-end gap-2">
                 {isHost && (
-                  <BackButton className="punktlandung-game-back-button" onClick={onCancelRound} label="Zurueck" />
+                  <Button
+                    className="punktlandung-game-back-button"
+                    tone="ghost"
+                    sound="click"
+                    onClick={onCancelRound}
+                    aria-label="Zurueck"
+                    title="Zurueck"
+                  >
+                    <span className="punktlandung-game-back-button-inner">
+                      <TriangleIcon direction="left" className="h-4 w-4" />
+                      <span>Zurück</span>
+                    </span>
+                  </Button>
                 )}
             </div>
           </div>
         </div>
       )}
 
+      {!expanded && (
       <button
         type="button"
         onClick={chromeHidden ? () => setChromeHidden(false) : hideChrome}
@@ -275,8 +303,9 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
         }`}
         title={chromeSuppressed ? "Einblendungen wieder anzeigen" : "Einblendungen für 5 Sekunden ausblenden"}
       >
-        {chromeSuppressed ? "Einblenden" : "Bild frei"}
+        <span className="punktlandung-focus-tab-text">{chromeSuppressed ? "Einblenden" : "Bild frei"}</span>
       </button>
+      )}
 
       {!chromeSuppressed && !fullMap && (
         <AdContainer
@@ -294,7 +323,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
         onMouseEnter={openMapByHover}
         onMouseLeave={closeMapByHover}
         onClick={() => {
-          if (!expanded && !isMobilePortrait) setMapSize("open");
+          if (!expanded && !isMobileTouchMap) setMapSize("open");
         }}
       >
         <div className="flex h-full flex-col gap-3">

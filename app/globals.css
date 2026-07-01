@@ -5927,9 +5927,79 @@ textarea {
   }
 }
 
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1024px) {
+  .punktlandung-action-back-button.punktlandung-back-button {
+    height: 3rem !important;
+    min-height: 3rem !important;
+    min-width: 3rem !important;
+    width: 3rem !important;
+  }
+
+  .punktlandung-tv-home .punktlandung-home-category-grid {
+    gap: 0.75rem 0.9rem;
+  }
+
+  .punktlandung-tv-home .punktlandung-home-category-card {
+    grid-template-columns: minmax(0, 1fr) 5.8rem;
+    min-height: 4.8rem;
+    padding: 0.85rem 0.85rem 0.85rem 1rem;
+  }
+
+  .punktlandung-tv-home .punktlandung-home-category-copy > p:first-child {
+    font-size: 1.25rem;
+    line-height: 1.05;
+  }
+
+  .punktlandung-tv-home .punktlandung-home-category-copy > p + p {
+    margin-top: 0.35rem;
+    font-size: 0.92rem;
+    line-height: 1.25;
+  }
+
+  .punktlandung-tv-home .punktlandung-home-category-art {
+    height: 4.2rem;
+    padding-right: 1.4rem;
+    transform: translateX(-0.25rem);
+  }
+
+  .punktlandung-tv-home .punktlandung-home-category-art img {
+    max-height: 3.4rem;
+    max-width: 3.9rem;
+  }
+
+  .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    max-height: 3.1rem;
+    max-width: 3.5rem;
+    opacity: 0.5;
+  }
+
+  .punktlandung-lobby-config-stage .punktlandung-category-card--preview .punktlandung-category-art img {
+    max-height: 3.6rem;
+    max-width: 4rem;
+    opacity: 0.52;
+  }
+}
+
 @media (min-width: 640px) {
   .punktlandung-results-mobile-header-back {
     display: none !important;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 639px) {
+  .punktlandung-results-hero-header {
+    align-items: end !important;
+    display: grid !important;
+    gap: 0.6rem !important;
+    grid-template-columns: minmax(0, 1fr) 2.7rem !important;
+  }
+
+  .punktlandung-results-hero .punktlandung-results-mobile-header-back {
+    align-self: end !important;
+    justify-self: end !important;
+    min-height: 3rem !important;
+    min-width: 2.7rem !important;
+    width: 2.7rem !important;
   }
 }
 
@@ -5981,6 +6051,20 @@ textarea {
   margin-top: 1rem;
 }
 
+.punktlandung-inline-action-content {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.5rem;
+  justify-content: center;
+  line-height: 1;
+}
+
+.punktlandung-inline-action-icon {
+  display: block;
+  flex: 0 0 auto;
+  transform: translateY(0.06rem);
+}
+
 @media (min-width: 1024px) {
   .punktlandung-home-start-stack {
     margin-top: clamp(1rem, 2.2vh, 1.5rem);
@@ -5996,7 +6080,7 @@ textarea {
 .leaflet-container {
   width: 100%;
   height: 100%;
-  background: #0f172a;
+  background: #aad3df;
   font-family: inherit;
 }
 
@@ -6338,10 +6422,6 @@ textarea {
   }
 }
 
-.punktlandung-lobby-touch-actions .punktlandung-lobby-touch-back {
-  display: none !important;
-}
-
 @media (max-width: 879px), (max-width: 1023px) and (orientation: landscape) {
   .punktlandung-lobby .punktlandung-lobby-mobile-back,
   .punktlandung-lobby .punktlandung-desktop-only {
@@ -6351,23 +6431,72 @@ textarea {
   .punktlandung-lobby-touch-actions {
     align-items: center;
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    padding-inline: clamp(0.9rem, 8vw, 4rem) !important;
+    gap: 1rem !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    padding: 0.75rem 0.9rem !important;
   }
 
   .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-back {
     display: inline-flex !important;
     grid-column: 1;
-    height: 3rem !important;
-    justify-self: end;
-    min-height: 3rem !important;
-    min-width: 3rem !important;
-    width: 3rem !important;
+  }
+
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-back,
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-primary {
+    align-items: center !important;
+    display: inline-flex !important;
+    height: 3.5rem !important;
+    justify-content: center !important;
+    min-height: 3.5rem !important;
+    padding: 0.75rem 1rem !important;
+    width: 100% !important;
+  }
+
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-button-inner {
+    align-items: center !important;
+    display: inline-flex !important;
+    gap: 0.55rem !important;
+    justify-content: center !important;
+  }
+
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-icon {
+    display: block !important;
+    flex: 0 0 auto !important;
+  }
+
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-icon-back {
+    transform: none !important;
+  }
+
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-icon-start {
+    transform: translateY(0.08rem) !important;
+  }
+
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-back .punktlandung-lobby-touch-button-inner {
+    transform: translateX(-0.18rem);
   }
 
   .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-primary {
-    grid-column: 3;
-    justify-self: start;
+    grid-column: 2;
+  }
+
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-primary .punktlandung-lobby-touch-button-inner {
+    transform: translateX(0.18rem);
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  .punktlandung-lobby-touch-actions {
+    inset-inline: 1.25rem !important;
+    grid-template-columns: minmax(9rem, 12.5rem) minmax(9rem, 12.5rem) !important;
+    justify-content: space-between !important;
+    padding-inline: 1rem !important;
+  }
+
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-back,
+  .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-primary {
+    height: 3.35rem !important;
+    min-height: 3.35rem !important;
   }
 }
 
@@ -7293,6 +7422,11 @@ textarea {
     0 0 18px color-mix(in srgb, var(--player-color, #f43f5e) 36%, transparent);
 }
 
+.punktlandung-map-label-distance {
+  font-style: normal !important;
+  font-weight: 400 !important;
+}
+
 .punktlandung-player-color-0 { --player-color: #2563eb; }
 .punktlandung-player-color-1 { --player-color: #f43f5e; }
 .punktlandung-player-color-2 { --player-color: #f59e0b; }
@@ -7461,12 +7595,23 @@ textarea {
     left: auto !important;
     right: 0.75rem !important;
     height: min(46dvh, 15rem) !important;
-    width: min(46vw, 24rem) !important;
+    width: min(40vw, 22rem) !important;
   }
 
   .punktlandung-guess-map-panel--open,
   .punktlandung-guess-map-panel--closed {
     padding: 0.55rem !important;
+  }
+
+  .punktlandung-guess-map-panel--open .punktlandung-map-panel-title,
+  .punktlandung-guess-map-panel--closed .punktlandung-map-panel-title {
+    display: none !important;
+  }
+
+  .punktlandung-guess-map-panel--open .punktlandung-map-panel-actions,
+  .punktlandung-guess-map-panel--closed .punktlandung-map-panel-actions {
+    justify-content: space-between !important;
+    width: 100% !important;
   }
 }
 
@@ -7479,6 +7624,7 @@ textarea {
     --mobile-game-image-gap: clamp(0.45rem, 1.6dvh, 0.85rem);
     --mobile-game-map-closed-h: clamp(18rem, 38dvh, 22rem);
     --mobile-game-map-open-h: clamp(20rem, 45dvh, 25rem);
+    --mobile-game-source-h: clamp(2.35rem, 5dvh, 2.8rem);
   }
 
   .punktlandung-image-replay {
@@ -7487,6 +7633,7 @@ textarea {
     --mobile-game-image-gap: clamp(1.65rem, 4.2dvh, 2.3rem);
     --mobile-game-map-closed-h: clamp(18rem, 38dvh, 22rem);
     --mobile-game-map-open-h: clamp(20rem, 45dvh, 25rem);
+    --mobile-game-source-h: clamp(1.9rem, 4dvh, 2.15rem);
   }
 
   .punktlandung-game-hud {
@@ -7569,6 +7716,11 @@ textarea {
     top: calc(var(--mobile-game-hud-h) + var(--mobile-game-image-gap)) !important;
   }
 
+  .punktlandung-game-viewer--map-full {
+    bottom: calc(var(--mobile-game-map-closed-h) + var(--mobile-game-pad) + var(--mobile-game-image-gap)) !important;
+    top: calc(var(--mobile-game-hud-h) + var(--mobile-game-image-gap)) !important;
+  }
+
   .punktlandung-game-viewer--map-open {
     bottom: 0 !important;
     top: var(--mobile-game-hud-h) !important;
@@ -7576,23 +7728,40 @@ textarea {
 
   .punktlandung-replay-viewer {
     bottom: calc(var(--mobile-game-map-closed-h) + var(--mobile-game-pad) + var(--mobile-game-image-gap)) !important;
+    overflow: visible !important;
     top: calc(var(--mobile-game-hud-h) + var(--mobile-game-image-gap)) !important;
   }
 
+  .punktlandung-game-viewer .punktlandung-panorama-viewport,
   .punktlandung-image-replay .punktlandung-panorama-viewport {
-    overflow: visible !important;
+    background: #020617 !important;
+    overflow: hidden !important;
   }
 
+  .punktlandung-game-viewer .punktlandung-panorama-viewport img,
+  .punktlandung-image-replay .punktlandung-panorama-viewport img {
+    bottom: var(--mobile-game-source-h) !important;
+    height: calc(100% - var(--mobile-game-source-h)) !important;
+  }
+
+  .punktlandung-game-viewer .punktlandung-source-chip,
   .punktlandung-image-replay .punktlandung-source-chip {
-    bottom: -1.15rem !important;
+    bottom: 0.18rem !important;
+  }
+
+  .punktlandung-replay-header {
+    align-items: end !important;
+    gap: 0.6rem !important;
+    grid-template-columns: minmax(0, 1fr) 2.7rem !important;
+    left: var(--mobile-game-pad) !important;
+    right: var(--mobile-game-pad) !important;
+    top: var(--mobile-game-pad) !important;
   }
 
   .punktlandung-replay-info {
-    left: var(--mobile-game-pad) !important;
     max-width: none !important;
     padding: 0.75rem 0.9rem !important;
-    right: calc(var(--mobile-game-pad) + 3.35rem) !important;
-    top: var(--mobile-game-pad) !important;
+    width: 100% !important;
   }
 
   .punktlandung-replay-info p {
@@ -7614,8 +7783,8 @@ textarea {
   }
 
   .punktlandung-replay-top-actions {
-    right: var(--mobile-game-pad) !important;
-    top: var(--mobile-game-pad) !important;
+    align-self: end !important;
+    justify-self: end !important;
   }
 
   .punktlandung-replay-top-actions .punktlandung-command-button {
@@ -7638,6 +7807,37 @@ textarea {
     white-space: nowrap !important;
   }
 
+  .punktlandung-source-chip--compact {
+    background: rgba(15, 23, 42, 0.38) !important;
+    border-color: rgba(148, 163, 184, 0.2) !important;
+    box-shadow: 0 10px 24px rgba(2, 6, 23, 0.28) !important;
+    opacity: 0.86 !important;
+  }
+
+  .punktlandung-source-chip--detail {
+    background: rgba(15, 23, 42, 0.66) !important;
+    border-color: rgba(165, 180, 252, 0.34) !important;
+    box-shadow: 0 14px 34px rgba(2, 6, 23, 0.34) !important;
+    flex-direction: column !important;
+    gap: 0.2rem !important;
+    max-width: min(17rem, calc(100vw - 3rem)) !important;
+    padding: 0.42rem 0.68rem !important;
+    pointer-events: auto !important;
+    white-space: normal !important;
+  }
+
+  .punktlandung-image-replay .punktlandung-source-chip--detail {
+    background: rgba(15, 23, 42, 0.5) !important;
+    border-color: rgba(148, 163, 184, 0.28) !important;
+    box-shadow: 0 10px 24px rgba(2, 6, 23, 0.24) !important;
+    flex-direction: row !important;
+    gap: 0.4rem !important;
+    max-width: calc(100vw - 2.5rem) !important;
+    min-height: 1.45rem !important;
+    padding: 0.22rem 0.6rem !important;
+    white-space: nowrap !important;
+  }
+
   .punktlandung-source-chip p {
     font-size: 0.45rem !important;
     letter-spacing: 0.16em !important;
@@ -7648,6 +7848,23 @@ textarea {
     font-size: 0.66rem !important;
     line-height: 1 !important;
     margin-top: 0 !important;
+  }
+
+  .punktlandung-source-chip--compact h1 {
+    color: rgb(203 213 225) !important;
+    font-weight: 700 !important;
+  }
+
+  .punktlandung-source-chip--detail p:last-child {
+    color: rgb(203 213 225) !important;
+    font-size: 0.52rem !important;
+    font-weight: 650 !important;
+    letter-spacing: 0 !important;
+    line-height: 1.2 !important;
+  }
+
+  .punktlandung-image-replay .punktlandung-source-chip--detail p:last-child {
+    display: none !important;
   }
 
   .punktlandung-focus-tab {
@@ -7661,6 +7878,11 @@ textarea {
     padding: 0.9rem 0.55rem !important;
     transform: translateY(-50%) !important;
     writing-mode: vertical-rl;
+  }
+
+  .punktlandung-focus-tab-text {
+    display: inline-block !important;
+    transform: rotate(180deg) !important;
   }
 
   .punktlandung-focus-tab:hover {
@@ -7752,6 +7974,170 @@ textarea {
   }
 }
 
+@media (min-width: 381px) and (max-width: 879px) and (orientation: portrait) {
+  .punktlandung-image-replay .punktlandung-replay-header {
+    grid-template-columns: minmax(0, 1fr) 3rem !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  .punktlandung-game-shell {
+    --mobile-game-hud-h: clamp(7.65rem, 16dvh, 8.25rem);
+    --mobile-game-back-w: clamp(5rem, 18vw, 5.7rem);
+    --mobile-game-meta-size: clamp(2.65rem, 10vw, 3rem);
+  }
+
+  .punktlandung-game-shell .punktlandung-game-hud {
+    padding-inline: clamp(0.75rem, 3.2vw, 1rem) !important;
+    padding-top: max(0.45rem, env(safe-area-inset-top)) !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-hud-grid {
+    gap: clamp(0.42rem, 1.6vw, 0.55rem) !important;
+    grid-template-columns: var(--mobile-game-meta-size) var(--mobile-game-meta-size) minmax(0, 1fr) var(--mobile-game-back-w) !important;
+    grid-template-rows: var(--mobile-game-meta-size) clamp(3.8rem, 8.2dvh, 4.1rem) !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-stats {
+    display: contents !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-stat,
+  .punktlandung-game-shell .punktlandung-game-back-button {
+    height: var(--mobile-game-meta-size) !important;
+    min-height: var(--mobile-game-meta-size) !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-stats .punktlandung-game-stat:nth-child(1) {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-stats .punktlandung-game-stat:nth-child(2) {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-stat {
+    align-items: center !important;
+    display: grid !important;
+    gap: 0.12rem !important;
+    grid-template-rows: auto auto !important;
+    justify-items: center !important;
+    padding: 0.34rem 0.24rem !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-stat p:first-child,
+  .punktlandung-game-shell .punktlandung-task-card p:first-child {
+    font-size: 0.48rem !important;
+    letter-spacing: 0.1em !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-stat p:last-child {
+    font-size: 1rem !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-stat-value {
+    display: block !important;
+    font-variant-numeric: tabular-nums !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-stat-value-round {
+    transform: none !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-task-slot {
+    align-self: stretch !important;
+    display: flex !important;
+    align-items: center !important;
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    justify-content: center !important;
+    padding-inline: 0 !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-task-card {
+    height: clamp(3.8rem, 8.2dvh, 4.1rem) !important;
+    max-width: none !important;
+    min-height: clamp(3.8rem, 8.2dvh, 4.1rem) !important;
+    padding: 0.64rem 0.7rem 0.66rem !important;
+    width: 100% !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-task-card-title {
+    align-items: center !important;
+    display: inline-flex !important;
+    flex-direction: column !important;
+    font-size: clamp(1.18rem, 5.5vw, 1.52rem) !important;
+    line-height: 1 !important;
+    width: fit-content !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-task-card-title-line {
+    background: rgba(110, 231, 183, 0.88) !important;
+    display: block !important;
+    height: 1px !important;
+    margin: 0.38rem 0 0.44rem !important;
+    width: 100% !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-actions {
+    align-self: stretch !important;
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-back-button {
+    min-width: var(--mobile-game-back-w) !important;
+    padding-inline: 0.55rem !important;
+    width: var(--mobile-game-back-w) !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-back-button-inner {
+    align-items: center !important;
+    display: inline-flex !important;
+    gap: 0.34rem !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    width: 100% !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-back-button-inner span {
+    font-size: 0.68rem !important;
+    font-weight: 900 !important;
+    text-transform: none !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-back-button svg {
+    transform: none !important;
+  }
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+  .punktlandung-image-replay {
+    --mobile-game-image-gap: clamp(1.05rem, 2.5dvh, 1.45rem);
+  }
+
+  .punktlandung-image-replay .punktlandung-guess-map-panel--full {
+    bottom: var(--mobile-game-pad) !important;
+    height: auto !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-hud-grid {
+    grid-template-columns: var(--mobile-game-meta-size) var(--mobile-game-meta-size) minmax(0, 1fr) var(--mobile-game-back-w) !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-game-back-button {
+    min-width: var(--mobile-game-back-w) !important;
+    width: var(--mobile-game-back-w) !important;
+  }
+}
+
 @keyframes float-emoji {
   0% {
     transform: translateY(0) scale(0.8) rotate(-8deg);
@@ -7795,6 +8181,11 @@ textarea {
     0 0 24px rgba(52, 211, 153, 0.72),
     0 0 54px rgba(99, 102, 241, 0.38);
   animation: punktlandung-title 760ms cubic-bezier(0.18, 0.9, 0.22, 1.2) both;
+}
+
+.punktlandung-hit-chip-detail {
+  font-style: normal;
+  font-weight: 400;
 }
 
 .punktlandung-aura {
@@ -8086,24 +8477,40 @@ textarea {
   height: 8.6rem;
   width: 14.2rem;
   border-radius: 0;
-  background:
-    radial-gradient(ellipse at 18% 50%, rgba(167, 243, 208, 0.44), rgba(110, 231, 183, 0.24) 24%, rgba(52, 211, 153, 0.1) 54%, transparent 82%),
-    linear-gradient(90deg, transparent 0 11%, rgba(167, 243, 208, 0.32) 18%, rgba(110, 231, 183, 0.16) 42%, rgba(52, 211, 153, 0.055) 70%, transparent 94%);
-  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+  background: transparent;
+  clip-path: none;
   filter:
-    blur(10px)
     drop-shadow(0 0 22px rgba(52, 211, 153, 0.22));
   opacity: 0.86;
   transform: translateY(-50%) scaleY(var(--punktlandung-loader-orbit-unscale-y));
   transform-origin: left center;
+}
+
+.punktlandung-loader-beam::before,
+.punktlandung-loader-beam::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 18% 50%, rgba(167, 243, 208, 0.44), rgba(110, 231, 183, 0.24) 24%, rgba(52, 211, 153, 0.1) 54%, transparent 82%),
+    linear-gradient(90deg, transparent 0 11%, rgba(167, 243, 208, 0.32) 18%, rgba(110, 231, 183, 0.16) 42%, rgba(52, 211, 153, 0.055) 70%, transparent 94%);
+}
+
+.punktlandung-loader-beam::before {
+  filter: blur(0.8px);
+  opacity: 1;
   -webkit-mask-image:
     linear-gradient(90deg, transparent 0%, transparent 12%, #000 19%, #000 66%, transparent 100%),
-    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.12) 16%, rgba(0, 0, 0, 0.62) 32%, #000 50%, rgba(0, 0, 0, 0.62) 68%, rgba(0, 0, 0, 0.12) 84%, transparent 100%);
+    conic-gradient(at 0% 50%, transparent 0deg 69deg, #000 77deg, #000 103deg, transparent 111deg 360deg);
   -webkit-mask-composite: source-in;
   mask-image:
     linear-gradient(90deg, transparent 0%, transparent 12%, #000 19%, #000 66%, transparent 100%),
-    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.12) 16%, rgba(0, 0, 0, 0.62) 32%, #000 50%, rgba(0, 0, 0, 0.62) 68%, rgba(0, 0, 0, 0.12) 84%, transparent 100%);
+    conic-gradient(at 0% 50%, transparent 0deg 69deg, #000 77deg, #000 103deg, transparent 111deg 360deg);
   mask-composite: intersect;
+}
+
+.punktlandung-loader-beam::after {
+  display: none;
 }
 
 .punktlandung-loader-ring {
@@ -8166,23 +8573,23 @@ textarea {
 
 .punktlandung-loader-ellipse-highlight {
   filter:
-    drop-shadow(0 0 6px rgba(167, 243, 208, 0.52))
-    drop-shadow(0 0 14px rgba(52, 211, 153, 0.34));
-  opacity: 0.86;
-  stroke-dashoffset: 17;
+    drop-shadow(0 0 7px rgba(167, 243, 208, 0.66))
+    drop-shadow(0 0 18px rgba(52, 211, 153, 0.42));
+  opacity: 0.94;
+  stroke-dashoffset: 7;
 }
 
 .punktlandung-loader-ellipse-highlight-outer {
   stroke: rgba(167, 243, 208, 0.94);
-  stroke-width: 1.45;
-  stroke-dasharray: 34 66;
+  stroke-width: 1.55;
+  stroke-dasharray: 14 86;
   animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
 }
 
 .punktlandung-loader-ellipse-highlight-inner {
   stroke: rgba(110, 231, 183, 0.88);
-  stroke-width: 1.25;
-  stroke-dasharray: 34 66;
+  stroke-width: 1.35;
+  stroke-dasharray: 14 86;
   animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
 }
 
@@ -8195,18 +8602,18 @@ textarea {
   width: 6.2rem;
   background:
     linear-gradient(90deg, transparent 0 16%, rgba(167, 243, 208, 0.2) 26%, rgba(110, 231, 183, 0.1) 52%, transparent 90%);
-  clip-path: polygon(0 50%, 100% 8%, 100% 92%);
-  filter: blur(6px);
-  opacity: 0.26;
+  clip-path: none;
+  filter: blur(7px);
+  opacity: 0.16;
   transform: translateY(-50%) scaleY(var(--punktlandung-loader-orbit-unscale-y));
   transform-origin: left center;
   -webkit-mask-image:
     linear-gradient(90deg, transparent 0%, transparent 16%, #000 26%, #000 62%, transparent 100%),
-    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.4) 28%, #000 50%, rgba(0, 0, 0, 0.4) 72%, transparent 100%);
+    conic-gradient(at 0% 50%, transparent 0deg 72deg, #000 80deg, #000 100deg, transparent 108deg 360deg);
   -webkit-mask-composite: source-in;
   mask-image:
     linear-gradient(90deg, transparent 0%, transparent 16%, #000 26%, #000 62%, transparent 100%),
-    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.4) 28%, #000 50%, rgba(0, 0, 0, 0.4) 72%, transparent 100%);
+    conic-gradient(at 0% 50%, transparent 0deg 72deg, #000 80deg, #000 100deg, transparent 108deg 360deg);
   mask-composite: intersect;
 }
 
@@ -8280,7 +8687,7 @@ textarea {
 
 @keyframes punktlandung-loader-ellipse-dash {
   to {
-    stroke-dashoffset: 117;
+    stroke-dashoffset: 107;
   }
 }
 
@@ -13315,5 +13722,475 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card label > span:nth-child(3),
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card label > div {
     margin-top: 0.3rem !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-tv-home .punktlandung-home-category-card {
+    align-items: center !important;
+    display: grid !important;
+    gap: clamp(0.45rem, 2vw, 0.7rem) !important;
+    grid-template-columns: minmax(0, 1fr) clamp(2.15rem, 10vw, 2.75rem) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-copy {
+    min-width: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-art {
+    align-items: center !important;
+    display: flex !important;
+    height: 100% !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    padding-right: 0 !important;
+    transform: none !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-art img {
+    max-height: clamp(1.65rem, 7.5vw, 2.3rem) !important;
+    max-width: clamp(1.9rem, 8.8vw, 2.6rem) !important;
+    object-fit: contain !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    opacity: 0.34 !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card {
+    align-items: center !important;
+    display: grid !important;
+    gap: clamp(0.55rem, 2.3vw, 0.8rem) !important;
+    grid-template-columns: minmax(0, 1fr) clamp(2.4rem, 10.5vw, 3rem) !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-copy {
+    min-width: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-art {
+    align-items: center !important;
+    display: flex !important;
+    height: 100% !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-art img {
+    max-height: clamp(1.9rem, 8vw, 2.65rem) !important;
+    max-width: clamp(2.15rem, 9.4vw, 2.95rem) !important;
+    object-fit: contain !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-art img {
+    opacity: 0.36 !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-art {
+    padding-right: 1.35rem !important;
+    transform: translateX(-0.85rem) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow-y: auto !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) > div,
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) > div > div {
+    height: auto !important;
+    min-height: 100% !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+  }
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+  .punktlandung-lobby-header > div:first-child {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .punktlandung-lobby-header > div:first-child > div {
+    width: 100% !important;
+  }
+
+  .punktlandung-lobby-header h1 {
+    font-size: clamp(1.32rem, 6vw, 1.55rem) !important;
+    line-height: 1.02 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card {
+    grid-template-columns: minmax(0, 1fr) clamp(2.55rem, 12vw, 3.25rem) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-art img {
+    max-height: clamp(1.98rem, 9vw, 2.76rem) !important;
+    max-width: clamp(2.28rem, 10.6vw, 3.12rem) !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-art {
+    transform: translateY(0.35rem) !important;
+  }
+}
+
+@media (min-width: 381px) and (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-tv-home .punktlandung-home-category-art,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-art {
+    transform: translateY(0.35rem) !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-grid {
+    gap: 0.75rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card {
+    min-height: clamp(5.05rem, 18.8vh, 5.9rem) !important;
+    padding-bottom: 0.86rem !important;
+    padding-top: 0.86rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-art {
+    height: clamp(3.35rem, 12.5vh, 4rem) !important;
+    padding-right: 0.95rem !important;
+    transform: translateX(-0.35rem) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-art img {
+    max-height: 100% !important;
+    max-width: 100% !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-grid {
+    gap: 0.75rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card {
+    grid-template-columns: minmax(0, 1fr) clamp(4.25rem, 13vw, 5.4rem) !important;
+    min-height: clamp(5rem, 18.5vh, 5.8rem) !important;
+    padding: 0.78rem 1rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-art {
+    height: clamp(3.25rem, 12vh, 3.85rem) !important;
+    padding-right: 0.75rem !important;
+    transform: translate(-0.45rem, 0.38rem) !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-art img {
+    max-height: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-art {
+    transform: translateY(0.62rem) !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-image-replay .punktlandung-source-chip--detail {
+    align-items: center !important;
+    background: rgba(15, 23, 42, 0.46) !important;
+    border-color: rgba(148, 163, 184, 0.34) !important;
+    bottom: calc((var(--mobile-game-source-h) - var(--mobile-game-image-gap)) / 2) !important;
+    box-shadow: 0 6px 16px rgba(2, 6, 23, 0.18) !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    gap: 0.45rem !important;
+    justify-content: center !important;
+    left: 50% !important;
+    max-width: calc(100% - 2rem) !important;
+    min-height: 1.55rem !important;
+    opacity: 0.86 !important;
+    padding: 0.24rem 0.6rem !important;
+    right: auto !important;
+    text-align: center !important;
+    transform: translate(-50%, 50%) !important;
+    white-space: nowrap !important;
+    width: auto !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-source-chip--detail p,
+  body .punktlandung-image-replay .punktlandung-source-chip--detail h1 {
+    line-height: 1 !important;
+    margin: 0 !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-source-chip--detail p:first-child {
+    color: rgba(199, 210, 254, 0.72) !important;
+    font-size: 0.52rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-source-chip--detail h1 {
+    color: rgba(255, 255, 255, 0.82) !important;
+    font-size: 0.72rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-source-chip--detail p:last-child {
+    display: none !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1024px) {
+  body .punktlandung-game-viewer--map-closed,
+  body .punktlandung-game-viewer--map-open {
+    bottom: 0 !important;
+    right: 35% !important;
+    top: 0 !important;
+  }
+
+  body .punktlandung-game-viewer .punktlandung-panorama-viewport,
+  body .punktlandung-game-viewer .punktlandung-panorama-viewport img {
+    bottom: 0 !important;
+    height: 100% !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-hud {
+    height: auto !important;
+    left: calc(65% + 0.75rem) !important;
+    padding: 0 !important;
+    right: 0.75rem !important;
+    top: calc(0.75rem + max(0px, env(safe-area-inset-top))) !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-hud-grid {
+    display: grid !important;
+    gap: 0.45rem !important;
+    grid-template-columns: 3.08rem 3.08rem minmax(0, 1fr) 5.4rem !important;
+    grid-template-rows: 3.08rem 3.75rem !important;
+    height: auto !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stats {
+    display: contents !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stats .punktlandung-game-stat:nth-child(1) {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stats .punktlandung-game-stat:nth-child(2) {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-actions {
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stat,
+  body .punktlandung-game-shell .punktlandung-game-back-button {
+    height: 3.08rem !important;
+    min-height: 3.08rem !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stat {
+    width: 3.08rem !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-back-button {
+    min-width: 5.4rem !important;
+    padding-inline: 0.5rem !important;
+    width: 5.4rem !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-back-button-inner {
+    align-items: center !important;
+    display: inline-flex !important;
+    gap: 0.3rem !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-back-button-inner span {
+    font-size: 0.66rem !important;
+    font-weight: 900 !important;
+    text-transform: none !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stat {
+    align-items: center !important;
+    display: grid !important;
+    gap: 0.12rem !important;
+    grid-template-rows: auto auto !important;
+    justify-items: center !important;
+    padding: 0.34rem 0.24rem !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stat p:first-child,
+  body .punktlandung-game-shell .punktlandung-task-card p:first-child {
+    font-size: 0.43rem !important;
+    letter-spacing: 0.08em !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stat p:last-child {
+    font-size: 0.98rem !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stat-value {
+    display: block !important;
+    font-variant-numeric: tabular-nums !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stat-value-round {
+    transform: none !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-task-slot {
+    align-items: center !important;
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    justify-content: center !important;
+    padding-inline: 0 !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card {
+    background: linear-gradient(180deg, rgba(49, 46, 129, 0.42), rgba(2, 6, 23, 0.78)) !important;
+    border: 1px solid rgba(129, 140, 248, 0.72) !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), 0 0 28px rgba(129, 140, 248, 0.2) !important;
+    height: 3.75rem !important;
+    max-width: none !important;
+    min-height: 3.75rem !important;
+    padding-bottom: 0.62rem !important;
+    padding-top: 0.6rem !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card-title {
+    align-items: center !important;
+    display: inline-flex !important;
+    flex-direction: column !important;
+    font-size: clamp(1.12rem, 5vh, 1.42rem) !important;
+    line-height: 1 !important;
+    width: fit-content !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card-title-line {
+    background: rgba(110, 231, 183, 0.88) !important;
+    display: block !important;
+    height: 1px !important;
+    margin: 0.34rem 0 0.4rem !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-game-viewer .punktlandung-source-chip--compact {
+    align-items: center !important;
+    background: rgba(15, 23, 42, 0.52) !important;
+    border: 1px solid rgba(148, 163, 184, 0.28) !important;
+    bottom: calc(0.75rem + max(0px, env(safe-area-inset-bottom))) !important;
+    box-shadow: 0 12px 32px rgba(2, 6, 23, 0.36) !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    gap: 0.38rem !important;
+    max-width: min(14rem, calc(65vw - 2rem)) !important;
+    min-height: 1.55rem !important;
+    opacity: 0.86 !important;
+    padding: 0.22rem 0.55rem !important;
+    white-space: nowrap !important;
+  }
+
+  body .punktlandung-game-viewer .punktlandung-source-chip--compact p,
+  body .punktlandung-game-viewer .punktlandung-source-chip--compact h1 {
+    line-height: 1 !important;
+    margin: 0 !important;
+  }
+
+  body .punktlandung-game-viewer .punktlandung-source-chip--compact p {
+    color: rgba(199, 210, 254, 0.72) !important;
+    font-size: 0.52rem !important;
+    letter-spacing: 0.16em !important;
+  }
+
+  body .punktlandung-game-viewer .punktlandung-source-chip--compact h1 {
+    color: rgba(255, 255, 255, 0.82) !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--closed,
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--open {
+    bottom: 0.75rem !important;
+    cursor: crosshair !important;
+    height: auto !important;
+    left: calc(65% + 0.75rem) !important;
+    right: 0.75rem !important;
+    top: calc(9.65rem + max(0px, env(safe-area-inset-top))) !important;
+    transform: none !important;
+    width: auto !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--closed {
+    padding: 0.6rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-source-chip--detail {
+    align-items: center !important;
+    background: rgba(15, 23, 42, 0.46) !important;
+    border-color: rgba(148, 163, 184, 0.34) !important;
+    bottom: calc(0.75rem + max(0px, env(safe-area-inset-bottom))) !important;
+    box-shadow: 0 6px 16px rgba(2, 6, 23, 0.18) !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 0.45rem !important;
+    justify-content: center !important;
+    left: 0.75rem !important;
+    max-width: none !important;
+    min-height: 1.55rem !important;
+    opacity: 0.86 !important;
+    padding: 0.24rem 0.6rem !important;
+    right: 35% !important;
+    text-align: center !important;
+    transform: none !important;
+    white-space: nowrap !important;
+    width: auto !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-source-chip--detail p,
+  body .punktlandung-image-replay .punktlandung-source-chip--detail h1 {
+    line-height: 1 !important;
+    margin: 0 !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-source-chip--detail p:first-child {
+    color: rgba(199, 210, 254, 0.72) !important;
+    font-size: 0.52rem !important;
+    letter-spacing: 0.16em !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-source-chip--detail h1 {
+    color: rgba(255, 255, 255, 0.82) !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-source-chip--detail p:last-child {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
 }

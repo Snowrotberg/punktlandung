@@ -49,6 +49,10 @@ type PixelSegment = {
 const PLAYER_ELLIPSE_SIZE = { width: 28, height: 8 };
 const ACTUAL_ELLIPSE_SIZE = { width: 50, height: 14 };
 const RESULT_MAX_ZOOM = 17;
+const GUESS_WORLD_BOUNDS = latLngBounds([
+  [-85, -180],
+  [85, 180]
+]);
 
 function normalizeLng(lng: number): number {
   return ((((lng + 180) % 360) + 360) % 360) - 180;
@@ -111,12 +115,12 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function labelIcon(label: string, className: string, placement: LabelPlacement) {
+function labelIcon(label: string, className: string, placement: LabelPlacement, labelHtml?: string) {
   const [dx, dy] = placement.offset;
   const { width, height } = placement.size;
   return divIcon({
     className: "punktlandung-map-label-marker",
-    html: `<span class="${className}">${escapeHtml(label)}</span>`,
+    html: `<span class="${className}">${labelHtml ?? escapeHtml(label)}</span>`,
     iconSize: [width, height],
     iconAnchor: [width / 2 - dx, height / 2 - dy]
   });
@@ -214,8 +218,11 @@ function MapResizer({ resizeSignal }: { resizeSignal?: number | string | boolean
       }
     };
     const resize = () => {
+      timers.push(window.setTimeout(invalidate, 0));
       timers.push(window.setTimeout(invalidate, 40));
+      timers.push(window.setTimeout(invalidate, 140));
       timers.push(window.setTimeout(invalidate, 260));
+      timers.push(window.setTimeout(invalidate, 520));
     };
     resize();
     const observer = new ResizeObserver(resize);
@@ -232,12 +239,27 @@ function MapResizer({ resizeSignal }: { resizeSignal?: number | string | boolean
         try {
           map.invalidateSize(false);
         } catch {}
+      }, 0),
+      window.setTimeout(() => {
+        try {
+          map.invalidateSize(false);
+        } catch {}
       }, 40),
       window.setTimeout(() => {
         try {
           map.invalidateSize(false);
         } catch {}
-      }, 320)
+      }, 140),
+      window.setTimeout(() => {
+        try {
+          map.invalidateSize(false);
+        } catch {}
+      }, 320),
+      window.setTimeout(() => {
+        try {
+          map.invalidateSize(false);
+        } catch {}
+      }, 620)
     ];
     return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [map, resizeSignal]);
@@ -252,6 +274,10 @@ function resultBoundsPadding(map: LeafletMapInstance, showLabels: boolean): [num
 
   if (!showLabels) {
     return [Math.max(74, Math.min(132, width * 0.22)), Math.max(70, Math.min(124, height * 0.28))];
+  }
+
+  if (width <= 420) {
+    return [Math.max(64, Math.min(92, width * 0.22)), Math.max(82, Math.min(132, height * 0.22))];
   }
 
   return [Math.max(140, Math.min(244, width * 0.28)), Math.max(102, Math.min(168, height * 0.28))];
@@ -293,7 +319,7 @@ function ResultBounds({
       }
     };
     fit();
-    const timers = [window.setTimeout(fit, 90), window.setTimeout(fit, 320), window.setTimeout(fit, 700)];
+    const timers = [window.setTimeout(fit, 90), window.setTimeout(fit, 320), window.setTimeout(fit, 700), window.setTimeout(fit, 980)];
     return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [map, summary, players?.length, showLabels, resizeSignal]);
 
@@ -642,18 +668,20 @@ function blendedVector(vectors: Array<{ vector: PixelPoint; weight: number }>): 
 function ResultMarker({
   point,
   label,
+  labelHtml,
   className,
   placement,
   zIndexOffset = 0
 }: {
   point: LatLng;
   label: string;
+  labelHtml?: string;
   className: string;
   placement: LabelPlacement;
   zIndexOffset?: number;
 }) {
   return (
-    <Marker position={[point.lat, point.lng]} icon={labelIcon(label, className, placement)} interactive={false} zIndexOffset={zIndexOffset} />
+    <Marker position={[point.lat, point.lng]} icon={labelIcon(label, className, placement, labelHtml)} interactive={false} zIndexOffset={zIndexOffset} />
   );
 }
 
@@ -775,7 +803,9 @@ function ResultsMarkers({
           const colorIndex = playerColorIndex(players, result.playerId);
           const hideDistance = location.category === "flags" && result.countryCorrect;
           const resultLabel = hideDistance ? "richtiges Land" : formatDistance(result.distanceKm);
-          const playerLabel = `#${index + 1} ${playerName(players, result.playerId)} - ${resultLabel}`;
+          const playerLabelPrefix = `#${index + 1} ${playerName(players, result.playerId)}`;
+          const playerLabel = `${playerLabelPrefix} - ${resultLabel}`;
+          const playerLabelHtml = `${escapeHtml(playerLabelPrefix)}<span class="punktlandung-map-label-distance"> - ${escapeHtml(resultLabel)}</span>`;
           const placement = placements.players.get(result.playerId);
 
           return (
@@ -795,6 +825,7 @@ function ResultsMarkers({
                   <ResultMarker
                     point={point}
                     label={playerLabel}
+                    labelHtml={playerLabelHtml}
                     className={`punktlandung-map-label punktlandung-map-label-player punktlandung-player-color-${colorIndex}`}
                     placement={placement}
                   />
@@ -874,6 +905,7 @@ export function LeafletMap({
   const maxZoom = mode === "results" ? RESULT_MAX_ZOOM : 13;
   const guessOverviewZoom = 2;
   const guessColorIndex = playerColorIndexByColor(players, currentPlayerColor);
+  const restrictToSingleWorld = mode === "guess";
 
   return (
     <MapContainer
@@ -887,7 +919,9 @@ export function LeafletMap({
       doubleClickZoom={false}
       touchZoom={false}
       dragging={false}
-      worldCopyJump
+      maxBounds={restrictToSingleWorld ? GUESS_WORLD_BOUNDS : undefined}
+      maxBoundsViscosity={restrictToSingleWorld ? 1 : 0}
+      worldCopyJump={!restrictToSingleWorld}
     >
       <MapInteractionState noPan={noPan} noZoom={noZoom} />
       <MapResizer resizeSignal={resizeSignal} />
@@ -895,6 +929,7 @@ export function LeafletMap({
       {mode === "results" && <ResultBounds summary={summary} players={players} showLabels={showLabels} resizeSignal={resizeSignal} />}
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | Tiles: <a href="https://www.openstreetmap.de/">OSM Deutschland</a>'
+        noWrap={restrictToSingleWorld}
         url="https://tile.openstreetmap.de/{z}/{x}/{y}.png"
       />
       {mode === "guess" && <ClickHandler disabled={disabled} onGuess={onGuess} />}

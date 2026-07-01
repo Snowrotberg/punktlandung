@@ -129,6 +129,7 @@ export type EmojiEventPayload = {
 export type ClientMessage =
   | { type: "create_room"; playerName: string }
   | { type: "create_online_room"; playerName?: string; hostParticipation?: HostParticipation }
+  | { type: "resume_room"; code: string; previousPlayerId: string }
   | { type: "create_solo"; playerName: string }
   | { type: "join_room"; code: string; playerName: string }
   | { type: "update_settings"; settings: Partial<GameSettings> }

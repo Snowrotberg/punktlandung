@@ -7,6 +7,7 @@ import type { GameMode, GameSettings, HostParticipation, Player, RoomKind, TeamI
 import { AdContainer } from "./AdContainer";
 import { BackButton } from "./BackButton";
 import { Button } from "./Button";
+import { TriangleIcon } from "./TriangleIcon";
 
 type LobbyViewProps = {
   code: string;
@@ -216,7 +217,10 @@ export function LobbyView({
               <div className="flex shrink-0 items-center gap-2">
                 <BackButton className="punktlandung-lobby-header-back" onClick={onLeave} label="Zurueck" />
                 <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 normal-case" disabled={!isHost || players.length === 0 || !canStart} onClick={onStart}>
-                  Starten
+                  <span className="punktlandung-inline-action-content">
+                    <span>Starten</span>
+                    <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
+                  </span>
                 </Button>
               </div>
             </header>
@@ -385,7 +389,10 @@ export function LobbyView({
             )}
             <BackButton className="punktlandung-lobby-header-back" onClick={onLeave} label="Zurueck" />
             <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
-              {primaryActionLabel}
+              <span className="punktlandung-inline-action-content">
+                <span>{primaryActionLabel}</span>
+                {primaryActionLabel === "Starten" && <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />}
+              </span>
             </Button>
           </div>
           <div className="punktlandung-lobby-mobile-back shrink-0">
@@ -879,9 +886,17 @@ export function LobbyView({
           </div>
         )}
         <div className="punktlandung-touch-only-grid punktlandung-lobby-touch-actions fixed inset-x-2 bottom-2 z-50 grid grid-cols-1 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md lg:hidden">
-          <BackButton className="punktlandung-lobby-touch-back" onClick={onLeave} label="Zurueck" />
+          <Button sound="click" tone="ghost" className="punktlandung-lobby-touch-back normal-case" onClick={onLeave} aria-label="Zurück" title="Zurück">
+            <span className="punktlandung-lobby-touch-button-inner">
+              <TriangleIcon direction="left" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-back h-5 w-5" />
+              <span>Zurück</span>
+            </span>
+          </Button>
           <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-lobby-touch-primary min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
-            {primaryActionLabel}
+            <span className="punktlandung-lobby-touch-button-inner">
+              <span>{primaryActionLabel}</span>
+              <TriangleIcon direction="right" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-start h-5 w-5" />
+            </span>
           </Button>
         </div>
         </div>

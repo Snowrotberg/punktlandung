@@ -58,7 +58,7 @@ const defaultSettings: GameSettings = {
   category: "mixed"
 };
 
-const playerColors = ["#34d399", "#818cf8", "#fb7185", "#fbbf24", "#22d3ee", "#c084fc", "#f472b6", "#a3e635"];
+const playerColors = ["#2563eb", "#f43f5e", "#f59e0b", "#06b6d4", "#7c3aed", "#f97316", "#ec4899", "#eab308", "#0ea5e9", "#dc2626"];
 
 function id(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
@@ -263,6 +263,39 @@ function joinRoom(client: Client, codeInput: string, playerName: string): void {
   } else {
     room.players.push(makePlayer(client.id, playerName, false, room.players.length));
   }
+  client.roomCode = code;
+  broadcast(room);
+}
+
+function replacePlayerId(room: InternalRoom, previousPlayerId: string, nextPlayerId: string): void {
+  if (previousPlayerId === nextPlayerId) return;
+  const player = room.players.find((candidate) => candidate.id === previousPlayerId);
+  if (player) {
+    room.players = room.players.filter((candidate) => candidate.id !== nextPlayerId);
+    player.id = nextPlayerId;
+    player.connected = true;
+  }
+  room.guesses = room.guesses.map((guess) => (guess.playerId === previousPlayerId ? { ...guess, playerId: nextPlayerId } : guess));
+  room.timedOutPlayerIds = room.timedOutPlayerIds.map((id) => (id === previousPlayerId ? nextPlayerId : id));
+  room.summaries = room.summaries.map((summary) => ({
+    ...summary,
+    results: summary.results.map((result) => ({
+      ...result,
+      playerId: result.playerId === previousPlayerId ? nextPlayerId : result.playerId,
+      guess: result.guess?.playerId === previousPlayerId ? { ...result.guess, playerId: nextPlayerId } : result.guess
+    }))
+  }));
+}
+
+function resumeRoom(client: Client, codeInput: string, previousPlayerId: string): void {
+  const code = codeInput.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const room = rooms.get(code);
+  if (!room || room.kind !== "online") return;
+  if (room.hostId !== previousPlayerId) return;
+
+  replacePlayerId(room, previousPlayerId, client.id);
+  room.hostId = client.id;
+  for (const player of room.players) player.isHost = player.id === room.hostId;
   client.roomCode = code;
   broadcast(room);
 }
@@ -500,6 +533,10 @@ function handleMessage(client: Client, raw: string): void {
     createRoom(client, message.playerName, "online", message.hostParticipation);
     return;
   }
+  if (message.type === "resume_room") {
+    resumeRoom(client, message.code, message.previousPlayerId);
+    return;
+  }
   if (message.type === "create_solo") {
     createRoom(client, message.playerName, "solo");
     return;
@@ -616,7 +653,9 @@ wss.on("connection", (socket) => {
     const room = findRoomFor(client);
     if (!room) return;
     if (room.kind === "online" && room.hostId === client.id) {
-      rooms.delete(room.code);
+      const hostPlayer = room.players.find((candidate) => candidate.id === client.id);
+      if (hostPlayer) hostPlayer.connected = false;
+      broadcast(room);
       return;
     }
     const player = room.players.find((candidate) => candidate.id === client.id);

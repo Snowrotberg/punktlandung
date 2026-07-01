@@ -1,8 +1,8 @@
 "use client";
 
 import type { ButtonHTMLAttributes } from "react";
-import { BackIcon } from "./BackIcon";
 import { Button } from "./Button";
+import { TriangleIcon } from "./TriangleIcon";
 
 type BackButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
   label?: string;
@@ -19,7 +19,7 @@ export function BackButton({ label = "Zurueck", sound = "click", className = "",
       tone="ghost"
       className={`punktlandung-back-button ${className}`}
     >
-      <BackIcon className="h-5 w-5" />
+      <TriangleIcon direction="left" className="h-5 w-5" />
     </Button>
   );
 }

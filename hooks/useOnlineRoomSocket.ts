@@ -5,17 +5,23 @@ import type { ClientMessage, GameSettings, HostParticipation, LatLng, RoomState,
 
 type ConnectionStatus = "connecting" | "open" | "closed";
 const onlineRoomStorageKey = "punktlandung-online-room-v1";
+const onlinePlayerStorageKey = "punktlandung-online-player-v1";
 const wsUrlStorageKey = "punktlandung-ws-url";
 
-function readStoredOnlineRoom(): RoomState | null {
+function readStoredOnlineRoomSnapshot(): RoomState | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.sessionStorage.getItem(onlineRoomStorageKey);
     const room = raw ? (JSON.parse(raw) as Partial<RoomState>) : null;
-    return room?.kind === "online" && room.status === "lobby" ? (room as RoomState) : null;
+    return room?.kind === "online" ? (room as RoomState) : null;
   } catch {
     return null;
   }
+}
+
+function readStoredOnlineRoom(): RoomState | null {
+  const room = readStoredOnlineRoomSnapshot();
+  return room?.status === "lobby" ? room : null;
 }
 
 function writeStoredOnlineRoom(room: RoomState | null): void {
@@ -31,6 +37,28 @@ function writeStoredOnlineRoom(room: RoomState | null): void {
   }
 }
 
+function readStoredOnlinePlayerId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.sessionStorage.getItem(onlinePlayerStorageKey);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredOnlinePlayerId(playerId: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (playerId) {
+      window.sessionStorage.setItem(onlinePlayerStorageKey, playerId);
+      return;
+    }
+    window.sessionStorage.removeItem(onlinePlayerStorageKey);
+  } catch {
+    // The resume path is best effort when sessionStorage is unavailable.
+  }
+}
+
 export function useOnlineRoomSocket() {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [room, setRoom] = useState<RoomState | null>(null);
@@ -42,10 +70,12 @@ export function useOnlineRoomSocket() {
     let reconnectTimer: number | null = null;
     let stopped = false;
     const restoredRoom = readStoredOnlineRoom();
+    const restoredRoomSnapshot = readStoredOnlineRoomSnapshot();
     if (restoredRoom) setRoom(restoredRoom);
 
     const params = new URLSearchParams(window.location.search);
     const sharedWsUrl = params.get("ws");
+    const canResumeRouteHost = !params.get("room") && window.location.pathname === "/online-modus";
     const hostname = window.location.hostname;
     const isLocalHost = hostname === "127.0.0.1" || hostname === "localhost";
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
@@ -91,13 +121,22 @@ export function useOnlineRoomSocket() {
       });
       socket.addEventListener("message", (event) => {
         const message = JSON.parse(event.data) as ServerMessage;
-        if (message.type === "hello") setPlayerId(message.playerId);
+        if (message.type === "hello") {
+          const storedRoom = readStoredOnlineRoomSnapshot() ?? restoredRoomSnapshot;
+          const previousPlayerId = readStoredOnlinePlayerId() ?? (canResumeRouteHost ? storedRoom?.hostId ?? null : null);
+          setPlayerId(message.playerId);
+          if (storedRoom?.code && previousPlayerId && previousPlayerId !== message.playerId) {
+            socket.send(JSON.stringify({ type: "resume_room", code: storedRoom.code, previousPlayerId } satisfies ClientMessage));
+          }
+          writeStoredOnlinePlayerId(message.playerId);
+        }
         if (message.type === "room_state") {
           writeStoredOnlineRoom(message.state);
           setRoom(message.state);
         }
         if (message.type === "left_room") {
           writeStoredOnlineRoom(null);
+          writeStoredOnlinePlayerId(null);
           setRoom(null);
         }
         if (message.type === "error") setError(message.message);
@@ -145,6 +184,7 @@ export function useOnlineRoomSocket() {
     restart: () => send({ type: "restart" }),
     leaveRoom: () => {
       writeStoredOnlineRoom(null);
+      writeStoredOnlinePlayerId(null);
       send({ type: "leave_room" });
     },
     setTeam: (team: TeamId) => send({ type: "set_team", team }),

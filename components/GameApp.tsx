@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { categoryOptions } from "@/lib/categories";
 import { useLocalGame } from "@/hooks/useLocalGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
@@ -339,8 +339,14 @@ export function GameApp({
   };
   const handleJoinOnlineRoom = () => {
     if (!pendingJoinCode) return;
+    const playerName = name.trim();
+    if (onlineGame.status !== "open" || playerName.length === 0) return;
     playSelect();
-    onlineGame.joinRoom(pendingJoinCode, name);
+    onlineGame.joinRoom(pendingJoinCode, playerName);
+  };
+  const handleJoinOnlineRoomSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    handleJoinOnlineRoom();
   };
   const handleUpdateSettings = (settings: Partial<GameSettings>) => {
     updateSettings(settings);
@@ -381,23 +387,24 @@ export function GameApp({
           <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Online-Raum</p>
           <h1 className="mt-2 text-3xl font-black leading-tight">Raum beitreten</h1>
           <p className="mt-2 text-sm leading-6 text-slate-300">Du trittst Raum {pendingJoinCode} bei. Wähle einen Namen für die Spielerliste.</p>
-          <label className="mt-5 block">
-            <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Name</span>
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              maxLength={18}
-              className="mt-2 h-12 w-full rounded-md border-0 bg-slate-950/70 px-3.5 text-base font-black text-white outline-none ring-1 ring-slate-700 transition focus:ring-2 focus:ring-emerald-300"
-            />
-          </label>
-          <button
-            type="button"
-            disabled={onlineGame.status !== "open" || name.trim().length === 0}
-            onClick={handleJoinOnlineRoom}
-            className="mt-4 min-h-12 w-full rounded-md bg-emerald-400/14 px-4 text-sm font-black uppercase tracking-[0.1em] text-emerald-100 ring-1 ring-emerald-300/65 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:bg-slate-900/70 disabled:text-slate-500 disabled:ring-slate-700"
-          >
-            {onlineGame.status === "open" ? "Beitreten" : "Verbinde Raumserver"}
-          </button>
+          <form onSubmit={handleJoinOnlineRoomSubmit}>
+            <label className="mt-5 block">
+              <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Name</span>
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                maxLength={18}
+                className="mt-2 h-12 w-full rounded-md border-0 bg-slate-950/70 px-3.5 text-base font-black text-white outline-none ring-1 ring-slate-700 transition focus:ring-2 focus:ring-emerald-300"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={onlineGame.status !== "open" || name.trim().length === 0}
+              className="mt-4 min-h-12 w-full rounded-md bg-emerald-400/14 px-4 text-sm font-black uppercase tracking-[0.1em] text-emerald-100 ring-1 ring-emerald-300/65 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:bg-slate-900/70 disabled:text-slate-500 disabled:ring-slate-700"
+            >
+              {onlineGame.status === "open" ? "Beitreten" : "Verbinde Raumserver"}
+            </button>
+          </form>
           {onlineGame.error && (
             <button type="button" onClick={onlineGame.clearError} className="mt-3 w-full rounded-md bg-rose-950 px-3 py-2 text-sm font-black text-rose-100 ring-1 ring-rose-500/70">
               {onlineGame.error}
