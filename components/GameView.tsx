@@ -262,11 +262,11 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
 
             <div className="punktlandung-game-task-slot pointer-events-none order-2 col-span-1 flex justify-center px-1 xl:px-2">
               <div className="punktlandung-task-card inline-flex min-h-10 w-fit max-w-[min(100%,20rem)] flex-col items-center justify-center rounded-md bg-slate-950/46 px-4 py-1 text-center shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-emerald-300/40 backdrop-blur-md sm:min-h-11 sm:px-5">
-                <p className="text-[10px] font-black uppercase leading-none tracking-[0.22em] text-emerald-300">Gesucht</p>
-                <p className="punktlandung-task-card-title text-[18px] font-black leading-none text-white sm:text-[20px] xl:text-[22px]">
-                  <span aria-hidden="true" className="punktlandung-task-card-title-line" />
-                  <span>{taskText}</span>
-                </p>
+                <div className="punktlandung-task-card-inline">
+                  <span className="punktlandung-task-card-label">Gesucht</span>
+                  <span aria-hidden="true" className="punktlandung-task-card-separator" />
+                  <span className="punktlandung-task-card-title text-[18px] font-black leading-none text-white sm:text-[20px] xl:text-[22px]">{taskText}</span>
+                </div>
               </div>
             </div>
             <div className="punktlandung-game-actions pointer-events-auto order-3 col-span-1 flex justify-end gap-2">

@@ -624,6 +624,21 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
                       {replayMapFull ? "Minimieren" : "Maximieren"}
                     </Button>
                   )}
+                  <Button
+                    className="punktlandung-replay-map-back punktlandung-map-secondary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
+                    tone="ghost"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setReplayMapSize("closed");
+                      setShowImageReplay(false);
+                    }}
+                    title={showFinalStandings ? "Zurueck zum Endstand" : "Zurueck zur Aufloesung"}
+                  >
+                    <span className="punktlandung-inline-action-content">
+                      <TriangleIcon direction="left" className="h-4 w-4" />
+                      <span>Zurück</span>
+                    </span>
+                  </Button>
                   {finished ? (
                     showFinalStandings ? (
                       <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={!isHost} onClick={onRestart}>
@@ -855,14 +870,15 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
               </div>
               <BackButton className="punktlandung-results-mobile-header-back" disabled={!isHost} onClick={onBackToLobby} label="Zurueck" />
               <div className="hidden sm:flex sm:flex-wrap sm:justify-end sm:gap-2">
+                <Button tone="ghost" className="punktlandung-command-button punktlandung-results-action-back min-h-12 text-xs normal-case" disabled={!isHost} onClick={onBackToLobby}>
+                  <span className="punktlandung-inline-action-content">
+                    <TriangleIcon direction="left" className="h-4 w-4" />
+                    <span>Zurück</span>
+                  </span>
+                </Button>
                 <Button tone="ghost" className="punktlandung-command-button min-h-12 text-xs normal-case" onClick={openImageReplay}>
                   Bild nochmal ansehen
                 </Button>
-                {!finished ? (
-                  <BackButton className="punktlandung-action-back-button min-h-12" disabled={!isHost} onClick={onBackToLobby} label="Zurueck" />
-                ) : (
-                  <BackButton className="punktlandung-action-back-button min-h-12" disabled={!isHost} onClick={onBackToLobby} label="Zurueck" />
-                )}
                 {!finished ? (
                   <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={!isHost} onClick={onNext}>
                     <span className="punktlandung-inline-action-content">
@@ -883,7 +899,13 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
             <GuessMap mode="results" players={room.players} summary={summary} guesses={room.guesses} noPan={false} noZoom={false} />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:hidden">
+          <div className="punktlandung-results-mobile-actions grid grid-cols-3 gap-2 sm:hidden">
+            <Button tone="ghost" className="min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={!isHost} onClick={onBackToLobby}>
+              <span className="punktlandung-inline-action-content">
+                <TriangleIcon direction="left" className="h-4 w-4" />
+                <span>Zurück</span>
+              </span>
+            </Button>
             <Button tone="ghost" className="min-h-12 w-full px-3 py-2 text-xs normal-case" onClick={openImageReplay}>
               Bild nochmal ansehen
             </Button>

@@ -5991,15 +5991,11 @@ textarea {
     align-items: end !important;
     display: grid !important;
     gap: 0.6rem !important;
-    grid-template-columns: minmax(0, 1fr) 2.7rem !important;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 
   .punktlandung-results-hero .punktlandung-results-mobile-header-back {
-    align-self: end !important;
-    justify-self: end !important;
-    min-height: 3rem !important;
-    min-width: 2.7rem !important;
-    width: 2.7rem !important;
+    display: none !important;
   }
 }
 
@@ -6033,6 +6029,10 @@ textarea {
   display: none !important;
 }
 
+.punktlandung-replay-map-back {
+  display: none !important;
+}
+
 .punktlandung-preview-dash::after {
   content: "";
   pointer-events: none;
@@ -6054,15 +6054,41 @@ textarea {
 .punktlandung-inline-action-content {
   align-items: center;
   display: inline-flex;
-  gap: 0.5rem;
+  gap: 0.3rem;
   justify-content: center;
   line-height: 1;
+}
+
+.punktlandung-inline-action-content:has(svg:first-child) {
+  transform: translateX(-0.16rem);
+}
+
+.punktlandung-inline-action-content:has(svg:last-child) {
+  transform: translateX(0.16rem);
 }
 
 .punktlandung-inline-action-icon {
   display: block;
   flex: 0 0 auto;
   transform: translateY(0.06rem);
+}
+
+.punktlandung-results-mobile-actions {
+  align-items: stretch;
+}
+
+.punktlandung-results-mobile-actions .punktlandung-inline-action-content {
+  gap: 0.18rem;
+}
+
+.punktlandung-results-mobile-actions button {
+  min-width: 0 !important;
+  overflow: hidden;
+}
+
+.punktlandung-results-mobile-actions button,
+.punktlandung-results-mobile-actions button span {
+  line-height: 1.05;
 }
 
 @media (min-width: 1024px) {
@@ -6116,6 +6142,33 @@ textarea {
   display: block;
   padding-bottom: 0.08em;
   line-height: 0.94 !important;
+}
+
+.punktlandung-task-card-inline {
+  align-items: center;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.punktlandung-task-card-label {
+  color: rgb(110 231 183);
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.punktlandung-task-card-separator {
+  background: rgba(110, 231, 183, 0.88);
+  display: block;
+  height: 1px;
+  margin: 0.38rem 0 0.44rem;
+  width: 100%;
 }
 
 .punktlandung-map-label {
@@ -6428,12 +6481,30 @@ textarea {
     display: none !important;
   }
 
+  .punktlandung-lobby .punktlandung-lobby-config-section {
+    padding-bottom: 7.75rem !important;
+  }
+
   .punktlandung-lobby-touch-actions {
     align-items: center;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98)) !important;
     display: grid !important;
     gap: 1rem !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    padding: 0.75rem 0.9rem !important;
+    overflow: visible !important;
+    padding: 1.35rem 0.9rem 0.75rem !important;
+    position: fixed !important;
+  }
+
+  .punktlandung-lobby-touch-actions::before {
+    background: #020617;
+    bottom: 100%;
+    content: "";
+    height: 1rem;
+    left: 0;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
   }
 
   .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-back {
@@ -6455,7 +6526,7 @@ textarea {
   .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-button-inner {
     align-items: center !important;
     display: inline-flex !important;
-    gap: 0.55rem !important;
+    gap: 0.3rem !important;
     justify-content: center !important;
   }
 
@@ -6473,7 +6544,7 @@ textarea {
   }
 
   .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-back .punktlandung-lobby-touch-button-inner {
-    transform: translateX(-0.18rem);
+    transform: translateX(-0.26rem);
   }
 
   .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-primary {
@@ -6481,7 +6552,21 @@ textarea {
   }
 
   .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-primary .punktlandung-lobby-touch-button-inner {
-    transform: translateX(0.18rem);
+    transform: translateX(0.26rem);
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section {
+    padding-bottom: calc(9.25rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(9.25rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby-config-stage::after {
+    content: "";
+    display: block;
+    flex: 0 0 calc(5.5rem + env(safe-area-inset-bottom));
+    height: calc(5.5rem + env(safe-area-inset-bottom));
   }
 }
 
@@ -7738,6 +7823,10 @@ textarea {
     overflow: hidden !important;
   }
 
+  .punktlandung-image-replay .punktlandung-panorama-viewport {
+    overflow: visible !important;
+  }
+
   .punktlandung-game-viewer .punktlandung-panorama-viewport img,
   .punktlandung-image-replay .punktlandung-panorama-viewport img {
     bottom: var(--mobile-game-source-h) !important;
@@ -7785,6 +7874,10 @@ textarea {
   .punktlandung-replay-top-actions {
     align-self: end !important;
     justify-self: end !important;
+  }
+
+  .punktlandung-image-replay .punktlandung-replay-top-actions .punktlandung-action-back-button {
+    display: none !important;
   }
 
   .punktlandung-replay-top-actions .punktlandung-command-button {
@@ -7962,6 +8055,23 @@ textarea {
     display: inline-flex !important;
   }
 
+  .punktlandung-image-replay .punktlandung-replay-map-back {
+    display: inline-flex !important;
+  }
+
+  .punktlandung-image-replay .punktlandung-map-panel-actions {
+    display: grid !important;
+    gap: 0.45rem !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .punktlandung-image-replay .punktlandung-map-size-button,
+  .punktlandung-image-replay .punktlandung-map-secondary-button,
+  .punktlandung-image-replay .punktlandung-map-primary-button {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
   .punktlandung-map-close-button {
     min-height: 2.9rem !important;
     min-width: 2.9rem !important;
@@ -7982,20 +8092,21 @@ textarea {
 
 @media (max-width: 879px) and (orientation: portrait) {
   .punktlandung-game-shell {
+    --mobile-game-pad: clamp(0.5rem, 2.35vw, 0.75rem);
     --mobile-game-hud-h: clamp(7.65rem, 16dvh, 8.25rem);
     --mobile-game-back-w: clamp(5rem, 18vw, 5.7rem);
     --mobile-game-meta-size: clamp(2.65rem, 10vw, 3rem);
   }
 
   .punktlandung-game-shell .punktlandung-game-hud {
-    padding-inline: clamp(0.75rem, 3.2vw, 1rem) !important;
-    padding-top: max(0.45rem, env(safe-area-inset-top)) !important;
+    padding-inline: var(--mobile-game-pad) !important;
+    padding-top: max(var(--mobile-game-pad), env(safe-area-inset-top)) !important;
   }
 
   .punktlandung-game-shell .punktlandung-game-hud-grid {
     gap: clamp(0.42rem, 1.6vw, 0.55rem) !important;
     grid-template-columns: var(--mobile-game-meta-size) var(--mobile-game-meta-size) minmax(0, 1fr) var(--mobile-game-back-w) !important;
-    grid-template-rows: var(--mobile-game-meta-size) clamp(3.8rem, 8.2dvh, 4.1rem) !important;
+    grid-template-rows: clamp(3.8rem, 8.2dvh, 4.1rem) var(--mobile-game-meta-size) !important;
   }
 
   .punktlandung-game-shell .punktlandung-game-stats {
@@ -8010,12 +8121,12 @@ textarea {
 
   .punktlandung-game-shell .punktlandung-game-stats .punktlandung-game-stat:nth-child(1) {
     grid-column: 1 !important;
-    grid-row: 1 !important;
+    grid-row: 2 !important;
   }
 
   .punktlandung-game-shell .punktlandung-game-stats .punktlandung-game-stat:nth-child(2) {
     grid-column: 2 !important;
-    grid-row: 1 !important;
+    grid-row: 2 !important;
   }
 
   .punktlandung-game-shell .punktlandung-game-stat {
@@ -8055,7 +8166,7 @@ textarea {
     display: flex !important;
     align-items: center !important;
     grid-column: 1 / -1 !important;
-    grid-row: 2 !important;
+    grid-row: 1 !important;
     justify-content: center !important;
     padding-inline: 0 !important;
   }
@@ -8085,14 +8196,60 @@ textarea {
     width: 100% !important;
   }
 
+  .punktlandung-game-shell .punktlandung-task-card-inline {
+    align-items: center !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    gap: clamp(0.6rem, 2.45vw, 0.86rem) !important;
+    justify-content: center !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: fit-content !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-task-card-label {
+    color: rgb(110 231 183) !important;
+    flex: 0 0 auto !important;
+    font-size: clamp(0.68rem, 2.35vw, 0.8rem) !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.16em !important;
+    line-height: 1 !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-task-card-separator {
+    background: rgba(110, 231, 183, 0.9) !important;
+    flex: 0 0 auto !important;
+    height: clamp(1.72rem, 4.95vw, 2.08rem) !important;
+    margin: 0 !important;
+    width: 1px !important;
+  }
+
+  .punktlandung-game-shell .punktlandung-task-card-title {
+    display: block !important;
+    flex: 0 1 auto !important;
+    font-size: clamp(1.28rem, 6.05vw, 1.72rem) !important;
+    line-height: 1 !important;
+    min-width: 0 !important;
+    overflow-wrap: normal !important;
+    padding-bottom: 0.06em !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+    width: auto !important;
+  }
+
   .punktlandung-game-shell .punktlandung-game-actions {
     align-self: stretch !important;
     grid-column: 4 !important;
-    grid-row: 1 !important;
+    grid-row: 2 !important;
     justify-self: end !important;
   }
 
   .punktlandung-game-shell .punktlandung-game-back-button {
+    align-items: center !important;
+    display: inline-flex !important;
+    justify-content: center !important;
     min-width: var(--mobile-game-back-w) !important;
     padding-inline: 0.55rem !important;
     width: var(--mobile-game-back-w) !important;
@@ -8101,9 +8258,10 @@ textarea {
   .punktlandung-game-shell .punktlandung-game-back-button-inner {
     align-items: center !important;
     display: inline-flex !important;
-    gap: 0.34rem !important;
+    gap: 0.24rem !important;
     justify-content: center !important;
     line-height: 1 !important;
+    transform: translate(-0.14rem, 0.01rem) !important;
     width: 100% !important;
   }
 
@@ -8475,7 +8633,7 @@ textarea {
   left: 0;
   top: 0;
   height: 8.6rem;
-  width: 14.2rem;
+  width: 16.4rem;
   border-radius: 0;
   background: transparent;
   clip-path: none;
@@ -8500,13 +8658,15 @@ textarea {
   filter: blur(0.8px);
   opacity: 1;
   -webkit-mask-image:
-    linear-gradient(90deg, transparent 0%, transparent 12%, #000 19%, #000 66%, transparent 100%),
-    conic-gradient(at 0% 50%, transparent 0deg 69deg, #000 77deg, #000 103deg, transparent 111deg 360deg);
-  -webkit-mask-composite: source-in;
+    radial-gradient(ellipse 30% 82% at 0% 50%, transparent 0%, transparent 43%, rgba(0, 0, 0, 0.36) 57%, #000 73%, #000 100%),
+    radial-gradient(ellipse 104% 58% at 13% 50%, #000 0%, #000 70%, transparent 97%),
+    conic-gradient(at 0% 50%, transparent 0deg 73deg, #000 80deg, #000 100deg, transparent 107deg 360deg);
+  -webkit-mask-composite: source-in, source-in;
   mask-image:
-    linear-gradient(90deg, transparent 0%, transparent 12%, #000 19%, #000 66%, transparent 100%),
-    conic-gradient(at 0% 50%, transparent 0deg 69deg, #000 77deg, #000 103deg, transparent 111deg 360deg);
-  mask-composite: intersect;
+    radial-gradient(ellipse 30% 82% at 0% 50%, transparent 0%, transparent 43%, rgba(0, 0, 0, 0.36) 57%, #000 73%, #000 100%),
+    radial-gradient(ellipse 104% 58% at 13% 50%, #000 0%, #000 70%, transparent 97%),
+    conic-gradient(at 0% 50%, transparent 0deg 73deg, #000 80deg, #000 100deg, transparent 107deg 360deg);
+  mask-composite: intersect, intersect;
 }
 
 .punktlandung-loader-beam::after {
@@ -8576,20 +8736,20 @@ textarea {
     drop-shadow(0 0 7px rgba(167, 243, 208, 0.66))
     drop-shadow(0 0 18px rgba(52, 211, 153, 0.42));
   opacity: 0.94;
-  stroke-dashoffset: 7;
+  stroke-dashoffset: 5.5;
 }
 
 .punktlandung-loader-ellipse-highlight-outer {
   stroke: rgba(167, 243, 208, 0.94);
   stroke-width: 1.55;
-  stroke-dasharray: 14 86;
+  stroke-dasharray: 11 89;
   animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
 }
 
 .punktlandung-loader-ellipse-highlight-inner {
   stroke: rgba(110, 231, 183, 0.88);
   stroke-width: 1.35;
-  stroke-dasharray: 14 86;
+  stroke-dasharray: 11 89;
   animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
 }
 
@@ -8599,21 +8759,21 @@ textarea {
   left: 0;
   top: 0;
   height: 4.2rem;
-  width: 6.2rem;
+  width: 7rem;
   background:
-    linear-gradient(90deg, transparent 0 16%, rgba(167, 243, 208, 0.2) 26%, rgba(110, 231, 183, 0.1) 52%, transparent 90%);
+    linear-gradient(90deg, transparent 0 22%, rgba(167, 243, 208, 0.18) 34%, rgba(110, 231, 183, 0.09) 58%, transparent 92%);
   clip-path: none;
   filter: blur(7px);
-  opacity: 0.16;
+  opacity: 0.13;
   transform: translateY(-50%) scaleY(var(--punktlandung-loader-orbit-unscale-y));
   transform-origin: left center;
   -webkit-mask-image:
-    linear-gradient(90deg, transparent 0%, transparent 16%, #000 26%, #000 62%, transparent 100%),
-    conic-gradient(at 0% 50%, transparent 0deg 72deg, #000 80deg, #000 100deg, transparent 108deg 360deg);
+    linear-gradient(90deg, transparent 0%, transparent 22%, #000 33%, #000 68%, transparent 100%),
+    conic-gradient(at 0% 50%, transparent 0deg 75deg, #000 82deg, #000 98deg, transparent 105deg 360deg);
   -webkit-mask-composite: source-in;
   mask-image:
-    linear-gradient(90deg, transparent 0%, transparent 16%, #000 26%, #000 62%, transparent 100%),
-    conic-gradient(at 0% 50%, transparent 0deg 72deg, #000 80deg, #000 100deg, transparent 108deg 360deg);
+    linear-gradient(90deg, transparent 0%, transparent 22%, #000 33%, #000 68%, transparent 100%),
+    conic-gradient(at 0% 50%, transparent 0deg 75deg, #000 82deg, #000 98deg, transparent 105deg 360deg);
   mask-composite: intersect;
 }
 
@@ -8687,7 +8847,7 @@ textarea {
 
 @keyframes punktlandung-loader-ellipse-dash {
   to {
-    stroke-dashoffset: 107;
+    stroke-dashoffset: 105.5;
   }
 }
 
@@ -13948,6 +14108,10 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 @media (orientation: landscape) and (max-height: 520px) and (max-width: 1024px) {
+  body .punktlandung-game-shell:has(.punktlandung-guess-map-panel--full) .punktlandung-game-hud {
+    display: none !important;
+  }
+
   body .punktlandung-game-viewer--map-closed,
   body .punktlandung-game-viewer--map-open {
     bottom: 0 !important;
@@ -13973,7 +14137,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     display: grid !important;
     gap: 0.45rem !important;
     grid-template-columns: 3.08rem 3.08rem minmax(0, 1fr) 5.4rem !important;
-    grid-template-rows: 3.08rem 3.75rem !important;
+    grid-template-rows: 3.75rem 3.08rem !important;
     height: auto !important;
   }
 
@@ -13983,17 +14147,17 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 
   body .punktlandung-game-shell .punktlandung-game-stats .punktlandung-game-stat:nth-child(1) {
     grid-column: 1 !important;
-    grid-row: 1 !important;
+    grid-row: 2 !important;
   }
 
   body .punktlandung-game-shell .punktlandung-game-stats .punktlandung-game-stat:nth-child(2) {
     grid-column: 2 !important;
-    grid-row: 1 !important;
+    grid-row: 2 !important;
   }
 
   body .punktlandung-game-shell .punktlandung-game-actions {
     grid-column: 4 !important;
-    grid-row: 1 !important;
+    grid-row: 2 !important;
     justify-self: end !important;
   }
 
@@ -14008,6 +14172,9 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 
   body .punktlandung-game-shell .punktlandung-game-back-button {
+    align-items: center !important;
+    display: inline-flex !important;
+    justify-content: center !important;
     min-width: 5.4rem !important;
     padding-inline: 0.5rem !important;
     width: 5.4rem !important;
@@ -14016,9 +14183,10 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   body .punktlandung-game-shell .punktlandung-game-back-button-inner {
     align-items: center !important;
     display: inline-flex !important;
-    gap: 0.3rem !important;
+    gap: 0.22rem !important;
     justify-content: center !important;
     line-height: 1 !important;
+    transform: translate(-0.13rem, 0.01rem) !important;
     width: 100% !important;
   }
 
@@ -14063,7 +14231,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   body .punktlandung-game-shell .punktlandung-game-task-slot {
     align-items: center !important;
     grid-column: 1 / -1 !important;
-    grid-row: 2 !important;
+    grid-row: 1 !important;
     justify-content: center !important;
     padding-inline: 0 !important;
   }
@@ -14095,6 +14263,48 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     height: 1px !important;
     margin: 0.34rem 0 0.4rem !important;
     width: 100% !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card-inline {
+    align-items: center !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    gap: 0.68rem !important;
+    justify-content: center !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: fit-content !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card-label {
+    color: rgb(110 231 183) !important;
+    flex: 0 0 auto !important;
+    font-size: 0.62rem !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.14em !important;
+    line-height: 1 !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card-separator {
+    background: rgba(110, 231, 183, 0.9) !important;
+    flex: 0 0 auto !important;
+    height: 1.7rem !important;
+    margin: 0 !important;
+    width: 1px !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card-title {
+    display: block !important;
+    flex: 0 1 auto !important;
+    font-size: clamp(1.08rem, 5.4vh, 1.44rem) !important;
+    line-height: 1 !important;
+    min-width: 0 !important;
+    padding-bottom: 0.06em !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+    width: auto !important;
   }
 
   body .punktlandung-game-viewer .punktlandung-source-chip--compact {
@@ -14138,9 +14348,27 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     height: auto !important;
     left: calc(65% + 0.75rem) !important;
     right: 0.75rem !important;
-    top: calc(9.65rem + max(0px, env(safe-area-inset-top))) !important;
+    top: calc(9.25rem + max(0px, env(safe-area-inset-top))) !important;
     transform: none !important;
     width: auto !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--full {
+    bottom: 0.75rem !important;
+    height: auto !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    top: 0.75rem !important;
+    width: auto !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--full .punktlandung-map-panel-title {
+    display: none !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--full .punktlandung-map-panel-actions {
+    justify-content: flex-end !important;
+    width: 100% !important;
   }
 
   body .punktlandung-game-shell .punktlandung-guess-map-panel--closed {
@@ -14157,14 +14385,14 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     flex-direction: row !important;
     gap: 0.45rem !important;
     justify-content: center !important;
-    left: 0.75rem !important;
-    max-width: none !important;
+    left: 50% !important;
+    max-width: min(15rem, calc(65vw - 2rem)) !important;
     min-height: 1.55rem !important;
     opacity: 0.86 !important;
     padding: 0.24rem 0.6rem !important;
-    right: 35% !important;
+    right: auto !important;
     text-align: center !important;
-    transform: none !important;
+    transform: translateX(-50%) !important;
     white-space: nowrap !important;
     width: auto !important;
   }
@@ -14188,9 +14416,97 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 
   body .punktlandung-image-replay .punktlandung-source-chip--detail p:last-child {
-    min-width: 0 !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
+    display: none !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-viewer {
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 35% !important;
+    top: 0 !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-viewer .punktlandung-panorama-viewport,
+  body .punktlandung-image-replay .punktlandung-replay-viewer .punktlandung-panorama-viewport img {
+    bottom: 0 !important;
+    height: 100% !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-header {
+    align-items: start !important;
+    display: grid !important;
+    gap: 0.45rem !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    top: calc(0.75rem + max(0px, env(safe-area-inset-top))) !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-info {
+    grid-column: 1 !important;
+    max-width: min(38rem, calc(65vw - 1.5rem)) !important;
+    padding: 0.85rem 1rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-top-actions {
+    display: flex !important;
+    gap: 0.45rem !important;
+    grid-column: 2 !important;
+    justify-self: end !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-top-actions .punktlandung-action-back-button {
+    display: inline-flex !important;
+    height: 3.08rem !important;
+    min-height: 3.08rem !important;
+    min-width: 3.08rem !important;
+    width: 3.08rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-top-actions .punktlandung-command-button {
+    display: none !important;
+    height: 3.08rem !important;
+    min-height: 3.08rem !important;
+    min-width: 8.8rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--closed,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--open {
+    bottom: 0.75rem !important;
+    height: auto !important;
+    left: calc(65% + 0.75rem) !important;
+    right: 0.75rem !important;
+    top: calc(5.05rem + max(0px, env(safe-area-inset-top))) !important;
+    transform: none !important;
+    width: auto !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--closed {
+    padding: 0.6rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--closed .punktlandung-map-panel-title,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--open .punktlandung-map-panel-title {
+    display: none !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--closed .punktlandung-map-panel-header,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--open .punktlandung-map-panel-header {
+    display: flex !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--closed .punktlandung-map-panel-actions,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--open .punktlandung-map-panel-actions {
+    display: flex !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--closed .punktlandung-map-size-button,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--open .punktlandung-map-size-button,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--closed .punktlandung-map-primary-button,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--open .punktlandung-map-primary-button {
+    min-height: 2.9rem !important;
+    min-width: 7rem !important;
   }
 }
