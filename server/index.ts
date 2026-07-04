@@ -291,11 +291,15 @@ function resumeRoom(client: Client, codeInput: string, previousPlayerId: string)
   const code = codeInput.toUpperCase().replace(/[^A-Z0-9]/g, "");
   const room = rooms.get(code);
   if (!room || room.kind !== "online") return;
-  if (room.hostId !== previousPlayerId) return;
+  const isHostResume = room.hostId === previousPlayerId;
+  const isKnownPlayer = room.players.some((player) => player.id === previousPlayerId);
+  if (!isHostResume && !isKnownPlayer) return;
 
   replacePlayerId(room, previousPlayerId, client.id);
-  room.hostId = client.id;
-  for (const player of room.players) player.isHost = player.id === room.hostId;
+  if (isHostResume) {
+    room.hostId = client.id;
+    for (const player of room.players) player.isHost = player.id === room.hostId;
+  }
   client.roomCode = code;
   broadcast(room);
 }

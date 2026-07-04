@@ -19,9 +19,9 @@ const modePreview: Array<{
   available: boolean;
   badge?: string;
 }> = [
-  { id: "solo", title: "Solo-Modus", text: "Eine Person, ein Tipp.", available: true },
-  { id: "couch", title: "Party-Modus", text: "Mehrere Personen am selben Bildschirm. Jeder kann tippen", available: true },
-  { id: "online", title: "Online-Modus", text: "Eigener Tipp, gegeneinander online.", available: true }
+  { id: "solo", title: "Solo-Modus", text: "Eine Person setzt pro Runde einen Pin.", available: true },
+  { id: "couch", title: "Party-Modus", text: "Reihum tippen, Punkte jagen.", available: true },
+  { id: "online", title: "Online-Modus", text: "Code teilen und live gegeneinander spielen.", available: true }
 ];
 
 const legalLinks = [

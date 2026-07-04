@@ -5886,6 +5886,100 @@ textarea {
   height: 1.55rem;
 }
 
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) > div {
+    align-content: start !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) > div > div {
+    align-items: stretch !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    height: auto !important;
+    justify-content: flex-start !important;
+    min-height: 0 !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section {
+    display: block !important;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    margin-top: 0 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding-top: 0 !important;
+    padding-bottom: calc(8.9rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(8.9rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-stage {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    height: auto !important;
+    margin-top: 0 !important;
+    min-height: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-settings {
+    margin-top: 0 !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-party-rules,
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-party-settings .punktlandung-party-rules,
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-online-settings .punktlandung-party-rules {
+    margin-top: 0.75rem !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-stage::after {
+    content: "";
+    display: block;
+    flex: 0 0 calc(5.65rem + env(safe-area-inset-bottom));
+    height: calc(5.65rem + env(safe-area-inset-bottom));
+    order: 99;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.99), rgba(2, 6, 23, 0.99)) !important;
+    border: 1px solid rgba(148, 163, 184, 0.34) !important;
+    border-bottom: 0 !important;
+    border-radius: 0.45rem 0.45rem 0 0 !important;
+    bottom: 0 !important;
+    box-shadow: 0 -18px 42px rgba(2, 6, 23, 0.58) !important;
+    overflow: visible !important;
+    padding-bottom: calc(0.78rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions::before {
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0), rgba(2, 6, 23, 0.98)) !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.24) !important;
+    bottom: 100% !important;
+    height: 1.15rem !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions::after {
+    background: #020617;
+    content: "";
+    height: calc(1.5rem + env(safe-area-inset-bottom));
+    left: -1px;
+    pointer-events: none;
+    position: absolute;
+    right: -1px;
+    top: 100%;
+  }
+}
+
 .punktlandung-back-button,
 .punktlandung-back-link {
   align-items: center !important;
@@ -6557,7 +6651,22 @@ textarea {
 }
 
 @media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow-y: auto !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) > div,
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) > div > div {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
   body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section {
+    flex: 0 0 auto !important;
+    margin-top: 0 !important;
+    overflow: visible !important;
     padding-bottom: calc(9.25rem + env(safe-area-inset-bottom)) !important;
     scroll-padding-bottom: calc(9.25rem + env(safe-area-inset-bottom)) !important;
   }
@@ -8098,6 +8207,10 @@ textarea {
     --mobile-game-meta-size: clamp(2.65rem, 10vw, 3rem);
   }
 
+  .punktlandung-image-replay {
+    --mobile-game-pad: clamp(0.5rem, 2.35vw, 0.75rem);
+  }
+
   .punktlandung-game-shell .punktlandung-game-hud {
     padding-inline: var(--mobile-game-pad) !important;
     padding-top: max(var(--mobile-game-pad), env(safe-area-inset-top)) !important;
@@ -8658,12 +8771,12 @@ textarea {
   filter: blur(0.8px);
   opacity: 1;
   -webkit-mask-image:
-    radial-gradient(ellipse 30% 82% at 0% 50%, transparent 0%, transparent 43%, rgba(0, 0, 0, 0.36) 57%, #000 73%, #000 100%),
+    radial-gradient(ellipse 36% 50% at -10% 50%, transparent 0%, transparent 39%, rgba(0, 0, 0, 0.32) 54%, #000 72%, #000 100%),
     radial-gradient(ellipse 104% 58% at 13% 50%, #000 0%, #000 70%, transparent 97%),
     conic-gradient(at 0% 50%, transparent 0deg 73deg, #000 80deg, #000 100deg, transparent 107deg 360deg);
   -webkit-mask-composite: source-in, source-in;
   mask-image:
-    radial-gradient(ellipse 30% 82% at 0% 50%, transparent 0%, transparent 43%, rgba(0, 0, 0, 0.36) 57%, #000 73%, #000 100%),
+    radial-gradient(ellipse 36% 50% at -10% 50%, transparent 0%, transparent 39%, rgba(0, 0, 0, 0.32) 54%, #000 72%, #000 100%),
     radial-gradient(ellipse 104% 58% at 13% 50%, #000 0%, #000 70%, transparent 97%),
     conic-gradient(at 0% 50%, transparent 0deg 73deg, #000 80deg, #000 100deg, transparent 107deg 360deg);
   mask-composite: intersect, intersect;
@@ -14019,15 +14132,17 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 
   body .punktlandung-tv-home .punktlandung-home-category-card {
+    --home-category-icon-slot: clamp(4.15rem, 8.2vw, 5rem);
+    grid-template-columns: minmax(0, 1fr) var(--home-category-icon-slot) !important;
     min-height: clamp(5.05rem, 18.8vh, 5.9rem) !important;
     padding-bottom: 0.86rem !important;
     padding-top: 0.86rem !important;
   }
 
   body .punktlandung-tv-home .punktlandung-home-category-art {
-    height: clamp(3.35rem, 12.5vh, 4rem) !important;
-    padding-right: 0.95rem !important;
-    transform: translateX(-0.35rem) !important;
+    height: clamp(3.8rem, 15vh, 4.45rem) !important;
+    padding-right: 0.2rem !important;
+    transform: translateX(-1.15rem) !important;
   }
 
   body .punktlandung-tv-home .punktlandung-home-category-art img {
@@ -14508,5 +14623,142 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   body .punktlandung-image-replay .punktlandung-guess-map-panel--open .punktlandung-map-primary-button {
     min-height: 2.9rem !important;
     min-width: 7rem !important;
+  }
+}
+
+/* Mobile portrait spacing lock: game, results and replay must keep the same
+   outer rhythm so switching between them does not visibly jump. */
+@media (max-width: 879px) and (orientation: portrait) {
+  body main:has(.punktlandung-results-grid),
+  body .punktlandung-image-replay {
+    --mobile-game-pad: clamp(0.5rem, 2.35vw, 0.75rem);
+  }
+
+  body main:has(.punktlandung-results-grid) {
+    padding: var(--mobile-game-pad) !important;
+  }
+
+  body .punktlandung-results-grid,
+  body .punktlandung-results-grid > section,
+  body .punktlandung-results-sidebar {
+    gap: var(--mobile-game-pad) !important;
+  }
+
+  body .punktlandung-results-grid {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-results-hero,
+  body .punktlandung-results-map,
+  body .punktlandung-results-mobile-actions,
+  body .punktlandung-results-panel {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-header,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel {
+    left: var(--mobile-game-pad) !important;
+    right: var(--mobile-game-pad) !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section {
+    padding-top: 0 !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) > div {
+    align-content: start !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) > div > div {
+    align-items: stretch !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    height: auto !important;
+    justify-content: flex-start !important;
+    min-height: 0 !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section {
+    display: block !important;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    margin-top: 0 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding-top: 0 !important;
+    padding-bottom: calc(8.9rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(8.9rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-stage {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    height: auto !important;
+    margin-top: 0 !important;
+    min-height: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-settings {
+    margin-top: 0 !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-party-rules,
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-party-settings .punktlandung-party-rules,
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-online-settings .punktlandung-party-rules {
+    margin-top: 0.75rem !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-stage::after {
+    content: "";
+    display: block;
+    flex: 0 0 calc(5.65rem + env(safe-area-inset-bottom));
+    height: calc(5.65rem + env(safe-area-inset-bottom));
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.99), rgba(2, 6, 23, 0.99)) !important;
+    border: 1px solid rgba(148, 163, 184, 0.34) !important;
+    border-bottom: 0 !important;
+    border-radius: 0.45rem 0.45rem 0 0 !important;
+    bottom: 0 !important;
+    box-shadow: 0 -18px 42px rgba(2, 6, 23, 0.58) !important;
+    overflow: visible !important;
+    padding-bottom: calc(0.78rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions::before {
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0), rgba(2, 6, 23, 0.98)) !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.24) !important;
+    bottom: 100% !important;
+    height: 1.15rem !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions::after {
+    background: #020617;
+    content: "";
+    height: calc(1.5rem + env(safe-area-inset-bottom));
+    left: -1px;
+    pointer-events: none;
+    position: absolute;
+    right: -1px;
+    top: 100%;
   }
 }

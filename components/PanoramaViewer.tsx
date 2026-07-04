@@ -450,43 +450,48 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
       }}
     >
       {!imageFailed && (
-        <img
-          key={`${location.id}-${imageIndex}`}
-          src={displayedImageUrl}
-          alt="Ort zum Erraten"
-          className={`absolute inset-0 h-full w-full select-none object-cover transition-[opacity,transform] ${
+        <div
+          className={`absolute inset-0 transition-[opacity,transform] ${
             imageLoaded ? "opacity-100" : "opacity-0"
           } ${isDragging ? "duration-0" : "duration-150"}`}
           style={style}
-          loading="eager"
-          decoding="async"
-          fetchPriority="high"
-          draggable={false}
-          onDragStart={(event) => event.preventDefault()}
-          onLoad={(event) => {
-            const image = event.currentTarget;
-            if (!isImageLargeEnough(image.naturalWidth, image.naturalHeight, location.category)) {
+        >
+          <img
+            key={`${location.id}-${imageIndex}`}
+            src={displayedImageUrl}
+            alt="Ort zum Erraten"
+            className="absolute inset-0 h-full w-full select-none object-cover"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+            draggable={false}
+            onDragStart={(event) => event.preventDefault()}
+            onLoad={(event) => {
+              const image = event.currentTarget;
+              if (!isImageLargeEnough(image.naturalWidth, image.naturalHeight, location.category)) {
+                setLoadedImageUrl(null);
+                tryNextImageCandidate();
+                return;
+              }
+              if (isLikelyImageCollage(image, location.category)) {
+                setLoadedImageUrl(null);
+                tryNextImageCandidate();
+                return;
+              }
+              autoSkipStreak.current = 0;
+              acceptedImageUrls.add(displayedImageUrl);
+              setLoadedImageUrl(displayedImageUrl);
+              setShowLoadOverlay(false);
+              setShowSlowLoadHint(false);
+              setShowManualSkip(false);
+            }}
+            onError={() => {
               setLoadedImageUrl(null);
               tryNextImageCandidate();
-              return;
-            }
-            if (isLikelyImageCollage(image, location.category)) {
-              setLoadedImageUrl(null);
-              tryNextImageCandidate();
-              return;
-            }
-            autoSkipStreak.current = 0;
-            acceptedImageUrls.add(displayedImageUrl);
-            setLoadedImageUrl(displayedImageUrl);
-            setShowLoadOverlay(false);
-            setShowSlowLoadHint(false);
-            setShowManualSkip(false);
-          }}
-          onError={() => {
-            setLoadedImageUrl(null);
-            tryNextImageCandidate();
-          }}
-        />
+            }}
+          />
+          {!chromeHidden && <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.04)_44%,rgba(2,6,23,0.18)_68%,rgba(2,6,23,0.42)_86%,rgba(2,6,23,0.64)_100%)]" />}
+        </div>
       )}
 
       {!imageLoaded && (showLoadOverlay || imageFailed) && (
@@ -533,8 +538,6 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
           </div>
         </div>
       )}
-
-      {!chromeHidden && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,6,23,0.18)_58%,rgba(2,6,23,0.7)_100%)]" />}
 
       {!chromeHidden && sourceVariant === "compact" && (
         <div className="punktlandung-source-chip punktlandung-source-chip--compact absolute bottom-3 left-1/2 z-10 w-fit max-w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-slate-950/44 px-3 py-2 text-center shadow-[0_16px_36px_rgba(0,0,0,0.18)] ring-1 ring-slate-700/35 backdrop-blur sm:bottom-4">

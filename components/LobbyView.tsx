@@ -102,7 +102,7 @@ export function LobbyView({
   }, [code]);
   const me = players.find((player) => player.id === meId);
   const rankedPlayers = [...players].sort((a, b) => b.score - a.score);
-  const headerKicker = isSolo ? (isCouchMode ? "Partymodus" : "Solo-Modus") : "Online-Raum";
+  const headerKicker = isSolo ? (isCouchMode ? "Partymodus" : "Solo-Modus") : "Online-Modus";
   const headerTitle = isSolo
     ? isCouchMode
       ? "Mehrere Personen an einem Bildschirm"
@@ -371,9 +371,9 @@ export function LobbyView({
                   className="absolute right-1 top-1/2 z-0 h-8 w-7 -translate-y-[58%] drop-shadow-[0_0_14px_rgba(52,211,153,0.55)] md:right-2 md:h-9 md:w-8"
                   color="#34d399"
                 />
-                <h1 className="relative z-10 truncate text-2xl font-black md:text-3xl min-[2200px]:text-5xl">{headerTitle}</h1>
+                <h1 className="relative z-10 text-2xl font-black md:text-3xl min-[2200px]:text-5xl">{headerTitle}</h1>
               </div>
-              <p className="mt-0.5 hidden text-xs text-slate-400 min-[420px]:block md:mt-1 md:text-sm min-[2200px]:text-xl">{headerHint}</p>
+              <p className="mt-0.5 block text-xs text-slate-400 md:mt-1 md:text-sm min-[2200px]:text-xl">{headerHint}</p>
             </div>
           </div>
 

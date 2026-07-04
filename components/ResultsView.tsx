@@ -529,7 +529,7 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
             />
           </div>
 
-          {!replayChromeSuppressed && <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.42)_0%,rgba(2,6,23,0)_28%,rgba(2,6,23,0.04)_68%,rgba(2,6,23,0.36)_100%)]" />}
+          {!replayChromeSuppressed && <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.42)_0%,rgba(2,6,23,0)_28%,rgba(2,6,23,0.04)_68%,rgba(2,6,23,0.36)_100%)]" />}
 
           {!replayChromeSuppressed && (
             <div className="punktlandung-replay-header absolute left-3 right-3 top-3 z-30 grid grid-cols-[minmax(0,min(36rem,calc(100vw-6rem)))_auto] items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
