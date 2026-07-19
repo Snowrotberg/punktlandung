@@ -26,6 +26,8 @@ const slowLoadHintMs = 10000;
 const manualSkipHintMs = 15000;
 const failedImageAutoSkipMs = 7000;
 const loadOverlayDelayMs = 2200;
+const defaultProxyWidth = 1400;
+const imageWidthSteps = [800, 1000, 1200, 1400, 1600, 1800, 2200] as const;
 const acceptedImageUrls = new Set<string>();
 
 function safeDecodeURIComponent(value: string) {
@@ -78,6 +80,21 @@ function wikimediaFilePageUrl(rawUrl: string) {
   if (!fileTitle) return rawUrl;
 
   return `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(fileTitle).replace(/%20/g, "_")}`;
+}
+
+function roundResponsiveImageWidth(rawWidth: number) {
+  const safeWidth = Number.isFinite(rawWidth) ? rawWidth : defaultProxyWidth;
+  const clampedWidth = Math.max(imageWidthSteps[0], Math.min(imageWidthSteps[imageWidthSteps.length - 1], safeWidth));
+  return imageWidthSteps.find((width) => width >= clampedWidth) ?? imageWidthSteps[imageWidthSteps.length - 1];
+}
+
+function estimateResponsiveImageWidth(element?: HTMLElement | null) {
+  if (typeof window === "undefined") return defaultProxyWidth;
+
+  const rect = element?.getBoundingClientRect();
+  const cssWidth = rect?.width && rect.width > 0 ? rect.width : window.innerWidth;
+  const pixelRatio = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2);
+  return roundResponsiveImageWidth(cssWidth * pixelRatio * 1.15);
 }
 
 function isImageLargeEnough(width: number, height: number, category: GeoLocation["category"]) {
@@ -191,6 +208,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
   const lastTap = useRef({ time: 0, x: 0, y: 0, pointerType: "" });
   const skippedLocationIds = useRef(new Set<string>());
   const autoSkipStreak = useRef(0);
+  const [proxyWidth, setProxyWidth] = useState(() => estimateResponsiveImageWidth());
 
   const imageUrls = useMemo(() => {
     const urls = location.panoramaUrls?.length ? location.panoramaUrls : [location.panoramaUrl];
@@ -201,11 +219,28 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
   const sourceHref = location.sourceUrl ?? (location.source === "wikimedia" ? wikimediaFilePageUrl(currentImageUrl) : currentImageUrl);
   const sourceName = location.source === "wikimedia" ? "Wikimedia Commons" : location.attribution || location.source;
   const imageProxyDisabled = process.env.NEXT_PUBLIC_DISABLE_IMAGE_PROXY === "true";
-  const proxyWidth = 1800;
   const displayedImageUrl = imageProxyDisabled
     ? wikimediaSizedImageUrl(currentImageUrl, proxyWidth)
     : `/api/image?src=${encodeURIComponent(currentImageUrl)}&w=${proxyWidth}`;
   const imageLoaded = loadedImageUrl === displayedImageUrl || acceptedImageUrls.has(displayedImageUrl);
+
+  useEffect(() => {
+    const updateProxyWidth = () => {
+      const nextWidth = estimateResponsiveImageWidth(viewportRef.current);
+      setProxyWidth((currentWidth) => (currentWidth === nextWidth ? currentWidth : nextWidth));
+    };
+
+    updateProxyWidth();
+    window.addEventListener("resize", updateProxyWidth);
+
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateProxyWidth);
+    if (viewportRef.current) observer?.observe(viewportRef.current);
+
+    return () => {
+      window.removeEventListener("resize", updateProxyWidth);
+      observer?.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     setZoom(100);
@@ -303,6 +338,19 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
     };
   };
 
+  const toggleZoom = () => {
+    if (settings.noZoom) return;
+
+    if (zoom > 100) {
+      resetView();
+      return;
+    }
+
+    const nextZoom = 180;
+    setZoom(nextZoom);
+    setPan((currentPan) => clampPan(currentPan, nextZoom));
+  };
+
   const style = useMemo(
     () => ({
       transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${scale})`
@@ -346,9 +394,9 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
       pointerType: event.pointerType
     };
 
-    if (isDoublePointerDown && zoom > 100) {
+    if (isDoublePointerDown && event.pointerType !== "mouse" && !settings.noZoom) {
       event.preventDefault();
-      resetView();
+      toggleZoom();
       return;
     }
 
@@ -421,9 +469,9 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
       onPointerUp={handlePointerEnd}
       onPointerCancel={handlePointerEnd}
       onDoubleClick={(event) => {
-        if (zoom <= 100) return;
+        if (settings.noZoom) return;
         event.preventDefault();
-        resetView();
+        toggleZoom();
       }}
       onKeyDown={(event) => {
         if (!canPanImage) return;

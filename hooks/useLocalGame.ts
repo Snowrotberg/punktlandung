@@ -292,7 +292,11 @@ function normalizeStoredRoom(room: Partial<RoomState>, fallbackHostId: string): 
     roundStartedAt: typeof room.roundStartedAt === "number" ? room.roundStartedAt : null,
     summaries,
     emojiEvents: Array.isArray(room.emojiEvents) ? room.emojiEvents : [],
-    adGateUntil: typeof room.adGateUntil === "number" ? room.adGateUntil : null
+    adGateUntil: typeof room.adGateUntil === "number" ? room.adGateUntil : null,
+    nextRoundReadyPlayerIds: Array.isArray(room.nextRoundReadyPlayerIds)
+      ? room.nextRoundReadyPlayerIds.filter((id): id is string => typeof id === "string")
+      : [],
+    nextRoundStartsAt: typeof room.nextRoundStartsAt === "number" ? room.nextRoundStartsAt : null
   };
 }
 
@@ -461,7 +465,9 @@ function evaluateRound(room: RoomState): RoomState {
     roundEndsAt: null,
     roundStartedAt: null,
     timedOutPlayerIds: [],
-    summaries: [...room.summaries, summary]
+    summaries: [...room.summaries, summary],
+    nextRoundReadyPlayerIds: [],
+    nextRoundStartsAt: null
   };
 }
 
@@ -488,7 +494,9 @@ function createInitialRoom(playerId: string, playerName: string, mode: InitialLo
       roundStartedAt: null,
       summaries: [],
       emojiEvents: [],
-      adGateUntil: null
+      adGateUntil: null,
+      nextRoundReadyPlayerIds: [],
+      nextRoundStartsAt: null
     });
   }
 
@@ -514,7 +522,9 @@ function createInitialRoom(playerId: string, playerName: string, mode: InitialLo
     roundStartedAt: null,
     summaries: [],
     emojiEvents: [],
-    adGateUntil: null
+    adGateUntil: null,
+    nextRoundReadyPlayerIds: [],
+    nextRoundStartsAt: null
   });
 }
 
@@ -708,7 +718,9 @@ export function useLocalGame(initialMode?: InitialLocalGameMode) {
       roundStartedAt: null,
       summaries: [],
       emojiEvents: [],
-      adGateUntil: null
+      adGateUntil: null,
+      nextRoundReadyPlayerIds: [],
+      nextRoundStartsAt: null
     });
     setRoom(nextRoom);
     setError(null);
@@ -741,7 +753,9 @@ export function useLocalGame(initialMode?: InitialLocalGameMode) {
       roundStartedAt: null,
       summaries: [],
       emojiEvents: [],
-      adGateUntil: null
+      adGateUntil: null,
+      nextRoundReadyPlayerIds: [],
+      nextRoundStartsAt: null
     });
     setRoom(nextRoom);
     setError(null);
@@ -805,7 +819,9 @@ export function useLocalGame(initialMode?: InitialLocalGameMode) {
         emojiEvents: [],
         roundEndsAt: turnEndFrom(roundStartedAt, current.settings),
         roundStartedAt,
-        adGateUntil: null
+        adGateUntil: null,
+        nextRoundReadyPlayerIds: [],
+        nextRoundStartsAt: null
       };
     });
   }, [drawLocation]);
@@ -852,6 +868,8 @@ export function useLocalGame(initialMode?: InitialLocalGameMode) {
         roundEndsAt: null,
         roundStartedAt: null,
         adGateUntil: null,
+        nextRoundReadyPlayerIds: [],
+        nextRoundStartsAt: null,
         currentRound:
           current.status === "guessing" && !current.summaries.some((summary) => summary.roundNumber === current.currentRound)
             ? Math.max(0, current.currentRound - 1)
@@ -901,6 +919,8 @@ export function useLocalGame(initialMode?: InitialLocalGameMode) {
         roundStartedAt: null,
         summaries: [],
         adGateUntil: null,
+        nextRoundReadyPlayerIds: [],
+        nextRoundStartsAt: null,
         players: current.players.map((player) => ({ ...player, score: 0, status: "active" }))
       });
     });
@@ -934,6 +954,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode) {
       cancelRound,
       skipLocation,
       restart,
+      readyNextRound: () => undefined,
       leaveRoom,
       clearError: () => setError(null),
       setTeam,

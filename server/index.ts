@@ -37,6 +37,7 @@ type InternalRoom = RoomState & {
 const PORT = Number(process.env.WS_PORT ?? 3001);
 const ROOM_TTL_MS = 1000 * 60 * 60 * 3;
 const AD_GATE_MS = 0;
+const NEXT_ROUND_COUNTDOWN_MS = 30_000;
 const RECENT_ROOM_LOCATION_LIMIT = 120;
 const RECENT_GLOBAL_LOCATION_LIMIT = 80;
 const FAILED_LOCATION_LIMIT = 80;
@@ -118,7 +119,9 @@ function publicRoom(room: InternalRoom): RoomState {
     roundStartedAt: room.roundStartedAt,
     summaries: room.summaries,
     emojiEvents: room.emojiEvents.slice(-30),
-    adGateUntil: room.adGateUntil
+    adGateUntil: room.adGateUntil,
+    nextRoundReadyPlayerIds: room.nextRoundReadyPlayerIds,
+    nextRoundStartsAt: room.nextRoundStartsAt
   };
 }
 
@@ -192,6 +195,20 @@ function activePlayers(room: InternalRoom): Player[] {
   return room.players.filter((player) => player.connected && player.status === "active");
 }
 
+function resetNextRoundGate(room: InternalRoom): void {
+  room.nextRoundReadyPlayerIds = [];
+  room.nextRoundStartsAt = null;
+}
+
+function markNextRoundReady(room: InternalRoom, playerId: string): void {
+  if (!room.nextRoundReadyPlayerIds.includes(playerId)) room.nextRoundReadyPlayerIds.push(playerId);
+}
+
+function allActivePlayersReady(room: InternalRoom): boolean {
+  const activeIds = activePlayers(room).map((player) => player.id);
+  return activeIds.length > 0 && activeIds.every((playerId) => room.nextRoundReadyPlayerIds.includes(playerId));
+}
+
 function syncLocalPlayers(room: InternalRoom): void {
   if (room.kind !== "solo") return;
   const host = room.players.find((player) => player.id === room.hostId) ?? room.players.find((player) => !player.localOnly);
@@ -236,6 +253,8 @@ function createRoom(client: Client, playerName: string | undefined, kind: RoomKi
     summaries: [],
     emojiEvents: [],
     adGateUntil: null,
+    nextRoundReadyPlayerIds: [],
+    nextRoundStartsAt: null,
     locationQueue: [],
     failedLocationIds: [],
     recentLocationIds: [],
@@ -277,6 +296,7 @@ function replacePlayerId(room: InternalRoom, previousPlayerId: string, nextPlaye
   }
   room.guesses = room.guesses.map((guess) => (guess.playerId === previousPlayerId ? { ...guess, playerId: nextPlayerId } : guess));
   room.timedOutPlayerIds = room.timedOutPlayerIds.map((id) => (id === previousPlayerId ? nextPlayerId : id));
+  room.nextRoundReadyPlayerIds = room.nextRoundReadyPlayerIds.map((id) => (id === previousPlayerId ? nextPlayerId : id));
   room.summaries = room.summaries.map((summary) => ({
     ...summary,
     results: summary.results.map((result) => ({
@@ -312,6 +332,7 @@ function leaveRoom(client: Client): void {
   }
   room.players = room.players.filter((player) => player.id !== client.id);
   room.guesses = room.guesses.filter((guess) => guess.playerId !== client.id);
+  room.nextRoundReadyPlayerIds = room.nextRoundReadyPlayerIds.filter((playerId) => playerId !== client.id);
   client.roomCode = null;
   send(client, { type: "left_room" });
 
@@ -338,6 +359,12 @@ function leaveRoom(client: Client): void {
     room.roundStartedAt = null;
     room.guesses = [];
     room.timedOutPlayerIds = [];
+    resetNextRoundGate(room);
+  }
+
+  if (room.kind === "online" && room.status === "results" && allActivePlayersReady(room)) {
+    startRoundNow(room);
+    return;
   }
 
   broadcast(room);
@@ -352,9 +379,24 @@ function startRound(client: Client, room: InternalRoom): void {
   }
   if (room.currentRound >= room.settings.rounds) {
     room.status = "finished";
+    resetNextRoundGate(room);
     broadcast(room);
     return;
   }
+  if (room.kind === "online" && room.status === "results") {
+    markNextRoundReady(room, client.id);
+    if (allActivePlayersReady(room)) {
+      startRoundNow(room);
+      return;
+    }
+    room.nextRoundStartsAt = room.nextRoundStartsAt ?? Date.now() + NEXT_ROUND_COUNTDOWN_MS;
+    broadcast(room);
+    return;
+  }
+  startRoundNow(room);
+}
+
+function startRoundNow(room: InternalRoom): void {
   room.currentRound += 1;
   const roundStartedAt = Date.now();
   room.status = "guessing";
@@ -365,6 +407,19 @@ function startRound(client: Client, room: InternalRoom): void {
   room.roundEndsAt = room.settings.timeLimitSec > 0 ? roundStartedAt + room.settings.timeLimitSec * 1000 : null;
   room.roundStartedAt = roundStartedAt;
   room.adGateUntil = null;
+  resetNextRoundGate(room);
+  broadcast(room);
+}
+
+function readyNextRound(client: Client, room: InternalRoom): void {
+  if (room.kind !== "online" || room.status !== "results") return;
+  const player = room.players.find((candidate) => candidate.id === client.id && candidate.connected && candidate.status === "active");
+  if (!player) return;
+  markNextRoundReady(room, client.id);
+  if (allActivePlayersReady(room)) {
+    startRoundNow(room);
+    return;
+  }
   broadcast(room);
 }
 
@@ -471,6 +526,7 @@ function evaluateRound(room: InternalRoom): void {
   room.roundStartedAt = null;
   room.timedOutPlayerIds = [];
   room.adGateUntil = room.status === "results" && AD_GATE_MS > 0 ? Date.now() + AD_GATE_MS : null;
+  resetNextRoundGate(room);
   broadcast(room);
 }
 
@@ -567,6 +623,9 @@ function handleMessage(client: Client, raw: string): void {
     case "start_round":
       startRound(client, room);
       break;
+    case "ready_next_round":
+      readyNextRound(client, room);
+      break;
     case "submit_guess":
       submitGuess(client, room, message.guess, message.countryCode, message.playerId);
       break;
@@ -605,6 +664,7 @@ function handleMessage(client: Client, raw: string): void {
         room.roundEndsAt = null;
         room.roundStartedAt = null;
         room.adGateUntil = null;
+        resetNextRoundGate(room);
         const lastSummary = room.summaries.at(-1);
         if (!lastSummary || lastSummary.roundNumber !== room.currentRound) {
           room.currentRound = Math.max(0, room.currentRound - 1);
@@ -626,6 +686,7 @@ function handleMessage(client: Client, raw: string): void {
       room.roundStartedAt = null;
       room.summaries = [];
       room.adGateUntil = null;
+      resetNextRoundGate(room);
       room.locationQueue = [];
       room.failedLocationIds = [];
       room.recentLocationIds = [];
@@ -674,6 +735,10 @@ wss.on("connection", (socket) => {
       room.hostId = newHost.id;
       for (const candidate of room.players) candidate.isHost = candidate.id === newHost.id;
     }
+    if (room.kind === "online" && room.status === "results" && allActivePlayersReady(room)) {
+      startRoundNow(room);
+      return;
+    }
     broadcast(room);
   });
 });
@@ -682,6 +747,9 @@ setInterval(() => {
   const now = Date.now();
   for (const room of rooms.values()) {
     if (room.status === "guessing" && room.roundEndsAt && now >= room.roundEndsAt) evaluateRound(room);
+    if (room.kind === "online" && room.status === "results" && room.nextRoundStartsAt && now >= room.nextRoundStartsAt) {
+      startRoundNow(room);
+    }
     if (now - room.lastActivityAt > ROOM_TTL_MS) rooms.delete(room.code);
   }
 }, 500);

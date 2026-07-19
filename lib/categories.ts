@@ -79,17 +79,17 @@ export const categoryOptions: CategoryOption[] = [
     short: "Luftbilder und Karten von oben.",
     tag: "07",
     icon: "/category-icons/satellite-preview.png",
-    homeIconClass: "max-h-[76px] max-w-[112px]",
+    homeIconClass: "max-h-[88px] max-w-[132px]",
     lobbyIconClass: "max-h-[88px] max-w-[132px] sm:max-h-[104px] sm:max-w-[154px]",
     disabled: true
   },
   {
     id: "streetview-preview",
     title: "Street View",
-    short: "Straßen direkt aus Augenhöhe.",
+    short: "Straßen auf Augenhöhe.",
     tag: "08",
     icon: "/category-icons/streetview-preview.png",
-    homeIconClass: "max-h-[76px] max-w-[112px]",
+    homeIconClass: "max-h-[88px] max-w-[132px]",
     lobbyIconClass: "max-h-[88px] max-w-[132px] sm:max-h-[104px] sm:max-w-[154px]",
     disabled: true
   }

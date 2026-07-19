@@ -197,7 +197,7 @@ export function LobbyView({
 
   if (isOnlineRoom && isRoomOnline) {
     return (
-      <main className="punktlandung-lobby h-dvh overflow-hidden bg-slate-950 p-2 text-slate-50 md:p-4">
+      <main className="punktlandung-lobby punktlandung-online-waiting-room h-dvh overflow-hidden bg-slate-950 p-2 text-slate-50 md:p-4">
         <div className="mx-auto grid h-full min-h-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-2 md:gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px]">
           <AdContainer
             placement="online-left-rail"
@@ -207,14 +207,14 @@ export function LobbyView({
             className="hidden h-full min-h-0 xl:block"
             fullWidthResponsive
           />
-          <div className="flex min-h-0 min-w-0 flex-col gap-2 md:gap-4">
+          <div className="punktlandung-online-waiting-content flex min-h-0 min-w-0 flex-col gap-2 md:gap-4">
             <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-md bg-slate-900/70 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-5">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Online-Warteraum</p>
                 <h1 className="mt-1 text-2xl font-black leading-tight text-white md:text-4xl">QR-Code scannen und beitreten</h1>
                 <p className="mt-1 text-sm text-slate-400">Großer Bildschirm: Raumleitung und Ergebnisanzeige.</p>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="punktlandung-online-waiting-header-actions flex shrink-0 items-center gap-2">
                 <BackButton className="punktlandung-lobby-header-back" onClick={onLeave} label="Zurueck" />
                 <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 normal-case" disabled={!isHost || players.length === 0 || !canStart} onClick={onStart}>
                   <span className="punktlandung-inline-action-content">
@@ -269,12 +269,12 @@ export function LobbyView({
                     </p>
                   </div>
                 </div>
-                <p className="mt-2 truncate rounded-md bg-slate-950/45 px-3 py-2 text-xs font-bold text-slate-400 ring-1 ring-slate-700/50">
+                <p className="punktlandung-online-invite-link mt-2 truncate rounded-md bg-slate-950/45 px-3 py-2 text-xs font-bold text-slate-400 ring-1 ring-slate-700/50">
                   {inviteLink}
                 </p>
               </div>
 
-              <aside className="arcade-panel flex min-h-0 flex-col rounded-md border-slate-700/70 p-4 md:p-5">
+              <aside className="arcade-panel punktlandung-online-waitlist-panel flex min-h-0 flex-col rounded-md border-slate-700/70 p-4 md:p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Spieler</p>
@@ -283,7 +283,7 @@ export function LobbyView({
                   <span className="text-lg font-black text-emerald-300">{players.length}</span>
                 </div>
 
-                <div className="mt-4 min-h-0 flex-1 space-y-2 overflow-auto pr-1">
+                <div className="punktlandung-online-player-list mt-4 min-h-0 flex-1 space-y-2 overflow-auto pr-1">
                   {rankedPlayers.length === 0 ? (
                     <div className="grid h-full min-h-48 place-items-center rounded-md bg-slate-950/42 p-4 text-center ring-1 ring-slate-700/60">
                       <p className="max-w-xs text-sm leading-6 text-slate-400">Noch niemand ist beigetreten. Scannt den QR-Code mit Handy, Tablet oder Laptop.</p>
@@ -346,6 +346,26 @@ export function LobbyView({
             fullWidthResponsive
           />
         </div>
+        <div className="punktlandung-touch-only-grid punktlandung-lobby-touch-actions punktlandung-online-waiting-touch-actions fixed inset-x-2 bottom-2 z-50 grid grid-cols-2 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md">
+          <Button sound="click" tone="ghost" className="punktlandung-lobby-touch-back normal-case" onClick={onLeave} aria-label="Zurück" title="Zurück">
+            <span className="punktlandung-lobby-touch-button-inner">
+              <TriangleIcon direction="left" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-back h-5 w-5" />
+              <span>Zurück</span>
+            </span>
+          </Button>
+          <Button
+            sound="select"
+            tone="selected"
+            className="punktlandung-command-button punktlandung-lobby-touch-primary min-h-12 normal-case"
+            disabled={!isHost || players.length === 0 || !canStart}
+            onClick={onStart}
+          >
+            <span className="punktlandung-lobby-touch-button-inner">
+              <span>Starten</span>
+              <TriangleIcon direction="right" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-start h-5 w-5" />
+            </span>
+          </Button>
+        </div>
       </main>
     );
   }
@@ -402,6 +422,15 @@ export function LobbyView({
 
         <section className={`punktlandung-lobby-config-section ${isOnlineRoom ? "punktlandung-online-layout" : ""} min-h-0 flex-1 overflow-y-auto pb-20 sm:pb-0 lg:overflow-hidden ${isSolo ? "" : "grid gap-2 md:gap-4 lg:grid-cols-[1fr_310px]"}`}>
           <div className="punktlandung-lobby-config-stage flex min-h-0 flex-col gap-2 md:gap-4 lg:grid lg:h-full lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:items-stretch min-[2200px]:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
+            <div
+              className={`punktlandung-lobby-settings-column ${
+                isOnlineRoom
+                  ? "punktlandung-online-settings-column"
+                  : isCouchMode
+                    ? "punktlandung-party-settings-column"
+                    : "punktlandung-solo-settings-column"
+              }`}
+            >
             <div className={`arcade-panel punktlandung-lobby-settings ${isSolo ? "punktlandung-local-settings" : ""} ${isCouchMode ? "punktlandung-party-settings" : ""} ${isOnlineRoom ? "punktlandung-online-settings" : ""} order-1 min-w-0 rounded-md border-slate-700/70 p-3 md:p-4 lg:order-none lg:h-full min-[2200px]:p-6`}>
               {isSolo ? (
                 <div className="punktlandung-settings-main punktlandung-local-main">
@@ -487,9 +516,9 @@ export function LobbyView({
                     ))}
                   </div>
                   {isOnlineRoom && !isRoomOnline && (
-                    <div className="punktlandung-online-host-card mt-4 rounded-md bg-slate-950/42 p-3 ring-1 ring-slate-700/60">
+                    <div className="punktlandung-online-host-card mt-4">
                       <div className="punktlandung-online-host-head flex items-center justify-between gap-3">
-                        <h2 className="punktlandung-settings-heading text-[22px] font-black leading-tight">Host-Rolle</h2>
+                        <p className="punktlandung-online-host-label text-xs font-black uppercase tracking-[0.2em] text-slate-400">Host-Rolle</p>
                         {!isHost && <span className="text-xs font-black text-slate-400">Host stellt ein</span>}
                       </div>
                       <div className="punktlandung-online-host-options mt-3 grid grid-cols-2 gap-2">
@@ -631,11 +660,9 @@ export function LobbyView({
                   </div>
 
                   <div>
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
-                        Einschränkungen <span className="tracking-[0.08em] text-slate-500">(optional)</span>
-                      </p>
-                    </div>
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                      Einschränkungen <span className="tracking-[0.08em] text-slate-500">(optional)</span>
+                    </p>
                     <div className="punktlandung-restriction-grid mt-1.5 grid grid-cols-3 gap-2">
                       {[
                         ["noMove", "Nicht bewegen"],
@@ -674,6 +701,14 @@ export function LobbyView({
                 </fieldset>
               </div>
             </div>
+            <AdContainer
+              placement={isOnlineRoom ? "online-settings-banner" : isCouchMode ? "party-settings-banner" : "solo-settings-banner"}
+              variant="banner"
+              label="Anzeige"
+              className="punktlandung-settings-ad"
+              fullWidthResponsive
+            />
+            </div>
 
             <div className="arcade-panel punktlandung-lobby-categories order-2 min-w-0 rounded-md border-slate-700/70 p-3 md:p-4 lg:order-none lg:h-full min-[2200px]:p-6">
               <div className="punktlandung-category-heading flex flex-wrap items-start justify-between gap-3">
@@ -686,6 +721,7 @@ export function LobbyView({
                 {categoryOptions.map((category) => (
                   <button
                     key={category.id}
+                    data-category-id={category.id}
                     disabled={!isHost || category.disabled}
                     onClick={() => {
                       if (!category.selectableId) return;
@@ -703,13 +739,17 @@ export function LobbyView({
                       <span className={`absolute inset-y-5 left-0 w-1 rounded-r-full transition ${category.selectableId && settings.category === category.selectableId ? "bg-emerald-300/80" : "bg-emerald-400/28 group-hover:bg-emerald-300/70"}`} />
                     )}
                     <span className="punktlandung-category-copy relative z-10 block min-w-0">
-                      <span className={`punktlandung-category-title block pr-8 text-base font-black leading-tight sm:pr-0 sm:text-[22px] min-[2200px]:text-4xl ${category.disabled ? "text-slate-400" : "text-white"}`}>{category.title}</span>
-                      <span className={`punktlandung-category-text mt-2 block text-xs leading-4 sm:mt-3 sm:text-base sm:leading-6 min-[2200px]:text-xl min-[2200px]:leading-8 ${category.disabled ? "text-slate-500" : "text-slate-300"}`}>{category.short}</span>
-                      {category.disabled && (
-                        <span className="mt-3 inline-block rounded-sm border border-slate-600/80 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-400">
-                          SPÄTER
+                      <span className={`punktlandung-category-title block pr-8 text-base font-black leading-tight sm:pr-0 sm:text-[22px] min-[2200px]:text-4xl ${category.disabled ? "text-slate-400" : "text-white"}`}>
+                        <span className="punktlandung-category-title-line inline-flex min-w-0 items-center gap-2">
+                          <span className="min-w-0 hyphens-auto whitespace-normal [overflow-wrap:normal]">{category.title}</span>
+                          {category.disabled && (
+                            <span className="punktlandung-category-soon-badge shrink-0 rounded-sm border border-slate-600/80 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-slate-400">
+                              SPÄTER
+                            </span>
+                          )}
                         </span>
-                      )}
+                      </span>
+                      <span className={`punktlandung-category-text mt-2 block text-xs leading-4 sm:mt-3 sm:text-base sm:leading-6 min-[2200px]:text-xl min-[2200px]:leading-8 ${category.disabled ? "text-slate-500" : "text-slate-300"}`}>{category.short}</span>
                     </span>
                     <span className="punktlandung-category-art relative z-10 hidden h-24 min-w-0 items-center justify-center pr-7 sm:flex sm:h-24 sm:pr-14 min-[2200px]:h-36">
                       <img

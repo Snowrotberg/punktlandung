@@ -93,7 +93,9 @@ type FinalHighlight = {
 type ResultsViewProps = {
   room: RoomState;
   isHost: boolean;
+  meId?: string | null;
   onNext: () => void;
+  onReadyNextRound?: () => void;
   onBackToLobby: () => void;
   onRestart: () => void;
   onLeave: () => void;
@@ -327,9 +329,10 @@ function buildCategoryHighlights(summaries: RoundSummary[], players: Player[]): 
     .sort((a, b) => a.label.localeCompare(b.label, "de"));
 }
 
-export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: ResultsViewProps) {
+export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBackToLobby, onRestart }: ResultsViewProps) {
   const { playSuccess } = useSound();
   const [revealed, setRevealed] = useState(false);
+  const [nowTick, setNowTick] = useState(Date.now());
   const [showLanding, setShowLanding] = useState(false);
   const [showImageReplay, setShowImageReplay] = useState(false);
   const [showFinalStandings, setShowFinalStandings] = useState(false);
@@ -377,6 +380,37 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
   const replayChromeSuppressed = replayChromeHidden || replayChromeHoverHidden;
   const countryLabel = displayCountryName(location);
   const continentLabel = displayContinent(location?.continent ?? "");
+  const onlineNextRoundGate = room.kind === "online" && room.status === "results";
+  const activeOnlinePlayers = useMemo(
+    () => room.players.filter((player) => player.connected && player.status === "active"),
+    [room.players]
+  );
+  const readyPlayerIds = useMemo(() => new Set(room.nextRoundReadyPlayerIds ?? []), [room.nextRoundReadyPlayerIds]);
+  const readyPlayerCount = activeOnlinePlayers.filter((player) => readyPlayerIds.has(player.id)).length;
+  const isMeReadyForNextRound = Boolean(meId && readyPlayerIds.has(meId));
+  const nextRoundCountdownSeconds =
+    onlineNextRoundGate && room.nextRoundStartsAt ? Math.max(0, Math.ceil((room.nextRoundStartsAt - nowTick) / 1000)) : null;
+  const readyStatusText = `${readyPlayerCount}/${activeOnlinePlayers.length} bereit`;
+  const nextRoundButtonLabel =
+    onlineNextRoundGate && nextRoundCountdownSeconds !== null
+      ? `Start in ${nextRoundCountdownSeconds}s`
+      : onlineNextRoundGate && !isHost
+        ? isMeReadyForNextRound
+          ? readyStatusText
+          : "Bereit für nächste Runde"
+        : "Nächste Runde";
+  const nextRoundButtonDisabled = onlineNextRoundGate
+    ? isHost
+      ? Boolean(room.nextRoundStartsAt)
+      : isMeReadyForNextRound || !onReadyNextRound
+    : !isHost;
+  const handleNextRoundButton = () => {
+    if (onlineNextRoundGate && !isHost) {
+      onReadyNextRound?.();
+      return;
+    }
+    onNext();
+  };
   const replayMapPanelLayout = replayMapFull
     ? "fixed bottom-3 right-3 h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] sm:bottom-4 sm:right-4 sm:h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)]"
     : replayMapExpanded
@@ -400,6 +434,13 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
     const timer = window.setTimeout(() => setReplayChromeHidden(false), 5000);
     return () => window.clearTimeout(timer);
   }, [replayChromeHidden]);
+
+  useEffect(() => {
+    if (!room.nextRoundStartsAt) return;
+    setNowTick(Date.now());
+    const timer = window.setInterval(() => setNowTick(Date.now()), 500);
+    return () => window.clearInterval(timer);
+  }, [room.nextRoundStartsAt]);
 
   useEffect(() => {
     const query = window.matchMedia("(max-width: 879px) and (orientation: portrait)");
@@ -570,9 +611,9 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
                     </Button>
                   )
                 ) : (
-                  <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={!isHost} onClick={onNext}>
+                  <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                     <span className="punktlandung-inline-action-content">
-                      <span>Nächste Runde</span>
+                      <span>{nextRoundButtonLabel}</span>
                       <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
                     </span>
                   </Button>
@@ -659,9 +700,9 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
                       </Button>
                     )
                   ) : (
-                    <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={!isHost} onClick={onNext}>
+                    <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                       <span className="punktlandung-inline-action-content">
-                        <span>Nächste Runde</span>
+                        <span>{nextRoundButtonLabel}</span>
                         <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
                       </span>
                     </Button>
@@ -681,7 +722,6 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
                   )}
                 </div>
               </div>
-
               <div className="relative min-h-0 flex-1 overflow-hidden rounded-md ring-1 ring-slate-700/70">
                 <div className={replayMapInteractive ? "h-full w-full" : "pointer-events-none h-full w-full"}>
                   <GuessMap
@@ -880,9 +920,9 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
                   Bild nochmal ansehen
                 </Button>
                 {!finished ? (
-                  <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={!isHost} onClick={onNext}>
+                  <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                     <span className="punktlandung-inline-action-content">
-                      <span>Nächste Runde</span>
+                      <span>{nextRoundButtonLabel}</span>
                       <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
                     </span>
                   </Button>
@@ -910,9 +950,9 @@ export function ResultsView({ room, isHost, onNext, onBackToLobby, onRestart }: 
               Bild nochmal ansehen
             </Button>
             {!finished ? (
-              <Button sound="select" tone="selected" className="min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={!isHost} onClick={onNext}>
+              <Button sound="select" tone="selected" className="min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                 <span className="punktlandung-inline-action-content">
-                  <span>Nächste Runde</span>
+                  <span>{nextRoundButtonLabel}</span>
                   <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
                 </span>
               </Button>

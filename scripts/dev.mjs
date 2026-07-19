@@ -5,6 +5,12 @@ const commands = [
   { name: "next", args: ["run", "next"] }
 ];
 
+function npmSpawnTarget(args) {
+  if (process.platform !== "win32") return { command: "npm", args };
+  const command = process.env.ComSpec || "cmd.exe";
+  return { command, args: ["/d", "/s", "/c", ["npm", ...args].join(" ")] };
+}
+
 function normalizedEnv() {
   const env = { ...process.env };
   if (process.platform === "win32") {
@@ -21,7 +27,8 @@ function normalizedEnv() {
 }
 
 const children = commands.map(({ name, args }) => {
-  const child = spawn(process.platform === "win32" ? "npm.cmd" : "npm", args, {
+  const target = npmSpawnTarget(args);
+  const child = spawn(target.command, target.args, {
     stdio: "inherit",
     env: normalizedEnv()
   });

@@ -5980,6 +5980,144 @@ textarea {
   }
 }
 
+/* The fixed mobile action area is opaque across the full viewport width. */
+@media (max-width: 1023px) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions {
+    isolation: isolate !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions::before,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions::before {
+    background: #020617 !important;
+    border: 0 !important;
+    bottom: 0 !important;
+    content: "" !important;
+    display: block !important;
+    height: calc(4.625rem + env(safe-area-inset-bottom)) !important;
+    left: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    right: 0 !important;
+    top: auto !important;
+    z-index: -1 !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout {
+    --online-host-heading-gap: 1rem;
+  }
+}
+
+/* Mobile online waiting room: every card participates in one natural scroll flow. */
+@media (max-width: 1023px) {
+  body .punktlandung-online-waiting-room {
+    min-height: 100dvh;
+    height: 100dvh !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+  }
+
+  body .punktlandung-online-waiting-room > div {
+    height: auto !important;
+    min-height: 100% !important;
+    align-content: start;
+  }
+
+  body .punktlandung-online-waiting-content {
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+
+  body .punktlandung-online-waiting-grid {
+    flex: none !important;
+    grid-template-rows: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body .punktlandung-online-qr-panel {
+    grid-template-rows: auto auto auto auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body .punktlandung-online-qr-box {
+    justify-self: center;
+    width: min(100%, clamp(14rem, 55dvh, 18rem)) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: 1 !important;
+  }
+
+  body .punktlandung-online-qr-box img {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+  }
+
+  body .punktlandung-online-waitlist-panel {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body .punktlandung-online-player-list {
+    flex: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body .punktlandung-online-invite-link {
+    overflow: visible !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    text-overflow: clip !important;
+  }
+}
+
+/* Phone waiting room: keep both host actions within thumb reach. */
+@media (max-width: 879px), (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-online-waiting-room .punktlandung-online-waiting-header-actions {
+    display: none !important;
+  }
+
+  body .punktlandung-online-waiting-room .punktlandung-online-waiting-content {
+    padding-bottom: calc(5.125rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-online-waiting-room .punktlandung-online-waiting-touch-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    height: 4.125rem !important;
+    max-height: 4.125rem !important;
+    min-height: 0 !important;
+  }
+}
+
+/* Final host rhythm: one standard gap above the heading and the name row. */
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card {
+  margin-top: 1rem !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name {
+  margin-top: 1rem !important;
+}
+
+/* Host controls use the same clear vertical rhythm in every viewport. */
+body .punktlandung-lobby-config-section.punktlandung-online-layout {
+  --online-host-block-gap: 1rem;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name {
+  margin-top: 1rem !important;
+}
+
 .punktlandung-back-button,
 .punktlandung-back-link {
   align-items: center !important;
@@ -6095,14 +6233,18 @@ textarea {
 
 .punktlandung-tv-home .punktlandung-home-login-block input,
 .punktlandung-tv-home .punktlandung-home-room-card input {
+  font-family: inherit;
   font-weight: 400;
   letter-spacing: 0;
+  line-height: 1.25;
 }
 
 .punktlandung-tv-home .punktlandung-home-login-block input::placeholder,
 .punktlandung-tv-home .punktlandung-home-room-card input::placeholder {
+  font-family: inherit;
   font-weight: 400;
   letter-spacing: 0;
+  line-height: inherit;
 }
 
 .punktlandung-tv-home .punktlandung-home-room-card .punktlandung-home-mode-text {
@@ -6112,6 +6254,44 @@ textarea {
 
 .punktlandung-tv-home .punktlandung-home-room-card .punktlandung-home-room-controls {
   margin-top: 0.65rem;
+}
+
+.punktlandung-home-mode-content {
+  align-items: center;
+  display: grid;
+  gap: 0.72rem;
+  grid-template-columns: 3.42rem minmax(0, 1fr);
+}
+
+.punktlandung-home-mode-icon {
+  align-self: center;
+  display: grid;
+  height: 3.16rem;
+  justify-self: center;
+  margin-top: 0;
+  overflow: visible;
+  place-items: center;
+  width: 3.42rem;
+}
+
+.punktlandung-home-mode-icon img {
+  display: block;
+  filter: none;
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  transform: none;
+  width: 100%;
+}
+
+.punktlandung-home-mode-icon-solo,
+.punktlandung-home-mode-icon-couch,
+.punktlandung-home-mode-icon-online,
+.punktlandung-home-mode-icon-room {
+  height: 3.1rem;
+  transform: none;
+  width: 3.55rem;
 }
 
 .punktlandung-preview-dash {
@@ -6332,7 +6512,7 @@ textarea {
 
 /* Desktop/TV mode screen source-of-truth layer.
    This sits after the older repair blocks and keeps mobile/portrait untouched. */
-@media (min-width: 1024px) and (orientation: landscape) {
+@media (min-width: 880px) and (orientation: landscape) {
   .punktlandung-lobby-config-stage .punktlandung-lobby-settings {
     display: flex !important;
     flex-direction: column !important;
@@ -6691,6 +6871,46 @@ textarea {
   .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-primary {
     height: 3.35rem !important;
     min-height: 3.35rem !important;
+  }
+}
+
+/* Phone portrait category titles stay complete; paired cards share row height. */
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-grid,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-grid.punktlandung-category-grid--preview {
+    align-items: stretch !important;
+    grid-auto-rows: auto !important;
+    grid-template-rows: repeat(4, auto) !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card {
+    gap: 0.5rem !important;
+    grid-template-columns: minmax(0, 1fr) 3.25rem !important;
+    height: auto !important;
+    min-height: 6.75rem !important;
+    overflow: hidden !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-title,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-title-line,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-title-line > span:first-child {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-title-line {
+    align-items: baseline !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-title-line > span:first-child {
+    hyphens: auto !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
   }
 }
 
@@ -8202,7 +8422,7 @@ textarea {
 @media (max-width: 879px) and (orientation: portrait) {
   .punktlandung-game-shell {
     --mobile-game-pad: clamp(0.5rem, 2.35vw, 0.75rem);
-    --mobile-game-hud-h: clamp(7.65rem, 16dvh, 8.25rem);
+    --mobile-game-hud-h: clamp(7.9rem, 16.75dvh, 8.8rem);
     --mobile-game-back-w: clamp(5rem, 18vw, 5.7rem);
     --mobile-game-meta-size: clamp(2.65rem, 10vw, 3rem);
   }
@@ -8217,7 +8437,7 @@ textarea {
   }
 
   .punktlandung-game-shell .punktlandung-game-hud-grid {
-    gap: clamp(0.42rem, 1.6vw, 0.55rem) !important;
+    gap: var(--mobile-game-pad) !important;
     grid-template-columns: var(--mobile-game-meta-size) var(--mobile-game-meta-size) minmax(0, 1fr) var(--mobile-game-back-w) !important;
     grid-template-rows: clamp(3.8rem, 8.2dvh, 4.1rem) var(--mobile-game-meta-size) !important;
   }
@@ -13558,6 +13778,58 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     font-size: clamp(0.68rem, 0.72vw, 0.84rem) !important;
     line-height: 1.18 !important;
   }
+
+  .punktlandung-home-mode-content {
+    gap: clamp(0.68rem, 0.7vw, 0.9rem) !important;
+    grid-template-columns: clamp(3.25rem, 2.95vw, 3.8rem) minmax(0, 1fr) !important;
+  }
+
+  .punktlandung-home-mode-icon {
+    height: clamp(2.95rem, 2.75vw, 3.4rem) !important;
+    margin-top: 0.02rem !important;
+    width: clamp(3.25rem, 2.95vw, 3.8rem) !important;
+  }
+
+  .punktlandung-home-mode-icon-solo,
+  .punktlandung-home-mode-icon-couch,
+  .punktlandung-home-mode-icon-online,
+  .punktlandung-home-mode-icon-room {
+    height: clamp(2.95rem, 2.75vw, 3.4rem) !important;
+    transform: none !important;
+    width: clamp(3.45rem, 3.15vw, 4rem) !important;
+  }
+
+  .punktlandung-home-mode-icon img {
+    height: 100% !important;
+    object-fit: contain !important;
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1536px) and (max-height: 820px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash {
+    --home-category-icon-slot: clamp(4.75rem, 5.1vw, 5.45rem);
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art {
+    height: clamp(3.7rem, 82%, 4.45rem) !important;
+    padding-right: 0.55rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-content {
+    grid-template-columns: 4rem minmax(0, 1fr) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-solo,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-couch,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-online,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-room {
+    height: 3.25rem !important;
+    justify-self: center !important;
+    transform: none !important;
+    width: 4rem !important;
+  }
 }
 
 @media (max-width: 640px) and (orientation: portrait) {
@@ -13646,16 +13918,12 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     padding-top: 0.55rem !important;
   }
 
-  .punktlandung-tv-home .punktlandung-home-category-copy p:first-child {
-    font-size: clamp(0.95rem, 1.08vw, 1.15rem) !important;
-    line-height: 1.05 !important;
-  }
-
   .punktlandung-tv-home .punktlandung-home-category-copy p + p {
     font-size: clamp(0.68rem, 0.72vw, 0.78rem) !important;
     line-height: 1.15 !important;
   }
 
+  .punktlandung-tv-home .punktlandung-home-category-heading h2,
   .punktlandung-home-login-block h2,
   .punktlandung-home-start-stack h2 {
     font-size: clamp(1.2rem, 1.55vw, 1.75rem) !important;
@@ -13686,10 +13954,11 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     padding-top: 0.45rem !important;
   }
 
+  .punktlandung-tv-home .punktlandung-home-category-copy p:first-child,
   .punktlandung-home-mode-title,
   .punktlandung-home-start-stack button span[class*="text-lg"] {
     font-size: clamp(0.98rem, 1.15vw, 1.32rem) !important;
-    line-height: 1.05 !important;
+    line-height: 1.15 !important;
   }
 
   .punktlandung-home-start-stack button span[class*="leading-"] {
@@ -13824,7 +14093,9 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 
   body .punktlandung-tv-home .punktlandung-home-category-grid {
+    flex: 0 0 auto !important;
     gap: var(--home-grid-gap) !important;
+    grid-template-rows: repeat(4, var(--home-category-card-h)) !important;
     margin-top: var(--home-grid-gap) !important;
   }
 
@@ -13853,18 +14124,28 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-start-stack {
+    display: grid !important;
     grid-row: 4 !important;
+    grid-template-rows:
+      var(--home-start-heading-h)
+      var(--home-start-list-gap)
+      calc((var(--home-category-card-h) * 3) + (var(--home-grid-gap) * 2))
+      var(--home-grid-gap)
+      var(--home-category-card-h) !important;
     margin-top: 0 !important;
   }
 
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-start-stack h2 {
+    grid-row: 1 !important;
     height: var(--home-start-heading-h) !important;
     line-height: var(--home-start-heading-h) !important;
   }
 
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-list {
+    grid-row: 3 !important;
     gap: var(--home-grid-gap) !important;
-    margin-top: var(--home-start-list-gap) !important;
+    grid-template-rows: repeat(3, var(--home-category-card-h)) !important;
+    margin-top: 0 !important;
   }
 
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-card {
@@ -13873,7 +14154,11 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card {
-    margin-top: var(--home-grid-gap) !important;
+    grid-row: 5 !important;
+    height: var(--home-category-card-h) !important;
+    margin-top: 0 !important;
+    min-height: var(--home-category-card-h) !important;
+    overflow: hidden !important;
   }
 
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel nav {
@@ -13913,26 +14198,170 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block span {
     line-height: 1.1 !important;
   }
+
+  body .punktlandung-tv-home .punktlandung-home-category-copy {
+    max-width: none !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-copy p:last-child,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-text {
+    display: block !important;
+    font-size: clamp(0.58rem, 1.35vh, 0.72rem) !important;
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-content {
+    gap: clamp(0.52rem, 0.8vh, 0.65rem) !important;
+    grid-template-columns: clamp(2.9rem, 5.5vh, 3.2rem) minmax(0, 1fr) !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1536px) and (max-height: 820px) and (orientation: landscape) {
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block {
+    transform: translateY(-2.7rem) !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1536px) and (min-height: 761px) and (max-height: 820px) and (orientation: landscape) {
+  body .punktlandung-tv-home {
+    --home-hero-h: clamp(6.15rem, 12.3vh, 6.75rem);
+    --home-map-h: clamp(96px, 14vh, 116px);
+    --home-grid-gap: 1rem;
+    --home-category-card-h: clamp(5.05rem, 11.6vh, 5.65rem);
+    --home-login-h: clamp(8.1rem, 16.4vh, 8.65rem);
+    --home-start-list-gap: var(--home-grid-gap);
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block {
+    overflow: visible !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block > div {
+    gap: 0.42rem !important;
+    margin-top: 0.5rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block label {
+    line-height: 1 !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block label > span {
+    color: rgb(100 116 139) !important;
+    display: block !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    margin-bottom: 0.28rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block input {
+    background: rgba(2, 6, 23, 0.68) !important;
+    background-clip: padding-box !important;
+    border: 2px solid rgba(71, 85, 105, 0.9) !important;
+    border-radius: 0.375rem !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    height: 2.15rem !important;
+    line-height: 1.2 !important;
+    margin-top: 0 !important;
+    outline: none !important;
+    padding: 0.28rem 0.85rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-solo img {
+    transform: translateX(-0.02rem) scale(0.88) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-couch img {
+    transform: translateX(0.18rem) scale(1.16) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-online img {
+    transform: translateX(-0.08rem) scale(1.58) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-room img {
+    transform: translateX(0.18rem) scale(1.52) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card {
+    padding: 0.5rem 0.65rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card .punktlandung-home-mode-content {
+    align-items: center !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card .punktlandung-home-mode-text {
+    line-height: 1.08 !important;
+    margin-top: 0.1rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card .punktlandung-home-room-controls {
+    gap: 0.5rem !important;
+    grid-template-columns: minmax(0, 1fr) 6.9rem !important;
+    margin-top: 0.32rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card input,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card button {
+    height: 1.85rem !important;
+    min-height: 0 !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card input {
+    padding-bottom: 0.12rem !important;
+    padding-top: 0.12rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card button {
+    padding-left: 0.65rem !important;
+    padding-right: 0.65rem !important;
+  }
 }
 
 @media (min-width: 1024px) and (max-height: 760px) and (orientation: landscape) {
   body .punktlandung-tv-home {
-    --home-hero-h: clamp(6.2rem, 15.2vh, 7rem);
+    --home-hero-h: clamp(6rem, 14.8vh, 7rem);
     --home-map-gap: 0.5rem;
     --home-map-h: clamp(74px, 14vh, 102px);
     --home-category-heading-gap: 0.55rem;
     --home-category-heading-h: clamp(1.35rem, 3.2vh, 1.55rem);
-    --home-grid-gap: 0.5rem;
+    --home-grid-gap: 1rem;
     --home-category-card-h: clamp(4.85rem, 11.8vh, 5.15rem);
     --home-login-h: clamp(6.2rem, 14.65vh, 6.7rem);
     --home-start-heading-h: clamp(1.35rem, 3.2vh, 1.55rem);
-    --home-start-list-gap: 0.5rem;
-    --home-start-top: calc(var(--home-category-card-top) - var(--home-start-heading-h) - var(--home-start-list-gap) + 0.06rem);
+    --home-start-list-gap: var(--home-grid-gap);
+    --home-start-top: calc(var(--home-category-card-top) - var(--home-start-heading-h) - var(--home-start-list-gap) - 1.955rem);
   }
 
+  body .punktlandung-tv-home .punktlandung-home-category-heading h2,
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block h2,
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-start-stack h2 {
     font-size: clamp(1.05rem, 2.9vh, 1.2rem) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy {
+    height: var(--home-hero-h) !important;
+    min-height: var(--home-hero-h) !important;
+    transform: translateY(0.5rem) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy p:first-of-type {
+    font-size: clamp(0.78rem, 2vh, 0.88rem) !important;
+    line-height: 1.22 !important;
+    margin-top: 0.42rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy p:last-of-type {
+    font-size: clamp(0.88rem, 2.25vh, 1rem) !important;
+    line-height: 1.28 !important;
+    margin-top: 0.22rem !important;
   }
 
   body .punktlandung-tv-home .punktlandung-home-category-card {
@@ -13943,12 +14372,28 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   body .punktlandung-tv-home .punktlandung-home-category-copy p:first-child,
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-title {
     font-size: clamp(1rem, 2.85vh, 1.15rem) !important;
+    line-height: 1.15 !important;
   }
 
   body .punktlandung-tv-home .punktlandung-home-category-copy p:last-child,
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-text {
     font-size: clamp(0.64rem, 1.85vh, 0.76rem) !important;
     line-height: 1.15 !important;
+    max-width: none !important;
+    white-space: nowrap !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-copy {
+    max-width: none !important;
+    overflow: visible !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-copy p:last-child {
+    display: block !important;
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
   }
 
   body .punktlandung-tv-home .punktlandung-home-category-art {
@@ -13958,6 +14403,41 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-card {
     padding-bottom: 0.5rem !important;
     padding-top: 0.5rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-content {
+    gap: 0.62rem !important;
+    grid-template-columns: 3.1rem minmax(0, 1fr) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon {
+    display: grid !important;
+    height: 2.52rem !important;
+    justify-self: center !important;
+    place-items: center !important;
+    width: 3.1rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-solo,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-couch,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-online,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-room {
+    height: 2.52rem !important;
+    transform: none !important;
+    width: 3.1rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon img,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-solo img,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-couch img,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-online img,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-room img {
+    height: 2.18rem !important;
+    max-height: 2.18rem !important;
+    max-width: 2.46rem !important;
+    object-fit: contain !important;
+    transform: none !important;
+    width: 2.46rem !important;
   }
 
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block > div {
@@ -13983,8 +14463,12 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card {
-    margin-top: var(--home-grid-gap) !important;
+    margin-top: 0 !important;
     padding: 0.55rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-content {
+    margin-left: 0.3rem !important;
   }
 
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card input,
@@ -13995,6 +14479,67 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card label > span:nth-child(3),
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card label > div {
     margin-top: 0.3rem !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1536px) and (max-height: 820px) and (orientation: landscape) {
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel {
+    grid-template-rows:
+      var(--home-login-top)
+      max(0rem, calc(var(--home-category-card-top) - var(--home-start-heading-h) - var(--home-start-list-gap) - var(--home-login-top)))
+      auto
+      minmax(0, 1fr)
+      auto !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block {
+    grid-row: 2 !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-start-stack {
+    grid-row: 3 !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel nav {
+    grid-row: 5 !important;
+  }
+}
+
+@media (min-width: 880px) and (orientation: landscape) {
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block {
+    overflow: visible !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block > div {
+    gap: clamp(0.5rem, 0.95vh, 0.72rem) !important;
+    margin-top: clamp(0.5rem, 0.95vh, 0.72rem) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block label {
+    line-height: 1 !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block label > span {
+    color: rgb(100 116 139) !important;
+    display: block !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    margin-bottom: 0.28rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block input {
+    background: rgba(2, 6, 23, 0.68) !important;
+    background-clip: padding-box !important;
+    border: 2px solid rgba(71, 85, 105, 0.9) !important;
+    border-radius: 0.375rem !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    height: clamp(2.05rem, 3.7vh, 2.35rem) !important;
+    line-height: 1.2 !important;
+    margin-top: 0 !important;
+    outline: none !important;
+    padding: 0.28rem 0.85rem !important;
   }
 }
 
@@ -14127,6 +14672,14 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 @media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-map {
+    height: clamp(232px, 55vh, 248px) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-map img {
+    object-position: center 61% !important;
+  }
+
   body .punktlandung-tv-home .punktlandung-home-category-grid {
     gap: 0.75rem !important;
   }
@@ -14148,6 +14701,14 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   body .punktlandung-tv-home .punktlandung-home-category-art img {
     max-height: 100% !important;
     max-width: 100% !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-text {
+    display: block !important;
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
   }
 
   body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-grid {
@@ -14250,7 +14811,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 
   body .punktlandung-game-shell .punktlandung-game-hud-grid {
     display: grid !important;
-    gap: 0.45rem !important;
+    gap: 0.75rem !important;
     grid-template-columns: 3.08rem 3.08rem minmax(0, 1fr) 5.4rem !important;
     grid-template-rows: 3.75rem 3.08rem !important;
     height: auto !important;
@@ -14760,5 +15321,1033 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     position: absolute;
     right: -1px;
     top: 100%;
+  }
+}
+body .punktlandung-tv-home .punktlandung-home-mode-icon-solo img,
+body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-solo img {
+  align-self: center !important;
+  justify-self: center !important;
+  transform: translateX(-3.2%) scale(0.78) !important;
+  transform-origin: center center !important;
+}
+
+@media (max-width: 1023px) {
+  body .punktlandung-tv-home .punktlandung-home-mode-icon-solo img,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-solo img {
+    transform: translate(-3.2%, -10.9%) scale(0.78) !important;
+  }
+}
+
+@media (min-width: 1537px) {
+  body .punktlandung-tv-home .punktlandung-home-mode-icon-solo img,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-solo img {
+    transform: translate(-3.2%, -11.8%) scale(0.78) !important;
+  }
+}
+
+body .punktlandung-tv-home .punktlandung-home-mode-icon-online img,
+body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-online img {
+  transform: translateX(-7.5%) !important;
+  transform-origin: center center !important;
+}
+
+@media (min-width: 1024px) and (max-width: 1536px) and (min-height: 761px) and (max-height: 820px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-mode-icon-online img,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-online img {
+    transform: translateX(-0.28rem) scale(1.58) !important;
+  }
+}
+
+body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+  transform: translateY(0.28rem) scale(1.36) !important;
+  transform-origin: center center !important;
+}
+
+body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash > span.rounded-sm {
+  top: 0.28rem !important;
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    transform: scale(1.5) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash > span.rounded-sm {
+    bottom: 0.78rem !important;
+    top: auto !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card[data-category-id="landscapes"] .punktlandung-home-category-art img {
+    transform: translateY(0.28rem) !important;
+  }
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    transform: scale(1.62) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash > span.rounded-sm {
+    bottom: 0.9rem !important;
+    top: auto !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    transform: translateY(0.2rem) scale(1.36) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash > span.rounded-sm {
+    top: 0.24rem !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1536px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    transform: translateY(0.24rem) scale(1.28) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash > span.rounded-sm {
+    top: 0.24rem !important;
+  }
+}
+
+@media (min-width: 2200px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    transform: translateY(0.34rem) scale(1.36) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash > span.rounded-sm {
+    top: 0.36rem !important;
+  }
+}
+
+@media (min-width: 880px) and (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-grid.punktlandung-category-grid--preview > .punktlandung-category-card > .punktlandung-category-art {
+    transform: translateX(-0.72rem) !important;
+  }
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-grid.punktlandung-category-grid--preview > .punktlandung-category-card > .punktlandung-category-art {
+    transform: translateX(-1.45rem) !important;
+  }
+}
+
+
+@media (min-width: 1024px) and (max-width: 1536px) and (max-height: 930px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-card[data-category-id="streetview-preview"] .punktlandung-home-category-title-line > span:first-child {
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card[data-category-id="streetview-preview"] .punktlandung-home-category-soon-badge {
+    left: 7.1rem !important;
+    position: absolute !important;
+    top: 1.55rem !important;
+  }
+}
+
+@media (min-width: 2200px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-grid.punktlandung-category-grid--preview > .punktlandung-category-card > .punktlandung-category-art {
+    transform: translateX(-2.25rem) !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="satellite-preview"] .punktlandung-category-art img,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="streetview-preview"] .punktlandung-category-art img {
+    transform: scale(1.34) !important;
+    transform-origin: center center !important;
+  }
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="satellite-preview"] .punktlandung-category-art img,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="streetview-preview"] .punktlandung-category-art img {
+    transform: scale(1.46) !important;
+  }
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section {
+    padding-bottom: 0 !important;
+    scroll-padding-bottom: 0 !important;
+  }
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview {
+    align-items: start !important;
+    min-height: 7.35rem !important;
+    padding: 0.75rem 0.68rem 0.65rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-copy {
+    position: static !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-copy > span:last-child {
+    bottom: 0.72rem !important;
+    left: auto !important;
+    margin: 0 !important;
+    position: absolute !important;
+    right: 0.58rem !important;
+    top: auto !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-art {
+    align-self: start !important;
+    transform: translateY(-0.18rem) !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="satellite-preview"] .punktlandung-category-art img,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="streetview-preview"] .punktlandung-category-art img {
+    transform: scale(1.72) !important;
+    transform-origin: center center !important;
+  }
+}
+
+@media (min-width: 381px) and (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview {
+    align-items: start !important;
+    min-height: 7.35rem !important;
+    padding: 0.75rem 0.68rem 0.65rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-copy {
+    position: static !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-copy > span:last-child {
+    bottom: 0.72rem !important;
+    left: auto !important;
+    margin: 0 !important;
+    position: absolute !important;
+    right: 0.58rem !important;
+    top: auto !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-art {
+    align-self: start !important;
+    transform: translateY(-0.18rem) !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="satellite-preview"] .punktlandung-category-art img,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="streetview-preview"] .punktlandung-category-art img {
+    transform: scale(1.62) !important;
+    transform-origin: center center !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-copy {
+    position: static !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-copy > span:last-child {
+    bottom: 1rem !important;
+    left: auto !important;
+    margin: 0 !important;
+    position: absolute !important;
+    right: 1rem !important;
+    top: auto !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section,
+  body .punktlandung-lobby .punktlandung-lobby-config-section {
+    padding-bottom: calc(5.75rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(5.75rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-stage::after,
+  body .punktlandung-lobby-config-stage::after {
+    content: "" !important;
+    display: block !important;
+    flex: 0 0 calc(0.95rem + env(safe-area-inset-bottom)) !important;
+    height: calc(0.95rem + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section,
+  body .punktlandung-lobby .punktlandung-lobby-config-section {
+    padding-bottom: calc(5.35rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(5.35rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-stage::after,
+  body .punktlandung-lobby-config-stage::after {
+    content: "" !important;
+    display: block !important;
+    flex: 0 0 calc(0.75rem + env(safe-area-inset-bottom)) !important;
+    height: calc(0.75rem + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+body .punktlandung-tv-home .punktlandung-home-category-title-line,
+body .punktlandung-lobby-config-stage .punktlandung-category-title-line {
+  max-width: 100% !important;
+  vertical-align: baseline !important;
+}
+
+body .punktlandung-tv-home .punktlandung-home-category-soon-badge,
+body .punktlandung-lobby-config-stage .punktlandung-category-soon-badge {
+  align-items: center !important;
+  display: inline-flex !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  position: static !important;
+  transform: translateY(-0.02em) !important;
+  white-space: nowrap !important;
+}
+
+body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-text,
+body .punktlandung-lobby-config-stage .punktlandung-category-card--preview .punktlandung-category-text {
+  bottom: auto !important;
+  left: auto !important;
+  margin-top: 0.5rem !important;
+  position: static !important;
+  right: auto !important;
+  top: auto !important;
+}
+
+body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-copy > .punktlandung-category-text:last-child,
+body .punktlandung-lobby-config-stage .punktlandung-category-card--preview .punktlandung-category-copy > .punktlandung-category-text:last-child {
+  bottom: auto !important;
+  display: block !important;
+  left: auto !important;
+  margin: 0.5rem 0 0 !important;
+  position: static !important;
+  right: auto !important;
+  top: auto !important;
+  transform: none !important;
+}
+
+body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+  transform: translateY(0.24rem) scale(1.5) !important;
+}
+
+body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="satellite-preview"] .punktlandung-category-art img,
+body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="streetview-preview"] .punktlandung-category-art img {
+  transform: scale(1.18) !important;
+  transform-origin: center center !important;
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    transform: scale(1.66) !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="satellite-preview"] .punktlandung-category-art img,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="streetview-preview"] .punktlandung-category-art img {
+    transform: scale(1.78) !important;
+  }
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    transform: scale(1.78) !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="satellite-preview"] .punktlandung-category-art img,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="streetview-preview"] .punktlandung-category-art img {
+    transform: scale(1.9) !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    transform: translateY(0.2rem) scale(1.5) !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="satellite-preview"] .punktlandung-category-art img,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="streetview-preview"] .punktlandung-category-art img {
+    transform: scale(1.24) !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1536px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    transform: translateY(0.24rem) scale(1.42) !important;
+  }
+}
+
+@media (min-width: 2200px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art img {
+    transform: translateY(0.34rem) scale(1.5) !important;
+  }
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings .punktlandung-party-rules.punktlandung-setup-rules,
+  body .punktlandung-lobby-config-stage .punktlandung-local-settings .punktlandung-party-rules.punktlandung-setup-rules,
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-rules.punktlandung-setup-rules,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-party-rules.punktlandung-setup-rules {
+    margin: clamp(1rem, 1.65vh, 1.35rem) 0 0 !important;
+  }
+}
+
+@media (min-width: 2200px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings .punktlandung-party-rules.punktlandung-setup-rules,
+  body .punktlandung-lobby-config-stage .punktlandung-local-settings .punktlandung-party-rules.punktlandung-setup-rules,
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-rules.punktlandung-setup-rules,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-party-rules.punktlandung-setup-rules {
+    margin-top: clamp(1rem, 1.1vh, 1.65rem) !important;
+  }
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-local-settings .punktlandung-mode-list-single {
+    align-content: start !important;
+    display: grid !important;
+    flex: 0 0 auto !important;
+    grid-auto-rows: auto !important;
+    grid-template-rows: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-local-settings .punktlandung-mode-list-single > .punktlandung-static-mode-choice {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 4rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-local-settings .punktlandung-party-rules.punktlandung-setup-rules {
+    margin-top: 0.5rem !important;
+    padding-top: 0.45rem !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1536px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-rules.punktlandung-setup-rules {
+    margin-top: 0.45rem !important;
+    padding-top: 0.45rem !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section,
+  body .punktlandung-lobby .punktlandung-lobby-config-section {
+    padding-bottom: calc(4.95rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(4.95rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-stage::after,
+  body .punktlandung-lobby-config-stage::after {
+    content: "" !important;
+    display: block !important;
+    flex: 0 0 calc(0.25rem + env(safe-area-inset-bottom)) !important;
+    height: calc(0.25rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions {
+    border: 1px solid rgba(148, 163, 184, 0.42) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(203, 213, 225, 0.1),
+      0 -16px 38px rgba(2, 6, 23, 0.5) !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section,
+  body .punktlandung-lobby .punktlandung-lobby-config-section {
+    padding-bottom: calc(5.15rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(5.15rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-stage::after,
+  body .punktlandung-lobby-config-stage::after {
+    content: "" !important;
+    display: block !important;
+    flex: 0 0 calc(1rem + env(safe-area-inset-bottom)) !important;
+    height: calc(1rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.5) !important;
+    box-shadow: inset 0 -1px 0 rgba(203, 213, 225, 0.08) !important;
+    overflow: visible !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions {
+    border: 1px solid rgba(148, 163, 184, 0.46) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(203, 213, 225, 0.12),
+      0 -14px 34px rgba(2, 6, 23, 0.48) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions::before,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions::before {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.34) !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section,
+  body .punktlandung-lobby .punktlandung-lobby-config-section {
+    padding-bottom: calc(4.35rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(4.35rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-stage::after,
+  body .punktlandung-lobby-config-stage::after {
+    content: "" !important;
+    display: block !important;
+    flex: 0 0 max(0px, env(safe-area-inset-bottom)) !important;
+    height: max(0px, env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions {
+    border: 1px solid rgba(148, 163, 184, 0.46) !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.34) !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section,
+  body .punktlandung-lobby .punktlandung-lobby-config-section {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-stage::after,
+  body .punktlandung-lobby-config-stage::after {
+    content: "" !important;
+    display: block !important;
+    flex: 0 0 calc(0.9rem + env(safe-area-inset-bottom)) !important;
+    height: calc(0.9rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.56) !important;
+    overflow: visible !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories::after {
+    background: rgba(203, 213, 225, 0.08) !important;
+    bottom: -1px !important;
+    content: "" !important;
+    display: block !important;
+    height: 1px !important;
+    left: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    right: 0 !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions {
+    border: 1px solid rgba(148, 163, 184, 0.5) !important;
+    border-top: 1px solid rgba(148, 163, 184, 0.52) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions::before,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions::before {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.4) !important;
+    content: "" !important;
+    display: block !important;
+  }
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: var(--online-host-block-gap, 1rem) 0 0 !important;
+  outline: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-head {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-settings-heading {
+  margin: 0 !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-options {
+  gap: var(--online-host-control-gap, 0.75rem) !important;
+  margin-top: var(--online-host-heading-gap, 0.75rem) !important;
+  width: 100% !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-options > button {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name {
+  margin-top: var(--online-host-control-gap, 0.75rem) !important;
+  width: 100% !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name input {
+  width: 100% !important;
+}
+
+/* Mobile lobby ending: content border, 16px gap, then the fixed action bar. */
+@media (max-width: 1023px) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section,
+  body .punktlandung-lobby .punktlandung-lobby-config-section {
+    overflow-x: visible !important;
+    overflow-y: auto !important;
+    padding-bottom: calc(5.125rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(5.125rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-stage::after,
+  body .punktlandung-lobby-config-stage::after,
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions::before,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions::before,
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions::after,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions {
+    backdrop-filter: none !important;
+    background: #020617 !important;
+    background-image: none !important;
+    border: 1px solid rgba(148, 163, 184, 0.5) !important;
+    border-radius: 0.45rem !important;
+    bottom: 0.5rem !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    height: 4.125rem !important;
+    overflow: hidden !important;
+    padding: 0.5rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout > aside {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.5) !important;
+    overflow: visible !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories::after {
+    content: none !important;
+    display: none !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-config-section,
+  body .punktlandung-lobby .punktlandung-lobby-config-section {
+    padding-bottom: calc(4.625rem + env(safe-area-inset-bottom)) !important;
+    scroll-padding-bottom: calc(4.625rem + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout {
+    --online-host-block-gap: 0.95rem;
+    --online-host-control-gap: 0.65rem;
+    --online-host-heading-gap: 0.65rem;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-options > button {
+    min-height: 4.15rem !important;
+    padding: 0.75rem !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name {
+    display: block !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout {
+    --online-host-block-gap: 0.85rem;
+    --online-host-control-gap: 0.55rem;
+    --online-host-heading-gap: 0.55rem;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name {
+    display: block !important;
+  }
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout {
+    --online-host-block-gap: clamp(0.85rem, 1.3vh, 1rem);
+    --online-host-control-gap: clamp(0.55rem, 1vh, 0.75rem);
+    --online-host-heading-gap: clamp(0.55rem, 1vh, 0.75rem);
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings {
+  --online-control-gap: 0.75rem;
+  --online-host-label-width: 3.9rem;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-mode-list,
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-options {
+  gap: var(--online-control-gap) !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card,
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-head,
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-options,
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name {
+  box-sizing: border-box !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  max-width: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  width: 100% !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-options {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name {
+  align-items: center !important;
+  display: grid !important;
+  gap: var(--online-control-gap) !important;
+  grid-template-columns: var(--online-host-label-width) minmax(0, 1fr) !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name > span {
+  min-width: 0 !important;
+  width: var(--online-host-label-width) !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name input {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings {
+    --online-control-gap: 0.65rem;
+    --online-host-label-width: 4rem;
+  }
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings {
+    --online-control-gap: 0.55rem;
+    --online-host-label-width: 3.85rem;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings {
+    --online-control-gap: 0.75rem;
+    --online-host-label-width: 4.1rem;
+  }
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings {
+    --online-control-gap: clamp(0.75rem, 1.15vh, 1rem);
+    --online-host-label-width: clamp(3.5rem, 4.3vw, 4.6rem);
+  }
+}
+
+/* Host role and play style deliberately share one outer grid line. */
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-options,
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* Keep scrolling content completely hidden behind the fixed mobile actions. */
+@media (max-width: 1023px) {
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions {
+    isolation: isolate !important;
+  }
+
+  body .punktlandung-lobby:has(.punktlandung-lobby-config-stage) .punktlandung-lobby-touch-actions::before,
+  body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions::before {
+    background: #020617 !important;
+    border: 0 !important;
+    bottom: 0 !important;
+    content: "" !important;
+    display: block !important;
+    height: calc(4.625rem + env(safe-area-inset-bottom)) !important;
+    left: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    right: 0 !important;
+    top: auto !important;
+    z-index: -1 !important;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout {
+    --online-host-heading-gap: 1rem;
+  }
+}
+
+/* Final host rhythm: one standard gap above the heading and the name row. */
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card {
+  margin-top: 1rem !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name {
+  margin-top: 1rem !important;
+}
+
+/* Laptop and monitor: give the party player row room above its card edge. */
+@media (min-width: 1280px) and (max-width: 2199px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-card {
+    height: calc(var(--mode-player-card-h) + 0.75rem) !important;
+    min-height: calc(var(--mode-player-card-h) + 0.75rem) !important;
+    padding-bottom: 1.35rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-slots {
+    margin-bottom: 0 !important;
+  }
+}
+
+/* Desktop game header: keep the back icon and label on one line. */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-game-shell .punktlandung-game-back-button,
+  body .punktlandung-game-shell .punktlandung-game-back-button-inner {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-back-button-inner > span {
+    display: inline-block !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* Desktop online setup: keep Host-Rolle clear of the play-style buttons. */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card {
+    margin-top: 0 !important;
+    padding-top: clamp(1rem, 1.65vh, 1.5rem) !important;
+  }
+}
+
+/* Laptop and monitor: keep the host sub-label clearly separated from both button rows. */
+@media (min-width: 1280px) and (max-width: 2199px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card {
+    padding-top: 2rem !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-options {
+    margin-top: 0.5rem !important;
+  }
+}
+
+/* Host-Rolle is a settings label, matching Name, Zeit and Runden in the hierarchy. */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-label {
+    font-size: 0.7rem !important;
+    line-height: 1 !important;
+  }
+}
+
+/* Laptop online setup: keep preview titles and their badges visually separate. */
+@media (min-width: 1024px) and (max-width: 1536px) and (min-height: 700px) and (max-height: 900px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-copy,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-title {
+    overflow: visible !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-title {
+    padding-right: 0 !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-title-line {
+    align-items: flex-start !important;
+    gap: 0.65rem !important;
+    max-width: none !important;
+    overflow: visible !important;
+    width: max-content !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="satellite-preview"] .punktlandung-category-title-line > span:first-child {
+    flex: 0 0 auto !important;
+    hyphens: none !important;
+    max-width: none !important;
+    white-space: nowrap !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-lobby-categories .punktlandung-category-card--preview[data-category-id="streetview-preview"] .punktlandung-category-title-line > span:first-child {
+    flex: 0 0 4.6rem !important;
+    max-width: 4.6rem !important;
+    white-space: normal !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-lobby-categories .punktlandung-category-card--preview .punktlandung-category-soon-badge {
+    flex: 0 0 auto !important;
+    margin-top: 0.12em !important;
+  }
+}
+
+/* Laptop home: optically center Solo and keep the room icon clear of its input. */
+@media (min-width: 1024px) and (max-width: 1536px) and (min-height: 761px) and (max-height: 820px) and (orientation: landscape) {
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon > img {
+    scale: 0.95 !important;
+    transform-origin: center center !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-solo img {
+    transform: translate(-3.2%, -9%) scale(0.78) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-room img {
+    transform: scale(0.96) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block > div {
+    gap: 1.42rem !important;
+  }
+}
+/* Solo setup: use the free desktop column height for a separate ad panel. */
+.punktlandung-lobby-settings-column {
+  display: contents;
+}
+
+.punktlandung-settings-ad {
+  display: none;
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  .punktlandung-lobby-config-stage > .punktlandung-solo-settings-column {
+    display: grid;
+    grid-template-rows: max-content minmax(clamp(7rem, 18vh, 22rem), 1fr);
+    gap: 1rem;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-solo-settings-column > .punktlandung-local-settings {
+    align-self: start;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .punktlandung-solo-settings-column > .punktlandung-settings-ad {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+/* Monitor and 4K: all setup modes have enough vertical room for the lower ad panel. */
+@media (min-width: 1900px) and (orientation: landscape) {
+  .punktlandung-lobby-config-stage > .punktlandung-lobby-settings-column {
+    display: grid;
+    grid-template-rows: max-content minmax(clamp(7rem, 18vh, 22rem), 1fr);
+    gap: 1rem;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings-column > .punktlandung-lobby-settings {
+    align-self: start;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .punktlandung-lobby-settings-column > .punktlandung-settings-ad {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+/* Phone landscape online setup: keep the fixed primary action on one line. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  body:has(.punktlandung-lobby-config-section.punktlandung-online-layout) .punktlandung-lobby-touch-primary,
+  body:has(.punktlandung-lobby-config-section.punktlandung-online-layout) .punktlandung-lobby-touch-primary .punktlandung-lobby-touch-button-inner,
+  body:has(.punktlandung-lobby-config-section.punktlandung-online-layout) .punktlandung-lobby-touch-primary .punktlandung-lobby-touch-button-inner > span {
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* Phone portrait: restore the section gap lost when the online layout becomes a block flow. */
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout > .punktlandung-online-aside {
+    margin-top: 1rem !important;
+  }
+}
+
+/* Home status controls: side panel by default, hero header in phone landscape. */
+.punktlandung-home-statuses {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  z-index: 20;
+}
+
+.punktlandung-home-statuses--side {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+}
+
+.punktlandung-home-statuses--hero {
+  display: none;
+}
+
+@media (min-width: 700px) and (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-statuses--side {
+    display: none !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-statuses--hero {
+    display: flex !important;
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
   }
 }

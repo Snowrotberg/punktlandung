@@ -3,8 +3,11 @@ export type AdPlacement =
   | "home-right-rail"
   | "solo-left-rail"
   | "solo-right-rail"
+  | "solo-settings-banner"
+  | "party-settings-banner"
   | "party-left-rail"
   | "party-right-rail"
+  | "online-settings-banner"
   | "online-left-rail"
   | "online-right-rail"
   | "lobby-left-rail"
@@ -38,8 +41,11 @@ export const adConfig = {
     "home-right-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_RIGHT_RAIL?.trim() || HOME_SIDEBAR_SLOT_ID,
     "solo-left-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_SOLO_LEFT_RAIL?.trim() || SOLO_SIDEBAR_SLOT_ID,
     "solo-right-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_SOLO_RIGHT_RAIL?.trim() || SOLO_SIDEBAR_SLOT_ID,
+    "solo-settings-banner": process.env.NEXT_PUBLIC_ADSENSE_SLOT_SOLO_SETTINGS_BANNER?.trim() || SOLO_SIDEBAR_SLOT_ID,
+    "party-settings-banner": process.env.NEXT_PUBLIC_ADSENSE_SLOT_PARTY_SETTINGS_BANNER?.trim() || PARTY_SIDEBAR_SLOT_ID,
     "party-left-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_PARTY_LEFT_RAIL?.trim() || PARTY_SIDEBAR_SLOT_ID,
     "party-right-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_PARTY_RIGHT_RAIL?.trim() || PARTY_SIDEBAR_SLOT_ID,
+    "online-settings-banner": process.env.NEXT_PUBLIC_ADSENSE_SLOT_ONLINE_SETTINGS_BANNER?.trim() || ONLINE_SIDEBAR_SLOT_ID,
     "online-left-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_ONLINE_LEFT_RAIL?.trim() || ONLINE_SIDEBAR_SLOT_ID,
     "online-right-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_ONLINE_RIGHT_RAIL?.trim() || ONLINE_SIDEBAR_SLOT_ID,
     "lobby-left-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_LOBBY_LEFT_RAIL?.trim() ?? "",

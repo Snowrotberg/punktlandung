@@ -177,6 +177,7 @@ export function useOnlineRoomSocket() {
     updateSettings: (settings: Partial<GameSettings>) => send({ type: "update_settings", settings }),
     renamePlayer: (_playerIdToRename: string, _name: string) => undefined,
     startRound: () => send({ type: "start_round" }),
+    readyNextRound: () => send({ type: "ready_next_round" }),
     submitGuess: (guess: LatLng & { countryCode?: string }, targetPlayerId?: string) =>
       send({ type: "submit_guess", guess, countryCode: guess.countryCode, playerId: targetPlayerId }),
     cancelRound: () => send({ type: "cancel_round" }),
@@ -185,6 +186,7 @@ export function useOnlineRoomSocket() {
     leaveRoom: () => {
       writeStoredOnlineRoom(null);
       writeStoredOnlinePlayerId(null);
+      setRoom(null);
       send({ type: "leave_room" });
     },
     setTeam: (team: TeamId) => send({ type: "set_team", team }),

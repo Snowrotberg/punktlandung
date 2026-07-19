@@ -116,6 +116,8 @@ export type RoomState = {
   summaries: RoundSummary[];
   emojiEvents: EmojiEventPayload[];
   adGateUntil: number | null;
+  nextRoundReadyPlayerIds: string[];
+  nextRoundStartsAt: number | null;
 };
 
 export type EmojiEventPayload = {
@@ -134,6 +136,7 @@ export type ClientMessage =
   | { type: "join_room"; code: string; playerName: string }
   | { type: "update_settings"; settings: Partial<GameSettings> }
   | { type: "start_round" }
+  | { type: "ready_next_round" }
   | { type: "submit_guess"; guess: LatLng; countryCode?: string; playerId?: string }
   | { type: "send_emoji"; emoji: string; x: number }
   | { type: "unlock_cosmetic"; cosmetic: Cosmetic }

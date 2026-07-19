@@ -17,11 +17,12 @@ const modePreview: Array<{
   title: string;
   text: string;
   available: boolean;
+  icon: string;
   badge?: string;
 }> = [
-  { id: "solo", title: "Solo-Modus", text: "Eine Person setzt pro Runde einen Pin.", available: true },
-  { id: "couch", title: "Party-Modus", text: "Reihum tippen, Punkte jagen.", available: true },
-  { id: "online", title: "Online-Modus", text: "Code teilen und live gegeneinander spielen.", available: true }
+  { id: "solo", title: "Solo-Modus", text: "Eine Person setzt pro Runde einen Pin.", available: true, icon: "/mode-icons/solo-modus-crop.png" },
+  { id: "couch", title: "Party-Modus", text: "Reihum tippen, Punkte jagen.", available: true, icon: "/mode-icons/party-modus-crop.png" },
+  { id: "online", title: "Online-Modus", text: "Code teilen und live gegeneinander spielen.", available: true, icon: "/mode-icons/online-modus-crop.png" }
 ];
 
 const legalLinks = [
@@ -85,6 +86,37 @@ function SoundToggle() {
     >
       Sound {enabled ? "an" : "aus"}
     </button>
+  );
+}
+
+function ServerStatus({ status }: { status: "connecting" | "open" | "closed" }) {
+  const label = status === "open" ? "Server an" : status === "connecting" ? "Server ..." : "Server aus";
+  const title = status === "open" ? "Raumserver ist verbunden" : status === "connecting" ? "Verbindung zum Raumserver wird aufgebaut" : "Raumserver ist nicht verbunden";
+
+  return (
+    <span
+      role="status"
+      aria-live="polite"
+      title={title}
+      className={`inline-flex min-h-[24px] items-center rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] ring-1 ${
+        status === "open"
+          ? "bg-emerald-400/10 text-emerald-300 ring-emerald-300/50"
+          : status === "connecting"
+            ? "bg-amber-400/10 text-amber-200 ring-amber-300/50"
+            : "bg-rose-400/10 text-rose-200 ring-rose-300/50"
+      }`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function HomeStatusControls({ serverStatus, placement }: { serverStatus: "connecting" | "open" | "closed"; placement: "hero" | "side" }) {
+  return (
+    <div className={`punktlandung-home-statuses punktlandung-home-statuses--${placement}`}>
+      <ServerStatus status={serverStatus} />
+      <SoundToggle />
+    </div>
   );
 }
 
@@ -219,7 +251,8 @@ export function GameApp({
     skipLocation,
     restart,
     leaveRoom,
-    setTeam
+    setTeam,
+    readyNextRound
   } = activeGame;
 
   useEffect(() => {
@@ -367,6 +400,14 @@ export function GameApp({
     leaveRoom();
     window.location.href = "/";
   };
+  const handleLeaveWaitingRoom = () => {
+    initialModeHandledRef.current = true;
+    setPendingJoinCode(null);
+    onlineGame.leaveRoom();
+    if (window.location.pathname !== "/online-modus") {
+      window.location.replace("/online-modus");
+    }
+  };
 
   if (requiredStatus && !routeGuardReady) {
     return <GameStateLoading />;
@@ -434,7 +475,9 @@ export function GameApp({
       <ResultsView
         room={room}
         isHost={isHost}
+        meId={playerId}
         onNext={handleStartRound}
+        onReadyNextRound={readyNextRound}
         onBackToLobby={cancelRound}
         onRestart={restart}
         onLeave={handleLeaveToHome}
@@ -458,7 +501,7 @@ export function GameApp({
           onRenamePlayer={renamePlayer}
           onStart={handleStartRound}
           onTeam={handleSetTeam}
-          onLeave={handleLeaveToHome}
+          onLeave={room.kind === "online" && Boolean(onlineGame.room) ? handleLeaveWaitingRoom : handleLeaveToHome}
           canStart={room.kind !== "online" || Boolean(onlineGame.room)}
           isRoomOnline={room.kind !== "online" || Boolean(onlineGame.room)}
           connectionStatus={onlineGame.status}
@@ -494,6 +537,7 @@ export function GameApp({
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_20%,rgba(52,211,153,0.14),transparent_28rem),radial-gradient(circle_at_82%_36%,rgba(99,102,241,0.18),transparent_30rem)]" />
 
           <div className="relative flex flex-col p-4 lg:h-full lg:min-h-0 lg:overflow-auto">
+            <HomeStatusControls serverStatus={onlineGame.status} placement="hero" />
             <div className="punktlandung-home-hero-copy max-w-3xl min-[2200px]:max-w-5xl">
               <div className="relative flex items-center gap-3">
                 <SvgPin
@@ -508,20 +552,6 @@ export function GameApp({
               <p className="mt-0.5 max-w-2xl text-sm leading-5 text-slate-200 min-[2200px]:max-w-4xl min-[2200px]:text-2xl min-[2200px]:leading-8">
                 Geo-Guessing-Spiel für Städte, Flaggen, Wahrzeichen &amp; mehr.
               </p>
-              <div className="mt-2 grid grid-cols-3 gap-4 rounded-md bg-slate-950/38 px-4 py-1 text-xs text-slate-200 ring-1 ring-slate-700/60 min-[2200px]:text-lg">
-                {[
-                  "Bild ansehen",
-                  "Ort erraten",
-                  "Punkte sammeln"
-                ].map((step, index) => (
-                  <div key={step} className="flex items-center gap-2 leading-tight">
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md border-2 border-emerald-400 bg-emerald-400/15 text-xs font-black text-emerald-200 min-[2200px]:h-10 min-[2200px]:w-10 min-[2200px]:text-lg">
-                      {index + 1}
-                    </span>
-                    <span className="font-bold">{step}</span>
-                  </div>
-                ))}
-              </div>
             </div>
 
             <div className="punktlandung-home-map relative mt-3.5 h-[150px] shrink-0 overflow-hidden rounded-md bg-slate-950/60 ring-1 ring-slate-700/70 sm:h-[176px] md:h-[194px] lg:h-[clamp(124px,22vh,190px)] min-[2200px]:h-[min(42vh,700px)]">
@@ -534,13 +564,13 @@ export function GameApp({
                 <div>
                   <h2 className="text-base font-black leading-none text-white md:text-[22px] min-[2200px]:text-3xl">Spielkategorien</h2>
                 </div>
-                <p className="hidden text-right text-xs leading-none text-slate-400 sm:block">Wähle die Art der Orte für deine Runde.</p>
               </div>
 
                   <div className="punktlandung-home-category-grid mt-4 grid flex-1 auto-rows-fr grid-cols-2 gap-4">
               {categoryOptions.map((category) => (
                 <div
                   key={category.id}
+                  data-category-id={category.id}
                   className={`punktlandung-home-category-card relative grid h-full min-h-[52px] grid-cols-1 items-center gap-4 overflow-hidden rounded-md px-4 py-2 sm:min-h-[clamp(48px,6.5vh,68px)] sm:grid-cols-[minmax(0,1fr)_64px] min-[2200px]:min-h-[96px] min-[2200px]:grid-cols-[minmax(0,1fr)_124px] ${
                     category.disabled
                       ? "punktlandung-preview-dash cursor-not-allowed select-none bg-slate-950/24"
@@ -548,7 +578,16 @@ export function GameApp({
                   }`}
                 >
                   <div className="punktlandung-home-category-copy min-w-0">
-                    <p className={`font-black leading-tight min-[2200px]:text-2xl ${category.disabled ? "text-slate-300" : "text-white"}`}>{category.title}</p>
+                    <p className={`font-black leading-tight min-[2200px]:text-2xl ${category.disabled ? "text-slate-300" : "text-white"}`}>
+                      <span className="punktlandung-home-category-title-line inline-flex min-w-0 items-center gap-2">
+                        <span className="truncate">{category.title}</span>
+                        {category.disabled && (
+                          <span className="punktlandung-home-category-soon-badge shrink-0 rounded-sm border border-slate-600/80 px-2 py-0.5 text-[10px] font-black tracking-[0.08em] text-slate-400 min-[2200px]:text-sm">
+                            SPÄTER
+                          </span>
+                        )}
+                      </span>
+                    </p>
                     <p className={`mt-0.5 text-xs leading-4 min-[2200px]:text-base min-[2200px]:leading-6 ${category.disabled ? "text-slate-500" : "text-slate-400"}`}>{category.short}</p>
                   </div>
                         <div className="punktlandung-home-category-art relative hidden h-10 min-w-0 -translate-x-4 items-center justify-center pr-3 sm:flex min-[2200px]:h-20 min-[2200px]:-translate-x-8">
@@ -560,11 +599,7 @@ export function GameApp({
                       draggable={false}
                     />
                   </div>
-                  {category.disabled ? (
-                      <span className="absolute right-2 top-2 z-10 rounded-sm border border-slate-600/80 px-2 py-0.5 text-[10px] font-black tracking-[0.08em] text-slate-400 min-[2200px]:right-4 min-[2200px]:top-4 min-[2200px]:text-sm">
-                      SPÄTER
-                    </span>
-                  ) : (
+                  {!category.disabled && (
                     <span className="absolute right-2 top-2 z-10 text-xs font-black text-indigo-200 min-[2200px]:right-4 min-[2200px]:top-4 min-[2200px]:text-xl">{category.tag}</span>
                   )}
                 </div>
@@ -575,11 +610,7 @@ export function GameApp({
 
         <aside className="relative z-20 order-2 lg:order-none lg:min-h-0 lg:overflow-hidden">
           <div className="punktlandung-home-side-panel arcade-panel relative flex flex-col rounded-md border-slate-700/80 p-4 lg:h-full lg:min-h-0 lg:overflow-hidden">
-            <div className="absolute right-4 top-4 z-10 flex items-start justify-end gap-4">
-              <div className="flex shrink-0 items-center gap-2">
-                <SoundToggle />
-              </div>
-            </div>
+            <HomeStatusControls serverStatus={onlineGame.status} placement="side" />
 
             <div className="punktlandung-home-login-block">
               <h2 className="text-lg font-black md:text-[22px]">Login</h2>
@@ -636,8 +667,11 @@ export function GameApp({
                       {mode.available && (
                         <span className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-emerald-400/22 transition group-hover:bg-emerald-300/75" />
                       )}
-                      <span className="flex items-start justify-between gap-2">
-                        <span>
+                      <span className="punktlandung-home-mode-content">
+                        <span className={`punktlandung-home-mode-icon punktlandung-home-mode-icon-${mode.id}`} aria-hidden="true">
+                          <img src={mode.icon} alt="" draggable={false} />
+                        </span>
+                        <span className="min-w-0">
                           <span className={`punktlandung-home-mode-title block text-lg font-black leading-tight ${mode.available ? "text-white" : "text-slate-400"}`}>{mode.title}</span>
                           <span className={`punktlandung-home-mode-text mt-0.5 block max-w-[28ch] text-xs leading-[1.25] ${mode.available ? "text-slate-300" : "text-slate-500"}`}>{mode.text}</span>
                           {mode.available && <span className="mt-1 block text-[10px] font-black uppercase tracking-[0.14em] text-emerald-300/90">Starten</span>}
@@ -655,28 +689,35 @@ export function GameApp({
 
               <div className="punktlandung-home-room-card mt-3 rounded-md bg-slate-950/72 p-3 ring-1 ring-slate-600/80 transition hover:bg-slate-900/86 hover:ring-emerald-300/75">
                 <label className="block">
-                  <span className="punktlandung-home-mode-title block text-lg font-black leading-tight text-white">Online-Raum</span>
-                  <span className="punktlandung-home-mode-text mt-0.5 block text-xs leading-tight text-slate-300">Online-Raum beitreten</span>
-                  <div className="punktlandung-home-room-controls mt-1.5 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-                    <input
-                      value={joinCodeInput}
-                      onChange={(event) => setJoinCodeInput(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") handleJoinByCode();
-                      }}
-                      maxLength={6}
-                      placeholder="Raumcode"
-                      className="h-10 min-w-0 rounded-md border-0 bg-slate-950/70 px-3 text-sm text-white outline-none ring-1 ring-slate-700 transition placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-300 md:text-base"
-                    />
-                    <button
-                      type="button"
-                      disabled={joinCodeInput.trim().length === 0}
-                      onClick={handleJoinByCode}
-                      className="h-10 rounded-md bg-emerald-400/12 px-3 text-xs font-black uppercase tracking-[0.08em] text-emerald-100 ring-1 ring-emerald-300/50 transition hover:bg-emerald-400/18 hover:ring-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-900/70 disabled:text-slate-500 disabled:ring-slate-700"
-                    >
-                      Beitreten
-                    </button>
-                  </div>
+                  <span className="punktlandung-home-mode-content punktlandung-home-room-content">
+                    <span className="punktlandung-home-mode-icon punktlandung-home-mode-icon-room" aria-hidden="true">
+                      <img src="/mode-icons/online-raum3-crop.png" alt="" draggable={false} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="punktlandung-home-mode-title block text-lg font-black leading-tight text-white">Online-Raum</span>
+                      <span className="punktlandung-home-mode-text mt-0.5 block text-xs leading-tight text-slate-300">Online-Raum beitreten</span>
+                      <span className="punktlandung-home-room-controls mt-1.5 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                        <input
+                          value={joinCodeInput}
+                          onChange={(event) => setJoinCodeInput(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") handleJoinByCode();
+                          }}
+                          maxLength={6}
+                          placeholder="Raumcode"
+                          className="h-10 min-w-0 rounded-md border-0 bg-slate-950/70 px-3 text-sm text-white outline-none ring-1 ring-slate-700 transition placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-300 md:text-base"
+                        />
+                        <button
+                          type="button"
+                          disabled={joinCodeInput.trim().length === 0}
+                          onClick={handleJoinByCode}
+                          className="h-10 rounded-md bg-emerald-400/12 px-3 text-xs font-black uppercase tracking-[0.08em] text-emerald-100 ring-1 ring-emerald-300/50 transition hover:bg-emerald-400/18 hover:ring-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-900/70 disabled:text-slate-500 disabled:ring-slate-700"
+                        >
+                          Beitreten
+                        </button>
+                      </span>
+                    </span>
+                  </span>
                 </label>
               </div>
           </div>
