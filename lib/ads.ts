@@ -25,6 +25,7 @@ const SOLO_SIDEBAR_SLOT_ID = "6536873787";
 const PARTY_SIDEBAR_SLOT_ID = "8719762534";
 const ONLINE_SIDEBAR_SLOT_ID = "7406680868";
 const GAME_RECTANGLE_SLOT_ID = "2615986240";
+const SETTINGS_BLOCK_SLOT_ID = "1700695095";
 
 const consentRequiredPlacements: Partial<Record<AdPlacement, boolean>> = {
   "online-left-rail": true,
@@ -41,8 +42,8 @@ export const adConfig = {
     "home-right-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_RIGHT_RAIL?.trim() || HOME_SIDEBAR_SLOT_ID,
     "solo-left-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_SOLO_LEFT_RAIL?.trim() || SOLO_SIDEBAR_SLOT_ID,
     "solo-right-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_SOLO_RIGHT_RAIL?.trim() || SOLO_SIDEBAR_SLOT_ID,
-    "solo-settings-banner": process.env.NEXT_PUBLIC_ADSENSE_SLOT_SOLO_SETTINGS_BANNER?.trim() || SOLO_SIDEBAR_SLOT_ID,
-    "party-settings-banner": process.env.NEXT_PUBLIC_ADSENSE_SLOT_PARTY_SETTINGS_BANNER?.trim() || PARTY_SIDEBAR_SLOT_ID,
+    "solo-settings-banner": process.env.NEXT_PUBLIC_ADSENSE_SLOT_SOLO_SETTINGS_BANNER?.trim() || SETTINGS_BLOCK_SLOT_ID,
+    "party-settings-banner": process.env.NEXT_PUBLIC_ADSENSE_SLOT_PARTY_SETTINGS_BANNER?.trim() || SETTINGS_BLOCK_SLOT_ID,
     "party-left-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_PARTY_LEFT_RAIL?.trim() || PARTY_SIDEBAR_SLOT_ID,
     "party-right-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_PARTY_RIGHT_RAIL?.trim() || PARTY_SIDEBAR_SLOT_ID,
     "online-settings-banner": process.env.NEXT_PUBLIC_ADSENSE_SLOT_ONLINE_SETTINGS_BANNER?.trim() || ONLINE_SIDEBAR_SLOT_ID,

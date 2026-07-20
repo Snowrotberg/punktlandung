@@ -16255,7 +16255,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 @media (min-width: 1024px) and (orientation: landscape) {
   .punktlandung-lobby-config-stage > .punktlandung-solo-settings-column {
     display: grid;
-    grid-template-rows: max-content minmax(clamp(7rem, 18vh, 22rem), 1fr);
+    grid-template-rows: max-content minmax(0, 1fr);
     gap: 1rem;
     min-width: 0;
     min-height: 0;
@@ -16271,7 +16271,8 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   .punktlandung-solo-settings-column > .punktlandung-settings-ad {
     display: flex;
     width: 100%;
-    height: 100%;
+    height: 100% !important;
+    max-height: 100% !important;
     min-height: 0;
     overflow: hidden;
   }
@@ -16297,7 +16298,8 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   .punktlandung-lobby-settings-column > .punktlandung-settings-ad {
     display: flex;
     width: 100%;
-    height: 100%;
+    height: 100% !important;
+    max-height: 100% !important;
     min-height: 0;
     overflow: hidden;
   }

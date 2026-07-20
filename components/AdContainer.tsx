@@ -1,20 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  AD_CONSENT_EVENT,
-  AD_CONSENT_STORAGE_KEY,
-  adConfig,
-  type AdPlacement,
-  type AdVariant,
-  isAdPlacementConsentRequired,
-  isAdPlacementConfigured
-} from "@/lib/ads";
+import { useEffect, useRef } from "react";
+import { adConfig, type AdPlacement, type AdVariant, isAdPlacementConfigured } from "@/lib/ads";
 
 type AdContainerProps = {
   placement?: AdPlacement;
   variant?: AdVariant;
-  adFormat?: "auto" | "vertical";
+  adFormat?: "auto" | "horizontal" | "vertical";
   label?: string;
   className?: string;
   position?: "relative" | "absolute";
@@ -27,15 +19,11 @@ declare global {
   }
 }
 
-function hasAdConsent(placement: AdPlacement) {
-  if (!isAdPlacementConsentRequired(placement)) return true;
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(AD_CONSENT_STORAGE_KEY) === "accepted";
-}
-
 function variantShape(variant: AdVariant) {
   if (variant === "rail") return "min-h-[420px] w-full";
-  if (variant === "game") return "h-[11rem] w-[min(92vw,240px)] sm:h-[11rem] sm:w-[min(92vw,240px)] min-[1900px]:h-[11.5rem] min-[1900px]:w-[min(92vw,260px)]";
+  if (variant === "game") {
+    return "h-[11rem] w-[min(92vw,240px)] sm:h-[11rem] sm:w-[min(92vw,240px)] min-[1900px]:h-[11.5rem] min-[1900px]:w-[min(92vw,260px)]";
+  }
   return "min-h-[96px] w-full";
 }
 
@@ -53,80 +41,103 @@ export function AdContainer({
   position = "relative",
   fullWidthResponsive = true
 }: AdContainerProps) {
-  const [consentGranted, setConsentGranted] = useState(false);
   const requestedRef = useRef(false);
+  const adElementRef = useRef<HTMLModElement | null>(null);
   const slotId = adConfig.slots[placement];
   const placementConfigured = isAdPlacementConfigured(placement);
-  const consentRequired = isAdPlacementConsentRequired(placement);
-  const canRequestAd = placementConfigured && consentGranted;
   const shape = variantShape(variant);
   const positionClass = position === "absolute" ? "absolute" : "relative";
+  const defaultFormat = adFormat ?? variantFormat(variant);
 
   useEffect(() => {
-    const syncConsent = () => setConsentGranted(hasAdConsent(placement));
-    syncConsent();
-    window.addEventListener(AD_CONSENT_EVENT, syncConsent);
-    window.addEventListener("storage", syncConsent);
-    return () => {
-      window.removeEventListener(AD_CONSENT_EVENT, syncConsent);
-      window.removeEventListener("storage", syncConsent);
-    };
-  }, [placement]);
+    const adElement = adElementRef.current;
+    if (!placementConfigured || !adElement || requestedRef.current) return;
 
-  useEffect(() => {
-    if (!canRequestAd || requestedRef.current) return;
-    requestedRef.current = true;
+    let timeout: number | undefined;
+    let didPush = false;
+    const isSettingsBlock = placement === "solo-settings-banner" || placement === "party-settings-banner";
+    const guardedAncestors: HTMLElement[] = [];
+    let ancestor = adElement.parentElement;
 
-    const timeout = window.setTimeout(() => {
-      try {
-        window.adsbygoogle = window.adsbygoogle || [];
-        window.adsbygoogle.push({});
-      } catch {
-        requestedRef.current = false;
+    if (isSettingsBlock) {
+      while (ancestor && ancestor !== document.body) {
+        guardedAncestors.push(ancestor);
+        if (ancestor.matches("main.punktlandung-lobby")) break;
+        ancestor = ancestor.parentElement;
       }
-    }, 80);
+    }
 
-    return () => window.clearTimeout(timeout);
-  }, [canRequestAd]);
+    const clearInjectedAutoHeights = () => {
+      guardedAncestors.forEach((element) => {
+        if (element.style.getPropertyValue("height") === "auto" && element.style.getPropertyPriority("height") === "important") {
+          element.style.removeProperty("height");
+        }
+      });
+    };
 
-  const allowAds = () => {
-    window.localStorage.setItem(AD_CONSENT_STORAGE_KEY, "accepted");
-    window.dispatchEvent(new Event(AD_CONSENT_EVENT));
-  };
+    const layoutObserver = new MutationObserver(clearInjectedAutoHeights);
+    const layoutRoot = guardedAncestors.at(-1);
+    if (layoutRoot) {
+      layoutObserver.observe(layoutRoot, { attributes: true, attributeFilter: ["style"], subtree: true });
+    }
+    const requestAd = () => {
+      if (requestedRef.current) return;
+
+      const bounds = adElement.getBoundingClientRect();
+      if (bounds.width <= 0 || bounds.height <= 0) return;
+
+      const useCompactSoloBanner =
+        placement === "solo-settings-banner" &&
+        window.matchMedia("(min-width: 1024px) and (max-width: 1899px) and (orientation: landscape)").matches;
+      adElement.dataset.adFormat = useCompactSoloBanner ? "horizontal" : defaultFormat;
+
+      requestedRef.current = true;
+      timeout = window.setTimeout(() => {
+        try {
+          window.adsbygoogle = window.adsbygoogle || [];
+          window.adsbygoogle.push({});
+          didPush = true;
+        } catch {
+          requestedRef.current = false;
+        }
+      }, 80);
+    };
+
+    requestAd();
+    const resizeObserver = new ResizeObserver(requestAd);
+    resizeObserver.observe(adElement);
+
+    return () => {
+      resizeObserver.disconnect();
+      layoutObserver.disconnect();
+      if (timeout !== undefined) {
+        window.clearTimeout(timeout);
+        if (!didPush) requestedRef.current = false;
+      }
+    };
+  }, [defaultFormat, placement, placementConfigured]);
 
   return (
     <aside
       aria-label={label}
       className={`arcade-panel ${positionClass} overflow-hidden rounded-md border-indigo-500/55 bg-slate-900/82 ${shape} ${className}`}
     >
-      {canRequestAd && (
+      {placementConfigured ? (
         <ins
+          ref={adElementRef}
           className="adsbygoogle block h-full w-full"
           style={{ display: "block" }}
           data-ad-client={adConfig.clientId}
-          data-ad-format={adFormat ?? variantFormat(variant)}
+          data-ad-format={defaultFormat}
           data-ad-slot={slotId}
           data-adtest={adConfig.testMode ? "on" : undefined}
           data-full-width-responsive={fullWidthResponsive ? "true" : "false"}
         />
-      )}
-
-      {!canRequestAd && (
+      ) : (
         <div className="absolute inset-0 grid place-items-center p-4 text-center">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-300">{label}</p>
-            <p className="mt-2 text-xs leading-5 text-slate-400">
-              {placementConfigured ? "Wird erst nach Zustimmung geladen." : "AdSense-ready Fläche."}
-            </p>
-            {placementConfigured && consentRequired && (
-              <button
-                type="button"
-                onClick={allowAds}
-                className="mt-3 rounded-md bg-slate-950/70 px-3 py-2 text-xs font-black text-emerald-200 ring-1 ring-emerald-300/50 transition hover:bg-emerald-400/10"
-              >
-                Anzeigen erlauben
-              </button>
-            )}
+            <p className="mt-2 text-xs leading-5 text-slate-400">AdSense-ready Fläche.</p>
           </div>
         </div>
       )}

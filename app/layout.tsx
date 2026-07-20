@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { StructuredData } from "@/components/StructuredData";
 import { adConfig } from "@/lib/ads";
 import { absoluteUrl, defaultDescription, ogImage, siteName, siteUrl } from "@/lib/seo";
@@ -70,17 +69,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <link rel="preconnect" href="https://commons.wikimedia.org" crossOrigin="" />
         <link rel="preconnect" href="https://upload.wikimedia.org" crossOrigin="" />
-      </head>
-      <body className="bg-slate-950 text-slate-50 antialiased">
         {adConfig.enabled && adConfig.clientId && (
-          <Script
-            id="punktlandung-adsense"
+          <script
             async
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adConfig.clientId)}`}
             crossOrigin="anonymous"
-            strategy="afterInteractive"
           />
         )}
+      </head>
+      <body className="bg-slate-950 text-slate-50 antialiased">
         <StructuredData />
         {children}
       </body>

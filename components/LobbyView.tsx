@@ -7,6 +7,7 @@ import type { GameMode, GameSettings, HostParticipation, Player, RoomKind, TeamI
 import { AdContainer } from "./AdContainer";
 import { BackButton } from "./BackButton";
 import { Button } from "./Button";
+import { LegalLinks } from "./LegalLinks";
 import { TriangleIcon } from "./TriangleIcon";
 
 type LobbyViewProps = {
@@ -334,6 +335,7 @@ export function LobbyView({
                     ? "Host spielt mit und wird später als Teilnehmer hinzugefügt."
                     : "Der große Bildschirm verwaltet den Raum und spielt nicht mit."}
                 </p>
+                <LegalLinks preserveSession className="mt-3 border-t border-slate-700/55 pt-3" />
               </aside>
             </section>
           </div>
@@ -700,6 +702,7 @@ export function LobbyView({
                   </div>
                 </fieldset>
               </div>
+              <LegalLinks preserveSession className="mt-3 border-t border-slate-800/85 pt-3" />
             </div>
             <AdContainer
               placement={isOnlineRoom ? "online-settings-banner" : isCouchMode ? "party-settings-banner" : "solo-settings-banner"}

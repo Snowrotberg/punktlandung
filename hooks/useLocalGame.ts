@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { builtInLocations } from "@/data/locations";
 import { averageGuess, badgeFor, countryCodeFromGuess, haversineDistanceKm, isGuessInCountry, scoreDistance } from "@/lib/geo";
 import { evaluateTerritoryGuess } from "@/lib/locationBoundaries";
+import { consumeLegalReturn } from "@/lib/legalNavigation";
 import type {
   Cosmetic,
   GameSettings,
@@ -93,6 +94,11 @@ type BrowserHistoryState = {
 };
 
 export type InitialLocalGameMode = GameSettings["localMode"] | "online";
+
+function storedRoomMatchesInitialMode(room: RoomState, initialMode: InitialLocalGameMode): boolean {
+  if (initialMode === "online") return room.kind === "online";
+  return room.kind === "solo" && room.settings.localMode === initialMode;
+}
 
 function readStoredSession(fallbackHostId: string): StoredSession | null {
   if (typeof window === "undefined") return null;
@@ -570,6 +576,17 @@ export function useLocalGame(initialMode?: InitialLocalGameMode) {
     }
 
     if (initialMode) {
+      const storedSession = readStoredSession(playerId);
+      const returningFromLegalPage = consumeLegalReturn(window.location.pathname);
+      if (returningFromLegalPage && storedSession && storedRoomMatchesInitialMode(storedSession.room, initialMode)) {
+        locationQueueRef.current = storedSession.locationQueue;
+        queueCategoryRef.current = storedSession.queueCategory;
+        lastLocationIdRef.current = storedSession.lastLocationId ?? storedSession.room.location?.id ?? null;
+        previousRoomRef.current = storedSession.room;
+        setRecentLocationIds(storedSession.recentLocationIds.length ? storedSession.recentLocationIds : readStoredRecentLocationIds());
+        setRoom(storedSession.room);
+        return;
+      }
       clearStoredSession();
       previousRoomRef.current = room;
       setRecentLocationIds(readStoredRecentLocationIds());

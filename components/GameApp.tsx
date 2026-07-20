@@ -8,6 +8,7 @@ import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
 import type { GameSettings, LatLng, RoomState, RoundStatus, TeamId } from "@/types/game";
 import { AdContainer } from "./AdContainer";
 import { GameView } from "./GameView";
+import { LegalLinks } from "./LegalLinks";
 import { LobbyView } from "./LobbyView";
 import { ResultsView } from "./ResultsView";
 import { useSound } from "./SoundProvider";
@@ -23,13 +24,6 @@ const modePreview: Array<{
   { id: "solo", title: "Solo-Modus", text: "Eine Person setzt pro Runde einen Pin.", available: true, icon: "/mode-icons/solo-modus-crop.png" },
   { id: "couch", title: "Party-Modus", text: "Reihum tippen, Punkte jagen.", available: true, icon: "/mode-icons/party-modus-crop.png" },
   { id: "online", title: "Online-Modus", text: "Code teilen und live gegeneinander spielen.", available: true, icon: "/mode-icons/online-modus-crop.png" }
-];
-
-const legalLinks = [
-  { href: "/infos", label: "Infos" },
-  { href: "/impressum", label: "Impressum" },
-  { href: "/datenschutz", label: "Datenschutz" },
-  { href: "/lizenzen", label: "Lizenzen" }
 ];
 
 export type InitialGameMode = "home" | GameSettings["localMode"] | "online";
@@ -722,13 +716,7 @@ export function GameApp({
               </div>
           </div>
 
-            <nav className="mt-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-1 pt-2 text-[12px] font-bold text-slate-500 md:justify-start">
-              {legalLinks.map((link) => (
-                <a key={link.href} href={link.href} className="transition hover:text-emerald-300">
-                  {link.label}
-                </a>
-              ))}
-            </nav>
+            <LegalLinks includeInfos className="mt-auto pt-2 text-[12px] md:justify-start md:text-left" align="center" />
           </div>
         </aside>
         </div>

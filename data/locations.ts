@@ -1,5 +1,6 @@
 import type { CommunityMapPack, GeoLocation } from "../types/game";
 import generatedLocations from "./generated/locations.generated.json";
+import excludedLicenseImageFiles from "./generated/image-license-exclusions.generated.json";
 
 const wikimediaFile = (fileName: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(fileName)}`;
 
@@ -609,11 +610,26 @@ const excludedImagePatterns = [
   /\btopo\b/i
 ];
 
+const normalizedLicenseExclusions = new Set(
+  excludedLicenseImageFiles.map((fileName) => fileName.replaceAll("_", " ").normalize("NFC").trim().toLocaleLowerCase())
+);
+
+function imageFileName(location: GeoLocation) {
+  if (location.imageFile) return location.imageFile;
+  try {
+    const url = new URL(location.panoramaUrl);
+    return decodeURIComponent(url.pathname.split("/").pop() ?? "");
+  } catch {
+    return location.panoramaUrl;
+  }
+}
+
 function isDefaultPlayableLocation(location: GeoLocation) {
   if (location.difficulty === "hard") return false;
+  const imageFile = imageFileName(location);
+  const normalizedImageFile = imageFile.replaceAll("_", " ").normalize("NFC").trim().toLocaleLowerCase();
+  if (normalizedLicenseExclusions.has(normalizedImageFile)) return false;
   if (location.category === "flags") return true;
-
-  const imageFile = (location.imageFile ?? location.panoramaUrl).toLowerCase();
   return !excludedImagePatterns.some((pattern) => pattern.test(imageFile));
 }
 

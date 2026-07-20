@@ -11,15 +11,16 @@ export const metadata: Metadata = {
 };
 
 type AccessPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     error?: string;
     next?: string;
-  };
+  }>;
 };
 
-export default function AccessPage({ searchParams }: AccessPageProps) {
-  const showError = searchParams?.error === "1";
-  const nextPath = safeNextPath(searchParams?.next);
+export default async function AccessPage({ searchParams }: AccessPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const showError = resolvedSearchParams?.error === "1";
+  const nextPath = safeNextPath(resolvedSearchParams?.next);
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-slate-950 px-4 py-6 text-slate-50 sm:px-6">

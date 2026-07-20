@@ -6,6 +6,7 @@ import { formatDistance, rankResults } from "@/lib/geo";
 import { BackButton } from "./BackButton";
 import { Button } from "./Button";
 import { GuessMap } from "./GuessMap";
+import { LegalLinks } from "./LegalLinks";
 import { PanoramaViewer } from "./PanoramaViewer";
 import { TriangleIcon } from "./TriangleIcon";
 import { useSound } from "./SoundProvider";
@@ -885,6 +886,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 );
               })}
             </div>
+            <LegalLinks preserveSession className="mt-3 border-t border-slate-700/55 pt-3" align="end" />
           </aside>
         </div>
       )}
@@ -1063,6 +1065,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 );
               })}
             </div>
+            <LegalLinks preserveSession className="mt-3 border-t border-slate-700/55 pt-2" />
           </div>
         </aside>
         </div>

@@ -3,6 +3,7 @@ const isStaticExport = process.env.PUNKTLANDUNG_STATIC_EXPORT === "true";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   output: isStaticExport ? "export" : undefined,
   trailingSlash: isStaticExport,
   images: {

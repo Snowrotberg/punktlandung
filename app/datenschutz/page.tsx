@@ -1,64 +1,277 @@
-import Link from "next/link";
-import { BackIcon } from "@/components/BackIcon";
+import type { Metadata } from "next";
+import { LegalBackLink } from "@/components/LegalBackLink";
+import { LegalLinks } from "@/components/LegalLinks";
+
+export const metadata: Metadata = {
+  title: "Datenschutz",
+};
+
+const externalLinkClass = "font-bold text-emerald-300 underline-offset-4 hover:text-emerald-200 hover:underline";
 
 export default function DatenschutzPage() {
   return (
     <main className="min-h-dvh bg-slate-950 p-4 text-slate-100">
-      <section className="mx-auto max-w-3xl rounded-md bg-slate-900/78 p-5 ring-1 ring-slate-700">
-        <Link href="/" aria-label="Zurueck" title="Zurueck" className="punktlandung-back-link">
-          <BackIcon />
-        </Link>
-        <h1 className="mt-5 text-4xl font-black text-white">Datenschutz</h1>
+      <article className="mx-auto max-w-3xl rounded-md bg-slate-900/78 p-5 ring-1 ring-slate-700 sm:p-7">
+        <LegalBackLink />
+        <h1 className="mt-5 break-words text-3xl font-black text-white sm:text-4xl">Datenschutzerklärung</h1>
+        <p className="mt-3 text-sm text-slate-400">Stand: 19. Juli 2026</p>
         <p className="mt-4 text-slate-300">
-          Diese Datenschutzerklaerung informiert darueber, welche Daten Punktlandung verarbeitet, wenn das Spiel im Browser genutzt wird.
+          Diese Datenschutzerklärung erläutert, welche personenbezogenen Daten bei der Nutzung von
+          Punktlandung verarbeitet werden und welche Rechte betroffene Personen haben.
         </p>
 
-        <div className="mt-6 space-y-5 text-sm leading-6 text-slate-300">
+        <div className="mt-7 space-y-7 text-sm leading-6 text-slate-300">
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">Verantwortlicher</h2>
-            <p className="mt-2">Punktlandung</p>
-          </section>
-
-          <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">Lokale Spieldaten</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">1. Verantwortlicher</h2>
             <p className="mt-2">
-              Punktlandung speichert Nickname, Spielstand und Sitzungsdaten lokal im Browser. Diese Daten helfen dabei, ein Spiel nach einem
-              versehentlichen Schliessen fortzusetzen oder lokale Einstellungen beizubehalten.
+              Tim Kleinheins
+              <br />
+              Pfauenbergsteige 84
+              <br />
+              73732 Esslingen
+              <br />
+              Deutschland
+              <br />
+              E-Mail:{" "}
+              <a href="mailto:aintartstudio@gmail.com" className={externalLinkClass}>
+                aintartstudio@gmail.com
+              </a>
             </p>
           </section>
 
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">Server und Online-Raeume</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">2. Allgemeine Hinweise und Rechtsgrundlagen</h2>
             <p className="mt-2">
-              Der aktuelle Browser-Modus kann ohne Benutzerkonto genutzt werden. Wenn Online-Funktionen aktiv sind, koennen Raumcode, Nickname,
-              Tipps, Punkte und technische Verbindungsdaten verarbeitet werden, damit die Spielrunde funktioniert.
+              Personenbezogene Daten sind alle Informationen, die sich auf eine identifizierte oder
+              identifizierbare Person beziehen. Punktlandung verarbeitet Daten nur, soweit dies zur
+              Bereitstellung des Spiels, zur Erfüllung nutzerseitig angeforderter Funktionen, zur Sicherheit
+              des Angebots oder für Werbung nach einer gegebenenfalls erforderlichen Einwilligung notwendig ist.
+            </p>
+            <p className="mt-2">
+              Maßgebliche Rechtsgrundlagen sind insbesondere Art. 6 Abs. 1 Buchst. a DSGVO (Einwilligung),
+              Art. 6 Abs. 1 Buchst. b DSGVO (Durchführung des angeforderten Nutzungsverhältnisses) und Art. 6
+              Abs. 1 Buchst. f DSGVO (berechtigte Interessen). Für das Speichern von Informationen auf dem
+              Endgerät oder den Zugriff darauf gilt zusätzlich § 25 TDDDG.
             </p>
           </section>
 
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">Kartendienste und Bildquellen</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">3. Hosting und Serverprotokolle</h2>
             <p className="mt-2">
-              Punktlandung laedt Kartenkacheln und freie Bilder aus externen Quellen wie OpenStreetMap-nahen Tile-Diensten und Wikimedia
-              Commons. Dabei kann die IP-Adresse technisch an diese Anbieter uebermittelt werden.
+              Website und Online-Server werden auf einem virtuellen Server der netcup GmbH,
+              Emmy-Noether-Straße 10, 76131 Karlsruhe, Deutschland, am Serverstandort Nürnberg betrieben.
+              Mit netcup besteht ein Vertrag zur Auftragsverarbeitung gemäß Art. 28 DSGVO.
+            </p>
+            <p className="mt-2">
+              Beim Aufruf des Angebots verarbeiten die Server technisch erforderliche Verbindungsdaten. Dazu
+              können insbesondere IP-Adresse, Datum und Uhrzeit, angeforderte Adresse, übertragene Datenmenge,
+              Referrer, Browserkennung, Betriebssystem sowie Status- und Fehlerangaben gehören. Die Verarbeitung
+              dient der sicheren und stabilen Bereitstellung sowie der Erkennung und Abwehr von Missbrauch. Sie
+              erfolgt auf Grundlage von Art. 6 Abs. 1 Buchst. f DSGVO. Das berechtigte Interesse liegt im sicheren
+              und störungsfreien Betrieb des Angebots. Serverprotokolle werden spätestens nach 14 Tagen automatisch
+              gelöscht, sofern sie nicht ausnahmsweise zur Aufklärung eines konkreten Sicherheitsvorfalls länger
+              benötigt werden.
+            </p>
+            <a
+              href="https://www.netcup.com/de/kontakt/datenschutzerklaerung"
+              target="_blank"
+              rel="noreferrer"
+              className={externalLinkClass}
+            >
+              Datenschutzerklärung von netcup
+            </a>
+          </section>
+
+          <section>
+            <h2 className="text-[22px] font-black leading-tight text-white">4. Lokale Browser-Speicherung</h2>
+            <p className="mt-2">
+              Punktlandung speichert bestimmte Spieldaten und Einstellungen direkt im Browser. Dazu können der
+              gewählte Spielername, Soundeinstellung, lokale Spielstände und Sitzungen, zuletzt verwendete Orte,
+              selbst erstellte Kartenpakete, die Adresse des Online-Servers sowie eine Werbe- oder
+              Einwilligungsentscheidung gehören. Kurzlebige Kennungen und Zustände eines Online-Raums können im
+              Sitzungsspeicher des Browsers abgelegt werden.
+            </p>
+            <p className="mt-2">
+              Diese Speicherung ermöglicht die angeforderten Spielfunktionen, das Wiederaufnehmen einer Runde und
+              das Beibehalten von Einstellungen. Rechtsgrundlagen sind Art. 6 Abs. 1 Buchst. b und f DSGVO sowie,
+              soweit die Speicherung technisch unbedingt erforderlich ist, § 25 Abs. 2 Nr. 2 TDDDG. Eine
+              Einwilligungsentscheidung wird auf Grundlage von Art. 6 Abs. 1 Buchst. a DSGVO und § 25 Abs. 1 TDDDG
+              gespeichert.
+            </p>
+            <p className="mt-2">
+              Sitzungsspeicher wird grundsätzlich mit dem Ende der Browsersitzung gelöscht. Dauerhafte lokale
+              Einträge bleiben erhalten, bis sie durch die Anwendung überschrieben, zurückgesetzt oder über die
+              Browser-Einstellungen gelöscht werden. Falls ein passwortgeschützter Testzugang aktiv ist, wird ein
+              technisch notwendiges Zugangscookie für bis zu 30 Tage gespeichert.
             </p>
           </section>
 
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">Werbung</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">5. Online-Räume und WebSocket-Verbindungen</h2>
             <p className="mt-2">
-              Punktlandung kann Werbeflaechen anzeigen. Personenbezogene Werbung oder vergleichbares Tracking wird nur eingesetzt, wenn die
-              dafuer erforderliche Einwilligung vorliegt.
+              Online-Räume funktionieren ohne Benutzerkonto. Für Einrichtung, Beitritt und Ablauf eines Raums
+              werden je nach Spielverlauf Raumcode, Spielername, technische Spielerkennung, Rolle oder Team,
+              gewählte Einstellungen, Bereitschafts- und Verbindungsstatus, Tipps, Punkte und Rundenergebnisse
+              verarbeitet. Diese Daten sind erforderlich, damit die angeforderte Mehrspielerfunktion bereitgestellt
+              werden kann. Rechtsgrundlage ist Art. 6 Abs. 1 Buchst. b DSGVO.
+            </p>
+            <p className="mt-2">
+              Aktive Raumdaten werden nur im Arbeitsspeicher des Online-Servers gehalten und spätestens drei Stunden
+              nach der letzten Aktivität automatisch gelöscht. Es erfolgt keine dauerhafte Speicherung in einer
+              Spielerdatenbank. Technische Verbindungs- und Fehlerdaten können zusätzlich in den unter Ziffer 3
+              beschriebenen Serverprotokollen enthalten sein.
             </p>
           </section>
 
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">Rechte der Nutzer</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">6. Karten von OpenStreetMap Deutschland</h2>
             <p className="mt-2">
-              Nutzer koennen Auskunft, Berichtigung, Loeschung, Einschraenkung der Verarbeitung und Widerspruch geltend machen.
+              Für die Kartenansichten werden Kartenkacheln von tile.openstreetmap.de abgerufen. Der Dienst wird im
+              Umfeld des FOSSGIS e. V. bereitgestellt. Beim Abruf erhält der Anbieter technisch insbesondere die
+              IP-Adresse, Zeitpunkt, angeforderte Kachel und Browserinformationen. Die Einbindung ist für die vom
+              Nutzer aufgerufene Karten- und Spielfunktion erforderlich und erfolgt auf Grundlage von Art. 6 Abs. 1
+              Buchst. b DSGVO. Karteninhalte basieren auf Daten der OpenStreetMap-Mitwirkenden.
+            </p>
+            <a
+              href="https://www.fossgis.de/datenschutzerkl%C3%A4rung/"
+              target="_blank"
+              rel="noreferrer"
+              className={externalLinkClass}
+            >
+              Datenschutzerklärung des FOSSGIS e. V.
+            </a>
+          </section>
+
+          <section>
+            <h2 className="text-[22px] font-black leading-tight text-white">7. Bilder von Wikimedia Commons</h2>
+            <p className="mt-2">
+              Punktlandung nutzt frei lizenzierte Bilder und zugehörige Metadaten aus Wikimedia Commons. Inhalte
+              können über einen eigenen Serverabruf oder unmittelbar von Servern der Wikimedia Foundation, Inc.,
+              1 Sansome Street, Suite 1895, San Francisco, California 94104, USA, geladen werden. Bei einem direkten
+              Abruf können insbesondere IP-Adresse, Browserkennung, angeforderte Datei und Zeitpunkt an Wikimedia
+              übermittelt werden. Die Verarbeitung dient der Bereitstellung der angeforderten Bild- und
+              Spielfunktion und erfolgt auf Grundlage von Art. 6 Abs. 1 Buchst. b DSGVO. Bei einer Übermittlung in
+              die USA gelten die von Wikimedia beschriebenen Datenschutz- und Übermittlungsbedingungen.
+            </p>
+            <a
+              href="https://foundation.wikimedia.org/wiki/Policy:Privacy_policy/de"
+              target="_blank"
+              rel="noreferrer"
+              className={externalLinkClass}
+            >
+              Datenschutzrichtlinie der Wikimedia Foundation
+            </a>
+          </section>
+
+          <section>
+            <h2 className="text-[22px] font-black leading-tight text-white">8. Google AdSense und Einwilligungsverwaltung</h2>
+            <p className="mt-2">
+              Zur Finanzierung des Angebots soll Google AdSense eingesetzt werden. Anbieter für Personen im
+              Europäischen Wirtschaftsraum ist Google Ireland Limited, Gordon House, Barrow Street, Dublin 4,
+              Irland. AdSense und beteiligte Werbepartner können Informationen auf dem Endgerät speichern oder
+              auslesen und Daten wie IP-Adresse, Geräte- und Browserinformationen, ungefähren Standort,
+              Seitenaufrufe und Interaktionen verarbeiten. Dies dient je nach Auswahl insbesondere der
+              Anzeigenbereitstellung und -messung, Personalisierung sowie Betrugs- und Missbrauchsprävention.
+            </p>
+            <p className="mt-2">
+              Soweit hierfür eine Einwilligung erforderlich ist, wird sie über die von Google bereitgestellte
+              Consent-Management-Plattform eingeholt. Rechtsgrundlagen sind Art. 6 Abs. 1 Buchst. a DSGVO und § 25
+              Abs. 1 TDDDG. Die Einwilligung ist freiwillig und kann jederzeit mit Wirkung für die Zukunft über die
+              Datenschutzeinstellungen widerrufen oder geändert werden. Die Auswahl wird gespeichert, damit sie bei
+              späteren Aufrufen berücksichtigt werden kann. Empfänger können Google, mit Google verbundene
+              Unternehmen und die in der Einwilligungsabfrage genannten Werbepartner sein. Dabei sind auch
+              Übermittlungen in Drittländer, insbesondere die USA, möglich. Einzelheiten zu Empfängern,
+              Speicherfristen und Übermittlungsgrundlagen stellt Google in der Einwilligungsabfrage und seinen
+              Datenschutzinformationen bereit.
+            </p>
+            <div className="mt-2 flex flex-col items-start gap-2">
+              <a
+                href="https://policies.google.com/privacy?hl=de"
+                target="_blank"
+                rel="noreferrer"
+                className={externalLinkClass}
+              >
+                Datenschutzerklärung von Google
+              </a>
+              <a
+                href="https://policies.google.com/technologies/ads?hl=de"
+                target="_blank"
+                rel="noreferrer"
+                className={externalLinkClass}
+              >
+                Informationen zur Werbung bei Google
+              </a>
+            </div>
+            <p className="mt-2">
+              Punktlandung verwendet derzeit keinen zusätzlichen Webanalyse- oder Besucherstatistikdienst.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-[22px] font-black leading-tight text-white">9. E-Mail-Kontakt</h2>
+            <p className="mt-2">
+              Bei einer Kontaktaufnahme per E-Mail werden die übermittelten Angaben verarbeitet, um die Anfrage zu
+              beantworten. Rechtsgrundlage ist je nach Inhalt Art. 6 Abs. 1 Buchst. b oder f DSGVO. Das berechtigte
+              Interesse liegt in der Bearbeitung der Anfrage. Die Daten werden gelöscht, sobald die Anfrage
+              abschließend geklärt ist und keine gesetzlichen Aufbewahrungspflichten entgegenstehen.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-[22px] font-black leading-tight text-white">10. Verschlüsselung</h2>
+            <p className="mt-2">
+              Die Website wird verschlüsselt über HTTPS übertragen. Dadurch sind übermittelte Daten während des
+              Transports grundsätzlich vor dem Mitlesen durch Dritte geschützt.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-[22px] font-black leading-tight text-white">11. Rechte betroffener Personen</h2>
+            <p className="mt-2">
+              Betroffene Personen haben im Rahmen der gesetzlichen Voraussetzungen das Recht auf Auskunft (Art. 15
+              DSGVO), Berichtigung (Art. 16 DSGVO), Löschung (Art. 17 DSGVO), Einschränkung der Verarbeitung (Art. 18
+              DSGVO), Datenübertragbarkeit (Art. 20 DSGVO) und Widerspruch gegen Verarbeitungen auf Grundlage
+              berechtigter Interessen (Art. 21 DSGVO). Eine erteilte Einwilligung kann jederzeit mit Wirkung für die
+              Zukunft widerrufen werden. Die Rechtmäßigkeit der bis zum Widerruf erfolgten Verarbeitung bleibt
+              unberührt. Zur Ausübung dieser Rechte genügt eine Nachricht an die unter Ziffer 1 genannte Adresse.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-[22px] font-black leading-tight text-white">12. Beschwerderecht</h2>
+            <p className="mt-2">
+              Betroffene Personen haben das Recht, sich bei einer Datenschutzaufsichtsbehörde zu beschweren.
+              Zuständig für den Verantwortlichen ist insbesondere:
+            </p>
+            <p className="mt-2">
+              Der Landesbeauftragte für den Datenschutz und die Informationsfreiheit Baden-Württemberg
+              <br />
+              Heilbronner Straße 35
+              <br />
+              70191 Stuttgart
+              <br />
+              E-Mail: poststelle@lfdi.bwl.de
+            </p>
+            <a
+              href="https://www.baden-wuerttemberg.datenschutz.de/kontakt-aufnehmen/"
+              target="_blank"
+              rel="noreferrer"
+              className={externalLinkClass}
+            >
+              Kontakt zur Datenschutzaufsicht
+            </a>
+          </section>
+
+          <section>
+            <h2 className="text-[22px] font-black leading-tight text-white">13. Änderungen dieser Datenschutzerklärung</h2>
+            <p className="mt-2">
+              Diese Datenschutzerklärung wird angepasst, wenn sich Funktionen, eingesetzte Dienste oder rechtliche
+              Anforderungen ändern. Es gilt die jeweils auf dieser Seite veröffentlichte Fassung.
             </p>
           </section>
         </div>
-      </section>
+        <LegalLinks className="mt-8 border-t border-slate-700/60 pt-4" includeInfos />
+      </article>
     </main>
   );
 }

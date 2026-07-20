@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { BackIcon } from "@/components/BackIcon";
+import { LegalBackLink } from "@/components/LegalBackLink";
 import { HomeSeoContent } from "@/components/SeoContent";
 import { FaqStructuredData } from "@/components/StructuredData";
 import { absoluteUrl } from "@/lib/seo";
@@ -19,9 +18,7 @@ export default function InfosPage() {
     <main className="min-h-dvh bg-slate-950 text-slate-100">
       <FaqStructuredData />
       <div className="mx-auto max-w-5xl px-4 pt-8 md:px-6">
-        <Link href="/" aria-label="Zurueck" title="Zurueck" className="punktlandung-back-link">
-          <BackIcon />
-        </Link>
+        <LegalBackLink />
       </div>
       <HomeSeoContent />
     </main>
