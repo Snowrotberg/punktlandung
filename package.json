@@ -14,6 +14,7 @@
     "build:static": "cross-env PUNKTLANDUNG_STATIC_EXPORT=true NEXT_PUBLIC_DISABLE_IMAGE_PROXY=true next build",
     "start": "next start -H localhost -p 3000",
     "catalog:generate": "node scripts/generate-wikimedia-catalog.mjs",
+    "catalog:augment-images": "node scripts/augment-wikimedia-images.mjs",
     "licenses:generate": "tsx scripts/generate-image-licenses.ts",
     "boundaries:generate": "node scripts/generate-location-boundaries.mjs",
     "boundaries:fetch": "node scripts/generate-location-boundaries.mjs --fetch-osm",

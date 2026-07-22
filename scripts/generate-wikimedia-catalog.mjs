@@ -3,11 +3,12 @@ import path from "node:path";
 
 const endpoint = "https://query.wikidata.org/sparql";
 const outputPath = path.join(process.cwd(), "data", "generated", "locations.generated.json");
-const targetPerCategory = Number.parseInt(process.env.CATALOG_TARGET_PER_CATEGORY ?? "300", 10);
+const targetPerCategory = Number.parseInt(process.env.CATALOG_TARGET_PER_CATEGORY ?? "500", 10);
 const queryLimit = Math.max(80, Math.min(450, Number.parseInt(process.env.CATALOG_QUERY_LIMIT ?? String(targetPerCategory * 2), 10)));
-const userAgent = process.env.WIKIDATA_USER_AGENT ?? "Punktlandung catalog generator/0.1 (local development; contact: local)";
+const userAgent = process.env.WIKIDATA_USER_AGENT ?? "Punktlandung/1.0 (catalog generator; aintartstudio@gmail.com)";
 const requestTimeoutMs = Number.parseInt(process.env.CATALOG_REQUEST_TIMEOUT_MS ?? "45000", 10);
 const retryCount = Number.parseInt(process.env.CATALOG_RETRIES ?? "2", 10);
+const countryBatchSize = Math.max(1, Number.parseInt(process.env.CATALOG_COUNTRY_BATCH_SIZE ?? "5", 10));
 const selectedCategories = new Set(
   (process.env.CATALOG_CATEGORIES ?? process.argv.slice(2).join(","))
     .split(",")
@@ -73,7 +74,7 @@ const categoryConfigs = [
     category: "landmarks",
     target: targetPerCategory,
     batchedByCountry: true,
-    batchLimit: 8,
+    batchLimit: 18,
     query: `
 SELECT ?item ?itemLabel ?countryLabel ?countryCode ?continentLabel ?coord ?image ?sitelinks WHERE {
   VALUES ?country { __COUNTRY__ }
@@ -107,7 +108,7 @@ LIMIT __BATCH_LIMIT__
     category: "cities",
     target: targetPerCategory,
     batchedByCountry: true,
-    batchLimit: 8,
+    batchLimit: 18,
     query: `
 SELECT ?item ?itemLabel ?countryLabel ?countryCode ?continentLabel ?coord ?image ?sitelinks WHERE {
   VALUES ?country { __COUNTRY__ }
@@ -129,7 +130,7 @@ LIMIT __BATCH_LIMIT__
     category: "landscapes",
     target: targetPerCategory,
     batchedByCountry: true,
-    batchLimit: 8,
+    batchLimit: 18,
     query: `
 SELECT ?item ?itemLabel ?countryLabel ?countryCode ?continentLabel ?coord ?image ?sitelinks WHERE {
   VALUES ?country { __COUNTRY__ }
@@ -285,7 +286,7 @@ function normalizeContinent(label) {
 function difficultyFromSitelinks(sitelinks, category) {
   if (category === "flags") return "easy";
   if (sitelinks >= 90) return "easy";
-  if (sitelinks >= 35) return "medium";
+  if (sitelinks >= 20) return "medium";
   return "hard";
 }
 
@@ -369,10 +370,16 @@ async function run() {
   for (const config of configs) {
     console.log(`Fetching ${config.category}...`);
     const locations = [];
+    const countryBatches = Array.from(
+      { length: Math.ceil(catalogCountries.length / countryBatchSize) },
+      (_, index) => catalogCountries.slice(index * countryBatchSize, (index + 1) * countryBatchSize)
+    );
     const queries = config.batchedByCountry
-      ? catalogCountries.map((country) => ({
-          label: country,
-          query: config.query.replaceAll("__COUNTRY__", country).replaceAll("__BATCH_LIMIT__", String(config.batchLimit ?? 8))
+      ? countryBatches.map((countries) => ({
+          label: countries.join(", "),
+          query: config.query
+            .replaceAll("__COUNTRY__", countries.join(" "))
+            .replaceAll("__BATCH_LIMIT__", String((config.batchLimit ?? 8) * countries.length))
         }))
       : [{ label: config.category, query: config.query }];
 

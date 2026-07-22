@@ -1,19 +1,19 @@
-import { LegalBackLink } from "@/components/LegalBackLink";
-import { LegalLinks } from "@/components/LegalLinks";
+import { InfoPageShell } from "@/components/InfoPageShell";
 import { ImageLicenseCatalog } from "@/components/ImageLicenseCatalog";
 
 export default function LizenzenPage() {
   return (
-    <main className="min-h-dvh bg-slate-950 p-4 text-slate-100">
-      <section className="mx-auto max-w-3xl rounded-md bg-slate-900/78 p-5 ring-1 ring-slate-700">
-        <LegalBackLink />
-        <h1 className="mt-5 text-4xl font-black text-white">Lizenzen und Quellen</h1>
-        <p className="mt-4 text-slate-300">
+    <InfoPageShell
+      eyebrow="Rechtliches"
+      title="Lizenzen und Quellen"
+      intro="Freie Karten-, Daten- und Bildquellen sowie die vollständigen Lizenzinformationen."
+    >
+      <p className="text-slate-300">
           Punktlandung nutzt freie Karten-, Daten- und Bildquellen. Diese Seite nennt die Quellen und vollständigen
           Lizenzinformationen.
         </p>
 
-        <div className="mt-6 space-y-5 text-sm leading-6 text-slate-300">
+      <div className="mt-6 space-y-5 text-sm leading-6 text-slate-300">
           <section>
             <h2 className="text-[22px] font-black leading-tight text-white">Karten</h2>
             <p className="mt-2">
@@ -49,9 +49,7 @@ export default function LizenzenPage() {
           </section>
 
           <ImageLicenseCatalog />
-        </div>
-        <LegalLinks className="mt-7 border-t border-slate-700/60 pt-4" includeInfos />
-      </section>
-    </main>
+      </div>
+    </InfoPageShell>
   );
 }

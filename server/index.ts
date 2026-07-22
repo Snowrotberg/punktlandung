@@ -23,6 +23,8 @@ type Client = {
   id: string;
   socket: WebSocket;
   roomCode: string | null;
+  messageWindowStartedAt: number;
+  messageCount: number;
 };
 
 type InternalRoom = RoomState & {
@@ -35,16 +37,30 @@ type InternalRoom = RoomState & {
 };
 
 const PORT = Number(process.env.WS_PORT ?? 3001);
+const HOST = process.env.WS_HOST ?? "127.0.0.1";
+const MAX_WS_PAYLOAD_BYTES = 32 * 1024;
+const MESSAGE_RATE_WINDOW_MS = 10_000;
+const MESSAGE_RATE_LIMIT = 80;
+const MAX_ACTIVE_ROOMS = 1_000;
+const MAX_PLAYERS_PER_ROOM = 50;
 const ROOM_TTL_MS = 1000 * 60 * 60 * 3;
 const AD_GATE_MS = 0;
 const NEXT_ROUND_COUNTDOWN_MS = 30_000;
-const RECENT_ROOM_LOCATION_LIMIT = 120;
-const RECENT_GLOBAL_LOCATION_LIMIT = 80;
+const RECENT_ROOM_LOCATION_LIMIT = 300;
+const RECENT_GLOBAL_LOCATION_LIMIT = 200;
 const FAILED_LOCATION_LIMIT = 80;
 const clients = new Map<string, Client>();
 const rooms = new Map<string, InternalRoom>();
 let lastGlobalLocationId: string | null = null;
 let recentGlobalLocationIds: string[] = [];
+
+const allowedOrigins = new Set(
+  (process.env.WS_ALLOWED_ORIGINS ??
+    "https://punktlandung.app,https://www.punktlandung.app,http://localhost:3000,http://127.0.0.1:3000")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
 
 const defaultSettings: GameSettings = {
   mode: "classic",
@@ -229,6 +245,10 @@ function syncLocalPlayers(room: InternalRoom): void {
 }
 
 function createRoom(client: Client, playerName: string | undefined, kind: RoomKind, hostParticipation?: HostParticipation): void {
+  if (rooms.size >= MAX_ACTIVE_ROOMS) {
+    sendError(client, "Der Server ist momentan ausgelastet. Bitte versuche es gleich noch einmal.");
+    return;
+  }
   const code = roomCode();
   const normalizedHostParticipation: HostParticipation =
     kind === "online" ? hostParticipation ?? "host_only" : "host_player";
@@ -276,6 +296,10 @@ function joinRoom(client: Client, codeInput: string, playerName: string): void {
     return;
   }
   const existing = room.players.find((player) => player.id === client.id);
+  if (!existing && room.players.filter((player) => !player.localOnly).length >= MAX_PLAYERS_PER_ROOM) {
+    sendError(client, "Dieser Raum ist bereits voll.");
+    return;
+  }
   if (existing) {
     existing.name = sanitizeName(playerName);
     existing.connected = true;
@@ -559,7 +583,7 @@ function updateSettings(client: Client, room: InternalRoom, patch: Partial<GameS
     ...room.settings,
     ...patch,
     timeLimitSec: clampInt(patch.timeLimitSec, room.settings.timeLimitSec, 0, 600),
-    rounds: clampInt(patch.rounds, room.settings.rounds, 1),
+    rounds: clampInt(patch.rounds, room.settings.rounds, 1, 100),
     localPlayerCount: clampInt(patch.localPlayerCount, room.settings.localPlayerCount, 1, 10)
   };
   if (room.kind === "solo") {
@@ -579,7 +603,12 @@ function updateSettings(client: Client, room: InternalRoom, patch: Partial<GameS
 function handleMessage(client: Client, raw: string): void {
   let message: ClientMessage;
   try {
-    message = JSON.parse(raw) as ClientMessage;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || !("type" in parsed) || typeof parsed.type !== "string") {
+      sendError(client, "Die Nachricht hatte kein gültiges Format.");
+      return;
+    }
+    message = parsed as ClientMessage;
   } catch {
     sendError(client, "Die Nachricht war kein gültiges JSON.");
     return;
@@ -705,14 +734,43 @@ const server = createServer((_req, res) => {
   res.end(JSON.stringify({ ok: true, service: "Punktlandung WebSocket", rooms: rooms.size }));
 });
 
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({
+  server,
+  maxPayload: MAX_WS_PAYLOAD_BYTES,
+  verifyClient: ({ origin }: { origin: string }) => allowedOrigins.has(origin)
+});
+
+function consumeMessageBudget(client: Client): boolean {
+  const now = Date.now();
+  if (now - client.messageWindowStartedAt >= MESSAGE_RATE_WINDOW_MS) {
+    client.messageWindowStartedAt = now;
+    client.messageCount = 0;
+  }
+  client.messageCount += 1;
+  if (client.messageCount <= MESSAGE_RATE_LIMIT) return true;
+  client.socket.close(1008, "Zu viele Nachrichten");
+  return false;
+}
 
 wss.on("connection", (socket) => {
-  const client: Client = { id: id("player"), socket, roomCode: null };
+  const client: Client = {
+    id: id("player"),
+    socket,
+    roomCode: null,
+    messageWindowStartedAt: Date.now(),
+    messageCount: 0
+  };
   clients.set(client.id, client);
   send(client, { type: "hello", playerId: client.id });
 
-  socket.on("message", (data) => handleMessage(client, data.toString()));
+  socket.on("message", (data) => {
+    if (!consumeMessageBudget(client)) return;
+    try {
+      handleMessage(client, data.toString());
+    } catch {
+      sendError(client, "Die Nachricht konnte nicht verarbeitet werden.");
+    }
+  });
   socket.on("close", () => {
     clients.delete(client.id);
     const room = findRoomFor(client);
@@ -754,6 +812,6 @@ setInterval(() => {
   }
 }, 500);
 
-server.listen(PORT, () => {
-  console.log(`Punktlandung WebSocket server listening on http://127.0.0.1:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`Punktlandung WebSocket server listening on http://${HOST}:${PORT}`);
 });

@@ -16,7 +16,7 @@ export default function GeoGuessrAlternativeDeutschPage() {
     <SeoLandingPage
       eyebrow="Alternative fuer Geo-Quiz-Fans"
       title="GeoGuessr Alternative auf Deutsch"
-      intro="Punktlandung bringt das Prinzip Orte erkennen und auf der Karte tippen in ein schnelles, deutschsprachiges Browser-Spiel. Du startest ohne Anmeldung und kannst allein oder mit mehreren Personen am selben Bildschirm spielen."
+      intro="Punktlandung ist eine schnelle deutschsprachige GeoGuessr-Alternative für Solo- und Partyrunden direkt im Browser."
       sections={[
         {
           title: "Direkt spielbar",
@@ -34,4 +34,3 @@ export default function GeoGuessrAlternativeDeutschPage() {
     />
   );
 }
-

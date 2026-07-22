@@ -853,27 +853,31 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 const barBackgroundSize = `${10000 / Math.max(1, percent)}% 100%`;
                 return (
                   <div key={stat.player.id} className="rounded-md bg-slate-950/45 px-3 py-1.5 ring-1 ring-slate-700/55">
-                    <div className="flex min-w-0 items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <span className="w-7 shrink-0 text-base font-black text-indigo-200">#{stat.rank}</span>
                         <span aria-hidden="true" className="h-7 w-1 rounded-full" style={playerAccentStyle(stat.player.color)} />
-                        <div className="min-w-0">
-                          <p className="truncate text-[15px] font-black leading-tight">{stat.player.name}</p>
-                          <p className="truncate text-[11px] italic text-emerald-300">{stat.title ? badgeWithArticle(stat.title) : ""}</p>
+                        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <p className="break-words text-[15px] font-black leading-tight">{stat.player.name}</p>
+                          {stat.title ? <p className="text-[11px] italic text-emerald-300">· {badgeWithArticle(stat.title)}</p> : null}
                         </div>
                       </div>
-                      <span className="shrink-0 text-lg font-black text-emerald-300">{formatPoints(stat.player.score)}</span>
                     </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-sm bg-slate-800">
-                      <div
-                        className="h-full rounded-sm"
-                        style={{
-                          width: `${percent}%`,
-                          background: scoreHeatmapGradient,
-                          backgroundSize: barBackgroundSize,
-                          boxShadow: "0 0 12px rgba(52, 211, 153, 0.22)"
-                        }}
-                      />
+                    <div className="mt-1.5 grid grid-cols-[minmax(0,1fr)_max-content] items-center gap-3">
+                      <div className="h-1.5 overflow-hidden rounded-sm bg-slate-800">
+                        <div
+                          className="h-full rounded-sm"
+                          style={{
+                            width: `${percent}%`,
+                            background: scoreHeatmapGradient,
+                            backgroundSize: barBackgroundSize,
+                            boxShadow: "0 0 12px rgba(52, 211, 153, 0.22)"
+                          }}
+                        />
+                      </div>
+                      <span className="min-w-[4.5rem] shrink-0 text-right text-lg font-black text-emerald-300">
+                        {formatPoints(stat.player.score)}
+                      </span>
                     </div>
                     <div className="mt-1 grid grid-cols-5 gap-2 text-[10px] text-slate-300">
                       <p className="truncate"><span className="font-black text-indigo-300">Pkt/R</span> {formatPoints(stat.averagePoints)}</p>
@@ -987,26 +991,30 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                       className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full"
                       style={playerAccentStyle(player?.color)}
                     />
-                    <div className="punktlandung-results-round-grid w-full min-w-0 items-center">
-                      <span className="punktlandung-results-rank shrink-0 font-black">#{index + 1}</span>
-                      <div className="punktlandung-results-identity min-w-0">
-                        <span className="punktlandung-results-player min-w-0 truncate font-black">{player?.name ?? "Spieler"}</span>
-                        <span className="punktlandung-results-distance text-xs text-slate-300">
-                          · {isFlagRound && result.countryCorrect ? "richtiges Land" : `${formatDistance(result.distanceKm)} entfernt`}
-                        </span>
+                    <div className="punktlandung-results-round-grid w-full min-w-0">
+                      <div className="punktlandung-results-topline min-w-0">
+                        <span className="punktlandung-results-rank shrink-0 font-black">#{index + 1}</span>
+                        <div className="punktlandung-results-identity min-w-0">
+                          <span className="punktlandung-results-player min-w-0 font-black">{player?.name ?? "Spieler"}</span>
+                          <span className="punktlandung-results-distance text-xs text-slate-300">
+                            · {isFlagRound && result.countryCorrect ? "richtiges Land" : `${formatDistance(result.distanceKm)} entfernt`}
+                          </span>
+                        </div>
                       </div>
-                      <div className="punktlandung-results-scorebar h-2 min-w-[64px] overflow-hidden rounded-sm bg-slate-800">
-                        <div
-                          className="h-full rounded-sm"
-                          style={{
-                            width: `${scorePercent}%`,
-                            background: scoreHeatmapGradient,
-                            backgroundSize: `${10000 / scorePercent}% 100%`,
-                            boxShadow: "0 0 12px rgba(52, 211, 153, 0.22)"
-                          }}
-                        />
+                      <div className="punktlandung-results-scoreline min-w-0">
+                        <div className="punktlandung-results-scorebar h-2 min-w-[64px] overflow-hidden rounded-sm bg-slate-800">
+                          <div
+                            className="h-full rounded-sm"
+                            style={{
+                              width: `${scorePercent}%`,
+                              background: scoreHeatmapGradient,
+                              backgroundSize: `${10000 / scorePercent}% 100%`,
+                              boxShadow: "0 0 12px rgba(52, 211, 153, 0.22)"
+                            }}
+                          />
+                        </div>
+                        <span className="punktlandung-results-points shrink-0 text-right font-black text-slate-200">{result.points}</span>
                       </div>
-                      <span className="punktlandung-results-points shrink-0 text-right font-black text-slate-200">{result.points}</span>
                     </div>
                   </div>
                 );
@@ -1047,6 +1055,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             <div className="punktlandung-results-list punktlandung-results-flat-list mt-2 grid min-h-0">
               {sortedPlayers.map((player, index) => {
                 const overallTitle = overallRankingTitleFor(index, sortedPlayers.length);
+                const totalPercent = Math.max(4, Math.min(100, (player.score / Math.max(1, champion?.score ?? player.score)) * 100));
                 return (
                   <div
                     key={player.id}
@@ -1057,10 +1066,31 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                       className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full"
                       style={playerAccentStyle(player.color)}
                     />
-                    <span className="punktlandung-results-rank shrink-0 font-black">#{index + 1}</span>
-                    <span className="min-w-0 truncate font-black">{player.name}</span>
-                    <span className="min-w-0 truncate text-xs font-normal italic text-emerald-300">{overallTitle ? badgeWithArticle(overallTitle) : ""}</span>
-                    <span className="punktlandung-results-points shrink-0 text-right font-black text-emerald-300">{player.score}</span>
+                    <div className="punktlandung-results-topline min-w-0">
+                      <span className="punktlandung-results-rank shrink-0 font-black">#{index + 1}</span>
+                      <div className="punktlandung-results-identity min-w-0">
+                        <span className="punktlandung-results-player min-w-0 font-black">{player.name}</span>
+                        {overallTitle ? (
+                          <span className="punktlandung-results-distance text-xs font-normal italic text-emerald-300">
+                            · {badgeWithArticle(overallTitle)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="punktlandung-results-scoreline min-w-0">
+                      <div className="punktlandung-results-scorebar h-2 min-w-[64px] overflow-hidden rounded-sm bg-slate-800">
+                        <div
+                          className="h-full rounded-sm"
+                          style={{
+                            width: `${totalPercent}%`,
+                            background: scoreHeatmapGradient,
+                            backgroundSize: `${10000 / totalPercent}% 100%`,
+                            boxShadow: "0 0 12px rgba(52, 211, 153, 0.22)"
+                          }}
+                        />
+                      </div>
+                      <span className="punktlandung-results-points shrink-0 text-right font-black text-emerald-300">{player.score}</span>
+                    </div>
                   </div>
                 );
               })}

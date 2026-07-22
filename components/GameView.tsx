@@ -224,6 +224,15 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
     setMapSize("closed");
     setChromeHidden(true);
   };
+
+  const toggleMobileImageFocus = () => {
+    if (!isMobileTouchMap) return;
+    if (chromeHidden) {
+      setChromeHidden(false);
+      return;
+    }
+    hideChrome();
+  };
   const mapPanelLayout = fullMap
     ? "fixed bottom-3 right-3 h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] cursor-[crosshair] sm:absolute sm:bottom-4 sm:right-4 sm:h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] min-[1900px]:bottom-4 min-[1900px]:right-4 min-[1900px]:h-[calc(100dvh-2rem)] min-[1900px]:w-[calc(100vw-2rem)]"
     : expanded
@@ -241,7 +250,14 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   return (
     <main className="punktlandung-game-shell fixed inset-0 overflow-hidden bg-slate-950">
       <div className={viewerLayout}>
-        <PanoramaViewer location={room.location} settings={room.settings} isHost={isHost} onSkipLocation={onSkipLocation} chromeHidden={chromeSuppressed} />
+        <PanoramaViewer
+          location={room.location}
+          settings={room.settings}
+          isHost={isHost}
+          onSkipLocation={onSkipLocation}
+          chromeHidden={chromeSuppressed}
+          onViewportTap={isMobileTouchMap ? toggleMobileImageFocus : undefined}
+        />
       </div>
 
       {!chromeSuppressed && (
@@ -290,7 +306,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
         </div>
       )}
 
-      {!expanded && (
+      {!expanded && !isMobileTouchMap && (
       <button
         type="button"
         onClick={chromeHidden ? () => setChromeHidden(false) : hideChrome}

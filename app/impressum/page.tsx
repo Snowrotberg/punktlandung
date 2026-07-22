@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { LegalBackLink } from "@/components/LegalBackLink";
-import { LegalLinks } from "@/components/LegalLinks";
+import { InfoPageShell } from "@/components/InfoPageShell";
 
 export const metadata: Metadata = {
   title: "Impressum",
@@ -10,12 +9,8 @@ const externalLinkClass = "font-bold text-emerald-300 underline-offset-4 hover:t
 
 export default function ImpressumPage() {
   return (
-    <main className="min-h-dvh bg-slate-950 p-4 text-slate-100">
-      <section className="mx-auto max-w-3xl rounded-md bg-slate-900/78 p-5 ring-1 ring-slate-700 sm:p-7">
-        <LegalBackLink />
-        <h1 className="mt-5 text-4xl font-black text-white">Impressum</h1>
-
-        <div className="mt-6 space-y-6 text-sm leading-6 text-slate-300">
+    <InfoPageShell fillDesktop eyebrow="Rechtliches" title="Impressum" intro="Anbieterkennzeichnung und Kontaktangaben zu Punktlandung.">
+      <div className="space-y-6 text-sm leading-6 text-slate-300">
           <section>
             <h2 className="text-[22px] font-black leading-tight text-white">Angaben gemäß § 5 DDG</h2>
             <p className="mt-2">
@@ -72,9 +67,7 @@ export default function ImpressumPage() {
               Verbraucherschlichtungsstelle teilzunehmen.
             </p>
           </section>
-        </div>
-        <LegalLinks className="mt-7 border-t border-slate-700/60 pt-4" includeInfos />
-      </section>
-    </main>
+      </div>
+    </InfoPageShell>
   );
 }

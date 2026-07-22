@@ -1,21 +1,25 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { BackIcon } from "./BackIcon";
 import { readLegalReturn } from "@/lib/legalNavigation";
 
 export function LegalBackLink() {
-  const router = useRouter();
+  const [href, setHref] = useState("/");
+
+  useEffect(() => {
+    setHref(readLegalReturn() ?? "/");
+  }, []);
 
   return (
-    <button
-      type="button"
+    <Link
+      href={href}
       aria-label="Zurück"
       title="Zurück"
-      className="punktlandung-back-link"
-      onClick={() => router.push(readLegalReturn() ?? "/")}
+      className="punktlandung-interactive-control punktlandung-back-link"
     >
       <BackIcon />
-    </button>
+    </Link>
   );
 }

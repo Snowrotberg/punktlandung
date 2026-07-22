@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CookieSettingsButton } from "@/components/CookieSettingsButton";
 import { rememberLegalReturn } from "@/lib/legalNavigation";
 
 type LegalLinksProps = {
@@ -10,17 +11,6 @@ type LegalLinksProps = {
   align?: "start" | "center" | "end";
   preserveSession?: boolean;
 };
-
-type GoogleFcApi = {
-  callbackQueue?: Array<() => void>;
-  showRevocationMessage?: () => void;
-};
-
-declare global {
-  interface Window {
-    googlefc?: GoogleFcApi;
-  }
-}
 
 const links = [
   { href: "/impressum", label: "Impressum" },
@@ -34,19 +24,7 @@ const alignmentClasses = {
   end: "justify-end text-right"
 };
 
-function openPrivacySettings() {
-  const googleFc = (window.googlefc ??= {});
-  googleFc.callbackQueue ??= [];
-
-  if (googleFc.showRevocationMessage) {
-    googleFc.showRevocationMessage();
-    return;
-  }
-
-  googleFc.callbackQueue.push(() => googleFc.showRevocationMessage?.());
-}
-
-export function LegalLinks({ className = "", includeInfos = false, align = "start", preserveSession = false }: LegalLinksProps) {
+export function LegalLinks({ className = "", includeInfos = true, align = "start", preserveSession = false }: LegalLinksProps) {
   const pathname = usePathname();
   const rememberReturn = () => {
     if (preserveSession && pathname) rememberLegalReturn(pathname);
@@ -67,13 +45,7 @@ export function LegalLinks({ className = "", includeInfos = false, align = "star
           {link.label}
         </Link>
       ))}
-      <button
-        type="button"
-        onClick={openPrivacySettings}
-        className="p-0 font-bold text-inherit transition hover:text-emerald-300 focus-visible:text-emerald-300"
-      >
-        Cookies
-      </button>
+      <CookieSettingsButton className="p-0 font-bold text-inherit transition hover:text-emerald-300 focus-visible:text-emerald-300" />
     </nav>
   );
 }

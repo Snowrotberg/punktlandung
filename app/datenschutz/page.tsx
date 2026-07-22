@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { LegalBackLink } from "@/components/LegalBackLink";
-import { LegalLinks } from "@/components/LegalLinks";
+import { InfoPageShell } from "@/components/InfoPageShell";
 
 export const metadata: Metadata = {
   title: "Datenschutz",
@@ -10,17 +9,18 @@ const externalLinkClass = "font-bold text-emerald-300 underline-offset-4 hover:t
 
 export default function DatenschutzPage() {
   return (
-    <main className="min-h-dvh bg-slate-950 p-4 text-slate-100">
-      <article className="mx-auto max-w-3xl rounded-md bg-slate-900/78 p-5 ring-1 ring-slate-700 sm:p-7">
-        <LegalBackLink />
-        <h1 className="mt-5 break-words text-3xl font-black text-white sm:text-4xl">Datenschutzerklärung</h1>
-        <p className="mt-3 text-sm text-slate-400">Stand: 19. Juli 2026</p>
-        <p className="mt-4 text-slate-300">
+    <InfoPageShell
+      eyebrow="Rechtliches"
+      title="Datenschutzerklärung"
+      intro="Informationen zur Verarbeitung personenbezogener Daten und zu den Rechten betroffener Personen."
+    >
+      <p className="text-sm text-slate-400">Stand: 19. Juli 2026</p>
+      <p className="mt-4 text-slate-300">
           Diese Datenschutzerklärung erläutert, welche personenbezogenen Daten bei der Nutzung von
           Punktlandung verarbeitet werden und welche Rechte betroffene Personen haben.
         </p>
 
-        <div className="mt-7 space-y-7 text-sm leading-6 text-slate-300">
+      <div className="mt-7 space-y-7 text-sm leading-6 text-slate-300">
           <section>
             <h2 className="text-[22px] font-black leading-tight text-white">1. Verantwortlicher</h2>
             <p className="mt-2">
@@ -269,9 +269,7 @@ export default function DatenschutzPage() {
               Anforderungen ändern. Es gilt die jeweils auf dieser Seite veröffentlichte Fassung.
             </p>
           </section>
-        </div>
-        <LegalLinks className="mt-8 border-t border-slate-700/60 pt-4" includeInfos />
-      </article>
-    </main>
+      </div>
+    </InfoPageShell>
   );
 }

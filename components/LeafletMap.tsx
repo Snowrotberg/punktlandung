@@ -1,9 +1,11 @@
 "use client";
 
-import { MapContainer, Marker, Polyline, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from "react-leaflet";
-import { divIcon, latLngBounds } from "leaflet";
-import type { LatLngExpression, Map as LeafletMapInstance } from "leaflet";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Marker, Polyline, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+import type { MapContainerProps } from "react-leaflet";
+import { LeafletProvider, createLeafletContext } from "@react-leaflet/core";
+import { Map as LeafletMapClass, divIcon, latLngBounds } from "leaflet";
+import type { LatLngExpression, Map as LeafletMapInstance, Polyline as LeafletPolyline } from "leaflet";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Guess, LatLng, Player, RoundSummary } from "@/types/game";
 import { formatDistance, rankResults } from "@/lib/geo";
 
@@ -53,6 +55,53 @@ const GUESS_WORLD_BOUNDS = latLngBounds([
   [-85, -180],
   [85, 180]
 ]);
+
+function StrictSafeMapContainer({
+  bounds,
+  boundsOptions,
+  center,
+  children,
+  className,
+  id,
+  placeholder,
+  style,
+  whenReady,
+  zoom,
+  ...options
+}: MapContainerProps) {
+  const mapRef = useRef<LeafletMapInstance | null>(null);
+  const [context, setContext] = useState<ReturnType<typeof createLeafletContext> | null>(null);
+
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    if (node === null) {
+      mapRef.current?.remove();
+      mapRef.current = null;
+      setContext(null);
+      return;
+    }
+
+    if (mapRef.current) return;
+
+    const map = new LeafletMapClass(node, options);
+    mapRef.current = map;
+    if (center != null && zoom != null) {
+      map.setView(center, zoom);
+    } else if (bounds != null) {
+      map.fitBounds(bounds, boundsOptions);
+    }
+    if (whenReady != null) map.whenReady(whenReady);
+    setContext(createLeafletContext(map));
+    // Map options and the initial viewport intentionally match react-leaflet's
+    // mount-only MapContainer behavior. Later viewport updates use map hooks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div ref={containerRef} className={className} id={id} style={style}>
+      {context ? <LeafletProvider value={context}>{children}</LeafletProvider> : placeholder ?? null}
+    </div>
+  );
+}
 
 function normalizeLng(lng: number): number {
   return ((((lng + 180) % 360) + 360) % 360) - 180;
@@ -811,12 +860,12 @@ function ResultsMarkers({
           return (
             <Fragment key={result.playerId}>
               {!hideDistance && (
-                <Polyline
+                <FlowingResultConnector
+                  color={color}
                   positions={[
                     [point.lat, point.lng],
                     [displayGeometry?.location.lat ?? location.lat, displayGeometry?.location.lng ?? location.lng]
                   ]}
-                  pathOptions={{ color, opacity: 0.74, weight: 4, dashArray: "8 10" }}
                 />
               )}
               {showLabels && placement ? (
@@ -883,6 +932,80 @@ function ResultsMarkers({
   );
 }
 
+type FlowingResultConnectorProps = {
+  color: string;
+  positions: [LatLngExpression, LatLngExpression];
+};
+
+function FlowingResultConnector({ color, positions }: FlowingResultConnectorProps) {
+  const map = useMap();
+  const lineRef = useRef<LeafletPolyline | null>(null);
+  const [playerPosition, targetPosition] = positions;
+  const playerPoint = map.latLngToContainerPoint(playerPosition);
+  const targetAnchor = map.latLngToContainerPoint(targetPosition);
+  const ellipseCenter = {
+    x: targetAnchor.x,
+    y: targetAnchor.y + 3
+  };
+  const direction = {
+    x: playerPoint.x - ellipseCenter.x,
+    y: playerPoint.y - ellipseCenter.y
+  };
+  const directionLength = Math.hypot(direction.x, direction.y);
+  const unitDirection =
+    directionLength > 0
+      ? { x: direction.x / directionLength, y: direction.y / directionLength }
+      : { x: 0, y: 0 };
+  const ellipseRadius =
+    directionLength > 0
+      ? 1 /
+        Math.sqrt(
+          (unitDirection.x * unitDirection.x) / Math.pow(ACTUAL_ELLIPSE_SIZE.width / 2, 2) +
+            (unitDirection.y * unitDirection.y) / Math.pow(ACTUAL_ELLIPSE_SIZE.height / 2, 2)
+        )
+      : 0;
+  const connectorGap = 3;
+  const visibleTarget = map.containerPointToLatLng([
+    ellipseCenter.x + unitDirection.x * (ellipseRadius + connectorGap),
+    ellipseCenter.y + unitDirection.y * (ellipseRadius + connectorGap)
+  ]);
+  const visiblePositions: LatLngExpression[] = directionLength > ellipseRadius + connectorGap ? [playerPosition, visibleTarget] : [];
+
+  useEffect(() => {
+    const path = lineRef.current?.getElement();
+    if (!path || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let frame = 0;
+    const startedAt = performance.now();
+    const animate = (now: number) => {
+      const progress = ((now - startedAt) % 720) / 720;
+      path.setAttribute("stroke-dashoffset", String(-18 * progress));
+      frame = window.requestAnimationFrame(animate);
+    };
+    frame = window.requestAnimationFrame(animate);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      path.removeAttribute("stroke-dashoffset");
+    };
+  }, []);
+
+  return (
+    <Polyline
+      ref={lineRef}
+      positions={visiblePositions}
+      interactive={false}
+      pathOptions={{
+        color,
+        opacity: 0.82,
+        weight: 4,
+        dashArray: "8 10",
+        lineCap: "round"
+      }}
+    />
+  );
+}
+
 export function LeafletMap({
   mode,
   center = { lat: 20, lng: 0 },
@@ -908,7 +1031,7 @@ export function LeafletMap({
   const restrictToSingleWorld = mode === "guess";
 
   return (
-    <MapContainer
+    <StrictSafeMapContainer
       {...(initialBounds
         ? { bounds: initialBounds, boundsOptions: { padding: [56, 56], maxZoom } }
         : { center: mapCenter, zoom: mode === "results" ? 10 : guessOverviewZoom })}
@@ -950,6 +1073,6 @@ export function LeafletMap({
       {mode === "results" && (
         <ResultsMarkers summary={summary} players={players} guesses={guesses} showLabels={showLabels} resizeSignal={resizeSignal} />
       )}
-    </MapContainer>
+    </StrictSafeMapContainer>
   );
 }

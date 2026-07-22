@@ -10,6 +10,7 @@ export type AdPlacement =
   | "online-settings-banner"
   | "online-left-rail"
   | "online-right-rail"
+  | "info-content-banner"
   | "lobby-left-rail"
   | "lobby-right-rail"
   | "game-bottom-left";
@@ -49,6 +50,7 @@ export const adConfig = {
     "online-settings-banner": process.env.NEXT_PUBLIC_ADSENSE_SLOT_ONLINE_SETTINGS_BANNER?.trim() || ONLINE_SIDEBAR_SLOT_ID,
     "online-left-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_ONLINE_LEFT_RAIL?.trim() || ONLINE_SIDEBAR_SLOT_ID,
     "online-right-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_ONLINE_RIGHT_RAIL?.trim() || ONLINE_SIDEBAR_SLOT_ID,
+    "info-content-banner": process.env.NEXT_PUBLIC_ADSENSE_SLOT_INFO_CONTENT_BANNER?.trim() || SETTINGS_BLOCK_SLOT_ID,
     "lobby-left-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_LOBBY_LEFT_RAIL?.trim() ?? "",
     "lobby-right-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_LOBBY_RIGHT_RAIL?.trim() ?? "",
     "game-bottom-left": process.env.NEXT_PUBLIC_ADSENSE_SLOT_GAME_BOTTOM_LEFT?.trim() || GAME_RECTANGLE_SLOT_ID

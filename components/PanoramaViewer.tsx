@@ -9,6 +9,7 @@ type PanoramaViewerProps = {
   isHost: boolean;
   onSkipLocation: (locationId: string) => void;
   chromeHidden?: boolean;
+  onViewportTap?: () => void;
   sourceVariant?: "compact" | "detail";
 };
 
@@ -189,7 +190,7 @@ function isLikelyImageCollage(image: HTMLImageElement, category: GeoLocation["ca
   }
 }
 
-export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chromeHidden = false, sourceVariant = "compact" }: PanoramaViewerProps) {
+export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chromeHidden = false, onViewportTap, sourceVariant = "compact" }: PanoramaViewerProps) {
   const [zoom, setZoom] = useState(100);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -206,6 +207,9 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
   const activePointers = useRef(new Map<number, { x: number; y: number }>());
   const pinchStart = useRef<{ distance: number; pan: { x: number; y: number }; zoom: number } | null>(null);
   const lastTap = useRef({ time: 0, x: 0, y: 0, pointerType: "" });
+  const singleTapTimer = useRef<number | null>(null);
+  const touchDoubleTapHandledUntil = useRef(0);
+  const tapGesture = useRef<{ pointerId: number; x: number; y: number; moved: boolean } | null>(null);
   const skippedLocationIds = useRef(new Set<string>());
   const autoSkipStreak = useRef(0);
   const [proxyWidth, setProxyWidth] = useState(() => estimateResponsiveImageWidth());
@@ -378,27 +382,23 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
     return Math.hypot(second.x - first.x, second.y - first.y);
   };
 
+  const clearPendingSingleTap = () => {
+    if (singleTapTimer.current === null) return;
+    window.clearTimeout(singleTapTimer.current);
+    singleTapTimer.current = null;
+  };
+
+  useEffect(() => {
+    clearPendingSingleTap();
+    lastTap.current = { time: 0, x: 0, y: 0, pointerType: "" };
+    return clearPendingSingleTap;
+  }, [location.id]);
+
   const handlePointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if (event.button !== 0) return;
 
     const point = { x: event.clientX, y: event.clientY };
-    const previousTap = lastTap.current;
-    const isDoublePointerDown =
-      previousTap.pointerType === event.pointerType &&
-      window.performance.now() - previousTap.time < 320 &&
-      Math.hypot(point.x - previousTap.x, point.y - previousTap.y) < 24;
-    lastTap.current = {
-      time: window.performance.now(),
-      x: point.x,
-      y: point.y,
-      pointerType: event.pointerType
-    };
-
-    if (isDoublePointerDown && event.pointerType !== "mouse" && !settings.noZoom) {
-      event.preventDefault();
-      toggleZoom();
-      return;
-    }
+    tapGesture.current = { pointerId: event.pointerId, ...point, moved: false };
 
     activePointers.current.set(event.pointerId, point);
     if (event.pointerType === "touch" && event.currentTarget.setPointerCapture) {
@@ -407,6 +407,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
 
     const points = Array.from(activePointers.current.values());
     if (points.length >= 2 && !settings.noZoom) {
+      tapGesture.current = null;
       event.preventDefault();
       event.currentTarget.focus();
       stopDragging();
@@ -428,6 +429,10 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    const gesture = tapGesture.current;
+    if (gesture?.pointerId === event.pointerId && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 10) {
+      gesture.moved = true;
+    }
     if (activePointers.current.has(event.pointerId)) {
       activePointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     }
@@ -450,13 +455,57 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
     setPan((value) => clampPan({ x: value.x + deltaX, y: value.y + deltaY }));
   };
 
-  const handlePointerEnd = (event: ReactPointerEvent<HTMLElement>) => {
+  const handlePointerEnd = (event: ReactPointerEvent<HTMLElement>, canceled = false) => {
+    const gesture = tapGesture.current;
+    const target = event.target instanceof Element ? event.target : null;
+    const shouldHandleTap =
+      !canceled &&
+      gesture?.pointerId === event.pointerId &&
+      !gesture.moved &&
+      activePointers.current.size <= 1 &&
+      !target?.closest("a, button, input, select, textarea");
     activePointers.current.delete(event.pointerId);
     pinchStart.current = null;
     stopDragging();
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    tapGesture.current = null;
+    if (!shouldHandleTap) return;
+
+    if (event.pointerType === "mouse") {
+      onViewportTap?.();
+      return;
+    }
+
+    const now = window.performance.now();
+    const previousTap = lastTap.current;
+    const isDoubleTap =
+      previousTap.pointerType === event.pointerType &&
+      now - previousTap.time < 320 &&
+      Math.hypot(event.clientX - previousTap.x, event.clientY - previousTap.y) < 24;
+
+    if (isDoubleTap && !settings.noZoom) {
+      event.preventDefault();
+      clearPendingSingleTap();
+      lastTap.current = { time: 0, x: 0, y: 0, pointerType: "" };
+      touchDoubleTapHandledUntil.current = now + 500;
+      toggleZoom();
+      return;
+    }
+
+    lastTap.current = {
+      time: now,
+      x: event.clientX,
+      y: event.clientY,
+      pointerType: event.pointerType
+    };
+    clearPendingSingleTap();
+    singleTapTimer.current = window.setTimeout(() => {
+      singleTapTimer.current = null;
+      lastTap.current = { time: 0, x: 0, y: 0, pointerType: "" };
+      onViewportTap?.();
+    }, 320);
   };
 
   return (
@@ -467,9 +516,13 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerEnd}
-      onPointerCancel={handlePointerEnd}
+      onPointerCancel={(event) => handlePointerEnd(event, true)}
       onDoubleClick={(event) => {
         if (settings.noZoom) return;
+        if (window.performance.now() < touchDoubleTapHandledUntil.current) {
+          event.preventDefault();
+          return;
+        }
         event.preventDefault();
         toggleZoom();
       }}
@@ -608,13 +661,6 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
         </a>
       )}
 
-      {!chromeHidden && (
-        <div className="absolute left-3 top-28 flex flex-wrap gap-2 sm:left-4 sm:top-24">
-          {settings.noMove && <span className="rounded-md bg-rose-500/20 px-3 py-2 text-xs font-black ring-1 ring-rose-400/70 backdrop-blur">NICHT BEWEGEN</span>}
-          {settings.noPan && <span className="rounded-md bg-rose-500/20 px-3 py-2 text-xs font-black ring-1 ring-rose-400/70 backdrop-blur">NICHT SCHWENKEN</span>}
-          {settings.noZoom && <span className="rounded-md bg-rose-500/20 px-3 py-2 text-xs font-black ring-1 ring-rose-400/70 backdrop-blur">NICHT ZOOMEN</span>}
-        </div>
-      )}
     </section>
   );
 }

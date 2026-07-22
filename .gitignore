@@ -13,5 +13,8 @@ coverage/
 # Responsive-Test
 test-artifacts/
 
+# Local Codex attachments
+.codex-remote-attachments/
+
 # Temporäre lokale Dateien
 Textdokument (neu).txt

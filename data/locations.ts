@@ -625,7 +625,7 @@ function imageFileName(location: GeoLocation) {
 }
 
 function isDefaultPlayableLocation(location: GeoLocation) {
-  if (location.difficulty === "hard") return false;
+  if (location.difficulty === "hard" && (location.popularity ?? 0) < 20) return false;
   const imageFile = imageFileName(location);
   const normalizedImageFile = imageFile.replaceAll("_", " ").normalize("NFC").trim().toLocaleLowerCase();
   if (normalizedLicenseExclusions.has(normalizedImageFile)) return false;

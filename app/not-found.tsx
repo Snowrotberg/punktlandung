@@ -55,7 +55,7 @@ export default function NotFound() {
             <div className="mt-6 flex justify-center sm:mt-8">
               <Link
                 href="/"
-                className="group relative inline-flex min-h-12 w-full max-w-xs items-center justify-center overflow-hidden rounded-md border-2 border-emerald-400/80 bg-slate-950/65 px-5 py-3 text-base font-black text-white shadow-[0_0_24px_rgba(52,211,153,0.18)] transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-400/12 sm:w-auto"
+                className="punktlandung-interactive-surface group relative inline-flex min-h-12 w-full max-w-xs items-center justify-center overflow-hidden rounded-md border-2 border-emerald-400/80 bg-slate-950/65 px-5 py-3 text-base font-black text-white shadow-[0_0_24px_rgba(52,211,153,0.18)] transition hover:border-emerald-300 hover:bg-emerald-400/12 sm:w-auto"
               >
                 <span className="absolute left-0 top-1/2 h-8 w-1.5 -translate-y-1/2 rounded-r-full bg-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.85)] transition group-hover:h-10" />
                 <span className="relative">Zur Startseite</span>

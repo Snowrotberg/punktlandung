@@ -5,8 +5,8 @@ import QRCode from "qrcode";
 import { categoryOptions } from "@/lib/categories";
 import type { GameMode, GameSettings, HostParticipation, Player, RoomKind, TeamId } from "@/types/game";
 import { AdContainer } from "./AdContainer";
-import { BackButton } from "./BackButton";
-import { Button } from "./Button";
+import { BackLink } from "./BackButton";
+import { Button, ButtonLink } from "./Button";
 import { LegalLinks } from "./LegalLinks";
 import { TriangleIcon } from "./TriangleIcon";
 
@@ -24,6 +24,7 @@ type LobbyViewProps = {
   onStart: () => void;
   onTeam: (team: TeamId) => void;
   onLeave: () => void;
+  leaveHref: string;
   canStart?: boolean;
   isRoomOnline?: boolean;
   connectionStatus?: "connecting" | "open" | "closed";
@@ -76,6 +77,7 @@ export function LobbyView({
   onStart,
   onTeam,
   onLeave,
+  leaveHref,
   canStart = true,
   isRoomOnline = true,
   connectionStatus = "closed",
@@ -216,7 +218,7 @@ export function LobbyView({
                 <p className="mt-1 text-sm text-slate-400">Großer Bildschirm: Raumleitung und Ergebnisanzeige.</p>
               </div>
               <div className="punktlandung-online-waiting-header-actions flex shrink-0 items-center gap-2">
-                <BackButton className="punktlandung-lobby-header-back" onClick={onLeave} label="Zurueck" />
+                <BackLink className="punktlandung-lobby-header-back" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
                 <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 normal-case" disabled={!isHost || players.length === 0 || !canStart} onClick={onStart}>
                   <span className="punktlandung-inline-action-content">
                     <span>Starten</span>
@@ -349,12 +351,12 @@ export function LobbyView({
           />
         </div>
         <div className="punktlandung-touch-only-grid punktlandung-lobby-touch-actions punktlandung-online-waiting-touch-actions fixed inset-x-2 bottom-2 z-50 grid grid-cols-2 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md">
-          <Button sound="click" tone="ghost" className="punktlandung-lobby-touch-back normal-case" onClick={onLeave} aria-label="Zurück" title="Zurück">
+          <ButtonLink sound="click" tone="ghost" className="punktlandung-lobby-touch-back normal-case" href={leaveHref} onNavigate={onLeave} aria-label="Zurück" title="Zurück">
             <span className="punktlandung-lobby-touch-button-inner">
               <TriangleIcon direction="left" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-back h-5 w-5" />
               <span>Zurück</span>
             </span>
-          </Button>
+          </ButtonLink>
           <Button
             sound="select"
             tone="selected"
@@ -409,7 +411,7 @@ export function LobbyView({
                 <span className="block text-lg font-black tracking-[0.18em] text-white">{copied ? "KOPIERT" : code}</span>
               </button>
             )}
-            <BackButton className="punktlandung-lobby-header-back" onClick={onLeave} label="Zurueck" />
+            <BackLink className="punktlandung-lobby-header-back" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
             <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
               <span className="punktlandung-inline-action-content">
                 <span>{primaryActionLabel}</span>
@@ -418,7 +420,7 @@ export function LobbyView({
             </Button>
           </div>
           <div className="punktlandung-lobby-mobile-back shrink-0">
-            <BackButton onClick={onLeave} label="Zurueck" />
+            <BackLink href={leaveHref} onNavigate={onLeave} label="Zurueck" />
           </div>
         </header>
 
@@ -478,7 +480,7 @@ export function LobbyView({
                               title={player?.name ?? `Spieler ${slotNumber}`}
                             >
                               <span
-                                className="mx-auto mb-1 block h-3.5 w-3.5 rounded-full border-2 border-white/85 shadow-[0_0_12px_rgba(0,0,0,0.3)] transition group-hover:scale-110"
+                                className="punktlandung-party-slot-dot mx-auto mb-1 block h-3.5 w-3.5 rounded-full border-2 border-white/85 shadow-[0_0_12px_rgba(0,0,0,0.3)] transition group-hover:scale-110"
                                 style={{ background: isActive ? slotColor : "transparent" }}
                               />
                               <span>{slotNumber}</span>
@@ -689,11 +691,23 @@ export function LobbyView({
                             aria-hidden="true"
                             className={`grid h-4 w-4 shrink-0 place-items-center rounded-sm border-2 transition ${
                               settings[key as keyof GameSettings]
-                                ? "border-emerald-300 bg-emerald-400/20 text-emerald-200"
+                                ? "border-emerald-300 bg-emerald-300 text-slate-950 shadow-[0_0_10px_rgba(110,231,183,0.3)]"
                                 : "border-slate-500 bg-slate-800/80 text-transparent group-hover:border-slate-400"
                             }`}
                           >
-                            <span className="text-xs leading-none">{settings[key as keyof GameSettings] ? "?" : ""}</span>
+                            {settings[key as keyof GameSettings] ? (
+                              <svg
+                                viewBox="0 0 16 16"
+                                className="h-3 w-3"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="m3 8.25 3.1 3.1L13 4.75" />
+                              </svg>
+                            ) : null}
                           </span>
                           <span className="leading-tight">{label}</span>
                         </label>
@@ -702,7 +716,7 @@ export function LobbyView({
                   </div>
                 </fieldset>
               </div>
-              <LegalLinks preserveSession className="mt-3 border-t border-slate-800/85 pt-3" />
+              <LegalLinks preserveSession className="mt-3 hidden border-t border-slate-800/85 pt-3 lg:flex" />
             </div>
             <AdContainer
               placement={isOnlineRoom ? "online-settings-banner" : isCouchMode ? "party-settings-banner" : "solo-settings-banner"}
@@ -768,6 +782,9 @@ export function LobbyView({
                     </span>
                   </button>
                 ))}
+              </div>
+              <div className="punktlandung-mobile-category-legal lg:hidden">
+                <LegalLinks preserveSession className="border-t border-slate-800/85 pt-3" />
               </div>
             </div>
           </div>
@@ -929,12 +946,12 @@ export function LobbyView({
           </div>
         )}
         <div className="punktlandung-touch-only-grid punktlandung-lobby-touch-actions fixed inset-x-2 bottom-2 z-50 grid grid-cols-1 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md lg:hidden">
-          <Button sound="click" tone="ghost" className="punktlandung-lobby-touch-back normal-case" onClick={onLeave} aria-label="Zurück" title="Zurück">
+          <ButtonLink sound="click" tone="ghost" className="punktlandung-lobby-touch-back normal-case" href={leaveHref} onNavigate={onLeave} aria-label="Zurück" title="Zurück">
             <span className="punktlandung-lobby-touch-button-inner">
               <TriangleIcon direction="left" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-back h-5 w-5" />
               <span>Zurück</span>
             </span>
-          </Button>
+          </ButtonLink>
           <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-lobby-touch-primary min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
             <span className="punktlandung-lobby-touch-button-inner">
               <span>{primaryActionLabel}</span>

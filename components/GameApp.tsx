@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { categoryOptions } from "@/lib/categories";
 import { useLocalGame } from "@/hooks/useLocalGame";
@@ -70,7 +71,7 @@ function SoundToggle() {
     <button
       type="button"
       onClick={toggle}
-      className={`rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] ring-1 transition hover:-translate-y-0.5 ${
+      className={`rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] ring-1 transition ${
         enabled
           ? "bg-emerald-400/10 text-emerald-300 ring-emerald-300/50"
           : "bg-slate-950/70 text-slate-400 ring-slate-600/80 hover:text-slate-200"
@@ -265,32 +266,6 @@ export function GameApp({
       // Keep the UI usable even when persistence is blocked.
     }
   }, [name]);
-
-  useEffect(() => {
-    const openButtonTargetInNewTab = (event: MouseEvent) => {
-      const isMiddleClick = event.type === "auxclick" && event.button === 1;
-      const isModifiedLeftClick = event.type === "click" && event.button === 0 && (event.ctrlKey || event.metaKey);
-      if (!isMiddleClick && !isModifiedLeftClick) return;
-      if (!(event.target instanceof Element)) return;
-
-      const button = event.target.closest("button");
-      if (!button || button.disabled) return;
-      if (button.dataset.punktlandungNewTabComponent === "true") return;
-
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      const opened = window.open(button.dataset.newTabHref ?? window.location.href, "_blank", "noopener,noreferrer");
-      if (opened) opened.opener = null;
-    };
-
-    document.addEventListener("click", openButtonTargetInNewTab, true);
-    document.addEventListener("auxclick", openButtonTargetInNewTab, true);
-    return () => {
-      document.removeEventListener("click", openButtonTargetInNewTab, true);
-      document.removeEventListener("auxclick", openButtonTargetInNewTab, true);
-    };
-  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -496,6 +471,7 @@ export function GameApp({
           onStart={handleStartRound}
           onTeam={handleSetTeam}
           onLeave={room.kind === "online" && Boolean(onlineGame.room) ? handleLeaveWaitingRoom : handleLeaveToHome}
+          leaveHref={room.kind === "online" && Boolean(onlineGame.room) ? "/online-modus" : "/"}
           canStart={room.kind !== "online" || Boolean(onlineGame.room)}
           isRoomOnline={room.kind !== "online" || Boolean(onlineGame.room)}
           connectionStatus={onlineGame.status}
@@ -526,9 +502,7 @@ export function GameApp({
           fullWidthResponsive
         />
         <div className="punktlandung-tv-home flex min-h-0 min-w-0 flex-col gap-4 lg:grid lg:grid-cols-[1fr_420px] min-[1900px]:grid-cols-[minmax(0,1fr)_480px] min-[2200px]:grid-cols-[minmax(0,1fr)_520px]">
-        <section className="arcade-panel relative z-10 order-1 overflow-hidden rounded-md border-slate-700/80 lg:order-none lg:min-h-0">
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(148,163,184,0.055)_1px,transparent_1px),linear-gradient(0deg,rgba(148,163,184,0.055)_1px,transparent_1px)] bg-[size:56px_56px]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_20%,rgba(52,211,153,0.14),transparent_28rem),radial-gradient(circle_at_82%_36%,rgba(99,102,241,0.18),transparent_30rem)]" />
+        <section className="arcade-panel punktlandung-home-main-panel relative z-10 order-1 overflow-hidden rounded-md border-slate-700/80 lg:order-none lg:min-h-0">
 
           <div className="relative flex flex-col p-4 lg:h-full lg:min-h-0 lg:overflow-auto">
             <HomeStatusControls serverStatus={onlineGame.status} placement="hero" />
@@ -643,18 +617,21 @@ export function GameApp({
                 {modePreview.map((mode) => {
                   const isDisabled = !mode.available;
                   return (
-                    <button
+                    <Link
                       key={mode.id}
-                      type="button"
-                      disabled={isDisabled}
-                      data-new-tab-href={mode.available ? appPathWithMode(mode.id) : undefined}
-                      onClick={() => {
+                      href={appPathWithMode(mode.id)}
+                      aria-disabled={isDisabled}
+                      tabIndex={isDisabled ? -1 : undefined}
+                      onClick={(event) => {
+                        if (isDisabled) {
+                          event.preventDefault();
+                          return;
+                        }
                         playSelect();
-                        window.location.href = appPathWithMode(mode.id);
                       }}
-                      className={`punktlandung-home-mode-card group relative min-h-[46px] rounded-md px-3.5 py-1.5 text-left transition lg:min-h-[clamp(40px,4.5vh,52px)] ${
+                      className={`punktlandung-home-mode-card punktlandung-interactive-surface group relative min-h-[46px] rounded-md px-3.5 py-1.5 text-left transition lg:min-h-[clamp(40px,4.5vh,52px)] ${
                         mode.available
-                          ? "cursor-pointer overflow-hidden bg-slate-950/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_16px_34px_rgba(0,0,0,0.18)] ring-1 ring-slate-600/80 hover:-translate-y-0.5 hover:bg-slate-900/86 hover:ring-emerald-300/75 focus:outline-none focus:ring-2 focus:ring-emerald-300/85"
+                          ? "cursor-pointer overflow-hidden bg-slate-950/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_16px_34px_rgba(0,0,0,0.18)] ring-1 ring-slate-600/80 hover:bg-slate-900/86 hover:ring-emerald-300/75 focus:outline-none focus:ring-2 focus:ring-emerald-300/85"
                           : "punktlandung-preview-dash bg-slate-950/28 pr-24"
                       } disabled:cursor-not-allowed disabled:hover:bg-slate-950/35 disabled:hover:ring-slate-700/70`}
                     >
@@ -676,20 +653,22 @@ export function GameApp({
                           </span>
                         )}
                       </span>
-                    </button>
+                    </Link>
                   );
                 })}
               </div>
 
-              <div className="punktlandung-home-room-card mt-3 rounded-md bg-slate-950/72 p-3 ring-1 ring-slate-600/80 transition hover:bg-slate-900/86 hover:ring-emerald-300/75">
+              <div className="punktlandung-home-room-card mt-3 rounded-md bg-slate-950/72 p-3 ring-1 ring-slate-600/80">
                 <label className="block">
                   <span className="punktlandung-home-mode-content punktlandung-home-room-content">
                     <span className="punktlandung-home-mode-icon punktlandung-home-mode-icon-room" aria-hidden="true">
                       <img src="/mode-icons/online-raum3-crop.png" alt="" draggable={false} />
                     </span>
-                    <span className="min-w-0">
-                      <span className="punktlandung-home-mode-title block text-lg font-black leading-tight text-white">Online-Raum</span>
-                      <span className="punktlandung-home-mode-text mt-0.5 block text-xs leading-tight text-slate-300">Online-Raum beitreten</span>
+                    <span className="punktlandung-home-room-main min-w-0">
+                      <span className="punktlandung-home-room-heading">
+                        <span className="punktlandung-home-mode-title block text-lg font-black leading-tight text-white">Online-Raum</span>
+                        <span className="punktlandung-home-mode-text mt-0.5 block text-xs leading-tight text-slate-300">Online-Raum beitreten</span>
+                      </span>
                       <span className="punktlandung-home-room-controls mt-1.5 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
                         <input
                           value={joinCodeInput}

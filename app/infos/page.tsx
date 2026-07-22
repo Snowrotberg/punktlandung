@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { LegalBackLink } from "@/components/LegalBackLink";
+import { InfoPageShell } from "@/components/InfoPageShell";
 import { HomeSeoContent } from "@/components/SeoContent";
 import { FaqStructuredData } from "@/components/StructuredData";
 import { absoluteUrl } from "@/lib/seo";
@@ -15,12 +15,16 @@ export const metadata: Metadata = {
 
 export default function InfosPage() {
   return (
-    <main className="min-h-dvh bg-slate-950 text-slate-100">
+    <>
       <FaqStructuredData />
-      <div className="mx-auto max-w-5xl px-4 pt-8 md:px-6">
-        <LegalBackLink />
-      </div>
-      <HomeSeoContent />
-    </main>
+      <InfoPageShell
+        fillDesktop
+        eyebrow="Punktlandung Infos"
+        title="Geo-Quiz, Spielmodi und häufige Fragen"
+        intro="Alles Wichtige über Punktlandung sowie direkte Wege zu den vertiefenden Informationsseiten."
+      >
+        <HomeSeoContent />
+      </InfoPageShell>
+    </>
   );
 }
