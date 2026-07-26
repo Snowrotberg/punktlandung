@@ -17,11 +17,17 @@ export default function LizenzenPage() {
           <section>
             <h2 className="text-[22px] font-black leading-tight text-white">Karten</h2>
             <p className="mt-2">
-              Kartenmaterial: OpenStreetMap-Mitwirkende. Die jeweils verwendete Kachelquelle wird in der Kartenansicht über die
-              Leaflet-Attribution angezeigt.
+              Die Kartendaten stammen von den OpenStreetMap-Mitwirkenden und stehen unter der Open Data Commons
+              Open Database License (ODbL). Die derzeit verwendeten Kartenkacheln von tile.openstreetmap.de werden
+              im Umfeld des FOSSGIS e. V. bereitgestellt; die Kachelgrafiken stehen unter CC BY-SA 2.0. Die
+              Quellenhinweise erscheinen zusätzlich direkt in jeder Kartenansicht.
             </p>
             <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold text-emerald-300 hover:text-emerald-200">
               OpenStreetMap Copyright und Lizenz
+            </a>
+            <span className="mx-2 text-slate-600">·</span>
+            <a href="https://fossgis.de/arbeitsgruppen/osm-server/nutzungsbedingungen/" target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold text-emerald-300 hover:text-emerald-200">
+              Bedingungen des Kartendienstes
             </a>
           </section>
 
@@ -29,10 +35,22 @@ export default function LizenzenPage() {
             <h2 className="text-[22px] font-black leading-tight text-white">Ländergrenzen</h2>
             <p className="mt-2">
               Für Flaggenrunden nutzt Punktlandung einen lokalen GeoJSON-Länderdatensatz, damit Treffer im richtigen Land ohne externe
-              Geocoding-Abfrage erkannt werden können.
+              Geocoding-Abfrage erkannt werden können. Das Geo-Countries-Dataset steht unter der Open Data Commons
+              Public Domain Dedication and License (PDDL); die zugrunde liegenden Natural-Earth-Daten sind gemeinfrei.
             </p>
             <a href="https://github.com/datasets/geo-countries" target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold text-emerald-300 hover:text-emerald-200">
               Geo Countries Dataset
+            </a>
+          </section>
+
+          <section>
+            <h2 className="text-[22px] font-black leading-tight text-white">Kartensoftware</h2>
+            <p className="mt-2">
+              Die interaktiven Karten werden mit Leaflet dargestellt. Leaflet ist freie Software unter der
+              BSD-2-Clause-Lizenz.
+            </p>
+            <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold text-emerald-300 hover:text-emerald-200">
+              Leaflet-Lizenz
             </a>
           </section>
 

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { StructuredData } from "@/components/StructuredData";
 import { adConfig } from "@/lib/ads";
+import { analyticsEnabled } from "@/lib/analytics";
 import { absoluteUrl, defaultDescription, ogImage, siteName, siteUrl } from "@/lib/seo";
 import "./globals.css";
 
@@ -65,10 +67,22 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="de">
+    <html lang="de" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://commons.wikimedia.org" crossOrigin="" />
-        <link rel="preconnect" href="https://upload.wikimedia.org" crossOrigin="" />
+        <link rel="preconnect" href="https://commons.wikimedia.org" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://upload.wikimedia.org" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://commons.wikimedia.org" />
+        <link rel="dns-prefetch" href="https://upload.wikimedia.org" />
+        {analyticsEnabled && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html:
+                "window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};" +
+                "window.gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:1000,region:['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IS','IE','IT','LV','LI','LT','LU','MT','NL','NO','PL','PT','RO','SK','SI','ES','SE','GB','CH']});" +
+                "window.gtag('consent','default',{ad_storage:'granted',ad_user_data:'granted',ad_personalization:'granted',analytics_storage:'granted'});"
+            }}
+          />
+        )}
         {adConfig.enabled && adConfig.clientId && (
           <script
             async
@@ -78,6 +92,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         )}
       </head>
       <body className="bg-slate-950 text-slate-50 antialiased">
+        <script src="/ambient-phase.js" />
+        <GoogleAnalytics />
         <StructuredData />
         {children}
       </body>

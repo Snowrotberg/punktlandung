@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
-import { randomInt } from "node:crypto";
+import { randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { WebSocket, WebSocketServer } from "ws";
+import { recordUsageEvent, type UsageEventName, type UsageEvent } from "../lib/usageMetrics.server";
 import { builtInLocations } from "../data/locations";
 import { averageGuess, badgeFor, countryCodeFromGuess, haversineDistanceKm, isGuessInCountry, scoreDistance } from "../lib/geo";
 import { evaluateTerritoryGuess } from "../lib/locationBoundaries";
@@ -8,8 +9,11 @@ import type {
   ClientMessage,
   Cosmetic,
   GameSettings,
+  GameMode,
   Guess,
   HostParticipation,
+  LocalMode,
+  LocationCategory,
   Player,
   RoomKind,
   RoomState,
@@ -23,6 +27,7 @@ type Client = {
   id: string;
   socket: WebSocket;
   roomCode: string | null;
+  resumeToken: string;
   messageWindowStartedAt: number;
   messageCount: number;
 };
@@ -34,15 +39,25 @@ type InternalRoom = RoomState & {
   duelHp: Record<TeamId, number>;
   createdAt: number;
   lastActivityAt: number;
+  resumeTokens: Map<string, string>;
 };
+
+function boundedEnvInteger(name: string, fallback: number, min: number, max: number): number {
+  const raw = process.env[name];
+  if (!raw?.trim()) return fallback;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(parsed)));
+}
 
 const PORT = Number(process.env.WS_PORT ?? 3001);
 const HOST = process.env.WS_HOST ?? "127.0.0.1";
-const MAX_WS_PAYLOAD_BYTES = 32 * 1024;
-const MESSAGE_RATE_WINDOW_MS = 10_000;
-const MESSAGE_RATE_LIMIT = 80;
-const MAX_ACTIVE_ROOMS = 1_000;
-const MAX_PLAYERS_PER_ROOM = 50;
+const MAX_WS_PAYLOAD_BYTES = boundedEnvInteger("WS_MAX_PAYLOAD_BYTES", 32 * 1024, 1024, 1024 * 1024);
+const MESSAGE_RATE_WINDOW_MS = boundedEnvInteger("WS_RATE_WINDOW_MS", 10_000, 1_000, 60_000);
+const MESSAGE_RATE_LIMIT = boundedEnvInteger("WS_RATE_LIMIT", 80, 5, 500);
+const MAX_ACTIVE_ROOMS = boundedEnvInteger("WS_MAX_ACTIVE_ROOMS", 1_000, 1, 10_000);
+const MAX_PLAYERS_PER_ROOM = boundedEnvInteger("WS_MAX_PLAYERS_PER_ROOM", 10, 1, 10);
+const MAX_CONNECTIONS = boundedEnvInteger("WS_MAX_CONNECTIONS", 5_000, 10, 50_000);
 const ROOM_TTL_MS = 1000 * 60 * 60 * 3;
 const AD_GATE_MS = 0;
 const NEXT_ROUND_COUNTDOWN_MS = 30_000;
@@ -53,6 +68,16 @@ const clients = new Map<string, Client>();
 const rooms = new Map<string, InternalRoom>();
 let lastGlobalLocationId: string | null = null;
 let recentGlobalLocationIds: string[] = [];
+let connectionCapacityWarningActive = false;
+let roomCapacityWarningActive = false;
+let lastRecordedConnections = -1;
+let lastRecordedRooms = -1;
+
+function recordOperationalEvent(event: UsageEventName, details: Omit<UsageEvent, "version" | "at" | "event"> = {}): void {
+  void recordUsageEvent(event, details).catch((error) => {
+    console.warn(`[metrics] Could not persist ${event}:`, error instanceof Error ? error.message : error);
+  });
+}
 
 const allowedOrigins = new Set(
   (process.env.WS_ALLOWED_ORIGINS ??
@@ -79,6 +104,17 @@ const playerColors = ["#2563eb", "#f43f5e", "#f59e0b", "#06b6d4", "#7c3aed", "#f
 
 function id(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+}
+
+function resumeToken(): string {
+  return randomBytes(32).toString("hex");
+}
+
+function resumeTokenMatches(expected: string | undefined, supplied: string): boolean {
+  if (!expected || !/^[a-f0-9]{64}$/i.test(supplied)) return false;
+  const expectedBuffer = Buffer.from(expected, "hex");
+  const suppliedBuffer = Buffer.from(supplied, "hex");
+  return expectedBuffer.length === suppliedBuffer.length && timingSafeEqual(expectedBuffer, suppliedBuffer);
 }
 
 function roomCode(): string {
@@ -157,6 +193,44 @@ function broadcast(room: InternalRoom): void {
 
 function sendError(client: Client, message: string): void {
   send(client, { type: "error", message });
+}
+
+function capacitySnapshot() {
+  const connectionUtilization = clients.size / MAX_CONNECTIONS;
+  const roomUtilization = rooms.size / MAX_ACTIVE_ROOMS;
+  return {
+    status: connectionUtilization >= 1 || roomUtilization >= 1 ? "full" : connectionUtilization >= 0.8 || roomUtilization >= 0.8 ? "warning" : "ok",
+    connections: {
+      active: clients.size,
+      limit: MAX_CONNECTIONS,
+      utilizationPercent: Math.round(connectionUtilization * 10_000) / 100
+    },
+    rooms: {
+      active: rooms.size,
+      limit: MAX_ACTIVE_ROOMS,
+      utilizationPercent: Math.round(roomUtilization * 10_000) / 100
+    },
+    playersPerRoomLimit: MAX_PLAYERS_PER_ROOM
+  };
+}
+
+function reportCapacityWarnings(): void {
+  const snapshot = capacitySnapshot();
+  const connectionsWarning = snapshot.connections.utilizationPercent >= 80;
+  const roomsWarning = snapshot.rooms.utilizationPercent >= 80;
+  if (connectionsWarning && !connectionCapacityWarningActive) {
+    console.warn(`[capacity] WebSocket connections at ${snapshot.connections.utilizationPercent}% (${snapshot.connections.active}/${snapshot.connections.limit}).`);
+  }
+  if (roomsWarning && !roomCapacityWarningActive) {
+    console.warn(`[capacity] Active rooms at ${snapshot.rooms.utilizationPercent}% (${snapshot.rooms.active}/${snapshot.rooms.limit}).`);
+  }
+  connectionCapacityWarningActive = connectionsWarning;
+  roomCapacityWarningActive = roomsWarning;
+  if (clients.size !== lastRecordedConnections || rooms.size !== lastRecordedRooms) {
+    lastRecordedConnections = clients.size;
+    lastRecordedRooms = rooms.size;
+    recordOperationalEvent("capacity_sample", { connections: clients.size, rooms: rooms.size });
+  }
 }
 
 function findRoomFor(client: Client): InternalRoom | null {
@@ -245,6 +319,10 @@ function syncLocalPlayers(room: InternalRoom): void {
 }
 
 function createRoom(client: Client, playerName: string | undefined, kind: RoomKind, hostParticipation?: HostParticipation): void {
+  if (findRoomFor(client)) {
+    sendError(client, "Bitte verlasse zuerst deinen aktuellen Raum.");
+    return;
+  }
   if (rooms.size >= MAX_ACTIVE_ROOMS) {
     sendError(client, "Der Server ist momentan ausgelastet. Bitte versuche es gleich noch einmal.");
     return;
@@ -280,11 +358,14 @@ function createRoom(client: Client, playerName: string | undefined, kind: RoomKi
     recentLocationIds: [],
     duelHp: { aurora: 20000, pulse: 20000 },
     createdAt: Date.now(),
-    lastActivityAt: Date.now()
+    lastActivityAt: Date.now(),
+    resumeTokens: new Map([[client.id, client.resumeToken]])
   };
   syncLocalPlayers(room);
   rooms.set(code, room);
   client.roomCode = code;
+  recordOperationalEvent("room_created", { gameType: kind === "online" ? "online" : kind === "party" ? "party" : "solo" });
+  reportCapacityWarnings();
   broadcast(room);
 }
 
@@ -306,11 +387,13 @@ function joinRoom(client: Client, codeInput: string, playerName: string): void {
   } else {
     room.players.push(makePlayer(client.id, playerName, false, room.players.length));
   }
+  room.resumeTokens.set(client.id, client.resumeToken);
   client.roomCode = code;
+  recordOperationalEvent("room_joined", { gameType: "online" });
   broadcast(room);
 }
 
-function replacePlayerId(room: InternalRoom, previousPlayerId: string, nextPlayerId: string): void {
+function replacePlayerId(room: InternalRoom, previousPlayerId: string, nextPlayerId: string, nextResumeToken: string): void {
   if (previousPlayerId === nextPlayerId) return;
   const player = room.players.find((candidate) => candidate.id === previousPlayerId);
   if (player) {
@@ -329,17 +412,29 @@ function replacePlayerId(room: InternalRoom, previousPlayerId: string, nextPlaye
       guess: result.guess?.playerId === previousPlayerId ? { ...result.guess, playerId: nextPlayerId } : result.guess
     }))
   }));
+  room.resumeTokens.delete(previousPlayerId);
+  room.resumeTokens.set(nextPlayerId, nextResumeToken);
 }
 
-function resumeRoom(client: Client, codeInput: string, previousPlayerId: string): void {
+function resumeRoom(client: Client, codeInput: string, previousPlayerId: string, suppliedResumeToken: string): void {
   const code = codeInput.toUpperCase().replace(/[^A-Z0-9]/g, "");
   const room = rooms.get(code);
-  if (!room || room.kind !== "online") return;
+  if (!room || room.kind !== "online") {
+    sendError(client, "Die Sitzung konnte nicht wiederhergestellt werden.");
+    return;
+  }
   const isHostResume = room.hostId === previousPlayerId;
   const isKnownPlayer = room.players.some((player) => player.id === previousPlayerId);
-  if (!isHostResume && !isKnownPlayer) return;
+  if (!isHostResume && !isKnownPlayer) {
+    sendError(client, "Die Sitzung konnte nicht wiederhergestellt werden.");
+    return;
+  }
+  if (!resumeTokenMatches(room.resumeTokens.get(previousPlayerId), suppliedResumeToken)) {
+    sendError(client, "Die Sitzung konnte nicht wiederhergestellt werden.");
+    return;
+  }
 
-  replacePlayerId(room, previousPlayerId, client.id);
+  replacePlayerId(room, previousPlayerId, client.id, client.resumeToken);
   if (isHostResume) {
     room.hostId = client.id;
     for (const player of room.players) player.isHost = player.id === room.hostId;
@@ -355,6 +450,7 @@ function leaveRoom(client: Client): void {
     return;
   }
   room.players = room.players.filter((player) => player.id !== client.id);
+  room.resumeTokens.delete(client.id);
   room.guesses = room.guesses.filter((guess) => guess.playerId !== client.id);
   room.nextRoundReadyPlayerIds = room.nextRoundReadyPlayerIds.filter((playerId) => playerId !== client.id);
   client.roomCode = null;
@@ -600,17 +696,149 @@ function updateSettings(client: Client, room: InternalRoom, patch: Partial<GameS
   broadcast(room);
 }
 
-function handleMessage(client: Client, raw: string): void {
-  let message: ClientMessage;
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || !("type" in parsed) || typeof parsed.type !== "string") {
-      sendError(client, "Die Nachricht hatte kein gültiges Format.");
-      return;
+const gameModes = new Set<GameMode>(["classic", "crew", "elimination", "duel"]);
+const localModes = new Set<LocalMode>(["solo", "couch"]);
+const locationCategories = new Set<LocationCategory>([
+  "mixed",
+  "landmarks",
+  "cities",
+  "landscapes",
+  "flags",
+  "capitals",
+  "streetview"
+]);
+const hostParticipations = new Set<HostParticipation>(["host_player", "host_only"]);
+const teams = new Set<TeamId>(["aurora", "pulse"]);
+const unlockableCosmetics = new Set<Cosmetic>(["crown", "visor", "halo", "neon-frame"]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isShortString(value: unknown, maxLength: number): value is string {
+  return typeof value === "string" && value.length <= maxLength;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function validatedSettingsPatch(value: unknown): Partial<GameSettings> | null {
+  if (!isRecord(value)) return null;
+  const patch: Partial<GameSettings> = {};
+  if (value.mode !== undefined) {
+    if (typeof value.mode !== "string" || !gameModes.has(value.mode as GameMode)) return null;
+    patch.mode = value.mode as GameMode;
+  }
+  if (value.localMode !== undefined) {
+    if (typeof value.localMode !== "string" || !localModes.has(value.localMode as LocalMode)) return null;
+    patch.localMode = value.localMode as LocalMode;
+  }
+  for (const key of ["localPlayerCount", "timeLimitSec", "rounds"] as const) {
+    if (value[key] !== undefined) {
+      if (!isFiniteNumber(value[key])) return null;
+      patch[key] = value[key];
     }
-    message = parsed as ClientMessage;
+  }
+  for (const key of ["noMove", "noPan", "noZoom"] as const) {
+    if (value[key] !== undefined) {
+      if (typeof value[key] !== "boolean") return null;
+      patch[key] = value[key];
+    }
+  }
+  if (value.mapPackId !== undefined) {
+    if (!isShortString(value.mapPackId, 80)) return null;
+    patch.mapPackId = value.mapPackId;
+  }
+  if (value.category !== undefined) {
+    if (typeof value.category !== "string" || !locationCategories.has(value.category as LocationCategory)) return null;
+    patch.category = value.category as LocationCategory;
+  }
+  return patch;
+}
+
+function validatedClientMessage(value: unknown): ClientMessage | null {
+  if (!isRecord(value) || !isShortString(value.type, 40)) return null;
+  switch (value.type) {
+    case "create_room":
+    case "create_solo":
+      return isShortString(value.playerName, 100) ? { type: value.type, playerName: value.playerName } : null;
+    case "create_online_room": {
+      if (value.playerName !== undefined && !isShortString(value.playerName, 100)) return null;
+      if (
+        value.hostParticipation !== undefined &&
+        (typeof value.hostParticipation !== "string" || !hostParticipations.has(value.hostParticipation as HostParticipation))
+      ) return null;
+      return {
+        type: value.type,
+        playerName: value.playerName as string | undefined,
+        hostParticipation: value.hostParticipation as HostParticipation | undefined
+      };
+    }
+    case "resume_room":
+      return isShortString(value.code, 12) &&
+        isShortString(value.previousPlayerId, 128) &&
+        typeof value.resumeToken === "string" &&
+        /^[a-f0-9]{64}$/i.test(value.resumeToken)
+        ? { type: value.type, code: value.code, previousPlayerId: value.previousPlayerId, resumeToken: value.resumeToken }
+        : null;
+    case "join_room":
+      return isShortString(value.code, 12) && isShortString(value.playerName, 100)
+        ? { type: value.type, code: value.code, playerName: value.playerName }
+        : null;
+    case "update_settings": {
+      const settings = validatedSettingsPatch(value.settings);
+      return settings ? { type: value.type, settings } : null;
+    }
+    case "submit_guess": {
+      if (!isRecord(value.guess) || !isFiniteNumber(value.guess.lat) || !isFiniteNumber(value.guess.lng)) return null;
+      if (value.countryCode !== undefined && !isShortString(value.countryCode, 8)) return null;
+      if (value.playerId !== undefined && !isShortString(value.playerId, 128)) return null;
+      return {
+        type: value.type,
+        guess: { lat: value.guess.lat, lng: value.guess.lng },
+        countryCode: typeof value.countryCode === "string" ? value.countryCode.toUpperCase() : undefined,
+        playerId: value.playerId as string | undefined
+      };
+    }
+    case "send_emoji":
+      return isShortString(value.emoji, 16) && isFiniteNumber(value.x)
+        ? { type: value.type, emoji: value.emoji, x: value.x }
+        : null;
+    case "unlock_cosmetic":
+      return typeof value.cosmetic === "string" && unlockableCosmetics.has(value.cosmetic as Cosmetic)
+        ? { type: value.type, cosmetic: value.cosmetic as Cosmetic }
+        : null;
+    case "set_team":
+      return typeof value.team === "string" && teams.has(value.team as TeamId)
+        ? { type: value.type, team: value.team as TeamId }
+        : null;
+    case "skip_location":
+      return value.locationId === undefined || isShortString(value.locationId, 128)
+        ? { type: value.type, locationId: value.locationId as string | undefined }
+        : null;
+    case "start_round":
+    case "ready_next_round":
+    case "cancel_round":
+    case "leave_room":
+    case "restart":
+      return { type: value.type };
+    default:
+      return null;
+  }
+}
+
+function handleMessage(client: Client, raw: string): void {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
   } catch {
     sendError(client, "Die Nachricht war kein gültiges JSON.");
+    return;
+  }
+  const message = validatedClientMessage(parsed);
+  if (!message) {
+    sendError(client, "Die Nachricht hatte kein gültiges Format.");
     return;
   }
 
@@ -623,7 +851,7 @@ function handleMessage(client: Client, raw: string): void {
     return;
   }
   if (message.type === "resume_room") {
-    resumeRoom(client, message.code, message.previousPlayerId);
+    resumeRoom(client, message.code, message.previousPlayerId, message.resumeToken);
     return;
   }
   if (message.type === "create_solo") {
@@ -669,12 +897,9 @@ function handleMessage(client: Client, raw: string): void {
       broadcast(room);
       break;
     case "unlock_cosmetic": {
-      const allowed: Cosmetic[] = ["crown", "visor", "halo", "neon-frame"];
-      if (allowed.includes(message.cosmetic)) {
-        const player = room.players.find((candidate) => candidate.id === client.id);
-        if (player) player.cosmetic = message.cosmetic;
-        broadcast(room);
-      }
+      const player = room.players.find((candidate) => candidate.id === client.id);
+      if (player) player.cosmetic = message.cosmetic;
+      broadcast(room);
       break;
     }
     case "set_team": {
@@ -731,7 +956,7 @@ function handleMessage(client: Client, raw: string): void {
 
 const server = createServer((_req, res) => {
   res.writeHead(200, { "content-type": "application/json" });
-  res.end(JSON.stringify({ ok: true, service: "Punktlandung WebSocket", rooms: rooms.size }));
+  res.end(JSON.stringify({ ok: true, service: "Punktlandung WebSocket", capacity: capacitySnapshot() }));
 });
 
 const wss = new WebSocketServer({
@@ -753,15 +978,24 @@ function consumeMessageBudget(client: Client): boolean {
 }
 
 wss.on("connection", (socket) => {
+  if (clients.size >= MAX_CONNECTIONS) {
+    console.warn(`[capacity] Rejected WebSocket connection at limit ${clients.size}/${MAX_CONNECTIONS}.`);
+    recordOperationalEvent("ws_connection_rejected", { connections: clients.size, rooms: rooms.size });
+    socket.close(1013, "Server ausgelastet");
+    return;
+  }
   const client: Client = {
     id: id("player"),
     socket,
     roomCode: null,
+    resumeToken: resumeToken(),
     messageWindowStartedAt: Date.now(),
     messageCount: 0
   };
   clients.set(client.id, client);
-  send(client, { type: "hello", playerId: client.id });
+  recordOperationalEvent("ws_connection_accepted");
+  reportCapacityWarnings();
+  send(client, { type: "hello", playerId: client.id, resumeToken: client.resumeToken });
 
   socket.on("message", (data) => {
     if (!consumeMessageBudget(client)) return;
@@ -771,8 +1005,12 @@ wss.on("connection", (socket) => {
       sendError(client, "Die Nachricht konnte nicht verarbeitet werden.");
     }
   });
+  socket.on("error", () => {
+    // The close handler owns room cleanup; socket errors must not crash the process.
+  });
   socket.on("close", () => {
     clients.delete(client.id);
+    reportCapacityWarnings();
     const room = findRoomFor(client);
     if (!room) return;
     if (room.kind === "online" && room.hostId === client.id) {
@@ -810,6 +1048,7 @@ setInterval(() => {
     }
     if (now - room.lastActivityAt > ROOM_TTL_MS) rooms.delete(room.code);
   }
+  reportCapacityWarnings();
 }, 500);
 
 server.listen(PORT, HOST, () => {

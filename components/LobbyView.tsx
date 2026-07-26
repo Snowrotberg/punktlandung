@@ -8,6 +8,7 @@ import { AdContainer } from "./AdContainer";
 import { BackLink } from "./BackButton";
 import { Button, ButtonLink } from "./Button";
 import { LegalLinks } from "./LegalLinks";
+import { PublicBetaBadge } from "./PublicBetaBadge";
 import { TriangleIcon } from "./TriangleIcon";
 
 type LobbyViewProps = {
@@ -63,6 +64,62 @@ function SvgPin({ className, color }: { className?: string; color: string }) {
   );
 }
 
+async function createBrandedQrCode(value: string): Promise<string> {
+  const canvas = document.createElement("canvas");
+
+  await QRCode.toCanvas(canvas, value, {
+    errorCorrectionLevel: "H",
+    margin: 4,
+    scale: 10,
+    color: {
+      dark: "#020617",
+      light: "#ffffff"
+    }
+  });
+
+  const context = canvas.getContext("2d");
+  if (!context) return canvas.toDataURL("image/png");
+
+  const size = canvas.width;
+  const protectionSize = size * 0.19;
+  const protectionX = (size - protectionSize) / 2;
+  const protectionY = (size - protectionSize) / 2;
+  const protectionRadius = size * 0.018;
+
+  context.fillStyle = "#ffffff";
+  context.beginPath();
+  context.roundRect(protectionX, protectionY, protectionSize, protectionSize, protectionRadius);
+  context.fill();
+
+  const logoHeight = size * 0.135;
+  const logoWidth = logoHeight * (64 / 84);
+  const logoX = (size - logoWidth) / 2;
+  const logoY = (size - logoHeight) / 2;
+  const scaleX = logoWidth / 64;
+  const scaleY = logoHeight / 84;
+
+  context.save();
+  context.translate(logoX, logoY);
+  context.scale(scaleX, scaleY);
+  context.fillStyle = "#020617";
+  context.beginPath();
+  context.moveTo(32, 82);
+  context.bezierCurveTo(32, 82, 6, 48, 6, 28);
+  context.bezierCurveTo(6, 12.5, 17.6, 3, 32, 3);
+  context.bezierCurveTo(46.4, 3, 58, 12.5, 58, 28);
+  context.bezierCurveTo(58, 48, 32, 82, 32, 82);
+  context.closePath();
+  context.fill();
+
+  context.fillStyle = "#ffffff";
+  context.beginPath();
+  context.arc(32, 27, 12, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+
+  return canvas.toDataURL("image/png");
+}
+
 export function LobbyView({
   code,
   roomKind,
@@ -97,12 +154,15 @@ export function LobbyView({
   const usesModeSidebarAd = isSoloMode || isCouchMode || isOnlineRoom;
   const leftRailPlacement = isSoloMode ? "solo-left-rail" : isCouchMode ? "party-left-rail" : isOnlineRoom ? "online-left-rail" : "lobby-left-rail";
   const rightRailPlacement = isSoloMode ? "solo-right-rail" : isCouchMode ? "party-right-rail" : isOnlineRoom ? "online-right-rail" : "lobby-right-rail";
-  const inviteLink = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    const url = new URL(window.location.origin);
+  const invite = useMemo(() => {
+    if (typeof window === "undefined") return { link: "", isMobileReachable: false };
+    const configuredOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    const url = new URL(configuredOrigin || window.location.origin);
     url.searchParams.set("room", code);
-    return url.toString();
+    const isLoopback = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]";
+    return { link: url.toString(), isMobileReachable: !isLoopback };
   }, [code]);
+  const inviteLink = invite.link;
   const me = players.find((player) => player.id === meId);
   const rankedPlayers = [...players].sort((a, b) => b.score - a.score);
   const headerKicker = isSolo ? (isCouchMode ? "Partymodus" : "Solo-Modus") : "Online-Modus";
@@ -133,20 +193,12 @@ export function LobbyView({
   const isCustomRoundCount = customRoundText !== "" || !roundPresets.includes(settings.rounds);
 
   useEffect(() => {
-    if (isSolo || !isRoomOnline || !inviteLink) {
+    if (isSolo || !isRoomOnline || !inviteLink || !invite.isMobileReachable) {
       setQrDataUrl("");
       return;
     }
     let cancelled = false;
-    QRCode.toDataURL(inviteLink, {
-      errorCorrectionLevel: "M",
-      margin: 1,
-      scale: 8,
-      color: {
-        dark: "#020617",
-        light: "#ffffff"
-      }
-    })
+    createBrandedQrCode(inviteLink)
       .then((dataUrl) => {
         if (!cancelled) setQrDataUrl(dataUrl);
       })
@@ -156,7 +208,7 @@ export function LobbyView({
     return () => {
       cancelled = true;
     };
-  }, [inviteLink, isRoomOnline, isSolo]);
+  }, [invite.isMobileReachable, inviteLink, isRoomOnline, isSolo]);
 
   const copyInvite = async () => {
     try {
@@ -213,7 +265,10 @@ export function LobbyView({
           <div className="punktlandung-online-waiting-content flex min-h-0 min-w-0 flex-col gap-2 md:gap-4">
             <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-md bg-slate-900/70 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-5">
               <div className="min-w-0">
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Online-Warteraum</p>
+                <div className="punktlandung-beta-context-row">
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Online-Warteraum</p>
+                  <PublicBetaBadge compact />
+                </div>
                 <h1 className="mt-1 text-2xl font-black leading-tight text-white md:text-4xl">QR-Code scannen und beitreten</h1>
                 <p className="mt-1 text-sm text-slate-400">Großer Bildschirm: Raumleitung und Ergebnisanzeige.</p>
               </div>
@@ -252,8 +307,15 @@ export function LobbyView({
                       className="block aspect-square h-full max-h-full w-auto max-w-full object-contain"
                       draggable={false}
                     />
-                  ) : (
+                  ) : invite.isMobileReachable ? (
                     <div className="grid h-64 w-64 place-items-center text-center text-sm font-black text-slate-700">QR wird erstellt</div>
+                  ) : (
+                    <div className="mx-auto grid max-w-md place-items-center gap-3 px-5 text-center text-slate-900">
+                      <p className="text-lg font-black">Lokaler Link nicht per Handy erreichbar</p>
+                      <p className="text-sm font-semibold leading-5 text-slate-700">
+                        Öffne Punktlandung über eine Netzwerk- oder Freigabe-Adresse. Danach wird hier automatisch ein scanbarer QR-Code angezeigt.
+                      </p>
+                    </div>
                   )}
                 </div>
 
@@ -389,7 +451,10 @@ export function LobbyView({
           <header className="punktlandung-lobby-header flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-md bg-slate-900/70 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-5 min-[2200px]:p-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">{headerKicker}</p>
+              <div className="punktlandung-beta-context-row">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">{headerKicker}</p>
+                <PublicBetaBadge compact />
+              </div>
               <div className="relative mt-1 inline-block max-w-full pr-12 md:pr-14">
                 <SvgPin
                   className="absolute right-1 top-1/2 z-0 h-8 w-7 -translate-y-[58%] drop-shadow-[0_0_14px_rgba(52,211,153,0.55)] md:right-2 md:h-9 md:w-8"
@@ -521,35 +586,37 @@ export function LobbyView({
                   </div>
                   {isOnlineRoom && !isRoomOnline && (
                     <div className="punktlandung-online-host-card mt-4">
-                      <div className="punktlandung-online-host-head flex items-center justify-between gap-3">
-                        <p className="punktlandung-online-host-label text-xs font-black uppercase tracking-[0.2em] text-slate-400">Host-Rolle</p>
-                        {!isHost && <span className="text-xs font-black text-slate-400">Host stellt ein</span>}
-                      </div>
-                      <div className="punktlandung-online-host-options mt-3 grid grid-cols-2 gap-2">
-                        {([
-                          ["host_player", "Ich spiele selbst", ""],
-                          ["host_only", "Ich verwalte nur", ""]
-                        ] as const).map(([value, title, text]) => (
-                          <button
-                            key={value}
-                            type="button"
-                            disabled={!isHost || !onHostParticipationChange}
-                            onClick={() => onHostParticipationChange?.(value, value === "host_player" ? hostPlayerName : undefined)}
-                            className={`group relative overflow-hidden rounded-md p-3 text-left transition ${
-                              hostParticipation === value
-                                ? "bg-slate-950/70 shadow-good ring-2 ring-emerald-300/75"
-                                : "bg-slate-950/40 ring-1 ring-slate-700/60 hover:bg-slate-900/70 hover:ring-emerald-300/60"
-                            } disabled:cursor-not-allowed`}
-                          >
-                            <span
-                              className={`absolute inset-y-4 left-0 w-1 rounded-r-full transition ${
-                                hostParticipation === value ? "bg-emerald-300/80" : "bg-emerald-400/28 group-hover:bg-emerald-300/70"
-                              }`}
-                            />
-                            <p className="font-black leading-tight">{title}</p>
-                            {text && <p className="punktlandung-online-host-text mt-1 text-xs leading-5 text-slate-300">{text}</p>}
-                          </button>
-                        ))}
+                      <div className="punktlandung-online-host-role-row">
+                        <div className="punktlandung-online-host-head flex items-center justify-between gap-3">
+                          <p className="punktlandung-online-host-label text-xs font-black uppercase tracking-[0.2em] text-slate-400">Host-Rolle</p>
+                          {!isHost && <span className="punktlandung-online-host-status text-xs font-black text-slate-400">Host stellt ein</span>}
+                        </div>
+                        <div className="punktlandung-online-host-options mt-3 grid grid-cols-2 gap-2">
+                          {([
+                            ["host_player", "Ich spiele selbst", ""],
+                            ["host_only", "Ich verwalte nur", ""]
+                          ] as const).map(([value, title, text]) => (
+                            <button
+                              key={value}
+                              type="button"
+                              disabled={!isHost || !onHostParticipationChange}
+                              onClick={() => onHostParticipationChange?.(value, value === "host_player" ? hostPlayerName : undefined)}
+                              className={`group relative overflow-hidden rounded-md p-3 text-left transition ${
+                                hostParticipation === value
+                                  ? "bg-slate-950/70 shadow-good ring-2 ring-emerald-300/75"
+                                  : "bg-slate-950/40 ring-1 ring-slate-700/60 hover:bg-slate-900/70 hover:ring-emerald-300/60"
+                              } disabled:cursor-not-allowed`}
+                            >
+                              <span
+                                className={`absolute inset-y-4 left-0 w-1 rounded-r-full transition ${
+                                  hostParticipation === value ? "bg-emerald-300/80" : "bg-emerald-400/28 group-hover:bg-emerald-300/70"
+                                }`}
+                              />
+                              <p className="font-black leading-tight">{title}</p>
+                              {text && <p className="punktlandung-online-host-text mt-1 text-xs leading-5 text-slate-300">{text}</p>}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       {hostParticipation === "host_player" && (
                         <label className="punktlandung-online-host-name mt-3 block">
@@ -716,7 +783,7 @@ export function LobbyView({
                   </div>
                 </fieldset>
               </div>
-              <LegalLinks preserveSession className="mt-3 hidden border-t border-slate-800/85 pt-3 lg:flex" />
+              <LegalLinks preserveSession className="punktlandung-settings-legal mt-3 hidden border-t border-slate-800/85 pt-3 lg:flex" />
             </div>
             <AdContainer
               placement={isOnlineRoom ? "online-settings-banner" : isCouchMode ? "party-settings-banner" : "solo-settings-banner"}

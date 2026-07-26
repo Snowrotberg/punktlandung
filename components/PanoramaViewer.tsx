@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import type { GeoLocation, GameSettings } from "@/types/game";
 
 type PanoramaViewerProps = {
@@ -25,8 +26,10 @@ const imageLoadTimeoutMs: Record<GeoLocation["category"], number> = {
 
 const slowLoadHintMs = 10000;
 const manualSkipHintMs = 15000;
-const failedImageAutoSkipMs = 7000;
+const failedImageAutoSkipMs = 1500;
 const loadOverlayDelayMs = 2200;
+const directFallbackHedgeDelayMs = 1400;
+const proxyFallbackTimeoutMs = 6500;
 const defaultProxyWidth = 1400;
 const imageWidthSteps = [800, 1000, 1200, 1400, 1600, 1800, 2200] as const;
 const acceptedImageUrls = new Set<string>();
@@ -197,6 +200,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
   const [imageIndex, setImageIndex] = useState(0);
   const [imageFailed, setImageFailed] = useState(false);
   const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);
+  const [preferredImageUrl, setPreferredImageUrl] = useState<string | null>(null);
   const [autoSkipPaused, setAutoSkipPaused] = useState(false);
   const [showLoadOverlay, setShowLoadOverlay] = useState(false);
   const [showSlowLoadHint, setShowSlowLoadHint] = useState(false);
@@ -212,6 +216,9 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
   const tapGesture = useRef<{ pointerId: number; x: number; y: number; moved: boolean } | null>(null);
   const skippedLocationIds = useRef(new Set<string>());
   const autoSkipStreak = useRef(0);
+  const loadedImageUrlRef = useRef<string | null>(null);
+  const fallbackTrackedLocationIds = useRef(new Set<string>());
+  const failureTrackedLocationIds = useRef(new Set<string>());
   const [proxyWidth, setProxyWidth] = useState(() => estimateResponsiveImageWidth());
 
   const imageUrls = useMemo(() => {
@@ -223,10 +230,16 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
   const sourceHref = location.sourceUrl ?? (location.source === "wikimedia" ? wikimediaFilePageUrl(currentImageUrl) : currentImageUrl);
   const sourceName = location.source === "wikimedia" ? "Wikimedia Commons" : location.attribution || location.source;
   const imageProxyDisabled = process.env.NEXT_PUBLIC_DISABLE_IMAGE_PROXY === "true";
-  const displayedImageUrl = imageProxyDisabled
+  const primaryImageUrl = imageProxyDisabled
     ? wikimediaSizedImageUrl(currentImageUrl, proxyWidth)
     : `/api/image?src=${encodeURIComponent(currentImageUrl)}&w=${proxyWidth}`;
+  const directImageUrl = wikimediaSizedImageUrl(currentImageUrl, Math.min(proxyWidth, 1400));
+  const displayedImageUrl = preferredImageUrl ?? primaryImageUrl;
   const imageLoaded = loadedImageUrl === displayedImageUrl || acceptedImageUrls.has(displayedImageUrl);
+
+  useEffect(() => {
+    loadedImageUrlRef.current = loadedImageUrl;
+  }, [loadedImageUrl]);
 
   useEffect(() => {
     const updateProxyWidth = () => {
@@ -252,6 +265,8 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
     setImageIndex(0);
     setImageFailed(false);
     setLoadedImageUrl(null);
+    loadedImageUrlRef.current = null;
+    setPreferredImageUrl(null);
     setAutoSkipPaused(false);
     setShowLoadOverlay(false);
     setShowSlowLoadHint(false);
@@ -260,6 +275,9 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
 
   useEffect(() => {
     setImageFailed(false);
+    setPreferredImageUrl(null);
+    setLoadedImageUrl(null);
+    loadedImageUrlRef.current = null;
     setShowLoadOverlay(false);
     setShowSlowLoadHint(false);
     setShowManualSkip(false);
@@ -276,6 +294,9 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
 
   const tryNextImageCandidate = () => {
     if (imageIndex < imageUrls.length - 1) {
+      setPreferredImageUrl(null);
+      setLoadedImageUrl(null);
+      loadedImageUrlRef.current = null;
       setImageIndex((value) => value + 1);
     } else {
       setImageFailed(true);
@@ -283,25 +304,76 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
   };
 
   useEffect(() => {
+    if (imageLoaded || imageProxyDisabled || preferredImageUrl || directImageUrl === primaryImageUrl) return;
+
+    let cancelled = false;
+    let preloadImage: HTMLImageElement | null = null;
+    const hedgeTimer = window.setTimeout(() => {
+      preloadImage = new Image();
+      preloadImage.decoding = "async";
+      preloadImage.onload = () => {
+        if (cancelled || loadedImageUrlRef.current) return;
+        if (!preloadImage || !isImageLargeEnough(preloadImage.naturalWidth, preloadImage.naturalHeight, location.category)) return;
+
+        acceptedImageUrls.add(directImageUrl);
+        if (!fallbackTrackedLocationIds.current.has(location.id)) {
+          fallbackTrackedLocationIds.current.add(location.id);
+          trackAnalyticsEvent("image_delivery_fallback", { category: location.category, reason: "direct_hedge" });
+        }
+        loadedImageUrlRef.current = directImageUrl;
+        setPreferredImageUrl(directImageUrl);
+        setLoadedImageUrl(directImageUrl);
+        setImageFailed(false);
+        setShowLoadOverlay(false);
+        setShowSlowLoadHint(false);
+        setShowManualSkip(false);
+      };
+      preloadImage.src = directImageUrl;
+    }, directFallbackHedgeDelayMs);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(hedgeTimer);
+      if (preloadImage) {
+        preloadImage.onload = null;
+        preloadImage.onerror = null;
+      }
+    };
+  }, [directImageUrl, imageLoaded, imageProxyDisabled, location.category, location.id, preferredImageUrl, primaryImageUrl]);
+
+  useEffect(() => {
     if (imageLoaded) return;
     const overlayTimer = window.setTimeout(() => setShowLoadOverlay(true), loadOverlayDelayMs);
     const hintTimer = window.setTimeout(() => setShowSlowLoadHint(true), slowLoadHintMs);
     const manualSkipTimer = window.setTimeout(() => setShowManualSkip(true), manualSkipHintMs);
+    const canUseDirectFallback = !imageProxyDisabled && !preferredImageUrl && directImageUrl !== primaryImageUrl;
     const timer = window.setTimeout(() => {
+      if (canUseDirectFallback) {
+        if (!fallbackTrackedLocationIds.current.has(location.id)) {
+          fallbackTrackedLocationIds.current.add(location.id);
+          trackAnalyticsEvent("image_delivery_fallback", { category: location.category, reason: "proxy_timeout" });
+        }
+        setPreferredImageUrl(directImageUrl);
+        setLoadedImageUrl(acceptedImageUrls.has(directImageUrl) ? directImageUrl : null);
+        return;
+      }
       tryNextImageCandidate();
-    }, imageLoadTimeoutMs[location.category] ?? 14000);
+    }, canUseDirectFallback ? proxyFallbackTimeoutMs : imageLoadTimeoutMs[location.category] ?? 14000);
     return () => {
       window.clearTimeout(overlayTimer);
       window.clearTimeout(hintTimer);
       window.clearTimeout(manualSkipTimer);
       window.clearTimeout(timer);
     };
-  }, [imageIndex, imageLoaded, imageUrls.length, location.category, location.id]);
+  }, [directImageUrl, displayedImageUrl, imageIndex, imageLoaded, imageProxyDisabled, imageUrls.length, location.category, location.id, preferredImageUrl, primaryImageUrl]);
 
   useEffect(() => {
     if (!imageFailed) return;
     setShowLoadOverlay(true);
-  }, [imageFailed]);
+    if (failureTrackedLocationIds.current.has(location.id)) return;
+    failureTrackedLocationIds.current.add(location.id);
+    trackAnalyticsEvent("image_delivery_failed", { category: location.category });
+  }, [imageFailed, location.category, location.id]);
 
   useEffect(() => {
     if (!imageFailed || autoSkipPaused || skippedLocationIds.current.has(location.id)) return;
@@ -581,12 +653,24 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, chr
               }
               autoSkipStreak.current = 0;
               acceptedImageUrls.add(displayedImageUrl);
+              loadedImageUrlRef.current = displayedImageUrl;
               setLoadedImageUrl(displayedImageUrl);
               setShowLoadOverlay(false);
               setShowSlowLoadHint(false);
               setShowManualSkip(false);
             }}
             onError={() => {
+              if (!imageProxyDisabled && !preferredImageUrl && directImageUrl !== primaryImageUrl) {
+                if (!fallbackTrackedLocationIds.current.has(location.id)) {
+                  fallbackTrackedLocationIds.current.add(location.id);
+                  trackAnalyticsEvent("image_delivery_fallback", { category: location.category, reason: "proxy_error" });
+                }
+                setPreferredImageUrl(directImageUrl);
+                setLoadedImageUrl(acceptedImageUrls.has(directImageUrl) ? directImageUrl : null);
+                loadedImageUrlRef.current = acceptedImageUrls.has(directImageUrl) ? directImageUrl : null;
+                return;
+              }
+              loadedImageUrlRef.current = null;
               setLoadedImageUrl(null);
               tryNextImageCandidate();
             }}

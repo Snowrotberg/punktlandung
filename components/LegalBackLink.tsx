@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BackIcon } from "./BackIcon";
+import { BackLink } from "./BackButton";
 import { readLegalReturn } from "@/lib/legalNavigation";
 
 export function LegalBackLink() {
@@ -13,13 +12,11 @@ export function LegalBackLink() {
   }, []);
 
   return (
-    <Link
+    <BackLink
       href={href}
       aria-label="Zurück"
       title="Zurück"
-      className="punktlandung-interactive-control punktlandung-back-link"
-    >
-      <BackIcon />
-    </Link>
+      className="punktlandung-back-link normal-case"
+    />
   );
 }

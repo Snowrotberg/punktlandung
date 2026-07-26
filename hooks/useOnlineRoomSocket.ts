@@ -6,6 +6,7 @@ import type { ClientMessage, GameSettings, HostParticipation, LatLng, RoomState,
 type ConnectionStatus = "connecting" | "open" | "closed";
 const onlineRoomStorageKey = "punktlandung-online-room-v1";
 const onlinePlayerStorageKey = "punktlandung-online-player-v1";
+const onlineResumeTokenStorageKey = "punktlandung-online-resume-token-v1";
 const wsUrlStorageKey = "punktlandung-ws-url";
 
 function readStoredOnlineRoomSnapshot(): RoomState | null {
@@ -59,12 +60,36 @@ function writeStoredOnlinePlayerId(playerId: string | null): void {
   }
 }
 
+function readStoredOnlineResumeToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.sessionStorage.getItem(onlineResumeTokenStorageKey);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredOnlineResumeToken(token: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (token) {
+      window.sessionStorage.setItem(onlineResumeTokenStorageKey, token);
+      return;
+    }
+    window.sessionStorage.removeItem(onlineResumeTokenStorageKey);
+  } catch {
+    // Reconnection remains best effort when sessionStorage is unavailable.
+  }
+}
+
 export function useOnlineRoomSocket() {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [room, setRoom] = useState<RoomState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const socketRef = useRef<WebSocket | null>(null);
+  const connectionResumeTokenRef = useRef<string | null>(null);
+  const connectionPlayerIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let reconnectTimer: number | null = null;
@@ -124,19 +149,27 @@ export function useOnlineRoomSocket() {
         if (message.type === "hello") {
           const storedRoom = readStoredOnlineRoomSnapshot() ?? restoredRoomSnapshot;
           const previousPlayerId = readStoredOnlinePlayerId() ?? (canResumeRouteHost ? storedRoom?.hostId ?? null : null);
+          const previousResumeToken = readStoredOnlineResumeToken();
+          connectionResumeTokenRef.current = message.resumeToken;
+          connectionPlayerIdRef.current = message.playerId;
           setPlayerId(message.playerId);
-          if (storedRoom?.code && previousPlayerId && previousPlayerId !== message.playerId) {
-            socket.send(JSON.stringify({ type: "resume_room", code: storedRoom.code, previousPlayerId } satisfies ClientMessage));
+          if (storedRoom?.code && previousPlayerId && previousResumeToken && previousPlayerId !== message.playerId) {
+            socket.send(JSON.stringify({ type: "resume_room", code: storedRoom.code, previousPlayerId, resumeToken: previousResumeToken } satisfies ClientMessage));
+          } else {
+            writeStoredOnlinePlayerId(message.playerId);
+            writeStoredOnlineResumeToken(message.resumeToken);
           }
-          writeStoredOnlinePlayerId(message.playerId);
         }
         if (message.type === "room_state") {
           writeStoredOnlineRoom(message.state);
+          writeStoredOnlinePlayerId(connectionPlayerIdRef.current);
+          if (connectionResumeTokenRef.current) writeStoredOnlineResumeToken(connectionResumeTokenRef.current);
           setRoom(message.state);
         }
         if (message.type === "left_room") {
           writeStoredOnlineRoom(null);
           writeStoredOnlinePlayerId(null);
+          writeStoredOnlineResumeToken(null);
           setRoom(null);
         }
         if (message.type === "error") setError(message.message);
@@ -186,6 +219,7 @@ export function useOnlineRoomSocket() {
     leaveRoom: () => {
       writeStoredOnlineRoom(null);
       writeStoredOnlinePlayerId(null);
+      writeStoredOnlineResumeToken(null);
       setRoom(null);
       send({ type: "leave_room" });
     },

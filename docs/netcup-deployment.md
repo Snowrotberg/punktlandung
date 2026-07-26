@@ -1,75 +1,51 @@
-# Netcup Deployment
+# Netcup-VPS-Deployment
 
-Punktlandung ist fuer den ersten Release als statische Website vorbereitet.
+Punktlandung wird als vollständige Next.js-Anwendung mit API-Routen und separatem WebSocket-Server betrieben. Ein statischer Export per FTPS ist für den aktuellen Funktionsumfang nicht mehr geeignet, weil dadurch insbesondere Online-Räume, Feedback-Versand, Bild-Proxy und anonyme Betriebsmetriken fehlen würden.
 
-Das bedeutet:
+Die frühere GitHub-Action für das statische FTPS-Deployment ist deshalb absichtlich deaktiviert. Ein Push nach `main` veröffentlicht die Website nicht mehr automatisch über diesen veralteten Weg.
 
-- laeuft auf normalem Netcup-Webhosting
-- Deployment ueber GitHub Actions
-- kein extra Server noetig
-- Solo funktioniert
-- Party-Modus am selben Bildschirm funktioniert
-- Online-Raeume ueber mehrere Geraete sind in dieser Variante deaktiviert
+## Bestandteile der Produktion
 
-## Warum keine Online-Raeume?
+- Next.js-Produktionsserver hinter dem vorhandenen HTTPS-Reverse-Proxy
+- WebSocket-Server aus `server/index.ts`, ausschließlich an `127.0.0.1` gebunden
+- Reverse-Proxy für die öffentliche sichere WebSocket-Verbindung
+- PM2 oder der bereits eingerichtete Prozessmanager für beide Prozesse
+- dauerhaft beschreibbare Datei für anonyme Betriebsmetriken außerhalb eines austauschbaren Release-Verzeichnisses
+- Gmail-App-Passwort für Feedback und interne Wochenberichte
 
-Online-Raeume brauchen eine gemeinsame Live-Verbindung im Internet. Wenn eine Person auf dem Handy tippt, muss der Laptop einer anderen Person diese Info sofort bekommen. Dafuer braucht man einen WebSocket-Server, eine Datenbank mit Echtzeit-Funktion oder einen aehnlichen Dienst.
-
-Normales Netcup-Webhosting liefert Dateien aus, laesst aber keinen dauerhaft laufenden Spielserver fuer solche Live-Raeume laufen. Deshalb ist die serverlose Version bewusst auf Solo und Party am selben Bildschirm ausgelegt.
-
-## GitHub-Secrets
-
-In GitHub unter `Settings -> Secrets and variables -> Actions` diese Repository-Secrets anlegen:
-
-| Secret | Beispiel | Zweck |
-| --- | --- | --- |
-| `NETCUP_FTP_SERVER` | `hosting123456.a2f3b.netcup.net` | FTP/FTPS-Server aus dem Netcup CCP/WCP |
-| `NETCUP_FTP_USERNAME` | `hosting123456` | FTP-Benutzer |
-| `NETCUP_FTP_PASSWORD` | `...` | FTP-Passwort |
-| `NETCUP_FTP_SERVER_DIR` | `/httpdocs/punktlandung/` | Zielordner der Domain |
-
-Danach auf `main` pushen oder die GitHub Action `Deploy static frontend to Netcup` manuell starten.
-
-Die Action fuehrt aus:
+## Erforderliche Prüfungen vor einem Release
 
 ```bash
 npm ci
 npm run typecheck
-npm run build:static
+npm run build
+npm run test:ws-hardening
 ```
 
-Danach wird der Ordner `out/` per FTPS zu Netcup hochgeladen.
+Das Deployment darf erst fortgesetzt werden, wenn alle vier Befehle erfolgreich sind. Geheimnisse gehören ausschließlich in die Serverumgebung und niemals in Git oder Build-Artefakte.
 
-## Lokal pruefen
+## Wichtige Produktionsvariablen
 
-Entwicklung:
+Die vollständige Liste und sichere Beispielwerte stehen in `.env.example`. Vor dem Start müssen insbesondere diese Gruppen konfiguriert sein:
 
-```bash
-npm install
-npm run dev
-```
+- `NEXT_PUBLIC_APP_URL`, Analytics- und AdSense-Werte
+- `FEEDBACK_GMAIL_USER`, `FEEDBACK_GMAIL_APP_PASSWORD`, `FEEDBACK_TO_EMAIL`
+- `WS_HOST=127.0.0.1`, erlaubte Origins und Schutzgrenzen
+- `USAGE_METRICS_FILE` und `USAGE_REPORT_TO_EMAIL`
+- während des geschützten Tests weiterhin `APP_ACCESS_PASSWORD`
 
-Statischen Netcup-Build pruefen:
+## Protokolle und Aufbewahrung
 
-```bash
-npm run build:static
-```
+Die Vorlage `ops/logrotate/punktlandung-pm2` begrenzt die PM2-Protokolle auf 14 Tage. Beim geschützten Produktionscheck muss zusätzlich bestätigt werden, dass die Zugriffs- und Fehlerprotokolle des Reverse-Proxys ebenfalls spätestens nach 14 Tagen gelöscht werden.
 
-Die fertigen Dateien liegen danach in `out/`.
+## Sicherer Release-Ablauf
 
-Wichtige Routen muessen als Ordner mit `index.html` vorhanden sein, zum Beispiel:
+1. Lokalen Release-Kandidaten vollständig prüfen.
+2. Änderungen gemeinsam reviewen, committen und pushen.
+3. Auf dem VPS über den bestehenden sicheren Prozess aktualisieren und neu bauen.
+4. Next.js- und WebSocket-Prozess kontrolliert neu starten.
+5. Prozessstatus, Reverse-Proxy, HTTPS, WebSocket und Logs prüfen.
+6. Vollständigen Produktionstest hinter der Passwortsperre durchführen.
+7. Die Passwortsperre erst nach ausdrücklicher Launch-Freigabe entfernen.
 
-```text
-out/solo-modus/index.html
-out/party-modus/index.html
-out/online-modus/index.html
-out/spielen/index.html
-out/aufloesung/index.html
-out/endergebnis/index.html
-```
-
-Der FTPS-Upload muss den kompletten Inhalt von `out/` inklusive aller Unterordner hochladen.
-
-## Spaeter mit Accounts oder Online-Raeumen
-
-Wenn spaeter Accounts, gespeicherte Spielstaende oder Online-Raeume dazukommen sollen, braucht Punktlandung wieder einen Backend-Dienst. Das kann dann z. B. ein kleiner VPS, Supabase, Firebase oder ein anderer Hosted-Service sein.
+Die konkreten Serverzugänge und Zugangsbefehle werden bewusst nicht im Repository dokumentiert.

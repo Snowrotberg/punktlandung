@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { categoryOptions } from "@/lib/categories";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { useLocalGame } from "@/hooks/useLocalGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
 import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
@@ -11,6 +12,7 @@ import { AdContainer } from "./AdContainer";
 import { GameView } from "./GameView";
 import { LegalLinks } from "./LegalLinks";
 import { LobbyView } from "./LobbyView";
+import { PublicBetaBadge } from "./PublicBetaBadge";
 import { ResultsView } from "./ResultsView";
 import { useSound } from "./SoundProvider";
 
@@ -32,6 +34,43 @@ export type RequiredGameStatus = Extract<RoundStatus, "guessing" | "results" | "
 const activeSessionStorageKey = "punktlandung-active-session-v1";
 const sessionResetStorageKey = "punktlandung-reset-session-v1";
 const historyStateKey = "punktlandung-history-v1";
+const trackedGameStartPrefix = "punktlandung-ga-game-start-";
+const trackedGameCompletePrefix = "punktlandung-ga-game-complete-";
+
+function analyticsGameType(room: RoomState): "solo" | "party" | "online" {
+  if (room.kind === "online") return "online";
+  return room.settings.localMode === "couch" ? "party" : "solo";
+}
+
+function trackRoomEventOnce(storageKey: string, eventName: string, room: RoomState): void {
+  try {
+    if (window.sessionStorage.getItem(storageKey)) return;
+    window.sessionStorage.setItem(storageKey, "1");
+  } catch {
+    // Analytics remains best effort when sessionStorage is unavailable.
+  }
+  const gameType = analyticsGameType(room);
+  trackAnalyticsEvent(eventName, {
+    game_type: gameType,
+    game_mode: room.settings.mode,
+    category: room.settings.category,
+    planned_rounds: room.settings.rounds,
+    player_count: room.players.length
+  });
+  void fetch("/api/usage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event: eventName,
+      gameType,
+      gameMode: room.settings.mode,
+      category: room.settings.category,
+      plannedRounds: room.settings.rounds,
+      playerCount: room.players.length
+    }),
+    keepalive: true
+  }).catch(() => undefined);
+}
 
 function SvgPin({ className, color }: { className?: string; color: string }) {
   return (
@@ -56,8 +95,7 @@ function HeroMapPreview() {
         src="/punktlandung-kartenbild.jpg"
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover"
-        style={{ objectPosition: "center 64%" }}
+        className="punktlandung-home-map-image absolute inset-0 h-full w-full object-cover"
         draggable={false}
       />
     </div>
@@ -85,8 +123,33 @@ function SoundToggle() {
 }
 
 function ServerStatus({ status }: { status: "connecting" | "open" | "closed" }) {
-  const label = status === "open" ? "Server an" : status === "connecting" ? "Server ..." : "Server aus";
-  const title = status === "open" ? "Raumserver ist verbunden" : status === "connecting" ? "Verbindung zum Raumserver wird aufgebaut" : "Raumserver ist nicht verbunden";
+  const [visibleStatus, setVisibleStatus] = useState<"open" | "closed">("open");
+  const offlineTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (status === "open") {
+      if (offlineTimerRef.current !== null) window.clearTimeout(offlineTimerRef.current);
+      offlineTimerRef.current = null;
+      setVisibleStatus("open");
+      return;
+    }
+
+    if (offlineTimerRef.current === null) {
+      offlineTimerRef.current = window.setTimeout(() => {
+        offlineTimerRef.current = null;
+        setVisibleStatus("closed");
+      }, 5000);
+    }
+  }, [status]);
+
+  useEffect(() => () => {
+    if (offlineTimerRef.current !== null) window.clearTimeout(offlineTimerRef.current);
+  }, []);
+
+  const label = visibleStatus === "open" ? "Server an" : "Server aus";
+  const title = visibleStatus === "open"
+    ? status === "open" ? "Raumserver ist verbunden" : "Verbindung zum Raumserver wird geprüft"
+    : "Raumserver ist seit mindestens fünf Sekunden nicht verbunden";
 
   return (
     <span
@@ -94,11 +157,9 @@ function ServerStatus({ status }: { status: "connecting" | "open" | "closed" }) 
       aria-live="polite"
       title={title}
       className={`inline-flex min-h-[24px] items-center rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] ring-1 ${
-        status === "open"
+        visibleStatus === "open"
           ? "bg-emerald-400/10 text-emerald-300 ring-emerald-300/50"
-          : status === "connecting"
-            ? "bg-amber-400/10 text-amber-200 ring-amber-300/50"
-            : "bg-rose-400/10 text-rose-200 ring-rose-300/50"
+          : "bg-rose-400/10 text-rose-200 ring-rose-300/50"
       }`}
     >
       {label}
@@ -251,6 +312,18 @@ export function GameApp({
   } = activeGame;
 
   useEffect(() => {
+    if (!room) return;
+    if (room.status === "guessing" && room.currentRound === 1 && room.summaries.length === 0 && room.roundStartedAt) {
+      trackRoomEventOnce(`${trackedGameStartPrefix}${room.roundStartedAt}`, "game_start", room);
+    }
+    if (room.status === "finished") {
+      const completedAt = room.summaries.at(-1)?.completedAt;
+      if (!completedAt) return;
+      trackRoomEventOnce(`${trackedGameCompletePrefix}${completedAt}`, "game_complete", room);
+    }
+  }, [room]);
+
+  useEffect(() => {
     try {
       const savedName = window.localStorage.getItem("punktlandung-name");
       if (savedName) setName(savedName);
@@ -326,6 +399,7 @@ export function GameApp({
   }, [requiredStatus]);
 
   const handleCreateLiveOnlineRoom = () => {
+    trackAnalyticsEvent("online_room_create_attempt");
     if (localGame.room?.kind === "online") setPendingOnlineSettings(localGame.room.settings);
     const hostParticipation = localGame.room?.hostParticipation ?? "host_only";
     onlineGame.createOnlineRoom({
@@ -344,6 +418,7 @@ export function GameApp({
     const playerName = name.trim();
     if (onlineGame.status !== "open" || playerName.length === 0) return;
     playSelect();
+    trackAnalyticsEvent("online_room_join_attempt");
     onlineGame.joinRoom(pendingJoinCode, playerName);
   };
   const handleJoinOnlineRoomSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -505,7 +580,10 @@ export function GameApp({
         <section className="arcade-panel punktlandung-home-main-panel relative z-10 order-1 overflow-hidden rounded-md border-slate-700/80 lg:order-none lg:min-h-0">
 
           <div className="relative flex flex-col p-4 lg:h-full lg:min-h-0 lg:overflow-auto">
-            <HomeStatusControls serverStatus={onlineGame.status} placement="hero" />
+            <div className="punktlandung-home-header-meta">
+              <PublicBetaBadge className="punktlandung-home-beta-badge" />
+              <HomeStatusControls serverStatus={onlineGame.status} placement="hero" />
+            </div>
             <div className="punktlandung-home-hero-copy max-w-3xl min-[2200px]:max-w-5xl">
               <div className="relative flex items-center gap-3">
                 <SvgPin
@@ -666,8 +744,7 @@ export function GameApp({
                     </span>
                     <span className="punktlandung-home-room-main min-w-0">
                       <span className="punktlandung-home-room-heading">
-                        <span className="punktlandung-home-mode-title block text-lg font-black leading-tight text-white">Online-Raum</span>
-                        <span className="punktlandung-home-mode-text mt-0.5 block text-xs leading-tight text-slate-300">Online-Raum beitreten</span>
+                        <span className="punktlandung-home-mode-title block text-lg font-black leading-tight text-white">Online-Raum beitreten</span>
                       </span>
                       <span className="punktlandung-home-room-controls mt-1.5 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
                         <input

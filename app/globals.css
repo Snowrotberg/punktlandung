@@ -6196,9 +6196,35 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   height: 2.75rem !important;
   justify-content: center !important;
   min-height: 2.75rem !important;
-  min-width: 2.75rem !important;
-  padding: 0 !important;
-  width: 2.75rem !important;
+  min-width: 5.4rem !important;
+  padding: 0 0.7rem !important;
+  width: auto !important;
+  white-space: nowrap !important;
+}
+
+.punktlandung-back-control-content {
+  align-items: center !important;
+  display: inline-grid !important;
+  flex: 0 0 auto !important;
+  gap: 0.3rem !important;
+  grid-template-columns: 1rem max-content !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+}
+
+.punktlandung-back-control-icon,
+.punktlandung-back-control-label {
+  display: block !important;
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+
+.punktlandung-back-control-label {
+  font-size: 0.75rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.01em !important;
 }
 
 .punktlandung-back-link {
@@ -6225,8 +6251,8 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   .punktlandung-lobby-header-back {
     height: 3rem !important;
     min-height: 3rem !important;
-    min-width: 3rem !important;
-    width: 3rem !important;
+    min-width: 5.4rem !important;
+    width: auto !important;
   }
 }
 
@@ -6234,8 +6260,8 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   .punktlandung-action-back-button.punktlandung-back-button {
     height: 3rem !important;
     min-height: 3rem !important;
-    min-width: 3rem !important;
-    width: 3rem !important;
+    min-width: 5.4rem !important;
+    width: auto !important;
   }
 
   .punktlandung-tv-home .punktlandung-home-category-grid {
@@ -6327,6 +6353,16 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   margin-top: 0.65rem;
 }
 
+.punktlandung-home-map-image {
+  object-position: center 64%;
+}
+
+@media (min-width: 1024px) and (max-width: 1536px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-map-image {
+    object-position: center 54% !important;
+  }
+}
+
 .punktlandung-home-mode-content {
   align-items: center;
   display: grid;
@@ -6399,9 +6435,16 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 .punktlandung-inline-action-content {
   align-items: center;
   display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   gap: 0.3rem;
   justify-content: center;
   line-height: 1;
+  white-space: nowrap;
+}
+
+.punktlandung-inline-action-content > * {
+  flex: 0 0 auto;
 }
 
 .punktlandung-inline-action-content:has(svg:first-child) {
@@ -6871,8 +6914,11 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-button-inner {
     align-items: center !important;
     display: inline-flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
     gap: 0.3rem !important;
     justify-content: center !important;
+    white-space: nowrap !important;
   }
 
   .punktlandung-lobby-touch-actions .punktlandung-lobby-touch-icon {
@@ -13683,24 +13729,32 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 @media (min-width: 1280px) and (max-width: 2199px) and (orientation: landscape) {
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-mode-list {
     gap: 1rem !important;
+    grid-template-rows: minmax(6.25rem, auto) !important;
     margin-top: calc(1rem + 1px) !important;
   }
 
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-mode-choice {
-    min-height: 4.65rem !important;
-    padding-bottom: 0.9rem !important;
-    padding-top: 0.9rem !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 6.25rem !important;
+    overflow: hidden !important;
+    padding-bottom: 0.8rem !important;
+    padding-top: 0.8rem !important;
   }
 
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-mode-choice .punktlandung-mode-title,
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-mode-choice p:first-of-type {
     line-height: 1.12 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
   }
 
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-mode-choice .punktlandung-mode-text,
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-mode-choice p + p {
     line-height: 1.2 !important;
     margin-top: 0.45rem !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
   }
 
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card {
@@ -14134,15 +14188,16 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     --home-hero-h: clamp(8.75rem, 15vh, 9.75rem);
     --home-map-gap: 0.75rem;
     --home-map-h: clamp(112px, 18vh, 166px);
-    --home-category-heading-gap: 0.875rem;
+    --home-category-heading-gap: 1.05rem;
     --home-category-heading-h: clamp(1.55rem, 2.7vh, 1.9rem);
     --home-grid-gap: 0.75rem;
+    --home-category-list-gap: 0.575rem;
     --home-category-card-h: clamp(5.35rem, 13.35vh, 8.35rem);
     --home-login-h: clamp(8.8rem, 16vh, 10.5rem);
     --home-start-heading-h: clamp(1.5rem, 2.55vh, 1.9rem);
-    --home-start-list-gap: clamp(0.5rem, 1.05vh, 0.75rem);
+    --home-start-list-gap: var(--home-category-list-gap);
     --home-login-top: calc(var(--home-panel-pad) + var(--home-hero-h) + var(--home-map-gap));
-    --home-category-card-top: calc(var(--home-login-top) + var(--home-map-h) + var(--home-category-heading-gap) + var(--home-category-heading-h) + var(--home-grid-gap));
+    --home-category-card-top: calc(var(--home-login-top) + var(--home-map-h) + var(--home-category-heading-gap) + var(--home-category-heading-h) + var(--home-category-list-gap));
     --home-start-top: calc(var(--home-category-card-top) - var(--home-start-heading-h) - var(--home-start-list-gap));
   }
 
@@ -14167,7 +14222,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     flex: 0 0 auto !important;
     gap: var(--home-grid-gap) !important;
     grid-template-rows: repeat(4, var(--home-category-card-h)) !important;
-    margin-top: var(--home-grid-gap) !important;
+    margin-top: var(--home-category-list-gap) !important;
   }
 
   body .punktlandung-tv-home .punktlandung-home-category-card {
@@ -14242,8 +14297,10 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   body .punktlandung-tv-home {
     --home-hero-h: clamp(8rem, 14.2vh, 8.85rem);
     --home-map-h: clamp(96px, 15vh, 138px);
+    --home-category-list-gap: 0.425rem;
     --home-category-card-h: clamp(4.9rem, 12.4vh, 7.2rem);
     --home-login-h: clamp(8.1rem, 16.7vh, 9rem);
+    --home-start-list-gap: var(--home-category-list-gap);
   }
 
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block h2,
@@ -14303,9 +14360,10 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     --home-hero-h: clamp(6.15rem, 12.3vh, 6.75rem);
     --home-map-h: clamp(96px, 14vh, 116px);
     --home-grid-gap: 1rem;
+    --home-category-list-gap: 0.825rem;
     --home-category-card-h: clamp(5.05rem, 11.6vh, 5.65rem);
     --home-login-h: clamp(8.1rem, 16.4vh, 8.65rem);
-    --home-start-list-gap: var(--home-grid-gap);
+    --home-start-list-gap: var(--home-category-list-gap);
   }
 
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block {
@@ -14396,18 +14454,120 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 }
 
+/* Setup-page footer and online host layout.
+   Keep all legal destinations visible and align Host-Rolle with the name row. */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings .punktlandung-settings-legal {
+    align-items: center !important;
+    column-gap: clamp(0.35rem, 0.65vw, 0.9rem) !important;
+    display: grid !important;
+    flex: 0 0 auto !important;
+    grid-template-columns: repeat(6, max-content) !important;
+    justify-content: space-between !important;
+    margin-top: 0.65rem !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0.65rem !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings .punktlandung-settings-legal > * {
+    min-width: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card {
+    --online-host-label-column: 5.75rem;
+    margin-top: 0.6rem !important;
+    padding: 0.65rem 0 !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-role-row,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name {
+    align-items: center !important;
+    display: grid !important;
+    gap: 0.75rem !important;
+    grid-template-columns: var(--online-host-label-column) minmax(0, 1fr) !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-head {
+    display: block !important;
+    min-width: 0 !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-status {
+    display: block !important;
+    font-size: 0.58rem !important;
+    line-height: 1.1 !important;
+    margin-top: 0.25rem !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-options {
+    gap: 0.55rem !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-options > button {
+    height: 2.25rem !important;
+    min-height: 2.25rem !important;
+    min-width: 0 !important;
+    padding: 0 0.5rem !important;
+    text-align: center !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name {
+    margin-top: 0.55rem !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name input {
+    margin: 0 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* Short laptop/monitor viewports: reclaim just enough height for the legal footer. */
+@media (min-width: 1024px) and (max-width: 2199px) and (max-height: 930px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-card {
+    height: auto !important;
+    min-height: 0 !important;
+    padding-bottom: 0.65rem !important;
+    padding-top: 0.65rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-slots {
+    margin-top: 0.35rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-rules.punktlandung-setup-rules,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-party-rules.punktlandung-setup-rules {
+    margin-top: 0.5rem !important;
+    padding-top: 0.5rem !important;
+  }
+}
+
 @media (min-width: 1024px) and (max-height: 760px) and (orientation: landscape) {
   body .punktlandung-tv-home {
     --home-hero-h: clamp(6rem, 14.8vh, 7rem);
     --home-map-gap: 0.5rem;
     --home-map-h: clamp(74px, 14vh, 102px);
-    --home-category-heading-gap: 0.55rem;
+    --home-category-heading-gap: 0.7rem;
     --home-category-heading-h: clamp(1.35rem, 3.2vh, 1.55rem);
     --home-grid-gap: 1rem;
+    --home-category-list-gap: 0.85rem;
     --home-category-card-h: clamp(4.85rem, 11.8vh, 5.15rem);
     --home-login-h: clamp(6.2rem, 14.65vh, 6.7rem);
     --home-start-heading-h: clamp(1.35rem, 3.2vh, 1.55rem);
-    --home-start-list-gap: var(--home-grid-gap);
+    --home-start-list-gap: var(--home-category-list-gap);
     --home-start-top: calc(var(--home-category-card-top) - var(--home-start-heading-h) - var(--home-start-list-gap) - 1.955rem);
   }
 
@@ -15508,7 +15668,13 @@ body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview
 
 
 @media (min-width: 1024px) and (max-width: 1536px) and (max-height: 930px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-card[data-category-id="streetview-preview"] .punktlandung-home-category-title-line {
+    column-gap: 0.55rem !important;
+    overflow: visible !important;
+  }
+
   body .punktlandung-tv-home .punktlandung-home-category-card[data-category-id="streetview-preview"] .punktlandung-home-category-title-line > span:first-child {
+    flex: 0 0 auto !important;
     max-width: none !important;
     overflow: visible !important;
     text-overflow: clip !important;
@@ -15516,9 +15682,10 @@ body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview
   }
 
   body .punktlandung-tv-home .punktlandung-home-category-card[data-category-id="streetview-preview"] .punktlandung-home-category-soon-badge {
-    left: 7.1rem !important;
-    position: absolute !important;
-    top: 1.55rem !important;
+    left: auto !important;
+    margin: 0 !important;
+    position: static !important;
+    top: auto !important;
   }
 }
 
@@ -16221,19 +16388,17 @@ body .punktlandung-lobby-config-stage .punktlandung-party-slot-dot {
   flex: 0 0 auto !important;
 }
 
-/* Desktop game header: keep the back icon and label on one line. */
-@media (min-width: 1024px) and (orientation: landscape) {
-  body .punktlandung-game-shell .punktlandung-game-back-button,
-  body .punktlandung-game-shell .punktlandung-game-back-button-inner {
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    white-space: nowrap !important;
-  }
+/* Keep the game back icon and label on one line in every responsive layout. */
+body .punktlandung-game-shell .punktlandung-game-back-button,
+body .punktlandung-game-shell .punktlandung-game-back-button-inner {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+}
 
-  body .punktlandung-game-shell .punktlandung-game-back-button-inner > span {
-    display: inline-block !important;
-    white-space: nowrap !important;
-  }
+body .punktlandung-game-shell .punktlandung-game-back-button-inner > * {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
 }
 
 /* Desktop online setup: keep Host-Rolle clear of the play-style buttons. */
@@ -16418,6 +16583,20 @@ body .punktlandung-lobby-config-stage .punktlandung-party-slot-dot {
   display: none;
 }
 
+.punktlandung-home-header-meta {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  z-index: 20;
+}
+
+.punktlandung-home-header-meta .punktlandung-home-statuses--hero {
+  position: static;
+}
+
 @media (min-width: 700px) and (max-width: 1023px) and (orientation: landscape) {
   body .punktlandung-tv-home .punktlandung-home-statuses--side {
     display: none !important;
@@ -16428,6 +16607,12 @@ body .punktlandung-lobby-config-stage .punktlandung-party-slot-dot {
     position: absolute;
     right: 1rem;
     top: 1rem;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-header-meta .punktlandung-home-statuses--hero {
+    position: static !important;
+    right: auto !important;
+    top: auto !important;
   }
 }
 
@@ -16543,7 +16728,7 @@ body .punktlandung-lobby-config-stage .punktlandung-party-slot-dot {
   body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card .punktlandung-home-room-controls {
     gap: clamp(0.3rem, 0.5vw, 0.5rem) !important;
     grid-template-columns: minmax(0, 1fr) clamp(5.4rem, 7.5vw, 6.9rem) !important;
-    margin-top: clamp(0.16rem, 0.45vh, 0.24rem) !important;
+    margin-top: clamp(0.44rem, 0.8vh, 0.56rem) !important;
     min-width: 0;
   }
 
@@ -16680,19 +16865,58 @@ body .punktlandung-lobby-config-stage .punktlandung-party-slot-dot {
  * its own border. Interactive cards, controls, maps, gaps and ad placements
  * deliberately keep their own backgrounds.
  */
+@property --punktlandung-ambient-mint-x {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: -2.6vw;
+}
+
+@property --punktlandung-ambient-mint-y {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: -1.8vh;
+}
+
+@property --punktlandung-ambient-indigo-x {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: 2.4vw;
+}
+
+@property --punktlandung-ambient-indigo-y {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: 1.5vh;
+}
+
 @keyframes punktlandung-ambient-drift {
   0%,
   100% {
-    background-position: -2.6vw -1.8vh, 2.4vw 1.5vh, 0 0, 0 0;
+    --punktlandung-ambient-mint-x: -2.6vw;
+    --punktlandung-ambient-mint-y: -1.8vh;
+    --punktlandung-ambient-indigo-x: 2.4vw;
+    --punktlandung-ambient-indigo-y: 1.5vh;
   }
 
   34% {
-    background-position: 2.8vw 2.4vh, -2.6vw -1.5vh, 0 0, 0 0;
+    --punktlandung-ambient-mint-x: 2.8vw;
+    --punktlandung-ambient-mint-y: 2.4vh;
+    --punktlandung-ambient-indigo-x: -2.6vw;
+    --punktlandung-ambient-indigo-y: -1.5vh;
   }
 
   67% {
-    background-position: 3.4vw -1.6vh, -1.2vw 2.8vh, 0 0, 0 0;
+    --punktlandung-ambient-mint-x: 3.4vw;
+    --punktlandung-ambient-mint-y: -1.6vh;
+    --punktlandung-ambient-indigo-x: -1.2vw;
+    --punktlandung-ambient-indigo-y: 2.8vh;
   }
+}
+
+:root {
+  --punktlandung-ambient-delay: 0ms;
+  --punktlandung-mint-light-y: 12%;
+  animation: punktlandung-ambient-drift 14s ease-in-out var(--punktlandung-ambient-delay) infinite;
 }
 
 :is(
@@ -16713,39 +16937,83 @@ body .punktlandung-lobby-config-stage .punktlandung-party-slot-dot {
   .punktlandung-info-content,
   .punktlandung-info-navigation
 ) {
-  animation: punktlandung-ambient-drift 24s ease-in-out infinite;
   background-image:
-    radial-gradient(circle at 22% 20%, rgba(52, 211, 153, 0.18), transparent 28rem),
-    radial-gradient(circle at 82% 36%, rgba(99, 102, 241, 0.18), transparent 30rem),
+    radial-gradient(
+      circle at calc(22vw + var(--punktlandung-ambient-mint-x)) calc(var(--punktlandung-mint-light-y) + var(--punktlandung-ambient-mint-y)),
+      rgba(52, 211, 153, 0.18),
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at calc(82vw + var(--punktlandung-ambient-indigo-x)) calc(36vh + var(--punktlandung-ambient-indigo-y)),
+      rgba(99, 102, 241, 0.18),
+      transparent 30rem
+    ),
     linear-gradient(90deg, rgba(148, 163, 184, 0.055) 1px, transparent 1px),
     linear-gradient(0deg, rgba(148, 163, 184, 0.055) 1px, transparent 1px);
   background-attachment: fixed, fixed, fixed, fixed;
-  background-position: 0 0;
+  background-position: 0 0, 0 0, 0 0, 0 0;
   background-repeat: no-repeat, no-repeat, repeat, repeat;
   background-size: 100vw 100vh, 100vw 100vh, 56px 56px, 56px 56px;
 }
 
+/*
+ * Final standings atmosphere
+ *
+ * Paint the moving light once behind the complete end card. The three large
+ * panels remain translucent, so mint, indigo and the grid continue through
+ * both columns instead of restarting inside every tile.
+ */
+.punktlandung-final-standings-grid {
+  background-color: rgba(2, 6, 23, 0.32);
+  background-image:
+    radial-gradient(
+      circle at calc(22vw + var(--punktlandung-ambient-mint-x)) calc(var(--punktlandung-mint-light-y) + var(--punktlandung-ambient-mint-y)),
+      rgba(52, 211, 153, 0.18),
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at calc(82vw + var(--punktlandung-ambient-indigo-x)) calc(36vh + var(--punktlandung-ambient-indigo-y)),
+      rgba(99, 102, 241, 0.18),
+      transparent 30rem
+    ),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.055) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(148, 163, 184, 0.055) 1px, transparent 1px);
+  background-attachment: fixed, fixed, fixed, fixed;
+  background-position: 0 0, 0 0, 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat, repeat, repeat;
+  background-size: 100vw 100vh, 100vw 100vh, 56px 56px, 56px 56px;
+  border-radius: 0.375rem;
+}
+
+.punktlandung-final-standings-grid :is(.punktlandung-final-left > div, .punktlandung-final-table) {
+  background-image: none !important;
+}
+
+.punktlandung-final-player-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.punktlandung-final-player-metrics > p {
+  line-height: 1.25;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 1180px) and (orientation: landscape) {
+  .punktlandung-final-player-metrics {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.05fr) minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 0.9fr);
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1179px) {
+  .punktlandung-final-player-metrics {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  :is(
-    .punktlandung-home-main-panel,
-    .punktlandung-home-side-panel,
-    .punktlandung-lobby-header,
-    .punktlandung-online-waiting-content > header,
-    .punktlandung-online-qr-panel,
-    .punktlandung-online-waitlist-panel,
-    .punktlandung-lobby-settings,
-    .punktlandung-lobby-categories,
-    .punktlandung-lobby-party-aside,
-    .punktlandung-results-hero,
-    .punktlandung-results-sidebar > div,
-    .punktlandung-final-left > div,
-    .punktlandung-final-table,
-    .punktlandung-info-header,
-    .punktlandung-info-content,
-    .punktlandung-info-navigation
-  ) {
-    animation: none;
-    background-position: 0 0;
+  :root {
+    animation: none !important;
   }
 }
 
@@ -16756,12 +17024,20 @@ body .punktlandung-lobby-config-stage .punktlandung-party-slot-dot {
   body .punktlandung-lobby .punktlandung-touch-only-grid.punktlandung-lobby-touch-actions {
     background-color: rgba(15, 23, 42, 0.96) !important;
     background-image:
-      radial-gradient(circle at 22% 20%, rgba(52, 211, 153, 0.14), transparent 28rem),
-      radial-gradient(circle at 82% 36%, rgba(99, 102, 241, 0.18), transparent 30rem),
+      radial-gradient(
+        circle at calc(22vw + var(--punktlandung-ambient-mint-x)) calc(var(--punktlandung-mint-light-y) + var(--punktlandung-ambient-mint-y)),
+        rgba(52, 211, 153, 0.14),
+        transparent 28rem
+      ),
+      radial-gradient(
+        circle at calc(82vw + var(--punktlandung-ambient-indigo-x)) calc(36vh + var(--punktlandung-ambient-indigo-y)),
+        rgba(99, 102, 241, 0.18),
+        transparent 30rem
+      ),
       linear-gradient(90deg, rgba(148, 163, 184, 0.055) 1px, transparent 1px),
       linear-gradient(0deg, rgba(148, 163, 184, 0.055) 1px, transparent 1px) !important;
     background-attachment: fixed, fixed, fixed, fixed !important;
-    background-position: 0 0 !important;
+    background-position: 0 0, 0 0, 0 0, 0 0 !important;
     background-repeat: no-repeat, no-repeat, repeat, repeat !important;
     background-size: 100vw 100vh, 100vw 100vh, 56px 56px, 56px 56px !important;
     border: 0 !important;
@@ -16839,5 +17115,380 @@ body .punktlandung-lobby-config-stage .punktlandung-party-slot-dot {
 @media (min-width: 1024px) {
   .punktlandung-mobile-category-legal {
     display: none !important;
+  }
+}
+
+/* Mobile Small/Large: reveal 5% more of wide images without reducing their
+   visible height. The image is scaled down to 95%, then stretched vertically
+   by the exact reciprocal so its resulting height remains 100%. */
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-game-viewer .punktlandung-panorama-viewport img,
+  body .punktlandung-image-replay .punktlandung-panorama-viewport img {
+    left: 50% !important;
+    max-width: none !important;
+    right: auto !important;
+    transform: translateX(-50%) scale(0.95) scaleY(1.052632) !important;
+    transform-origin: center center !important;
+    width: 105.2632% !important;
+  }
+}
+
+/*
+ * Setup category hover
+ *
+ * The shared desktop hover treatment uses an outside outline and lifts the
+ * control by two pixels. Category tiles sit flush against the edges of a
+ * tightly sized grid, so that outside outline can be clipped or painted below
+ * a neighbouring tile. Keep this interaction inside the tile and stationary;
+ * the visual weight then stays identical on all four edges at every desktop
+ * viewport size.
+ */
+.punktlandung-lobby-config-stage .punktlandung-category-card {
+  background-clip: padding-box !important;
+  isolation: isolate;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories
+    .punktlandung-category-card:not(:disabled):hover {
+    outline: none !important;
+    outline-offset: 0 !important;
+    translate: 0 0 !important;
+    z-index: 2 !important;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories
+    .punktlandung-category-card--available:hover {
+    border-color: rgba(110, 231, 183, 0.9) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(110, 231, 183, 0.72),
+      0 0 22px rgba(52, 211, 153, 0.2) !important;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories
+    .punktlandung-category-card--selected:hover {
+    border-color: rgba(110, 231, 183, 0.96) !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(167, 243, 208, 0.2),
+      0 0 24px rgba(52, 211, 153, 0.24) !important;
+  }
+}
+
+/* Monitor and TV category marker: keep the laptop marker's proportions.
+   Older desktop rules cap the marker at 82px, which makes it progressively
+   shorter and visually top-heavy as the category cards grow. */
+@media (min-width: 1537px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories
+    .punktlandung-category-card
+    > span.absolute.left-0 {
+    bottom: auto !important;
+    height: 60% !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+  }
+}
+
+/* Public beta status: visible on entry and orientation surfaces, deliberately
+   omitted from the immersive game and result HUDs. */
+.punktlandung-beta-context-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.7rem;
+}
+
+.punktlandung-beta-badge {
+  align-items: center;
+  background: rgba(139, 92, 246, 0.1);
+  border: 0;
+  border-radius: 0.375rem;
+  box-shadow: 0 0 0 1px rgba(196, 181, 253, 0.5);
+  color: rgb(196 181 253);
+  display: inline-flex;
+  flex: none;
+  font-size: 0.625rem;
+  font-weight: 900;
+  gap: 0.38rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  min-height: 1.5rem;
+  padding: 0.25rem 0.5rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.punktlandung-beta-badge:hover {
+  background: rgba(139, 92, 246, 0.18);
+  box-shadow: 0 0 0 1px rgba(216, 180, 254, 0.72), 0 0 12px rgba(139, 92, 246, 0.2);
+  color: rgb(221 214 254);
+}
+
+.punktlandung-beta-badge:focus-visible {
+  outline: 2px solid rgb(196 181 253);
+  outline-offset: 3px;
+}
+
+.punktlandung-beta-badge--compact {
+  font-size: 0.625rem;
+  min-height: 1.5rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.punktlandung-beta-badge-dot {
+  background: rgb(196 181 253);
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.16), 0 0 7px rgba(196, 181, 253, 0.58);
+  height: 0.34rem;
+  width: 0.34rem;
+}
+
+@media (max-width: 639px) {
+  .punktlandung-home-header-meta {
+    right: 0.75rem;
+    top: 0.75rem;
+  }
+
+  .punktlandung-home-hero-copy {
+    padding-top: 1.85rem;
+  }
+
+  .punktlandung-home-hero-copy > div:first-child {
+    flex-wrap: wrap;
+  }
+
+  .punktlandung-home-beta-badge {
+    flex-basis: auto;
+    font-size: 0.625rem;
+    min-height: 1.5rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+@media (min-width: 2200px) {
+  .punktlandung-beta-badge {
+    font-size: 0.75rem;
+    min-height: 1.8rem;
+    padding: 0.34rem 0.65rem;
+  }
+
+  .punktlandung-beta-badge--compact {
+    font-size: 0.75rem;
+    min-height: 1.8rem;
+    padding: 0.34rem 0.65rem;
+  }
+}
+
+/* Public-beta feedback */
+.punktlandung-feedback-dialog-layer {
+  overscroll-behavior: contain;
+}
+
+.punktlandung-feedback-dialog {
+  background:
+    linear-gradient(135deg, rgba(52, 211, 153, 0.09), transparent 36%),
+    linear-gradient(315deg, rgba(99, 102, 241, 0.12), transparent 42%),
+    rgba(15, 23, 42, 0.97);
+}
+
+.punktlandung-feedback-dialog textarea {
+  field-sizing: content;
+}
+
+.punktlandung-feedback-field {
+  -webkit-text-fill-color: rgb(241 245 249);
+  background-color: rgba(2, 6, 23, 0.84) !important;
+  border: 2px solid rgba(71, 85, 105, 0.92) !important;
+  caret-color: rgb(110 231 183);
+  color: rgb(241 245 249) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 10px 24px rgba(2, 6, 23, 0.16);
+}
+
+.punktlandung-feedback-field::placeholder {
+  color: rgb(148 163 184) !important;
+  opacity: 1;
+}
+
+.punktlandung-feedback-field:hover {
+  border-color: rgba(100, 116, 139, 0.98) !important;
+}
+
+.punktlandung-feedback-field:focus {
+  background-color: rgba(2, 6, 23, 0.96) !important;
+  border-color: rgb(110 231 183) !important;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.punktlandung-feedback-field:-webkit-autofill,
+.punktlandung-feedback-field:-webkit-autofill:hover,
+.punktlandung-feedback-field:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px rgb(2 6 23) inset, 0 0 0 3px rgba(52, 211, 153, 0.16) !important;
+  -webkit-text-fill-color: rgb(241 245 249) !important;
+  caret-color: rgb(110 231 183);
+}
+
+@media (max-width: 639px) {
+  .punktlandung-feedback-dialog {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    max-height: min(92dvh, 48rem);
+  }
+
+  .punktlandung-feedback-dialog .punktlandung-feedback-form {
+    gap: 0.8rem;
+  }
+
+  .punktlandung-feedback-dialog textarea {
+    min-height: 7.5rem;
+  }
+}
+
+@media (max-height: 620px) and (orientation: landscape) {
+  .punktlandung-feedback-dialog {
+    max-width: 58rem;
+  }
+
+  .punktlandung-feedback-dialog .punktlandung-feedback-form {
+    grid-template-columns: minmax(0, 1.4fr) minmax(15rem, 0.8fr);
+  }
+
+  .punktlandung-feedback-dialog .punktlandung-feedback-form > :first-child {
+    grid-row: span 3;
+  }
+
+  .punktlandung-feedback-dialog textarea {
+    min-height: 9rem;
+  }
+}
+
+/* Canonical back control
+ *
+ * This final, shared rule intentionally follows the older viewport-specific
+ * game/lobby rules. It prevents those legacy square-button dimensions and
+ * inherited flex directions from separating the triangle and label again.
+ */
+body :is(.punktlandung-back-button, .punktlandung-back-link) {
+  align-items: center !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: center !important;
+  min-width: 5.4rem !important;
+  padding-inline: 0.7rem !important;
+  width: auto !important;
+  white-space: nowrap !important;
+}
+
+body :is(.punktlandung-back-button, .punktlandung-back-link) .punktlandung-back-control-content {
+  align-items: center !important;
+  display: inline-grid !important;
+  gap: 0.3rem !important;
+  grid-template-columns: 1rem max-content !important;
+  justify-content: center !important;
+  transform: none !important;
+  width: max-content !important;
+  white-space: nowrap !important;
+}
+
+body :is(.punktlandung-back-button, .punktlandung-back-link) .punktlandung-back-control-label {
+  display: block !important;
+  font-size: 0.75rem !important;
+  line-height: 1 !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+}
+
+/* Canonical setup-page layout. This must remain after legacy viewport rules. */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings .punktlandung-settings-legal {
+    align-items: center !important;
+    column-gap: clamp(0.35rem, 0.65vw, 0.9rem) !important;
+    display: grid !important;
+    flex: 0 0 auto !important;
+    grid-template-columns: repeat(6, max-content) !important;
+    justify-content: space-between !important;
+    margin-top: 0.65rem !important;
+    padding: 0.65rem 0 0 !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings .punktlandung-settings-legal > * {
+    white-space: nowrap !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card {
+    --online-host-label-column: 5.75rem;
+    margin-top: 0.6rem !important;
+    padding: 0.65rem 0 !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-role-row,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name {
+    align-items: center !important;
+    display: grid !important;
+    gap: 0.75rem !important;
+    grid-template-columns: var(--online-host-label-column) minmax(0, 1fr) !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-head {
+    display: block !important;
+    min-width: 0 !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-status {
+    display: block !important;
+    font-size: 0.58rem !important;
+    line-height: 1.1 !important;
+    margin-top: 0.25rem !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-options {
+    gap: 0.55rem !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-options > button {
+    height: 2.25rem !important;
+    min-height: 2.25rem !important;
+    min-width: 0 !important;
+    padding: 0 0.5rem !important;
+    text-align: center !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name {
+    margin-top: 0.55rem !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name input {
+    margin: 0 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 2199px) and (max-height: 930px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-card {
+    height: auto !important;
+    min-height: 0 !important;
+    padding-bottom: 0.65rem !important;
+    padding-top: 0.65rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-slots {
+    margin-top: 0.35rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-rules.punktlandung-setup-rules,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-party-rules.punktlandung-setup-rules {
+    margin-top: 0.5rem !important;
+    padding-top: 0.5rem !important;
   }
 }

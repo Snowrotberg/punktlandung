@@ -6,6 +6,7 @@ import type { Guess, LatLng, LocationCategory, Player, RoomState } from "@/types
 import { findCountryCodeAtPoint } from "@/lib/countryLookup";
 import { AdContainer } from "./AdContainer";
 import { Button } from "./Button";
+import { BackButton } from "./BackButton";
 import { GuessMap } from "./GuessMap";
 import { PanoramaViewer } from "./PanoramaViewer";
 import { useSound } from "./SoundProvider";
@@ -287,19 +288,12 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
             </div>
             <div className="punktlandung-game-actions pointer-events-auto order-3 col-span-1 flex justify-end gap-2">
                 {isHost && (
-                  <Button
+                  <BackButton
                     className="punktlandung-game-back-button"
-                    tone="ghost"
                     sound="click"
                     onClick={onCancelRound}
-                    aria-label="Zurueck"
-                    title="Zurueck"
-                  >
-                    <span className="punktlandung-game-back-button-inner">
-                      <TriangleIcon direction="left" className="h-4 w-4" />
-                      <span>Zurück</span>
-                    </span>
-                  </Button>
+                    label="Zurück"
+                  />
                 )}
             </div>
           </div>

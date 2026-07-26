@@ -5,7 +5,9 @@ import type { LocationCategory, Player, RoomState, RoundResult, RoundSummary } f
 import { formatDistance, rankResults } from "@/lib/geo";
 import { BackButton } from "./BackButton";
 import { Button } from "./Button";
+import { AdContainer } from "./AdContainer";
 import { GuessMap } from "./GuessMap";
+import { FeedbackDialog } from "./FeedbackDialog";
 import { LegalLinks } from "./LegalLinks";
 import { PanoramaViewer } from "./PanoramaViewer";
 import { TriangleIcon } from "./TriangleIcon";
@@ -14,6 +16,9 @@ import { useSound } from "./SoundProvider";
 const punktlandungDistanceKm = 0.5;
 const punktlandungDelayMs = 850;
 const punktlandungVisibleMs = 5200;
+const feedbackPromptStorageKey = "punktlandung-feedback-prompt-v1";
+const feedbackSkipMs = 14 * 24 * 60 * 60 * 1000;
+const feedbackSentMs = 90 * 24 * 60 * 60 * 1000;
 const badgeArticleMap: Record<string, string> = {
   "Globus-Gott": "Der",
   "Pin-Papst": "Der",
@@ -125,6 +130,23 @@ function scoreHeatmapPercent(points: number): number {
 function scoreLead(players: Player[]): number {
   if (players.length < 2) return players[0]?.score ?? 0;
   return Math.max(0, (players[0]?.score ?? 0) - (players[1]?.score ?? 0));
+}
+
+function feedbackPromptAllowed(): boolean {
+  try {
+    const nextPromptAt = Number(window.localStorage.getItem(feedbackPromptStorageKey) || 0);
+    return !Number.isFinite(nextPromptAt) || nextPromptAt <= Date.now();
+  } catch {
+    return true;
+  }
+}
+
+function postponeFeedbackPrompt(durationMs: number): void {
+  try {
+    window.localStorage.setItem(feedbackPromptStorageKey, String(Date.now() + durationMs));
+  } catch {
+    // The feedback dialog remains optional when browser storage is unavailable.
+  }
 }
 
 function playerAccentStyle(color = "#f43f5e"): CSSProperties {
@@ -322,7 +344,7 @@ function buildCategoryHighlights(summaries: RoundSummary[], players: Player[]): 
       return {
         label: categoryLabels[category],
         value: player?.name ?? "Spieler",
-        detail: `Ø ${formatPoints(stats.points / Math.max(1, stats.rounds))} Punkte · ${stats.hits}/${stats.rounds} Punktl.`,
+        detail: `Ø ${formatPoints(stats.points / Math.max(1, stats.rounds))} Punkte · ${stats.hits}/${stats.rounds} Punktlandungen`,
         color: player?.color,
         tone: "category" as const
       };
@@ -337,10 +359,12 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const [showLanding, setShowLanding] = useState(false);
   const [showImageReplay, setShowImageReplay] = useState(false);
   const [showFinalStandings, setShowFinalStandings] = useState(false);
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
   const [replayMapSize, setReplayMapSize] = useState<"closed" | "open" | "full">("closed");
   const [replayChromeHidden, setReplayChromeHidden] = useState(false);
   const [replayChromeHoverHidden, setReplayChromeHoverHidden] = useState(false);
   const [isReplayMobilePortrait, setIsReplayMobilePortrait] = useState(false);
+  const [isReplayMobileLandscape, setIsReplayMobileLandscape] = useState(false);
   const replayMapCloseTimer = useRef<number | null>(null);
   const summary = room.summaries?.[room.summaries.length - 1] ?? null;
   const location = summary?.location ?? null;
@@ -379,6 +403,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const showReplayMapSizeButton = (replayMapExpanded || isReplayMobilePortrait) && !replayMapFull;
   const showReplayMapCloseButton = replayMapExpanded && (!isReplayMobilePortrait || replayMapFull);
   const replayChromeSuppressed = replayChromeHidden || replayChromeHoverHidden;
+  const isReplayMobileViewport = isReplayMobilePortrait || isReplayMobileLandscape;
   const countryLabel = displayCountryName(location);
   const continentLabel = displayContinent(location?.continent ?? "");
   const onlineNextRoundGate = room.kind === "online" && room.status === "results";
@@ -423,12 +448,19 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
     setShowLanding(false);
     setShowImageReplay(false);
     setShowFinalStandings(false);
+    setFeedbackDialogOpen(false);
     setReplayMapSize("closed");
     setReplayChromeHidden(false);
     setReplayChromeHoverHidden(false);
     const timer = window.setTimeout(() => setRevealed(true), 900);
     return () => window.clearTimeout(timer);
   }, [summary?.roundNumber, summary?.completedAt]);
+
+  useEffect(() => {
+    if (!finished || !showFinalStandings || !feedbackPromptAllowed()) return;
+    const timer = window.setTimeout(() => setFeedbackDialogOpen(true), 1100);
+    return () => window.clearTimeout(timer);
+  }, [finished, showFinalStandings, summary?.completedAt]);
 
   useEffect(() => {
     if (!replayChromeHidden) return;
@@ -446,6 +478,14 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   useEffect(() => {
     const query = window.matchMedia("(max-width: 879px) and (orientation: portrait)");
     const update = () => setIsReplayMobilePortrait(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1024px) and (max-height: 520px) and (orientation: landscape)");
+    const update = () => setIsReplayMobileLandscape(query.matches);
     update();
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
@@ -499,6 +539,15 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const hideReplayChrome = () => {
     setReplayMapSize("closed");
     setReplayChromeHidden(true);
+  };
+
+  const toggleReplayImageFocus = () => {
+    if (!isReplayMobileViewport || replayMapFull) return;
+    if (replayChromeHidden) {
+      setReplayChromeHidden(false);
+      return;
+    }
+    hideReplayChrome();
   };
 
   if (!summary || !location) return null;
@@ -567,6 +616,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
               isHost={false}
               onSkipLocation={() => undefined}
               chromeHidden={replayChromeSuppressed}
+              onViewportTap={isReplayMobileViewport ? toggleReplayImageFocus : undefined}
               sourceVariant="detail"
             />
           </div>
@@ -623,7 +673,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             </div>
           )}
 
-          {!replayMapFull && (
+          {!isReplayMobileViewport && !replayMapFull && (
           <button
             type="button"
             onClick={replayChromeHidden ? () => setReplayChromeHidden(false) : hideReplayChrome}
@@ -640,8 +690,18 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
           </button>
           )}
 
+          {!replayChromeSuppressed && !replayMapFull && (
+            <AdContainer
+              placement="game-bottom-left"
+              variant="game"
+              label="Anzeige"
+              position="absolute"
+              className="pointer-events-auto bottom-3 left-3 z-40 hidden lg:block sm:bottom-4 sm:left-4"
+            />
+          )}
+
           {!replayChromeSuppressed && (
-          <section
+            <section
             className={`punktlandung-guess-map-panel ${replayMapFull ? "punktlandung-guess-map-panel--full" : replayMapExpanded ? "punktlandung-guess-map-panel--open" : "punktlandung-guess-map-panel--closed"} origin-bottom-right transform-gpu z-40 rounded-md bg-slate-950/88 p-2.5 shadow-[0_24px_60px_rgba(0,0,0,0.34)] ring-1 ring-indigo-300/45 backdrop-blur-md transition-[width,height,transform] duration-300 sm:p-3 ${replayMapPanelLayout}`}
             onMouseEnter={openReplayMapByHover}
             onMouseLeave={closeReplayMapByHover}
@@ -752,7 +812,6 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
         >
           <section className="punktlandung-final-left grid min-h-0 gap-3 xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
             <div className="relative isolate overflow-hidden rounded-md border border-emerald-300/35 bg-slate-900/78 p-4 shadow-[0_26px_70px_rgba(0,0,0,0.34)] ring-1 ring-emerald-300/20">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_12%,rgba(52,211,153,0.18),transparent_24rem),radial-gradient(circle_at_86%_18%,rgba(99,102,241,0.18),transparent_26rem)]" />
               <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.34em] text-emerald-300">Endstand</p>
@@ -797,7 +856,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                     </div>
                   ) : (
                     <div className="rounded-md bg-slate-950/52 p-3 ring-1 ring-slate-700/70">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-300">Entfernungsschnitt</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-300">Durchschnittliche Entfernung</p>
                       <p className="mt-1 truncate text-xl font-black">{championStats?.averageDistanceKm == null ? "-" : formatDistance(championStats.averageDistanceKm)}</p>
                     </div>
                   )}
@@ -831,6 +890,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
 
           <aside className="punktlandung-final-table min-h-0 rounded-md border border-slate-700/55 bg-slate-900/72 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.24)] xl:overflow-hidden">
             <div className="mb-3 flex flex-wrap justify-end gap-2">
+              <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setFeedbackDialogOpen(true)}>
+                Feedback geben
+              </Button>
               <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setShowFinalStandings(false)}>
                 Letzte Auflösung
               </Button>
@@ -879,12 +941,12 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                         {formatPoints(stat.player.score)}
                       </span>
                     </div>
-                    <div className="mt-1 grid grid-cols-5 gap-2 text-[10px] text-slate-300">
-                      <p className="truncate"><span className="font-black text-indigo-300">Pkt/R</span> {formatPoints(stat.averagePoints)}</p>
-                      <p className="truncate"><span className="font-black text-indigo-300">Punktl.</span> {stat.hits}/{Math.max(1, stat.roundsPlayed)}</p>
-                      <p className="truncate"><span className="font-black text-indigo-300">Ø km</span> {stat.averageDistanceKm === null ? "-" : formatDistance(stat.averageDistanceKm)}</p>
-                      <p className="truncate"><span className="font-black text-indigo-300">{showMixedCategoryStats ? "Kat." : "Modus"}</span> {showMixedCategoryStats ? stat.bestCategoryLabel : categoryLabels[room.settings.category]}</p>
-                      <p className="truncate"><span className="font-black text-indigo-300">Zeit</span> {formatSeconds(stat.totalGuessSeconds)}</p>
+                    <div className="punktlandung-final-player-metrics mt-1 grid gap-x-2 gap-y-1 text-[10px] text-slate-300">
+                      <p><span className="font-black text-indigo-300">Punkte je Runde</span> {formatPoints(stat.averagePoints)}</p>
+                      <p><span className="font-black text-indigo-300">Punktlandungen</span> {stat.hits}/{Math.max(1, stat.roundsPlayed)}</p>
+                      <p><span className="font-black text-indigo-300">Durchschnittliche Entfernung</span> {stat.averageDistanceKm === null ? "-" : formatDistance(stat.averageDistanceKm)}</p>
+                      <p><span className="font-black text-indigo-300">{showMixedCategoryStats ? "Beste Kategorie" : "Spielmodus"}</span> {showMixedCategoryStats ? stat.bestCategoryLabel : categoryLabels[room.settings.category]}</p>
+                      <p><span className="font-black text-indigo-300">Tippzeit gesamt</span> {formatSeconds(stat.totalGuessSeconds)}</p>
                     </div>
                   </div>
                 );
@@ -1100,6 +1162,20 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
         </aside>
         </div>
       )}
+      <FeedbackDialog
+        open={feedbackDialogOpen}
+        context={{
+          source: "post-game",
+          mode: room.kind,
+          category: room.settings.category,
+          rounds: completedRounds
+        }}
+        onClose={() => {
+          postponeFeedbackPrompt(feedbackSkipMs);
+          setFeedbackDialogOpen(false);
+        }}
+        onSubmitted={() => postponeFeedbackPrompt(feedbackSentMs)}
+      />
     </main>
   );
 }

@@ -233,6 +233,8 @@ const excludedGeneratedImagePatterns = [
   /\bcollage\b/i,
   /\bcloudless\b/i,
   /\bdiagram\b/i,
+  /\bfrom space\b/i,
+  /\biss(?:\d|[-_\s])/i,
   /\bkarte\b/i,
   /\blandsat\b/i,
   /\blocator\b/i,
@@ -240,10 +242,14 @@ const excludedGeneratedImagePatterns = [
   /\bmodel\b/i,
   /\bmontage\b/i,
   /\bnasa\b/i,
+  /\borbit(?:al)?\b/i,
   /\bphoto[\s-]?montage\b/i,
   /\brelief map\b/i,
   /\bsatellite\b/i,
   /\bsentinel\b/i,
+  /\bspacecraft\b/i,
+  /\bsts\d/i,
+  /\bview of earth\b/i,
   /\btopo\b/i
 ];
 

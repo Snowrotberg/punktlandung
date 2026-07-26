@@ -59,6 +59,16 @@ function fileKey(fileName: string): string {
   return fileName.replace(/^File:/i, "").replaceAll("_", " ").normalize("NFC").trim().toLocaleLowerCase();
 }
 
+const licenseOverrides = new Map<string, { license: string; licenseUrl: string }>([
+  [
+    fileKey("Tianjin, China ESA15420167.jpeg"),
+    {
+      license: "CC BY-SA 3.0 IGO",
+      licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/igo/"
+    }
+  ]
+]);
+
 async function fetchBatch(fileNames: string[]): Promise<CommonsPage[]> {
   const url = new URL(endpoint);
   url.searchParams.set("action", "query");
@@ -115,15 +125,28 @@ async function run() {
     const canonicalFileName = (info?.canonicaltitle ?? page?.title ?? `File:${requestedFileName}`).replace(/^File:/, "");
     const locations = locationsByFile.get(requestedFileName) ?? [];
     const artist = metadataValue(metadata, "Artist") || metadataValue(metadata, "Credit") || "Nicht angegeben";
-    const license = metadataValue(metadata, "LicenseShortName") || metadataValue(metadata, "UsageTerms") || "Nicht angegeben";
-    const licenseUrl = metadata?.LicenseUrl?.value?.trim() || null;
+    const originalSourceUrl = info?.descriptionurl ?? sourceUrlFor(canonicalFileName);
+    const override = licenseOverrides.get(fileKey(canonicalFileName));
+    let license = override?.license ?? (metadataValue(metadata, "LicenseShortName") || metadataValue(metadata, "UsageTerms") || "Nicht angegeben");
+    let licenseUrl = override?.licenseUrl ?? (metadata?.LicenseUrl?.value?.trim() || null);
+
+    // Some older Commons files use a custom free-use template without a
+    // standalone licence URL. In those cases the file page itself contains
+    // the binding attribution or free-use terms and is the most precise link.
+    if (!licenseUrl && license === "Attribution") {
+      license = "Freie Nutzung mit Namensnennung gemäß Originalseite";
+      licenseUrl = originalSourceUrl;
+    } else if (!licenseUrl && license === "Copyrighted free use") {
+      license = "Freie Nutzung gemäß Freigabe auf der Originalseite";
+      licenseUrl = originalSourceUrl;
+    }
 
     return {
       fileName: canonicalFileName,
       artist,
       license,
       licenseUrl,
-      sourceUrl: info?.descriptionurl ?? sourceUrlFor(canonicalFileName),
+      sourceUrl: originalSourceUrl,
       categories: [...new Set(locations.map((location) => location.category))].sort(),
       locationCount: locations.length
     };

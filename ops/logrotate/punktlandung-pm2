@@ -1,4 +1,4 @@
-/root/.pm2/logs/punktlandung-*.log {
+/home/punktapp/.pm2/logs/punktlandung-*.log {
     daily
     rotate 14
     maxage 14
@@ -9,5 +9,6 @@
     dateext
     dateformat -%Y%m%d
     copytruncate
-    create 0640 root root
+    su punktapp punktapp
+    create 0640 punktapp punktapp
 }

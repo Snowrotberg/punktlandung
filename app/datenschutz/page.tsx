@@ -14,7 +14,7 @@ export default function DatenschutzPage() {
       title="Datenschutzerklärung"
       intro="Informationen zur Verarbeitung personenbezogener Daten und zu den Rechten betroffener Personen."
     >
-      <p className="text-sm text-slate-400">Stand: 19. Juli 2026</p>
+      <p className="text-sm text-slate-400">Stand: 23. Juli 2026</p>
       <p className="mt-4 text-slate-300">
           Diese Datenschutzerklärung erläutert, welche personenbezogenen Daten bei der Nutzung von
           Punktlandung verarbeitet werden und welche Rechte betroffene Personen haben.
@@ -87,8 +87,8 @@ export default function DatenschutzPage() {
             <p className="mt-2">
               Punktlandung speichert bestimmte Spieldaten und Einstellungen direkt im Browser. Dazu können der
               gewählte Spielername, Soundeinstellung, lokale Spielstände und Sitzungen, zuletzt verwendete Orte,
-              selbst erstellte Kartenpakete, die Adresse des Online-Servers sowie eine Werbe- oder
-              Einwilligungsentscheidung gehören. Kurzlebige Kennungen und Zustände eines Online-Raums können im
+              selbst erstellte Kartenpakete, die Adresse des Online-Servers, den Zeitpunkt einer späteren
+              Feedback-Einladung sowie eine Werbe- oder Einwilligungsentscheidung gehören. Kurzlebige Kennungen und Zustände eines Online-Raums können im
               Sitzungsspeicher des Browsers abgelegt werden.
             </p>
             <p className="mt-2">
@@ -140,6 +140,15 @@ export default function DatenschutzPage() {
             >
               Datenschutzerklärung des FOSSGIS e. V.
             </a>
+            <span className="mx-2 text-slate-600">·</span>
+            <a
+              href="https://fossgis.de/arbeitsgruppen/osm-server/nutzungsbedingungen/"
+              target="_blank"
+              rel="noreferrer"
+              className={externalLinkClass}
+            >
+              Nutzungsbedingungen des Kartendienstes
+            </a>
           </section>
 
           <section>
@@ -164,9 +173,10 @@ export default function DatenschutzPage() {
           </section>
 
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">8. Google AdSense und Einwilligungsverwaltung</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">8. Google AdSense, Google Analytics und Einwilligungsverwaltung</h2>
             <p className="mt-2">
-              Zur Finanzierung des Angebots soll Google AdSense eingesetzt werden. Anbieter für Personen im
+              Zur Finanzierung des Angebots bindet Punktlandung Google AdSense ein. Die öffentliche Auslieferung
+              von Anzeigen beginnt erst nach der Freigabe der Website. Anbieter für Personen im
               Europäischen Wirtschaftsraum ist Google Ireland Limited, Gordon House, Barrow Street, Dublin 4,
               Irland. AdSense und beteiligte Werbepartner können Informationen auf dem Endgerät speichern oder
               auslesen und Daten wie IP-Adresse, Geräte- und Browserinformationen, ungefähren Standort,
@@ -203,22 +213,109 @@ export default function DatenschutzPage() {
               </a>
             </div>
             <p className="mt-2">
-              Punktlandung verwendet derzeit keinen zusätzlichen Webanalyse- oder Besucherstatistikdienst.
+              Punktlandung verwendet außerdem Google Analytics 4, um die Nutzung des Angebots auszuwerten. Dabei
+              können insbesondere Seitenaufrufe, Sitzungs- und Geräteinformationen sowie grobe Ereignisse wie der
+              Start oder vollständige Abschluss einer Partie, Spieltyp, Kategorie und geplante Rundenzahl
+              verarbeitet werden. An Analytics werden keine Spielernamen, Raumcodes, E-Mail-Adressen,
+              Feedbacktexte, einzelnen Tipps oder Kartenkoordinaten übermittelt.
+            </p>
+            <p className="mt-2">
+              Google Analytics ist mit dem Einwilligungsmodus der Google-Consent-Management-Plattform verbunden.
+              In einwilligungspflichtigen Regionen wird die Speicherung von Analytics-Kennungen über die Auswahl
+              im Datenschutzdialog gesteuert. Bei verweigerter Einwilligung können technisch reduzierte,
+              cookielose Messsignale ohne Speicherung einer Analytics-Kennung auf dem Endgerät übermittelt werden.
+              Rechtsgrundlage für einwilligungsabhängige Speicherung und weitergehende Auswertung sind Art. 6 Abs. 1
+              Buchst. a DSGVO und § 25 Abs. 1 TDDDG. Die technisch reduzierte Reichweitenmessung dient dem
+              berechtigten Interesse, Betrieb, Nutzung und Fehler des Beta-Angebots beurteilen zu können (Art. 6
+              Abs. 1 Buchst. f DSGVO). Die Auswahl kann jederzeit über „Cookies“ geändert werden.
+            </p>
+            <p className="mt-2">
+              Die Aufbewahrung von Nutzer- und Ereignisdaten ist in Google Analytics auf zwei Monate eingestellt.
+              Diese Frist betrifft die von Google bereitgestellten Daten auf Nutzer- und Ereignisebene; aggregierte
+              Standardberichte können nach den Vorgaben von Google länger verfügbar bleiben.
+            </p>
+            <a
+              href="https://support.google.com/analytics/answer/7667196?hl=de"
+              target="_blank"
+              rel="noreferrer"
+              className={externalLinkClass}
+            >
+              Informationen zur Datenaufbewahrung bei Google Analytics
+            </a>
+            <p className="mt-2">
+              Zusätzlich speichert Punktlandung auf dem eigenen Server ausschließlich anonyme Betriebszähler,
+              etwa die Anzahl gestarteter und beendeter Partien, Räume und Verbindungen sowie Spitzenwerte der
+              gleichzeitigen Auslastung. Diese Zähler enthalten keine Nutzerkennungen, Namen, IP-Adressen,
+              Raumcodes oder Spielkoordinaten und werden nur für interne Wochenberichte verwendet.
             </p>
           </section>
 
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">9. E-Mail-Kontakt</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">9. Feedback und E-Mail-Kontakt</h2>
             <p className="mt-2">
               Bei einer Kontaktaufnahme per E-Mail werden die übermittelten Angaben verarbeitet, um die Anfrage zu
               beantworten. Rechtsgrundlage ist je nach Inhalt Art. 6 Abs. 1 Buchst. b oder f DSGVO. Das berechtigte
               Interesse liegt in der Bearbeitung der Anfrage. Die Daten werden gelöscht, sobald die Anfrage
-              abschließend geklärt ist und keine gesetzlichen Aufbewahrungspflichten entgegenstehen.
+              abschließend geklärt ist und keine gesetzlichen Aufbewahrungspflichten entgegenstehen, spätestens
+              jedoch nach 180 Tagen.
+            </p>
+            <p className="mt-2">
+              Während der öffentlichen Beta kann freiwillig über ein Feedbackformular eine Nachricht übermittelt
+              werden. Eine E-Mail-Adresse kann optional angegeben werden und wird ausschließlich verwendet, um bei
+              Rückfragen auf das Feedback zu antworten. Nach einer beendeten Partie können zusätzlich Spielmodus,
+              gewählte Kategorie und Anzahl der gespielten Runden übermittelt werden. Spielernamen, Raumcodes,
+              einzelne Tipps und Rundenergebnisse werden nicht mit dem Feedback versendet.
+            </p>
+            <p className="mt-2">
+              Die Verarbeitung dient der Auswertung von Fehlerhinweisen und Verbesserungsvorschlägen sowie der
+              Weiterentwicklung von Punktlandung. Rechtsgrundlage ist Art. 6 Abs. 1 Buchst. f DSGVO. Das berechtigte
+              Interesse liegt in der Qualitätssicherung und Verbesserung des Angebots. Soweit sich eine Nachricht
+              auf ein angefordertes oder bestehendes Nutzungsverhältnis bezieht, kann zusätzlich Art. 6 Abs. 1
+              Buchst. b DSGVO einschlägig sein.
+            </p>
+            <p className="mt-2">
+              Der Versand erfolgt an das Gmail-Postfach aintartstudio@gmail.com. Anbieter ist Google Ireland
+              Limited, Gordon House, Barrow Street, Dublin 4, Irland. Google verarbeitet die E-Mail-Inhalte und
+              technischen Versanddaten zur Bereitstellung des Postfachs. Dabei können Daten auch in Drittländer,
+              insbesondere die USA, übermittelt werden. Feedbacknachrichten werden spätestens nach 180 Tagen aus
+              dem Postfach gelöscht, sofern sie nicht ausnahmsweise zur Klärung eines konkreten Vorgangs länger
+              benötigt werden.
+            </p>
+            <p className="mt-2">
+              Die Feedbacknachricht ist für den Versand erforderlich. Die Angabe einer E-Mail-Adresse ist
+              freiwillig. Ohne E-Mail-Adresse kann das Feedback ausgewertet, aber keine individuelle Rückfrage
+              gestellt oder beantwortet werden. Bitte übermittle über das Formular keine vertraulichen
+              Informationen oder besonderen Kategorien personenbezogener Daten.
+            </p>
+            <p className="mt-2">
+              Zum Schutz vor automatisiertem Missbrauch prüft das Formular unter anderem Ausfüllzeit, versteckte
+              Formularfelder, Herkunft der Anfrage und Anzahl der Übermittlungen. Eine aus der IP-Adresse abgeleitete
+              technische Kennung wird ausschließlich im Arbeitsspeicher des Servers zur Begrenzung wiederholter
+              Anfragen gehalten und eine Stunde nach der jeweils letzten Anfrage gelöscht. Ergänzend können die unter Ziffer 3 beschriebenen
+              Serverprotokolle entstehen.
+            </p>
+            <a href="https://policies.google.com/privacy?hl=de" target="_blank" rel="noreferrer" className={externalLinkClass}>
+              Datenschutzerklärung von Google
+            </a>
+            <br />
+            <a href="https://policies.google.com/privacy/frameworks?hl=de" target="_blank" rel="noreferrer" className={externalLinkClass}>
+              Google: Rechtliche Grundlagen für internationale Datenübermittlungen
+            </a>
+          </section>
+
+          <section>
+            <h2 className="text-[22px] font-black leading-tight text-white">10. Pflichtangaben und automatisierte Entscheidungen</h2>
+            <p className="mt-2">
+              Pflichtangaben werden jeweils direkt an der betreffenden Funktion gekennzeichnet. Ohne die für eine
+              Spielfunktion erforderlichen Angaben, etwa einen Spielernamen für einen Online-Raum, kann diese
+              Funktion nicht bereitgestellt werden. Punktlandung trifft keine ausschließlich automatisierten
+              Entscheidungen mit rechtlicher oder ähnlich erheblicher Wirkung und erstellt kein Profiling im Sinne
+              von Art. 22 DSGVO. Die automatische Punkteberechnung dient ausschließlich dem Spielablauf.
             </p>
           </section>
 
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">10. Verschlüsselung</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">11. Verschlüsselung</h2>
             <p className="mt-2">
               Die Website wird verschlüsselt über HTTPS übertragen. Dadurch sind übermittelte Daten während des
               Transports grundsätzlich vor dem Mitlesen durch Dritte geschützt.
@@ -226,7 +323,7 @@ export default function DatenschutzPage() {
           </section>
 
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">11. Rechte betroffener Personen</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">12. Rechte betroffener Personen</h2>
             <p className="mt-2">
               Betroffene Personen haben im Rahmen der gesetzlichen Voraussetzungen das Recht auf Auskunft (Art. 15
               DSGVO), Berichtigung (Art. 16 DSGVO), Löschung (Art. 17 DSGVO), Einschränkung der Verarbeitung (Art. 18
@@ -238,7 +335,7 @@ export default function DatenschutzPage() {
           </section>
 
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">12. Beschwerderecht</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">13. Beschwerderecht</h2>
             <p className="mt-2">
               Betroffene Personen haben das Recht, sich bei einer Datenschutzaufsichtsbehörde zu beschweren.
               Zuständig für den Verantwortlichen ist insbesondere:
@@ -263,7 +360,7 @@ export default function DatenschutzPage() {
           </section>
 
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">13. Änderungen dieser Datenschutzerklärung</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">14. Änderungen dieser Datenschutzerklärung</h2>
             <p className="mt-2">
               Diese Datenschutzerklärung wird angepasst, wenn sich Funktionen, eingesetzte Dienste oder rechtliche
               Anforderungen ändern. Es gilt die jeweils auf dieser Seite veröffentlichte Fassung.

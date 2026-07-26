@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PublicBetaBadge } from "@/components/PublicBetaBadge";
 import { safeNextPath } from "@/lib/accessGate";
 
 export const metadata: Metadata = {
@@ -30,9 +31,12 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
       <section className="relative mx-auto flex min-h-[calc(100dvh-3rem)] w-full max-w-2xl items-center justify-center">
         <div className="arcade-panel w-full rounded-md p-5 sm:p-8">
           <div className="mb-7">
-            <p className="text-sm font-black uppercase tracking-[0.32em] text-emerald-300">
-              Testbetrieb
-            </p>
+            <div className="punktlandung-beta-context-row">
+              <p className="text-sm font-black uppercase tracking-[0.32em] text-emerald-300">
+                Testbetrieb
+              </p>
+              <PublicBetaBadge compact />
+            </div>
             <h1 className="mt-2 text-4xl font-black leading-none text-white sm:text-5xl">
               Punktlandung
             </h1>

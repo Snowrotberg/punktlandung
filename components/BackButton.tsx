@@ -10,7 +10,16 @@ type BackButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">
   sound?: "none" | "click" | "select";
 };
 
-export function BackButton({ label = "Zurueck", sound = "click", className = "", ...props }: BackButtonProps) {
+export function BackControlContent() {
+  return (
+    <span className="punktlandung-back-control-content" aria-hidden="true">
+      <TriangleIcon direction="left" className="punktlandung-back-control-icon h-4 w-4" />
+      <span className="punktlandung-back-control-label">Zurück</span>
+    </span>
+  );
+}
+
+export function BackButton({ label = "Zurück", sound = "click", className = "", ...props }: BackButtonProps) {
   return (
     <Button
       {...props}
@@ -20,7 +29,7 @@ export function BackButton({ label = "Zurueck", sound = "click", className = "",
       tone="ghost"
       className={`punktlandung-back-button ${className}`}
     >
-      <TriangleIcon direction="left" className="h-5 w-5" />
+      <BackControlContent />
     </Button>
   );
 }
@@ -32,7 +41,7 @@ type BackLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "children" | 
   onNavigate?: () => void;
 };
 
-export function BackLink({ href, label = "Zurueck", sound = "click", className = "", onNavigate, ...props }: BackLinkProps) {
+export function BackLink({ href, label = "Zurück", sound = "click", className = "", onNavigate, ...props }: BackLinkProps) {
   return (
     <ButtonLink
       {...props}
@@ -44,7 +53,7 @@ export function BackLink({ href, label = "Zurueck", sound = "click", className =
       onNavigate={onNavigate}
       className={`punktlandung-back-button ${className}`}
     >
-      <TriangleIcon direction="left" className="h-5 w-5" />
+      <BackControlContent />
     </ButtonLink>
   );
 }

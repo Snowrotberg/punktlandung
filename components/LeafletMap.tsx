@@ -6,7 +6,7 @@ import { LeafletProvider, createLeafletContext } from "@react-leaflet/core";
 import { Map as LeafletMapClass, divIcon, latLngBounds } from "leaflet";
 import type { LatLngExpression, Map as LeafletMapInstance, Polyline as LeafletPolyline } from "leaflet";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Guess, LatLng, Player, RoundSummary } from "@/types/game";
+import type { GeoLocation, Guess, LatLng, Player, RoundResult, RoundSummary } from "@/types/game";
 import { formatDistance, rankResults } from "@/lib/geo";
 
 type LeafletMapProps = {
@@ -42,6 +42,19 @@ type PixelPoint = {
   x: number;
   y: number;
 };
+
+function isTerritoryHit(location: GeoLocation, result: RoundResult): boolean {
+  return (
+    result.countryCorrect &&
+    (location.category === "flags" || location.category === "cities" || location.category === "capitals")
+  );
+}
+
+function territoryHitLabel(location: GeoLocation): string {
+  if (location.category === "cities") return "richtige Stadt";
+  if (location.category === "capitals") return "richtige Hauptstadt";
+  return "richtiges Land";
+}
 
 type PixelSegment = {
   a: PixelPoint;
@@ -792,7 +805,7 @@ function ResultsMarkers({
     const blockedSegments: PixelSegment[] = rankedResults.flatMap((result) => {
       const displayGuess = displayGeometry.resultGuesses.get(result.playerId);
       if (!result.guess || !displayGuess) return [];
-      if (location.category === "flags" && result.countryCorrect) return [];
+      if (isTerritoryHit(location, result)) return [];
       const guessPoint = map.latLngToContainerPoint([displayGuess.lat, displayGuess.lng]);
       return [{ a: { x: guessPoint.x, y: guessPoint.y }, b: { x: locationPoint.x, y: locationPoint.y } }];
     });
@@ -818,8 +831,8 @@ function ResultsMarkers({
       const displayGuess = displayGeometry.resultGuesses.get(result.playerId);
       if (!result.guess || !displayGuess) continue;
       const guessPoint = map.latLngToContainerPoint([displayGuess.lat, displayGuess.lng]);
-      const hideDistance = location.category === "flags" && result.countryCorrect;
-      const resultLabel = hideDistance ? "richtiges Land" : formatDistance(result.distanceKm);
+      const hideDistance = isTerritoryHit(location, result);
+      const resultLabel = hideDistance ? territoryHitLabel(location) : formatDistance(result.distanceKm);
       const label = `#${index + 1} ${playerName(players, result.playerId)} - ${resultLabel}`;
       const outwardVector = vectorAwayFrom(guessPoint, mapCenter);
       const targetVector = vectorAwayFrom(guessPoint, locationPoint);
@@ -850,8 +863,8 @@ function ResultsMarkers({
           if (!point) return null;
           const color = playerColor(players, result.playerId);
           const colorIndex = playerColorIndex(players, result.playerId);
-          const hideDistance = location.category === "flags" && result.countryCorrect;
-          const resultLabel = hideDistance ? "richtiges Land" : formatDistance(result.distanceKm);
+          const hideDistance = isTerritoryHit(location, result);
+          const resultLabel = hideDistance ? territoryHitLabel(location) : formatDistance(result.distanceKm);
           const playerLabelPrefix = `#${index + 1} ${playerName(players, result.playerId)}`;
           const playerLabel = `${playerLabelPrefix} - ${resultLabel}`;
           const playerLabelHtml = `${escapeHtml(playerLabelPrefix)}<span class="punktlandung-map-label-distance"> - ${escapeHtml(resultLabel)}</span>`;
@@ -1051,7 +1064,7 @@ export function LeafletMap({
       {mode === "guess" && <GuessViewportReset center={center} zoom={guessOverviewZoom} resetSignal={resetSignal} />}
       {mode === "results" && <ResultBounds summary={summary} players={players} showLabels={showLabels} resizeSignal={resizeSignal} />}
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | Tiles: <a href="https://www.openstreetmap.de/">OSM Deutschland</a>'
+        attribution='Daten &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap-Mitwirkende</a> (<a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>), Grafik <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA</a>, <a href="https://www.openstreetmap.org/fixthemap">Fehler melden</a>'
         noWrap={restrictToSingleWorld}
         url="https://tile.openstreetmap.de/{z}/{x}/{y}.png"
       />

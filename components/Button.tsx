@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, MouseEvent, ReactNode } from "react";
 import { useSound } from "./SoundProvider";
 
@@ -61,7 +60,7 @@ export function ButtonLink({ href, tone = "primary", sound = "none", className =
   const { playClick, playSelect } = useSound();
 
   return (
-    <Link
+    <a
       href={href}
       className={buttonClassName(tone, className)}
       onClick={(event) => {
@@ -75,6 +74,6 @@ export function ButtonLink({ href, tone = "primary", sound = "none", className =
       {...props}
     >
       {children}
-    </Link>
+    </a>
   );
 }
