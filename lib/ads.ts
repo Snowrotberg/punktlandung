@@ -1,6 +1,7 @@
 export type AdPlacement =
   | "home-left-rail"
   | "home-right-rail"
+  | "home-mobile-tablet"
   | "solo-left-rail"
   | "solo-right-rail"
   | "solo-settings-banner"
@@ -22,6 +23,7 @@ export const AD_CONSENT_EVENT = "punktlandung-ad-consent-change";
 
 const ADSENSE_CLIENT_ID = "ca-pub-9142115787733581";
 const HOME_SIDEBAR_SLOT_ID = "1859262170";
+const HOME_MOBILE_TABLET_SLOT_ID = "4380405735";
 const SOLO_SIDEBAR_SLOT_ID = "6536873787";
 const PARTY_SIDEBAR_SLOT_ID = "8719762534";
 const ONLINE_SIDEBAR_SLOT_ID = "7406680868";
@@ -41,6 +43,7 @@ export const adConfig = {
   slots: {
     "home-left-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_LEFT_RAIL?.trim() || HOME_SIDEBAR_SLOT_ID,
     "home-right-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_RIGHT_RAIL?.trim() || HOME_SIDEBAR_SLOT_ID,
+    "home-mobile-tablet": process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_MOBILE_TABLET?.trim() || HOME_MOBILE_TABLET_SLOT_ID,
     "solo-left-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_SOLO_LEFT_RAIL?.trim() || SOLO_SIDEBAR_SLOT_ID,
     "solo-right-rail": process.env.NEXT_PUBLIC_ADSENSE_SLOT_SOLO_RIGHT_RAIL?.trim() || SOLO_SIDEBAR_SLOT_ID,
     "solo-settings-banner": process.env.NEXT_PUBLIC_ADSENSE_SLOT_SOLO_SETTINGS_BANNER?.trim() || SETTINGS_BLOCK_SLOT_ID,

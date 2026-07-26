@@ -613,6 +613,15 @@ export function GameApp({
               </div>
             </div>
 
+            <AdContainer
+              placement="home-mobile-tablet"
+              variant="banner"
+              adFormat="horizontal"
+              label="Anzeige"
+              className="mt-3.5 h-[100px] shrink-0 sm:h-[110px] xl:hidden"
+              fullWidthResponsive
+            />
+
               <div className="punktlandung-home-category-heading mt-3.5 flex shrink-0 items-baseline justify-between gap-4">
                 <div>
                   <h2 className="text-base font-black leading-none text-white md:text-[22px] min-[2200px]:text-3xl">Spielkategorien</h2>
