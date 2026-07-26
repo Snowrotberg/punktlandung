@@ -261,7 +261,7 @@ const targets = [
   },
   { name: "spielen", access: "state", path: "/spielen", status: "guessing", note: "echter URL-Pfad mit QA-Session" },
   { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", note: "echter URL-Pfad mit QA-Session" },
-  { name: "nochmal-ansehen", access: "state-click", status: "results", buttonText: "Bild nochmal ansehen", note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
+  { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
   { name: "endergebnis", access: "state", path: "/endergebnis", status: "finished", note: "echter URL-Pfad mit QA-Session" },
   { name: "infos", access: "route", path: "/infos", note: "echter URL-Pfad" },
   { name: "impressum", access: "route", path: "/impressum", note: "echter URL-Pfad" },
@@ -416,13 +416,15 @@ async function ensureOnlineWaitingRoom(page) {
 async function clickButtonByVisibleText(page, text) {
   const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const roleMatch = page.getByRole("button", { name: new RegExp(escaped, "i") }).first();
-  if (await roleMatch.isVisible({ timeout: 1500 }).catch(() => false)) {
+  await roleMatch.waitFor({ state: "visible", timeout: 15000 }).catch(() => {});
+  if (await roleMatch.isVisible().catch(() => false)) {
     await roleMatch.click({ timeout: 5000 });
     return;
   }
 
   const textMatch = page.locator("button, [role='button'], a").filter({ hasText: new RegExp(escaped, "i") }).first();
-  if (await textMatch.isVisible({ timeout: 5000 }).catch(() => false)) {
+  await textMatch.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+  if (await textMatch.isVisible().catch(() => false)) {
     await textMatch.click({ timeout: 5000 });
     return;
   }
@@ -578,6 +580,30 @@ async function runTargetViewport(browser, target, viewport) {
     const response = await openTarget(page, target);
     responseStatus = response?.status() ?? null;
     if (responseStatus === 404) problems.push(`Route meldet 404: ${target.path}`);
+
+    if (target.expectedRoom) {
+      await page
+        .waitForFunction(
+          (expectedRoom) => {
+            try {
+              const rawSession = window.localStorage.getItem("punktlandung-active-session-v1");
+              const room = rawSession ? JSON.parse(rawSession)?.room : null;
+              return Boolean(
+                room &&
+                  Object.entries(expectedRoom).every(([key, value]) => {
+                    const actual = key === "localMode" ? room.settings?.localMode : room[key];
+                    return actual === value;
+                  })
+              );
+            } catch {
+              return false;
+            }
+          },
+          target.expectedRoom,
+          { timeout: 5000 }
+        )
+        .catch(() => {});
+    }
 
     const metrics = await collectLayoutMetrics(page);
     if (metrics.accessGate) {

@@ -20,9 +20,9 @@ type ButtonLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "o
 const toneClass = {
   primary: "heavy-button text-white",
   selected:
-    "relative overflow-hidden border-emerald-400/80 bg-slate-950/72 text-emerald-100 shadow-good hover:border-emerald-300/90 hover:bg-slate-900/86 before:absolute before:left-0 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-emerald-300/80",
-  good: "border-emerald-400/80 bg-slate-950/55 text-emerald-100 shadow-good hover:bg-emerald-400/12",
-  bad: "border-rose-500/80 bg-slate-950/55 text-rose-100 shadow-bad hover:bg-rose-500/12",
+    "relative overflow-hidden border-emerald-400/80 bg-slate-950/72 text-emerald-100 shadow-[inset_0_0_18px_rgba(52,211,153,0.10)] hover:border-emerald-300/90 hover:bg-slate-900/86 before:absolute before:left-0 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-emerald-300/80",
+  good: "border-emerald-400/80 bg-slate-950/55 text-emerald-100 shadow-[inset_0_0_18px_rgba(52,211,153,0.10)] hover:bg-emerald-400/12",
+  bad: "border-rose-500/80 bg-slate-950/55 text-rose-100 shadow-[inset_0_0_18px_rgba(244,63,94,0.10)] hover:bg-rose-500/12",
   ghost: "border-slate-600/80 bg-slate-950/45 text-slate-100 hover:border-slate-400/90 hover:bg-slate-800/70"
 };
 

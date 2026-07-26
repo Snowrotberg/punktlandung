@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { StructuredData } from "@/components/StructuredData";
 import { adConfig } from "@/lib/ads";
@@ -83,16 +84,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             }}
           />
         )}
+      </head>
+      <body className="bg-slate-950 text-slate-50 antialiased">
+        <script src="/ambient-phase.js" />
         {adConfig.enabled && adConfig.clientId && (
-          <script
-            async
+          <Script
+            id="punktlandung-adsense"
+            strategy="afterInteractive"
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adConfig.clientId)}`}
             crossOrigin="anonymous"
           />
         )}
-      </head>
-      <body className="bg-slate-950 text-slate-50 antialiased">
-        <script src="/ambient-phase.js" />
         <GoogleAnalytics />
         <StructuredData />
         {children}

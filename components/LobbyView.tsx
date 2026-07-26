@@ -273,8 +273,8 @@ export function LobbyView({
                 <p className="mt-1 text-sm text-slate-400">Großer Bildschirm: Raumleitung und Ergebnisanzeige.</p>
               </div>
               <div className="punktlandung-online-waiting-header-actions flex shrink-0 items-center gap-2">
-                <BackLink className="punktlandung-lobby-header-back" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
-                <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 normal-case" disabled={!isHost || players.length === 0 || !canStart} onClick={onStart}>
+                <BackLink className="punktlandung-lobby-header-back punktlandung-mode-action punktlandung-mode-action--secondary" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
+                <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case" disabled={!isHost || players.length === 0 || !canStart} onClick={onStart}>
                   <span className="punktlandung-inline-action-content">
                     <span>Starten</span>
                     <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
@@ -413,7 +413,7 @@ export function LobbyView({
           />
         </div>
         <div className="punktlandung-touch-only-grid punktlandung-lobby-touch-actions punktlandung-online-waiting-touch-actions fixed inset-x-2 bottom-2 z-50 grid grid-cols-2 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md">
-          <ButtonLink sound="click" tone="ghost" className="punktlandung-lobby-touch-back normal-case" href={leaveHref} onNavigate={onLeave} aria-label="Zurück" title="Zurück">
+          <ButtonLink sound="click" tone="ghost" className="punktlandung-lobby-touch-back punktlandung-mode-action punktlandung-mode-action--secondary normal-case" href={leaveHref} onNavigate={onLeave} aria-label="Zurück" title="Zurück">
             <span className="punktlandung-lobby-touch-button-inner">
               <TriangleIcon direction="left" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-back h-5 w-5" />
               <span>Zurück</span>
@@ -422,7 +422,7 @@ export function LobbyView({
           <Button
             sound="select"
             tone="selected"
-            className="punktlandung-command-button punktlandung-lobby-touch-primary min-h-12 normal-case"
+            className="punktlandung-command-button punktlandung-lobby-touch-primary punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case"
             disabled={!isHost || players.length === 0 || !canStart}
             onClick={onStart}
           >
@@ -476,8 +476,8 @@ export function LobbyView({
                 <span className="block text-lg font-black tracking-[0.18em] text-white">{copied ? "KOPIERT" : code}</span>
               </button>
             )}
-            <BackLink className="punktlandung-lobby-header-back" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
-            <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
+            <BackLink className="punktlandung-lobby-header-back punktlandung-mode-action punktlandung-mode-action--secondary" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
+            <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
               <span className="punktlandung-inline-action-content">
                 <span>{primaryActionLabel}</span>
                 {primaryActionLabel === "Starten" && <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />}
@@ -485,7 +485,7 @@ export function LobbyView({
             </Button>
           </div>
           <div className="punktlandung-lobby-mobile-back shrink-0">
-            <BackLink href={leaveHref} onNavigate={onLeave} label="Zurueck" />
+            <BackLink className="punktlandung-mode-action punktlandung-mode-action--secondary" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
           </div>
         </header>
 
@@ -505,7 +505,7 @@ export function LobbyView({
                 <div className="punktlandung-settings-main punktlandung-local-main">
                   <h2 className="punktlandung-settings-heading text-[22px] font-black leading-tight min-[2200px]:text-3xl">Spielweise</h2>
                   <div className="punktlandung-mode-list punktlandung-mode-list-single mt-4 grid gap-3">
-                    <div className="punktlandung-mode-choice punktlandung-static-mode-choice group relative min-h-12 overflow-hidden rounded-md bg-slate-950/70 py-2.5 pl-6 pr-2.5 text-left shadow-good ring-2 ring-emerald-300/75 min-[2200px]:min-h-24 min-[2200px]:p-5">
+                    <div className="punktlandung-mode-choice punktlandung-mode-choice--selected punktlandung-static-mode-choice group relative min-h-12 overflow-hidden rounded-md bg-slate-950/70 py-2.5 pl-6 pr-2.5 text-left min-[2200px]:min-h-24 min-[2200px]:p-5">
                       <span className="absolute inset-y-4 left-0 w-1 rounded-r-full bg-emerald-300/80" />
                       <p className="text-lg font-black min-[2200px]:text-2xl">{currentLocalMode.title}</p>
                       <p className="mt-0.5 text-[12px] text-slate-300 min-[2200px]:text-lg">{currentLocalMode.short}</p>
@@ -570,8 +570,8 @@ export function LobbyView({
                         onClick={() => onSettings({ mode: mode.id })}
                         className={`punktlandung-mode-choice group relative overflow-hidden rounded-md p-3 text-left transition ${
                           settings.mode === mode.id
-                            ? "bg-slate-950/70 shadow-good ring-2 ring-emerald-300/75"
-                            : "bg-slate-950/40 ring-1 ring-slate-700/60 hover:bg-slate-900/70 hover:ring-emerald-300/60"
+                            ? "punktlandung-mode-choice--selected bg-slate-950/70"
+                            : "punktlandung-mode-choice--available bg-slate-950/40 hover:bg-slate-900/70"
                         } disabled:cursor-not-allowed`}
                       >
                         <span
@@ -601,10 +601,10 @@ export function LobbyView({
                               type="button"
                               disabled={!isHost || !onHostParticipationChange}
                               onClick={() => onHostParticipationChange?.(value, value === "host_player" ? hostPlayerName : undefined)}
-                              className={`group relative overflow-hidden rounded-md p-3 text-left transition ${
+                              className={`punktlandung-host-role-choice group relative overflow-hidden rounded-md p-3 text-left transition ${
                                 hostParticipation === value
-                                  ? "bg-slate-950/70 shadow-good ring-2 ring-emerald-300/75"
-                                  : "bg-slate-950/40 ring-1 ring-slate-700/60 hover:bg-slate-900/70 hover:ring-emerald-300/60"
+                                  ? "punktlandung-host-role-choice--selected bg-slate-950/70"
+                                  : "punktlandung-host-role-choice--available bg-slate-950/40 hover:bg-slate-900/70"
                               } disabled:cursor-not-allowed`}
                             >
                               <span
@@ -646,10 +646,10 @@ export function LobbyView({
                           key={option.value}
                           type="button"
                           onClick={() => onSettings({ timeLimitSec: option.value })}
-                          className={`h-9 rounded-md px-2 text-[13px] font-black ring-1 transition min-[2200px]:h-20 min-[2200px]:text-2xl ${
+                          className={`punktlandung-setting-choice h-9 rounded-md px-2 text-[13px] font-black transition min-[2200px]:h-20 min-[2200px]:text-2xl ${
                             settings.timeLimitSec === option.value
-                              ? "bg-slate-950/70 text-emerald-100 ring-emerald-300/75"
-                              : "bg-slate-950/50 text-slate-200 ring-slate-700/50 hover:ring-slate-500"
+                              ? "punktlandung-setting-choice--selected bg-slate-950/70 text-emerald-100"
+                              : "punktlandung-setting-choice--available bg-slate-950/50 text-slate-200"
                           }`}
                         >
                           {option.label}
@@ -669,8 +669,10 @@ export function LobbyView({
                             setCustomRoundText("");
                             onSettings({ rounds });
                           }}
-                          className={`h-9 rounded-md px-2 text-[13px] font-black ring-1 transition min-[2200px]:h-20 min-[2200px]:text-2xl ${
-                            settings.rounds === rounds ? "bg-slate-950/70 ring-emerald-300/75" : "bg-slate-950/50 ring-slate-700/50 hover:ring-slate-500"
+                          className={`punktlandung-setting-choice h-9 rounded-md px-2 text-[13px] font-black transition min-[2200px]:h-20 min-[2200px]:text-2xl ${
+                            settings.rounds === rounds
+                              ? "punktlandung-setting-choice--selected bg-slate-950/70"
+                              : "punktlandung-setting-choice--available bg-slate-950/50"
                           }`}
                         >
                           {rounds}
@@ -742,10 +744,10 @@ export function LobbyView({
                       ].map(([key, label]) => (
                         <label
                           key={key}
-                          className={`group relative flex min-h-10 items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[11px] font-black ring-1 transition ${
+                          className={`punktlandung-restriction-choice group relative flex min-h-10 items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[11px] font-black transition ${
                             settings[key as keyof GameSettings]
-                              ? "bg-slate-950/72 text-white ring-emerald-300/65 shadow-[0_10px_24px_rgba(16,185,129,0.12)]"
-                              : "bg-slate-950/40 text-slate-200 ring-slate-700/55 hover:bg-slate-900/60 hover:ring-slate-500"
+                              ? "punktlandung-restriction-choice--selected bg-slate-950/72 text-white"
+                              : "punktlandung-restriction-choice--available bg-slate-950/40 text-slate-200 hover:bg-slate-900/60"
                           }`}
                         >
                           <input
@@ -756,9 +758,9 @@ export function LobbyView({
                           />
                           <span
                             aria-hidden="true"
-                            className={`grid h-4 w-4 shrink-0 place-items-center rounded-sm border-2 transition ${
+                            className={`punktlandung-restriction-indicator grid h-4 w-4 shrink-0 place-items-center rounded-sm border-2 transition ${
                               settings[key as keyof GameSettings]
-                                ? "border-emerald-300 bg-emerald-300 text-slate-950 shadow-[0_0_10px_rgba(110,231,183,0.3)]"
+                                ? "border-emerald-300 bg-emerald-300 text-slate-950"
                                 : "border-slate-500 bg-slate-800/80 text-transparent group-hover:border-slate-400"
                             }`}
                           >
@@ -815,8 +817,8 @@ export function LobbyView({
                       category.disabled
                         ? "punktlandung-preview-dash punktlandung-category-card--preview bg-slate-950/24 ring-0"
                         : category.selectableId && settings.category === category.selectableId
-                          ? "punktlandung-category-card--selected bg-slate-950/70 shadow-good ring-2 ring-emerald-300/75"
-                          : "punktlandung-category-card--available bg-slate-950/50 ring-1 ring-slate-700/50 hover:bg-slate-900/60 hover:ring-emerald-300/60"
+                          ? "punktlandung-category-card--selected bg-slate-950/70"
+                          : "punktlandung-category-card--available bg-slate-950/50 hover:bg-slate-900/60"
                     } disabled:cursor-not-allowed`}
                   >
                     {!category.disabled && (
@@ -909,7 +911,7 @@ export function LobbyView({
                         type="button"
                         disabled={connectionStatus !== "open" || !onCreateLiveRoom}
                         onClick={onCreateLiveRoom}
-                        className="mt-3 min-h-11 w-full rounded-md bg-emerald-400/12 px-3 text-sm font-black uppercase tracking-[0.08em] text-emerald-100 ring-1 ring-emerald-300/55 transition hover:bg-emerald-400/18 hover:ring-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-900/70 disabled:text-slate-500 disabled:ring-slate-700/70"
+                        className="punktlandung-mode-action punktlandung-mode-action--primary mt-3 min-h-11 w-full rounded-md bg-emerald-400/12 px-3 text-sm font-black uppercase tracking-[0.08em] text-emerald-100 transition disabled:cursor-not-allowed disabled:bg-slate-900/70 disabled:text-slate-500"
                       >
                         {connectionStatus === "open" ? "Online-Raum öffnen" : "Raumserver fehlt"}
                       </button>
@@ -1013,13 +1015,13 @@ export function LobbyView({
           </div>
         )}
         <div className="punktlandung-touch-only-grid punktlandung-lobby-touch-actions fixed inset-x-2 bottom-2 z-50 grid grid-cols-1 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md lg:hidden">
-          <ButtonLink sound="click" tone="ghost" className="punktlandung-lobby-touch-back normal-case" href={leaveHref} onNavigate={onLeave} aria-label="Zurück" title="Zurück">
+          <ButtonLink sound="click" tone="ghost" className="punktlandung-lobby-touch-back punktlandung-mode-action punktlandung-mode-action--secondary normal-case" href={leaveHref} onNavigate={onLeave} aria-label="Zurück" title="Zurück">
             <span className="punktlandung-lobby-touch-button-inner">
               <TriangleIcon direction="left" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-back h-5 w-5" />
               <span>Zurück</span>
             </span>
           </ButtonLink>
-          <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-lobby-touch-primary min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
+          <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-lobby-touch-primary punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
             <span className="punktlandung-lobby-touch-button-inner">
               <span>{primaryActionLabel}</span>
               <TriangleIcon direction="right" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-start h-5 w-5" />

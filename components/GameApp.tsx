@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { categoryOptions } from "@/lib/categories";
 import { trackAnalyticsEvent } from "@/lib/analytics";
@@ -278,7 +277,7 @@ export function GameApp({
   requireOnlineWaitingRoom?: boolean;
 }) {
   const routeInitialMode: InitialLocalGameMode | undefined = initialMode === "home" ? undefined : initialMode;
-  const localGame = useLocalGame(routeInitialMode);
+  const localGame = useLocalGame(routeInitialMode, Boolean(requiredStatus));
   const onlineGame = useOnlineRoomSocket();
   const { playSelect } = useSound();
   const [name, setName] = useState("Spieler 1");
@@ -437,7 +436,15 @@ export function GameApp({
     try {
       window.sessionStorage.setItem(sessionResetStorageKey, "1");
       window.localStorage.removeItem(activeSessionStorageKey);
-      window.history.replaceState({ appState: historyStateKey, room: null }, "");
+      const currentHistoryState = window.history.state;
+      window.history.replaceState(
+        {
+          ...(currentHistoryState && typeof currentHistoryState === "object" ? currentHistoryState : {}),
+          appState: historyStateKey,
+          room: null
+        },
+        ""
+      );
     } catch {
       // The in-memory leave still works when browser storage is unavailable.
     }
@@ -695,7 +702,7 @@ export function GameApp({
                 {modePreview.map((mode) => {
                   const isDisabled = !mode.available;
                   return (
-                    <Link
+                    <a
                       key={mode.id}
                       href={appPathWithMode(mode.id)}
                       aria-disabled={isDisabled}
@@ -731,7 +738,7 @@ export function GameApp({
                           </span>
                         )}
                       </span>
-                    </Link>
+                    </a>
                   );
                 })}
               </div>

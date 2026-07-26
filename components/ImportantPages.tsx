@@ -20,11 +20,11 @@ const legalLinks = [
 ];
 
 const navigationLinkClass =
-  "punktlandung-interactive-surface relative block w-full overflow-hidden rounded-md px-3 py-1.5 text-left text-sm font-bold ring-1 transition";
+  "punktlandung-interactive-surface relative block w-full overflow-hidden rounded-md border px-3 py-1.5 text-left text-sm font-bold transition";
 const inactiveLinkClass =
-  "bg-slate-950/72 text-slate-200 ring-slate-700 hover:text-emerald-300 hover:ring-emerald-400/60 focus-visible:text-emerald-300 focus-visible:ring-emerald-400/60";
+  "border-slate-700 bg-slate-950/72 text-slate-200 hover:border-emerald-400/60 hover:text-emerald-300 focus-visible:border-emerald-300/80 focus-visible:text-emerald-300";
 const activeLinkClass =
-  "bg-emerald-400/12 pl-4 text-emerald-100 ring-emerald-300/75 shadow-[0_0_18px_rgba(52,211,153,0.10)] before:absolute before:inset-y-1.5 before:left-0 before:w-1 before:rounded-r-full before:bg-emerald-300";
+  "border-emerald-300/75 bg-emerald-400/12 pl-4 text-emerald-100 shadow-[inset_0_0_18px_rgba(52,211,153,0.10)] before:absolute before:inset-y-1.5 before:left-0 before:w-1 before:rounded-r-full before:bg-emerald-300";
 
 type ImportantPagesProps = {
   className?: string;

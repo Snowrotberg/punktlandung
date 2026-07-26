@@ -49,3 +49,19 @@ Die Vorlage `ops/logrotate/punktlandung-pm2` begrenzt die PM2-Protokolle auf 14 
 7. Die Passwortsperre erst nach ausdrücklicher Launch-Freigabe entfernen.
 
 Die konkreten Serverzugänge und Zugangsbefehle werden bewusst nicht im Repository dokumentiert.
+
+## Einfacher Rollback-Ablauf
+
+Vor jedem Deployment wird der aktuell produktive Commit notiert:
+
+```bash
+sudo -u punktapp -H git -C /opt/punktlandung rev-parse HEAD
+```
+
+Falls die neue Version trotz der Vorprüfungen nicht stabil läuft, wird genau dieser zuvor notierte Commit wiederhergestellt. Dabei bleibt die Produktionsumgebung einschließlich `.env` unverändert:
+
+```bash
+sudo -u punktapp -H bash -lc 'cd /opt/punktlandung && git reset --hard <ROLLBACK_COMMIT> && npm install && npm run build && pm2 reload punktlandung && pm2 reload punktlandung-ws && pm2 save'
+```
+
+Danach werden HTTPS-Erreichbarkeit, Zugangssperre, Next.js-Prozess und WebSocket-Prozess erneut geprüft. Ein Rollback-Commit wird niemals geraten, sondern immer aus der unmittelbar vor dem Deployment notierten Commit-ID übernommen.

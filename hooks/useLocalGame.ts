@@ -167,7 +167,9 @@ function readBrowserHistoryState(): BrowserHistoryState | null {
 
 function writeBrowserHistoryState(room: RoomState | null, method: "push" | "replace"): void {
   if (typeof window === "undefined") return;
-  const state: BrowserHistoryState = {
+  const currentState = window.history.state;
+  const state: BrowserHistoryState & Record<string, unknown> = {
+    ...(currentState && typeof currentState === "object" ? currentState : {}),
     appState: historyStateKey,
     room
   };
@@ -534,7 +536,7 @@ function createInitialRoom(playerId: string, playerName: string, mode: InitialLo
   });
 }
 
-export function useLocalGame(initialMode?: InitialLocalGameMode) {
+export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSession = false) {
   const [playerId] = useState("local_host");
   const [room, setRoom] = useState<RoomState | null>(() => (initialMode ? createInitialRoom("local_host", "Geo-Gast", initialMode) : null));
   const [error, setError] = useState<string | null>(null);
@@ -603,7 +605,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode) {
       return;
     }
 
-    if (storedSession) {
+    if (restoreStoredSession && storedSession) {
       locationQueueRef.current = storedSession.locationQueue;
       queueCategoryRef.current = storedSession.queueCategory;
       lastLocationIdRef.current = storedSession.lastLocationId ?? storedSession.room.location?.id ?? null;

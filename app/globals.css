@@ -5858,17 +5858,15 @@ textarea {
 .heavy-button {
   border: 2px solid rgba(52, 211, 153, 0.86);
   background: linear-gradient(180deg, rgba(16, 185, 129, 0.96), rgba(5, 150, 105, 0.96));
-  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.24), 0 0 18px rgba(52, 211, 153, 0.28);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.24), inset 0 0 18px rgba(52, 211, 153, 0.12);
   transition:
-    transform 160ms ease,
     box-shadow 160ms ease,
     border-color 160ms ease;
 }
 
 .heavy-button:hover:not(:disabled) {
-  transform: translateY(-2px);
   border-color: rgb(52 211 153);
-  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.24), 0 0 24px rgba(52, 211, 153, 0.32);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.24), inset 0 0 24px rgba(52, 211, 153, 0.18);
 }
 
 .heavy-button:disabled {
@@ -5897,18 +5895,13 @@ textarea {
 :where(button, .punktlandung-interactive-control, .punktlandung-interactive-surface, summary):focus-visible,
 .punktlandung-restriction-grid label:has(input:focus-visible) {
   outline: 2px solid rgba(110, 231, 183, 0.95) !important;
-  outline-offset: 3px;
-  filter:
-    brightness(1.06)
-    drop-shadow(-4px 0 10px rgba(52, 211, 153, 0.2))
-    drop-shadow(4px 0 12px rgba(129, 140, 248, 0.2));
+  outline-offset: -2px;
+  filter: none;
 }
 
 :where(button, .punktlandung-interactive-control, .punktlandung-interactive-surface, summary):not(:disabled):not([aria-disabled="true"]),
 .punktlandung-restriction-grid label:has(input:not(:disabled)) {
   transition:
-    translate 170ms ease,
-    filter 170ms ease,
     outline-color 170ms ease,
     border-color 170ms ease,
     background-color 170ms ease,
@@ -5918,20 +5911,16 @@ textarea {
 
 :where(button, .punktlandung-interactive-control, .punktlandung-interactive-surface, summary):not(:disabled):not([aria-disabled="true"]):hover,
 .punktlandung-restriction-grid label:has(input:not(:disabled)):hover {
-  translate: 0 -2px;
-  outline: 2px solid rgba(110, 231, 183, 0.68);
-  outline-offset: 1px;
-  filter:
-    brightness(1.12)
-    saturate(1.1)
-    drop-shadow(-5px 0 12px rgba(52, 211, 153, 0.3))
-    drop-shadow(5px 0 14px rgba(129, 140, 248, 0.25));
+  translate: 0 0;
+  outline: none;
+  outline-offset: 0;
+  filter: none;
 }
 
 :where(button, .punktlandung-interactive-control, .punktlandung-interactive-surface, summary):not(:disabled):not([aria-disabled="true"]):active,
 .punktlandung-restriction-grid label:has(input:not(:disabled)):active {
   translate: 0 0;
-  filter: brightness(0.98) saturate(1.04);
+  filter: none;
   transition-duration: 70ms;
 }
 
@@ -6232,13 +6221,13 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   border-radius: 0.375rem;
   background: rgba(2, 6, 23, 0.45);
   color: rgb(241, 245, 249);
-  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
 }
 
 .punktlandung-back-link:hover {
   border-color: rgba(148, 163, 184, 0.9);
   background: rgba(30, 41, 59, 0.7);
-  transform: translateY(-0.125rem);
+  box-shadow: inset 0 0 18px rgba(52, 211, 153, 0.1);
 }
 
 .punktlandung-back-button svg,
@@ -8109,7 +8098,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 .punktlandung-focus-tab:hover {
-  transform: translateY(-50%) translateX(2px) rotate(180deg);
+  transform: translateY(-50%) rotate(180deg);
 }
 
 @media (orientation: landscape) and (max-height: 520px) and (max-width: 1024px) {
@@ -8425,7 +8414,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 
   .punktlandung-focus-tab:hover {
-    transform: translateY(-50%) translateX(-2px) !important;
+    transform: translateY(-50%) !important;
   }
 
   .punktlandung-guess-map-panel {
@@ -14555,6 +14544,277 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 }
 
+/* Cascade lock for the variable-height Party/Online setup cards. */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings .punktlandung-settings-legal {
+    margin-top: auto !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-role-row,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name {
+    grid-template-columns: 5.75rem minmax(0, 1fr) !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    justify-self: stretch !important;
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 2199px) and (max-height: 930px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage :is(.punktlandung-party-settings, .punktlandung-online-settings) {
+    padding-bottom: 0.65rem !important;
+    padding-top: 0.75rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage :is(.punktlandung-party-settings, .punktlandung-online-settings) .punktlandung-mode-list {
+    gap: 0.5rem !important;
+    margin-top: 0.6rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage :is(.punktlandung-party-settings, .punktlandung-online-settings) .punktlandung-mode-choice {
+    min-height: 3.45rem !important;
+    padding-bottom: 0.45rem !important;
+    padding-top: 0.45rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-card {
+    margin-top: 0.5rem !important;
+    padding-bottom: 0.45rem !important;
+    padding-top: 0.45rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-slots {
+    margin-top: 0.25rem !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card {
+    margin: 0.4rem 0 0 !important;
+    padding: 0.4rem 0 0 !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-options > button,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name input {
+    height: 2rem !important;
+    min-height: 2rem !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name {
+    margin-top: 0.4rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage :is(.punktlandung-party-settings, .punktlandung-online-settings)
+    .punktlandung-party-rules.punktlandung-setup-rules {
+    --setup-rule-control-height: 2rem !important;
+    --setup-rule-gap: 0.4rem !important;
+    margin-top: 0.45rem !important;
+    padding-top: 0.45rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage :is(.punktlandung-party-settings, .punktlandung-online-settings)
+    .punktlandung-settings-legal {
+    margin-top: 0.45rem !important;
+    padding-top: 0.45rem !important;
+  }
+}
+
+/* Final setup-card fit and Host-Rolle contract.
+   Party and Online add controls above the shared rules, so short desktop
+   viewports need a deliberately compact rhythm instead of clipping the legal
+   navigation at the panel edge. Host-role controls use the same stationary,
+   inside-only selection language as every other setup choice. */
+body .punktlandung-lobby-config-section.punktlandung-online-layout
+  .punktlandung-online-host-options > .punktlandung-host-role-choice {
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-shadow-colored: 0 0 #0000 !important;
+  box-sizing: border-box !important;
+  border: 1px solid rgba(71, 85, 105, 0.8) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+  filter: none !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  transform: none !important;
+  translate: 0 0 !important;
+  transition-property: background-color, border-color, color !important;
+  width: 100% !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout
+  .punktlandung-online-host-options > .punktlandung-host-role-choice--selected {
+  border-color: rgba(110, 231, 183, 0.92) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 231, 183, 0.2),
+    inset 0 0 20px rgba(52, 211, 153, 0.13) !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout
+  .punktlandung-online-host-options > .punktlandung-host-role-choice:not(:disabled):is(:hover, :focus, :focus-visible) {
+  background-color: rgba(15, 23, 42, 0.86) !important;
+  border-color: rgba(110, 231, 183, 0.9) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 231, 183, 0.18),
+    inset 0 0 20px rgba(52, 211, 153, 0.13) !important;
+  filter: none !important;
+  outline: none !important;
+  transform: none !important;
+  translate: 0 0 !important;
+}
+
+body .punktlandung-lobby-config-section.punktlandung-online-layout
+  .punktlandung-online-host-options > .punktlandung-host-role-choice:not(:disabled):active {
+  background-color: rgba(6, 78, 59, 0.18) !important;
+  border-color: rgba(167, 243, 208, 0.96) !important;
+  box-shadow:
+    inset 0 3px 10px rgba(2, 6, 23, 0.45),
+    inset 0 0 20px rgba(52, 211, 153, 0.14) !important;
+  transform: none !important;
+  translate: 0 0 !important;
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings {
+    overflow: hidden !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings .punktlandung-settings-legal {
+    margin-top: auto !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-role-row,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name {
+    grid-template-columns: 5.75rem minmax(0, 1fr) !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    justify-self: stretch !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 2199px) and (max-height: 930px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage :is(.punktlandung-party-settings, .punktlandung-online-settings) {
+    padding-bottom: 0.65rem !important;
+    padding-top: 0.75rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage :is(.punktlandung-party-settings, .punktlandung-online-settings) .punktlandung-settings-heading {
+    font-size: 1.1rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage :is(.punktlandung-party-settings, .punktlandung-online-settings) .punktlandung-mode-list {
+    gap: 0.5rem !important;
+    margin-top: 0.6rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage :is(.punktlandung-party-settings, .punktlandung-online-settings) .punktlandung-mode-choice {
+    min-height: 3.45rem !important;
+    padding-bottom: 0.45rem !important;
+    padding-top: 0.45rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-card {
+    margin-top: 0.5rem !important;
+    padding-bottom: 0.45rem !important;
+    padding-top: 0.45rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-slots {
+    margin-top: 0.25rem !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card {
+    margin: 0.4rem 0 0 !important;
+    padding: 0.4rem 0 0 !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-options > button,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name input {
+    height: 2rem !important;
+    min-height: 2rem !important;
+  }
+
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name {
+    margin-top: 0.4rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage :is(.punktlandung-party-settings, .punktlandung-online-settings)
+    .punktlandung-party-rules.punktlandung-setup-rules {
+    --setup-rule-control-height: 2rem !important;
+    --setup-rule-gap: 0.4rem !important;
+    margin-top: 0.45rem !important;
+    padding-top: 0.45rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage :is(.punktlandung-party-settings, .punktlandung-online-settings)
+    .punktlandung-settings-legal {
+    margin-top: 0.45rem !important;
+    padding-top: 0.45rem !important;
+  }
+}
+
+/*
+ * Mode-page actions use the same contour, fill and response as the selectable
+ * mode/category tiles. Hard contours stay inside the control so their visual
+ * weight remains stable in scaled monitor and TV layouts as well.
+ */
+body .punktlandung-lobby .punktlandung-mode-action {
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  box-sizing: border-box !important;
+  background-clip: border-box !important;
+  border: 2px solid rgba(71, 85, 105, 0.72) !important;
+  background: rgba(2, 6, 23, 0.62) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+body .punktlandung-lobby .punktlandung-mode-action--primary:not(:disabled):not([aria-disabled="true"]) {
+  border-color: rgba(110, 231, 183, 0.96) !important;
+  background: rgba(2, 6, 23, 0.72) !important;
+  box-shadow: inset 0 0 20px rgba(52, 211, 153, 0.12) !important;
+}
+
+body .punktlandung-lobby .punktlandung-mode-action--primary:disabled,
+body .punktlandung-lobby .punktlandung-mode-action--primary[aria-disabled="true"] {
+  border-color: rgba(71, 85, 105, 0.74) !important;
+  background: rgba(15, 23, 42, 0.7) !important;
+  box-shadow: none !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body .punktlandung-lobby
+    .punktlandung-mode-action:not(:disabled):not([aria-disabled="true"]):hover {
+    border-color: rgba(110, 231, 183, 0.96) !important;
+    background: rgba(15, 23, 42, 0.86) !important;
+    box-shadow: inset 0 0 24px rgba(52, 211, 153, 0.15) !important;
+    filter: none !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+    translate: 0 0 !important;
+    transform: none !important;
+  }
+}
+
+body .punktlandung-lobby
+  :is(.punktlandung-category-card, .punktlandung-mode-action):not(:disabled):not([aria-disabled="true"]):active {
+  background: rgba(6, 78, 59, 0.18) !important;
+  border-color: rgba(167, 243, 208, 0.96) !important;
+  box-shadow:
+    inset 0 3px 12px rgba(2, 6, 23, 0.48),
+    inset 0 0 26px rgba(52, 211, 153, 0.16) !important;
+  filter: brightness(0.96) saturate(1.04) !important;
+  translate: 0 0 !important;
+  transform: none !important;
+}
+
 @media (min-width: 1024px) and (max-height: 760px) and (orientation: landscape) {
   body .punktlandung-tv-home {
     --home-hero-h: clamp(6rem, 14.8vh, 7rem);
@@ -17144,8 +17404,121 @@ body .punktlandung-game-shell .punktlandung-game-back-button-inner > * {
  * viewport size.
  */
 .punktlandung-lobby-config-stage .punktlandung-category-card {
-  background-clip: padding-box !important;
+  box-sizing: border-box !important;
+  background-clip: border-box !important;
   isolation: isolate;
+}
+
+/*
+ * Keep every hard category contour inside the tile. Tailwind's ring utilities
+ * paint outside the element and therefore lost their outer edge where the
+ * tightly scaled monitor/TV grid meets its container. One real two-pixel
+ * border preserves exactly the same visual weight on all four sides. Stacking
+ * an inset contour on top of that border caused the former double/single edge
+ * mismatch at fractional monitor and TV scaling factors.
+ */
+body main.punktlandung-lobby
+  .punktlandung-lobby-config-stage
+  .punktlandung-lobby-categories
+  > .punktlandung-category-grid.punktlandung-category-grid--preview {
+  overflow: visible !important;
+}
+
+body .punktlandung-lobby-config-stage
+  .punktlandung-lobby-categories
+  .punktlandung-category-card {
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-shadow-colored: 0 0 #0000 !important;
+  box-sizing: border-box !important;
+  border: 2px solid rgba(51, 65, 85, 0.62) !important;
+  filter: none !important;
+  outline: 0 solid transparent !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  transition-property: background-color, border-color, color !important;
+}
+
+body .punktlandung-lobby-config-stage .punktlandung-mode-choice {
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  box-sizing: border-box !important;
+  border: 2px solid rgba(51, 65, 85, 0.62) !important;
+  box-shadow: none !important;
+}
+
+body .punktlandung-lobby-config-stage .punktlandung-mode-choice--selected {
+  border-color: rgba(110, 231, 183, 0.96) !important;
+  box-shadow: inset 0 0 20px rgba(52, 211, 153, 0.13) !important;
+}
+
+body .punktlandung-lobby-config-stage .punktlandung-setting-choice {
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  box-sizing: border-box !important;
+  border: 1px solid rgba(51, 65, 85, 0.62) !important;
+  box-shadow: none !important;
+}
+
+body .punktlandung-lobby-config-stage .punktlandung-setting-choice--selected {
+  border-color: rgba(110, 231, 183, 0.88) !important;
+  box-shadow: inset 0 0 14px rgba(52, 211, 153, 0.1) !important;
+}
+
+body .punktlandung-lobby-config-stage
+  .punktlandung-lobby-categories
+.punktlandung-category-card--selected {
+  border-color: rgba(110, 231, 183, 0.96) !important;
+  box-shadow: inset 0 0 24px rgba(52, 211, 153, 0.14) !important;
+  -webkit-box-shadow: inset 0 0 24px rgba(52, 211, 153, 0.14) !important;
+}
+
+body .punktlandung-lobby-config-stage
+  .punktlandung-lobby-categories
+  .punktlandung-category-card--preview {
+  border: 0 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+}
+
+body .punktlandung-lobby
+  :is(
+    .punktlandung-category-card,
+    .punktlandung-mode-choice,
+    .punktlandung-setting-choice,
+    .punktlandung-mode-action
+  ) {
+  translate: 0 0 !important;
+  transform: none !important;
+}
+
+body .punktlandung-lobby
+  :is(
+    .punktlandung-category-card,
+    .punktlandung-mode-choice,
+    .punktlandung-setting-choice,
+    .punktlandung-mode-action
+  ):focus-visible {
+  border-color: rgba(167, 243, 208, 0.98) !important;
+  filter: none !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  translate: 0 0 !important;
+  transform: none !important;
+}
+
+body .punktlandung-lobby-config-stage
+  :is(.punktlandung-mode-choice, .punktlandung-setting-choice):focus-visible {
+  box-shadow:
+    inset 0 0 0 1px rgba(167, 243, 208, 0.72),
+    inset 0 0 22px rgba(52, 211, 153, 0.16) !important;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -17162,19 +17535,149 @@ body .punktlandung-game-shell .punktlandung-game-back-button-inner > * {
     .punktlandung-lobby-categories
     .punktlandung-category-card--available:hover {
     border-color: rgba(110, 231, 183, 0.9) !important;
-    box-shadow:
-      inset 0 0 0 1px rgba(110, 231, 183, 0.72),
-      0 0 22px rgba(52, 211, 153, 0.2) !important;
+    box-shadow: inset 0 0 24px rgba(52, 211, 153, 0.14) !important;
+    -webkit-box-shadow: inset 0 0 24px rgba(52, 211, 153, 0.14) !important;
   }
 
   body .punktlandung-lobby-config-stage
     .punktlandung-lobby-categories
     .punktlandung-category-card--selected:hover {
     border-color: rgba(110, 231, 183, 0.96) !important;
-    box-shadow:
-      inset 0 0 0 1px rgba(167, 243, 208, 0.2),
-      0 0 24px rgba(52, 211, 153, 0.24) !important;
+    box-shadow: inset 0 0 28px rgba(52, 211, 153, 0.17) !important;
+    -webkit-box-shadow: inset 0 0 28px rgba(52, 211, 153, 0.17) !important;
   }
+
+  body .punktlandung-lobby-config-stage
+    :is(.punktlandung-mode-choice, .punktlandung-setting-choice):not(:disabled):hover {
+    border-color: rgba(110, 231, 183, 0.9) !important;
+    box-shadow: inset 0 0 20px rgba(52, 211, 153, 0.14) !important;
+    filter: none !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+    translate: 0 0 !important;
+    transform: none !important;
+  }
+}
+
+/* Home mode cards use the same stationary, inside-only interaction language
+   as the setup controls. The shared interactive-surface rule otherwise lifts
+   links by two pixels and paints an outline outside their box. */
+body .punktlandung-tv-home .punktlandung-home-mode-card:not([aria-disabled="true"]) {
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-shadow-colored: 0 0 #0000 !important;
+  box-sizing: border-box !important;
+  border: 1px solid rgba(71, 85, 105, 0.8) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+  filter: none !important;
+  outline: 0 solid transparent !important;
+  outline-offset: 0 !important;
+  transform: none !important;
+  translate: 0 0 !important;
+  transition-property: background-color, border-color, color !important;
+}
+
+body .punktlandung-tv-home
+  .punktlandung-home-mode-card:not([aria-disabled="true"]):is(:hover, :focus, :focus-visible) {
+  background-color: rgba(15, 23, 42, 0.86) !important;
+  border-color: rgba(110, 231, 183, 0.9) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 231, 183, 0.18),
+    inset 0 0 22px rgba(52, 211, 153, 0.14) !important;
+  filter: none !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  transform: none !important;
+  translate: 0 0 !important;
+}
+
+body .punktlandung-tv-home
+  .punktlandung-home-mode-card:not([aria-disabled="true"]):active {
+  background-color: rgba(6, 78, 59, 0.18) !important;
+  border-color: rgba(167, 243, 208, 0.96) !important;
+  box-shadow:
+    inset 0 3px 12px rgba(2, 6, 23, 0.48),
+    inset 0 0 24px rgba(52, 211, 153, 0.16) !important;
+  filter: none !important;
+  outline: none !important;
+  transform: none !important;
+  translate: 0 0 !important;
+}
+
+/* Restriction checkboxes follow the same stationary, inside-only contract as
+   the time and round choices. The shared label interaction otherwise lifts
+   them and adds an external outline/glow. */
+body .punktlandung-lobby-config-stage
+  .punktlandung-restriction-grid > .punktlandung-restriction-choice {
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-shadow-colored: 0 0 #0000 !important;
+  box-sizing: border-box !important;
+  border: 1px solid rgba(51, 65, 85, 0.62) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  transform: none !important;
+  translate: 0 0 !important;
+  transition-property: background-color, border-color, color !important;
+}
+
+body .punktlandung-lobby-config-stage
+  .punktlandung-restriction-grid > .punktlandung-restriction-choice--selected {
+  border-color: rgba(110, 231, 183, 0.88) !important;
+  box-shadow: inset 0 0 14px rgba(52, 211, 153, 0.1) !important;
+}
+
+body .punktlandung-lobby-config-stage
+  .punktlandung-restriction-grid > .punktlandung-restriction-choice
+  .punktlandung-restriction-indicator {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+body .punktlandung-lobby-config-stage
+  .punktlandung-restriction-grid > .punktlandung-restriction-choice:has(input:focus-visible) {
+  border-color: rgba(167, 243, 208, 0.98) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(167, 243, 208, 0.72),
+    inset 0 0 22px rgba(52, 211, 153, 0.16) !important;
+  outline: none !important;
+  transform: none !important;
+  translate: 0 0 !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body .punktlandung-lobby-config-stage
+    .punktlandung-restriction-grid > .punktlandung-restriction-choice:has(input:not(:disabled)):hover {
+    border-color: rgba(110, 231, 183, 0.9) !important;
+    box-shadow: inset 0 0 20px rgba(52, 211, 153, 0.14) !important;
+    filter: none !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+    transform: none !important;
+    translate: 0 0 !important;
+  }
+}
+
+body .punktlandung-lobby-config-stage
+  .punktlandung-restriction-grid > .punktlandung-restriction-choice:has(input:not(:disabled)):active {
+  background-color: rgba(6, 78, 59, 0.18) !important;
+  border-color: rgba(167, 243, 208, 0.96) !important;
+  box-shadow:
+    inset 0 3px 10px rgba(2, 6, 23, 0.45),
+    inset 0 0 18px rgba(52, 211, 153, 0.12) !important;
+  outline: none !important;
+  transform: none !important;
+  translate: 0 0 !important;
 }
 
 /* Monitor and TV category marker: keep the laptop marker's proportions.
@@ -17403,8 +17906,53 @@ body :is(.punktlandung-back-button, .punktlandung-back-link) .punktlandung-back-
   white-space: nowrap !important;
 }
 
+/* Back controls use the same stationary, inside-only interaction feedback as
+   the other canonical buttons. In particular, a click must not leave the
+   shared focus outline on top of the already three-pixel-wide ghost border. */
+body :is(.punktlandung-back-button, .punktlandung-back-link) {
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  filter: none !important;
+  outline: 0 solid transparent !important;
+  outline-offset: 0 !important;
+  transform: none !important;
+  translate: 0 0 !important;
+  transition-property: background-color, border-color, color, box-shadow !important;
+}
+
+body :is(.punktlandung-back-button, .punktlandung-back-link):not(:disabled):not([aria-disabled="true"]):is(:hover, :focus, :focus-visible) {
+  background-color: rgba(30, 41, 59, 0.7) !important;
+  border-color: rgba(110, 231, 183, 0.9) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 231, 183, 0.16),
+    inset 0 0 18px rgba(52, 211, 153, 0.1) !important;
+  filter: none !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  transform: none !important;
+  translate: 0 0 !important;
+}
+
+body :is(.punktlandung-back-button, .punktlandung-back-link):not(:disabled):not([aria-disabled="true"]):active {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(167, 243, 208, 0.96) !important;
+  box-shadow:
+    inset 0 3px 10px rgba(2, 6, 23, 0.48),
+    inset 0 0 18px rgba(52, 211, 153, 0.12) !important;
+  outline: none !important;
+  transform: none !important;
+  translate: 0 0 !important;
+}
+
 /* Canonical setup-page layout. This must remain after legacy viewport rules. */
 @media (min-width: 1024px) and (orientation: landscape) {
+  body main.punktlandung-lobby > div {
+    grid-template-rows: minmax(0, 1fr) !important;
+  }
+
   body .punktlandung-lobby-config-stage .punktlandung-lobby-settings .punktlandung-settings-legal {
     align-items: center !important;
     column-gap: clamp(0.35rem, 0.65vw, 0.9rem) !important;
@@ -17412,7 +17960,7 @@ body :is(.punktlandung-back-button, .punktlandung-back-link) .punktlandung-back-
     flex: 0 0 auto !important;
     grid-template-columns: repeat(6, max-content) !important;
     justify-content: space-between !important;
-    margin-top: 0.65rem !important;
+    margin-top: auto !important;
     padding: 0.65rem 0 0 !important;
     width: 100% !important;
   }
@@ -17423,16 +17971,16 @@ body :is(.punktlandung-back-button, .punktlandung-back-link) .punktlandung-back-
 
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card {
     --online-host-label-column: 5.75rem;
-    margin-top: 0.6rem !important;
-    padding: 0.65rem 0 !important;
+    margin-top: 0.4rem !important;
+    padding: 0.4rem 0 0 !important;
   }
 
-  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-role-row,
-  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name {
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-role-row,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-card .punktlandung-online-host-name {
     align-items: center !important;
     display: grid !important;
     gap: 0.75rem !important;
-    grid-template-columns: var(--online-host-label-column) minmax(0, 1fr) !important;
+    grid-template-columns: 3.75rem minmax(0, 1fr) !important;
     width: 100% !important;
   }
 
@@ -17456,15 +18004,15 @@ body :is(.punktlandung-back-button, .punktlandung-back-link) .punktlandung-back-
   }
 
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-options > button {
-    height: 2.25rem !important;
-    min-height: 2.25rem !important;
+    height: 2rem !important;
+    min-height: 2rem !important;
     min-width: 0 !important;
     padding: 0 0.5rem !important;
     text-align: center !important;
   }
 
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name {
-    margin-top: 0.55rem !important;
+    margin-top: 0.4rem !important;
   }
 
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-host-name input {
@@ -17478,17 +18026,87 @@ body :is(.punktlandung-back-button, .punktlandung-back-link) .punktlandung-back-
   body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-card {
     height: auto !important;
     min-height: 0 !important;
-    padding-bottom: 0.65rem !important;
-    padding-top: 0.65rem !important;
+    padding-bottom: 0.45rem !important;
+    padding-top: 0.45rem !important;
   }
 
   body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-player-slots {
-    margin-top: 0.35rem !important;
+    margin-top: 0.25rem !important;
   }
 
   body .punktlandung-lobby-config-stage .punktlandung-party-settings .punktlandung-party-rules.punktlandung-setup-rules,
   body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung-online-settings .punktlandung-party-rules.punktlandung-setup-rules {
+    margin-top: 0.45rem !important;
+    padding-top: 0.45rem !important;
+  }
+}
+
+/* Canonical setup-group rhythm.
+   A new heading is separated from the preceding controls more clearly than
+   from the controls it describes. Keep this identical in Solo, Party and
+   Online so Zeit, Runden and Einschränkungen read as three distinct groups. */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    fieldset,
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    fieldset.space-y-2 {
+    gap: 1rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    fieldset > div > p {
+    margin: 0 !important;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    fieldset > div {
+    column-gap: 0 !important;
+    row-gap: 0 !important;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    fieldset > div:has(> .punktlandung-restriction-grid) {
+    display: block !important;
+    gap: 0 !important;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    fieldset > div > p + div {
     margin-top: 0.5rem !important;
-    padding-top: 0.5rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    fieldset > div > .punktlandung-restriction-grid {
+    margin-top: 0.5rem !important;
+  }
+}
+
+/* Final spacing details for the two stacked cards called out in QA. */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage
+    .punktlandung-party-settings
+    .punktlandung-mode-list-single + .punktlandung-party-player-card {
+    margin-top: 1rem !important;
+  }
+
+  body .punktlandung-tv-home > aside
+    .punktlandung-home-side-panel
+    .punktlandung-home-room-card
+    .punktlandung-home-room-controls {
+    margin-top: 0.75rem !important;
   }
 }
