@@ -1,7 +1,7 @@
 "use client";
 
 type GoogleFcApi = {
-  callbackQueue?: Array<() => void>;
+  callbackQueue?: Array<(() => void) | { CONSENT_API_READY: () => void }>;
   showRevocationMessage?: () => void;
 };
 
@@ -14,13 +14,9 @@ declare global {
 function openPrivacySettings() {
   const googleFc = (window.googlefc ??= {});
   googleFc.callbackQueue ??= [];
-
-  if (googleFc.showRevocationMessage) {
-    googleFc.showRevocationMessage();
-    return;
-  }
-
-  googleFc.callbackQueue.push(() => googleFc.showRevocationMessage?.());
+  googleFc.callbackQueue.push({
+    CONSENT_API_READY: () => window.googlefc?.showRevocationMessage?.()
+  });
 }
 
 type CookieSettingsButtonProps = {
