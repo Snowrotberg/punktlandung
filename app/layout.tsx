@@ -84,17 +84,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             }}
           />
         )}
-      </head>
-      <body className="bg-slate-950 text-slate-50 antialiased">
-        <script src="/ambient-phase.js" />
         {adConfig.enabled && adConfig.clientId && (
           <Script
             id="punktlandung-adsense"
-            strategy="afterInteractive"
+            strategy="beforeInteractive"
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adConfig.clientId)}`}
             crossOrigin="anonymous"
           />
         )}
+      </head>
+      <body className="bg-slate-950 text-slate-50 antialiased">
+        <script src="/ambient-phase.js" />
         <GoogleAnalytics />
         <StructuredData />
         {children}
