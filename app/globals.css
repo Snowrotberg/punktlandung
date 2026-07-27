@@ -17581,6 +17581,18 @@ body .punktlandung-tv-home .punktlandung-home-mode-card:not([aria-disabled="true
   transition-property: background-color, border-color, color !important;
 }
 
+/* Keep the complete icon/copy unit optically centered inside responsive home
+   mode cards. Their height follows the category grid, so normal block flow
+   otherwise leaves the content visibly pinned to the top at taller viewports. */
+body .punktlandung-tv-home .punktlandung-home-mode-card {
+  align-items: center !important;
+  display: grid !important;
+}
+
+body .punktlandung-tv-home .punktlandung-home-mode-card > .punktlandung-home-mode-content {
+  width: 100% !important;
+}
+
 body .punktlandung-tv-home
   .punktlandung-home-mode-card:not([aria-disabled="true"]):is(:hover, :focus, :focus-visible) {
   background-color: rgba(15, 23, 42, 0.86) !important;
