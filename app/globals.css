@@ -17590,7 +17590,26 @@ body .punktlandung-tv-home .punktlandung-home-mode-card {
 }
 
 body .punktlandung-tv-home .punktlandung-home-mode-card > .punktlandung-home-mode-content {
+  translate: 0 clamp(2px, 0.35vh, 7px) !important;
   width: 100% !important;
+}
+
+/* The room card follows the same vertical rhythm as the three mode cards. */
+body .punktlandung-tv-home .punktlandung-home-room-card {
+  align-items: center !important;
+  display: grid !important;
+}
+
+body .punktlandung-tv-home .punktlandung-home-room-card > label {
+  translate: 0 clamp(2px, 0.35vh, 7px) !important;
+  width: 100% !important;
+}
+
+/* Preserve the mode-specific crop corrections while enlarging every home
+   mode icon by the same visual factor. */
+body .punktlandung-tv-home .punktlandung-home-mode-icon > img {
+  scale: 1.2 !important;
+  transform-origin: center center !important;
 }
 
 body .punktlandung-tv-home
