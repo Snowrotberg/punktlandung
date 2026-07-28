@@ -15047,6 +15047,25 @@ body .punktlandung-lobby
     padding-right: 0 !important;
   }
 
+  body .punktlandung-tv-home .punktlandung-home-category-copy > p:first-child,
+  body .punktlandung-tv-home .punktlandung-home-category-title-line,
+  body .punktlandung-tv-home .punktlandung-home-category-title-line > span:first-child {
+    max-width: 100% !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-title-line {
+    flex-wrap: wrap !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-title-line > span:first-child {
+    hyphens: auto !important;
+    min-width: 0 !important;
+    overflow-wrap: normal !important;
+  }
+
   body .punktlandung-tv-home .punktlandung-home-category-art {
     align-items: center !important;
     display: flex !important;
@@ -17176,6 +17195,11 @@ body .punktlandung-game-shell .punktlandung-game-back-button-inner > * {
 :root {
   --punktlandung-ambient-delay: 0ms;
   --punktlandung-mint-light-y: 12%;
+  --punktlandung-ambient-mint-radius: 28rem;
+  --punktlandung-ambient-indigo-radius: 30rem;
+  --punktlandung-ambient-mint-alpha: 0.18;
+  --punktlandung-ambient-indigo-alpha: 0.18;
+  --punktlandung-panel-grid-size: 56px;
   animation: punktlandung-ambient-drift 14s ease-in-out var(--punktlandung-ambient-delay) infinite;
 }
 
@@ -17200,20 +17224,24 @@ body .punktlandung-game-shell .punktlandung-game-back-button-inner > * {
   background-image:
     radial-gradient(
       circle at calc(22vw + var(--punktlandung-ambient-mint-x)) calc(var(--punktlandung-mint-light-y) + var(--punktlandung-ambient-mint-y)),
-      rgba(52, 211, 153, 0.18),
-      transparent 28rem
+      rgba(52, 211, 153, var(--punktlandung-ambient-mint-alpha)),
+      transparent var(--punktlandung-ambient-mint-radius)
     ),
     radial-gradient(
       circle at calc(82vw + var(--punktlandung-ambient-indigo-x)) calc(36vh + var(--punktlandung-ambient-indigo-y)),
-      rgba(99, 102, 241, 0.18),
-      transparent 30rem
+      rgba(99, 102, 241, var(--punktlandung-ambient-indigo-alpha)),
+      transparent var(--punktlandung-ambient-indigo-radius)
     ),
     linear-gradient(90deg, rgba(148, 163, 184, 0.055) 1px, transparent 1px),
     linear-gradient(0deg, rgba(148, 163, 184, 0.055) 1px, transparent 1px);
   background-attachment: fixed, fixed, fixed, fixed;
   background-position: 0 0, 0 0, 0 0, 0 0;
   background-repeat: no-repeat, no-repeat, repeat, repeat;
-  background-size: 100vw 100vh, 100vw 100vh, 56px 56px, 56px 56px;
+  background-size:
+    100vw 100vh,
+    100vw 100vh,
+    var(--punktlandung-panel-grid-size) var(--punktlandung-panel-grid-size),
+    var(--punktlandung-panel-grid-size) var(--punktlandung-panel-grid-size);
 }
 
 /*
@@ -18123,6 +18151,139 @@ body :is(.punktlandung-back-button, .punktlandung-back-link):not(:disabled):not(
     .punktlandung-party-rules.punktlandung-setup-rules
     fieldset > div > .punktlandung-restriction-grid {
     margin-top: 0.5rem !important;
+  }
+}
+
+/* Canonical landscape proportions and map crop.
+ *
+ * Home keeps a stable 2:1 split from laptop through television instead of a
+ * fixed-width sidebar that becomes progressively too narrow. Setup pages use
+ * the inverse 1:2 split. The map frame itself never changes here: only the
+ * image crop is adjusted for the pin balance of each viewport family. */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-tv-home {
+    grid-template-columns: minmax(0, 2fr) minmax(20rem, 1fr) !important;
+  }
+
+  body .punktlandung-lobby-config-stage,
+  body .punktlandung-lobby-config-section.punktlandung-online-layout
+    .punktlandung-lobby-config-stage {
+    grid-template-columns: minmax(20rem, 1fr) minmax(0, 2fr) !important;
+  }
+}
+
+/* Desktop map preview: a softly continued background lets the undistorted
+ * foreground pull back a little inside the unchanged, very wide frame. */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-map > div > div::before {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    background:
+      linear-gradient(rgb(239 234 224 / 0.12), rgb(239 234 224 / 0.12)),
+      url("/punktlandung-kartenbild.jpg") center 58% / cover no-repeat;
+    filter: blur(7px);
+    transform: scale(1.025);
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-map-image {
+    z-index: 1;
+    right: auto !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    transform: none !important;
+  }
+}
+
+/* Laptop: fill the full frame so no soft continuation is visible. */
+@media (min-width: 1024px) and (max-width: 1599px) and (max-height: 900px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-map-image {
+    left: 0 !important;
+    width: 100% !important;
+    object-position: center 55% !important;
+  }
+}
+
+/* Monitor: fill the full frame again so no soft continuation is visible. */
+@media (min-width: 1600px) and (max-width: 2199px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-map-image {
+    left: 0 !important;
+    width: 100% !important;
+    object-position: center 57% !important;
+  }
+}
+
+/* 4K television: keep the source proportions intact. Stretching the bitmap to
+ * the very wide frame made the map look tilted and visibly soft. */
+@media (min-width: 2200px) and (orientation: landscape) {
+  :root {
+    --punktlandung-ambient-mint-radius: 64rem;
+    --punktlandung-ambient-indigo-radius: 72rem;
+    --punktlandung-ambient-mint-alpha: 0.14;
+    --punktlandung-ambient-indigo-alpha: 0.14;
+    --punktlandung-panel-grid-size: 96px;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-map > div > div::before {
+    filter: blur(2px);
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-map-image {
+    left: 25% !important;
+    width: 50% !important;
+    object-position: center 55% !important;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  }
+}
+
+/* Phone Small/Large: zoom only the artwork inside the unchanged map frame. */
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-tv-home .punktlandung-home-map-image {
+    object-position: center center !important;
+    transform: scale(1.1) !important;
+    transform-origin: center center !important;
+  }
+}
+
+/* Phone Small gets one additional, deliberately small zoom step. */
+@media (max-width: 389px) and (orientation: portrait) {
+  body .punktlandung-tv-home .punktlandung-home-map-image {
+    transform: scale(1.2) !important;
+  }
+}
+
+/* Laptop home icon balance: keep the mode cards optically even while giving
+ * the smaller room symbol and all eight category illustrations more presence. */
+@media (min-width: 1024px) and (max-width: 1599px) and (max-height: 900px) and (orientation: landscape) {
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-online > img {
+    scale: 0.9025 !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-room > img {
+    scale: 1.14 !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-art > img {
+    scale: 1.05 !important;
+    transform-origin: center center !important;
+  }
+}
+
+/* Monitor home refinements requested for the 1920 x 1080 layout. */
+@media (min-width: 1600px) and (max-width: 2199px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-hero-copy {
+    transform: translateY(0.6rem) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-icon-online > img {
+    scale: 1.2 !important;
+    transform: translateX(-7.5%) scale(1.1) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card.punktlandung-preview-dash .punktlandung-home-category-art > img {
+    scale: 1.05 !important;
+    transform-origin: center center !important;
   }
 }
 

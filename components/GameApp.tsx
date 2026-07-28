@@ -583,7 +583,7 @@ export function GameApp({
           className="hidden h-full min-h-0 xl:block"
           fullWidthResponsive
         />
-        <div className="punktlandung-tv-home flex min-h-0 min-w-0 flex-col gap-4 lg:grid lg:grid-cols-[1fr_420px] min-[1900px]:grid-cols-[minmax(0,1fr)_480px] min-[2200px]:grid-cols-[minmax(0,1fr)_520px]">
+        <div className="punktlandung-tv-home flex min-h-0 min-w-0 flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]">
         <section className="arcade-panel punktlandung-home-main-panel relative z-10 order-1 overflow-hidden rounded-md border-slate-700/80 lg:order-none lg:min-h-0">
 
           <div className="relative flex flex-col p-4 lg:h-full lg:min-h-0 lg:overflow-auto">
@@ -613,15 +613,6 @@ export function GameApp({
               </div>
             </div>
 
-            <AdContainer
-              placement="home-mobile-tablet"
-              variant="banner"
-              adFormat="horizontal"
-              label="Anzeige"
-              className="mt-3.5 h-[100px] shrink-0 sm:h-[110px] xl:hidden"
-              fullWidthResponsive
-            />
-
               <div className="punktlandung-home-category-heading mt-3.5 flex shrink-0 items-baseline justify-between gap-4">
                 <div>
                   <h2 className="text-base font-black leading-none text-white md:text-[22px] min-[2200px]:text-3xl">Spielkategorien</h2>
@@ -640,9 +631,9 @@ export function GameApp({
                   }`}
                 >
                   <div className="punktlandung-home-category-copy min-w-0">
-                    <p className={`font-black leading-tight min-[2200px]:text-2xl ${category.disabled ? "text-slate-300" : "text-white"}`}>
-                      <span className="punktlandung-home-category-title-line inline-flex min-w-0 items-center gap-2">
-                        <span className="truncate">{category.title}</span>
+                    <p className={`min-w-0 font-black leading-tight min-[2200px]:text-2xl ${category.disabled ? "text-slate-300" : "text-white"}`}>
+                      <span className="punktlandung-home-category-title-line inline-flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="min-w-0 hyphens-auto whitespace-normal [overflow-wrap:normal]">{category.title}</span>
                         {category.disabled && (
                           <span className="punktlandung-home-category-soon-badge shrink-0 rounded-sm border border-slate-600/80 px-2 py-0.5 text-[10px] font-black tracking-[0.08em] text-slate-400 min-[2200px]:text-sm">
                             SPÄTER
@@ -792,6 +783,14 @@ export function GameApp({
           </div>
         </aside>
         </div>
+        <AdContainer
+          placement="home-mobile-tablet"
+          variant="banner"
+          adFormat="horizontal"
+          label="Anzeige"
+          className="punktlandung-home-mobile-ad h-[100px] shrink-0 sm:h-[110px] xl:hidden"
+          fullWidthResponsive
+        />
         <AdContainer
           placement="home-right-rail"
           variant="rail"

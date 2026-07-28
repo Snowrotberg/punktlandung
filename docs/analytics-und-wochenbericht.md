@@ -12,6 +12,21 @@
 
 Es werden nur grobe Produkt-Ereignisse gesendet. Namen, Raumcodes, E-Mail-Adressen, Feedbacktexte, Tipps und Koordinaten dürfen nicht als Ereignisparameter ergänzt werden.
 
+## KI-Verweise in GA4 auswerten
+
+Punktlandung ergänzt beim `page_view` zwei datensparsame Parameter:
+
+- `entry_referral_group`: `chatgpt`, `perplexity`, `claude`, `gemini`,
+  `copilot`, `direct`, `internal` oder `external`
+- `entry_referral_host`: ausschließlich der Hostname der verweisenden Seite,
+  niemals Pfad, Suchanfrage oder Query-Parameter
+
+Nach dem Deployment in **Verwaltung > Datenanzeige > Benutzerdefinierte
+Definitionen** beide Parameter als ereignisbezogene benutzerdefinierte
+Dimensionen anlegen. Danach in **Erkunden** einen Bericht mit
+`entry_referral_group`, Landingpage, Sitzungen, `game_start` und
+`game_complete` erstellen. Kleine Fallzahlen nicht überinterpretieren.
+
 ## Google-CMP verbinden
 
 In AdSense unter **Datenschutz und Mitteilungen > Europäische Verordnungen > Einstellungen** den Einwilligungsmodus für Werbe- und Analysezwecke aktivieren. Danach den Dialog mit Zustimmung, Ablehnung und erneutem Öffnen über den Link **Cookies** testen.

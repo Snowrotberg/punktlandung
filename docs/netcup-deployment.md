@@ -13,6 +13,18 @@ Die frühere GitHub-Action für das statische FTPS-Deployment ist deshalb absich
 - dauerhaft beschreibbare Datei für anonyme Betriebsmetriken außerhalb eines austauschbaren Release-Verzeichnisses
 - Gmail-App-Passwort für Feedback und interne Wochenberichte
 
+## Kanonische Domain am Reverse-Proxy
+
+`https://punktlandung.app` ist die kanonische Produktionsdomain. Der
+Reverse-Proxy muss Anfragen an `https://www.punktlandung.app/:path` dauerhaft
+mit Status 301 oder 308 auf `https://punktlandung.app/:path` weiterleiten. Die
+Weiterleitung muss Pfad und Query-Parameter erhalten. Nach jeder Änderung werden
+Startseite, eine Unterseite und ein URL-Beispiel mit Query-Parameter geprüft.
+
+Diese Weiterleitung gehört in die Host-Konfiguration des Reverse-Proxys und
+nicht in die Next.js-Oberfläche. Dadurch wird die doppelte Domain bereits vor
+dem Rendern vereinheitlicht.
+
 ## Erforderliche Prüfungen vor einem Release
 
 ```bash

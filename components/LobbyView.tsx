@@ -490,7 +490,7 @@ export function LobbyView({
         </header>
 
         <section className={`punktlandung-lobby-config-section ${isOnlineRoom ? "punktlandung-online-layout" : ""} min-h-0 flex-1 overflow-y-auto pb-20 sm:pb-0 lg:overflow-hidden ${isSolo ? "" : "grid gap-2 md:gap-4 lg:grid-cols-[1fr_310px]"}`}>
-          <div className="punktlandung-lobby-config-stage flex min-h-0 flex-col gap-2 md:gap-4 lg:grid lg:h-full lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:items-stretch min-[2200px]:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
+          <div className="punktlandung-lobby-config-stage flex min-h-0 flex-col gap-2 md:gap-4 lg:grid lg:h-full lg:grid-cols-[minmax(20rem,1fr)_minmax(0,2fr)] lg:items-stretch">
             <div
               className={`punktlandung-lobby-settings-column ${
                 isOnlineRoom

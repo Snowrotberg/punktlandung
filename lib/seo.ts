@@ -74,6 +74,22 @@ export const seoRoutes = [
     changeFrequency: "monthly"
   },
   {
+    path: "/so-funktioniert-punktlandung",
+    title: "Wie funktioniert Punktlandung? Spielablauf und Punkte",
+    description:
+      "So funktioniert Punktlandung: Ort erkennen, Tipp auf der Karte setzen und bis zu 5.000 Punkte nach Entfernung sammeln.",
+    priority: 0.75,
+    changeFrequency: "monthly"
+  },
+  {
+    path: "/ortskatalog",
+    title: "Der Punktlandung-Ortskatalog: Umfang, Kategorien und Quellen",
+    description:
+      "Transparenter Einblick in den Punktlandung-Ortskatalog: aktuelle Anzahl spielbarer Aufgaben, Kategorien, Länderabdeckung, Auswahl und Bildquellen.",
+    priority: 0.7,
+    changeFrequency: "monthly"
+  },
+  {
     path: "/lizenzen",
     title: "Punktlandung Lizenzen und Quellen",
     description: "Quellen und Lizenzhinweise fuer Karten, Laenderdaten und Bilder in Punktlandung.",

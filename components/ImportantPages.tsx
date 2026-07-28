@@ -13,6 +13,8 @@ const seoLinks = [
 
 const legalLinks = [
   { href: "/infos", label: "Infos" },
+  { href: "/so-funktioniert-punktlandung", label: "So funktioniert's" },
+  { href: "/ortskatalog", label: "Ortskatalog" },
   { href: "/feedback", label: "Feedback" },
   { href: "/impressum", label: "Impressum" },
   { href: "/datenschutz", label: "Datenschutz" },

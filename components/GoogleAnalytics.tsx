@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { analyticsEnabled, analyticsMeasurementId, trackAnalyticsEvent } from "@/lib/analytics";
+import { analyticsEnabled, analyticsMeasurementId, referralAttribution, trackAnalyticsEvent } from "@/lib/analytics";
 
 export function GoogleAnalytics() {
   const pathname = usePathname();
@@ -12,10 +12,13 @@ export function GoogleAnalytics() {
   useEffect(() => {
     if (!analyticsEnabled || !pathname || previousPathRef.current === pathname) return;
     previousPathRef.current = pathname;
+    const entryReferral = referralAttribution(document.referrer, window.location.origin);
     trackAnalyticsEvent("page_view", {
       page_path: pathname,
       page_location: `${window.location.origin}${pathname}`,
-      page_title: document.title
+      page_title: document.title,
+      entry_referral_group: entryReferral.group,
+      entry_referral_host: entryReferral.hostname
     });
   }, [pathname]);
 

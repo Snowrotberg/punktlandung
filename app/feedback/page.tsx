@@ -4,7 +4,11 @@ import { InfoPageShell } from "@/components/InfoPageShell";
 
 export const metadata: Metadata = {
   title: "Feedback zur öffentlichen Beta",
-  description: "Feedback, Fehler und Verbesserungsvorschläge zur öffentlichen Beta von Punktlandung senden."
+  description: "Feedback, Fehler und Verbesserungsvorschläge zur öffentlichen Beta von Punktlandung senden.",
+  robots: {
+    index: false,
+    follow: false
+  }
 };
 
 export default function FeedbackPage() {
