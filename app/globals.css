@@ -18181,7 +18181,7 @@ body :is(.punktlandung-back-button, .punktlandung-back-link):not(:disabled):not(
     inset: -8px;
     background:
       linear-gradient(rgb(239 234 224 / 0.12), rgb(239 234 224 / 0.12)),
-      url("/punktlandung-kartenbild.jpg") center 58% / cover no-repeat;
+      url("/punktlandung-kartenbild.webp") center 58% / cover no-repeat;
     filter: blur(7px);
     transform: scale(1.025);
   }
@@ -18285,6 +18285,127 @@ body :is(.punktlandung-back-button, .punktlandung-back-link):not(:disabled):not(
     scale: 1.05 !important;
     transform-origin: center center !important;
   }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-settings-heading {
+    transform: translateY(0.5rem) !important;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories
+    .punktlandung-category-heading {
+    transform: translateY(1.0625rem) !important;
+  }
+}
+
+/* Laptop legal rows: keep all six links inside their panels on one line. */
+@media (min-width: 1024px) and (max-width: 1599px) and (max-height: 900px) and (orientation: landscape) {
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel nav[aria-label="Rechtliche Informationen"] {
+    box-sizing: border-box !important;
+    column-gap: 0.3rem !important;
+    display: grid !important;
+    flex-wrap: nowrap !important;
+    font-size: 10px !important;
+    grid-template-columns: repeat(6, max-content) !important;
+    justify-content: space-between !important;
+    line-height: 1.15 !important;
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings .punktlandung-settings-legal {
+    box-sizing: border-box !important;
+    column-gap: 0.3rem !important;
+    font-size: 9.5px !important;
+    grid-template-columns: repeat(6, max-content) !important;
+    justify-content: space-between !important;
+    line-height: 1.15 !important;
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel nav[aria-label="Rechtliche Informationen"] > *,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings .punktlandung-settings-legal > * {
+    font-size: inherit !important;
+    height: auto !important;
+    line-height: inherit !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* Mobile Large legal rows: use the full inner width and distribute all links evenly. */
+@media (min-width: 381px) and (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel nav[aria-label="Rechtliche Informationen"],
+  body main.punktlandung-lobby
+    .punktlandung-lobby-config-stage
+    .punktlandung-mobile-category-legal > nav[aria-label="Rechtliche Informationen"] {
+    box-sizing: border-box !important;
+    column-gap: 0.25rem !important;
+    display: grid !important;
+    flex-wrap: nowrap !important;
+    grid-template-columns: repeat(6, max-content) !important;
+    justify-content: space-between !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel nav[aria-label="Rechtliche Informationen"] > *,
+  body main.punktlandung-lobby
+    .punktlandung-lobby-config-stage
+    .punktlandung-mobile-category-legal > nav[aria-label="Rechtliche Informationen"] > * {
+    min-width: 0 !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* Laptop setup controls: keep the compact time and custom-round labels legible. */
+@media (min-width: 1024px) and (max-width: 1599px) and (max-height: 900px) and (orientation: landscape) {
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-settings-heading {
+    transform: translateY(0.2rem) !important;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories
+    .punktlandung-category-heading {
+    transform: translateY(0.7rem) !important;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules {
+    --setup-rule-stepper-width: 1.8rem;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    fieldset > div:first-child
+    .punktlandung-setting-choice {
+    line-height: 1.1 !important;
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+    white-space: nowrap !important;
+  }
+
+  body .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    .punktlandung-round-stepper > input {
+    font-size: 0.75rem !important;
+    padding-left: 0.2rem !important;
+    padding-right: 0.2rem !important;
+  }
 }
 
 /* Final spacing details for the two stacked cards called out in QA. */
@@ -18300,5 +18421,54 @@ body :is(.punktlandung-back-button, .punktlandung-back-link):not(:disabled):not(
     .punktlandung-home-room-card
     .punktlandung-home-room-controls {
     margin-top: 0.75rem !important;
+  }
+}
+
+/* The compact results-header back control must not reappear after the shared
+ * canonical back-button display rule later in the cascade. */
+@media (min-width: 640px) {
+  body .punktlandung-results-mobile-header-back {
+    display: none !important;
+  }
+}
+
+/* Keep the three compact result/replay actions readable on 360 px phones. */
+@media (max-width: 380px) and (orientation: portrait) {
+  body .punktlandung-results-mobile-actions button {
+    font-size: 0.625rem !important;
+    padding-left: 0.3rem !important;
+    padding-right: 0.3rem !important;
+  }
+
+  body .punktlandung-results-mobile-actions .punktlandung-inline-action-content {
+    gap: 0.1rem !important;
+  }
+
+  body .punktlandung-results-mobile-actions .punktlandung-inline-action-icon {
+    height: 0.7rem !important;
+    width: 0.7rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--closed .punktlandung-map-panel-actions,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--open .punktlandung-map-panel-actions {
+    gap: 0.3rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--closed :is(.punktlandung-map-size-button, .punktlandung-map-secondary-button, .punktlandung-map-primary-button),
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--open :is(.punktlandung-map-size-button, .punktlandung-map-secondary-button, .punktlandung-map-primary-button) {
+    flex: 1 1 0 !important;
+    font-size: 0.625rem !important;
+    min-width: 0 !important;
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-inline-action-content {
+    gap: 0.1rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-inline-action-icon {
+    height: 0.7rem !important;
+    width: 0.7rem !important;
   }
 }

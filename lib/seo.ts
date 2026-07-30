@@ -5,7 +5,7 @@ export const siteUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:300
 export const siteName = "Punktlandung";
 
 export const defaultDescription =
-  "Punktlandung ist ein kostenloses Geo-Guessing-Spiel auf Deutsch: Bild ansehen, Ort erraten, Pin setzen und Punkte sammeln - solo oder als Partyspiel.";
+  "Punktlandung ist ein kostenloses deutschsprachiges Geografie-Partyspiel im Browser. Errate Städte, Hauptstädte, Wahrzeichen, Landschaften und Flaggen - solo oder gemeinsam mit Freunden, ohne Anmeldung.";
 
 export const ogImage = "/og-punktlandung.jpg";
 
@@ -83,9 +83,9 @@ export const seoRoutes = [
   },
   {
     path: "/ortskatalog",
-    title: "Der Punktlandung-Ortskatalog: Umfang, Kategorien und Quellen",
+    title: "Welche Orte und Aufgaben gibt es bei Punktlandung?",
     description:
-      "Transparenter Einblick in den Punktlandung-Ortskatalog: aktuelle Anzahl spielbarer Aufgaben, Kategorien, Länderabdeckung, Auswahl und Bildquellen.",
+      "Welche Inhalte bietet Punktlandung? Übersicht über spielbare Orte, Flaggen, Kategorien, Länderabdeckung, Bildauswahl und Quellen.",
     priority: 0.7,
     changeFrequency: "monthly"
   },

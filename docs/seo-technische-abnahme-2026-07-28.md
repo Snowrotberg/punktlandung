@@ -26,19 +26,21 @@ und funktionelle Spieloberfläche war nicht Gegenstand der Änderungen.
   `/spielen`, `/solo-modus`, `/party-modus`, `/online-modus`, `/warteraum`,
   `/aufloesung`, `/endergebnis` und `/feedback`.
 - Die notwendige permanente Weiterleitung von `www` auf die Hauptdomain in der
-  Deployment-Dokumentation festgehalten.
+  Deployment-Dokumentation festgehalten und zusätzlich als 308-Weiterleitung
+  in der Next.js-Middleware implementiert.
 
 ## Noch extern umzusetzen oder zu prüfen
 
-- [ ] Reverse-Proxy: `www` mit 301 oder 308 auf non-`www` weiterleiten.
+- [ ] Nach dem nächsten Deployment die neue 308-Weiterleitung von `www` auf
+  non-`www` live prüfen; eine Reverse-Proxy-Regel bleibt die bevorzugte
+  zusätzliche Absicherung.
 - [ ] Geänderten Stand deployen.
 - [ ] Live-Metadaten der `noindex`-Routen nach dem Deployment erneut abrufen.
 - [ ] Neue Sitemap prüfen: keine pauschalen `lastmod`-Werte mehr.
 - [x] Google-Search-Console-Domain-Property per DNS-TXT bestätigt.
-- [x] Sitemap in Google Search Console eingereicht; der erste Abruf stand am
-  28. Juli 2026 zunächst auf „Konnte nicht abgerufen werden“, obwohl der
-  unabhängige Live-Test für Browser und Googlebot HTTP 200 mit
-  `application/xml` lieferte. Nach der initialen Verarbeitung erneut prüfen.
+- [x] Sitemap in Google Search Console eingereicht. Der erste Abruf stand am
+  28. Juli 2026 zunächst auf „Konnte nicht abgerufen werden“; die anschließende
+  Verarbeitung war erfolgreich.
 - [ ] Sitemap in Bing Webmaster Tools einreichen.
 - [ ] URL-Prüfung für Startseite, FAQ und zwei Landingpages ausführen.
 - [ ] Strukturierte Daten der Startseite und FAQ mit einem Validator prüfen.

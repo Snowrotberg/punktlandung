@@ -39,8 +39,8 @@ export function ImageLicenseCatalog() {
               {label} <span className="ml-1 text-xs text-slate-400">({group.length})</span>
             </summary>
             <div className="space-y-2 border-t border-slate-700/70 p-3">
-              {group.map((entry) => (
-                <details key={entry.fileName} className="rounded border border-slate-800 bg-slate-950/60 px-3 py-2">
+              {group.map((entry, entryIndex) => (
+                <details key={`${entry.fileName}-${entry.sourceUrl}-${entryIndex}`} className="rounded border border-slate-800 bg-slate-950/60 px-3 py-2">
                   <summary className="cursor-pointer break-words font-bold text-slate-200 marker:text-emerald-300">
                     {entry.fileName} <span className="text-xs font-semibold text-emerald-300">· {entry.license}</span>
                   </summary>

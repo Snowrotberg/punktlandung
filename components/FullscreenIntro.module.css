@@ -1,0 +1,491 @@
+.intro {
+  background: #03071a;
+  color: #f8fafc;
+  height: 100dvh;
+  inset: 0;
+  isolation: isolate;
+  overflow: hidden;
+  position: fixed;
+  width: 100vw;
+  z-index: 12000;
+}
+
+.loadingScene {
+  align-items: center;
+  background:
+    radial-gradient(circle at center, rgba(52, 211, 153, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(3, 21, 37, 0.98), rgba(6, 9, 36, 0.98) 58%, rgba(16, 16, 55, 0.98));
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  inset: 0;
+  justify-content: center;
+  opacity: 1;
+  position: absolute;
+  animation: loadingSceneOut 180ms ease-out 70ms both;
+  z-index: 40;
+}
+
+.playing .loadingScene {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loadingMarker {
+  display: block;
+  transform: scale(1.3);
+  transform-origin: 50% 100%;
+}
+
+.loadingWordmark {
+  font-size: clamp(1.35rem, 2.4vw, 2.15rem);
+  font-weight: 950;
+  letter-spacing: -0.04em;
+  text-shadow: 0 0 1.5rem rgba(52, 211, 153, 0.34);
+}
+
+.mapFilm,
+.mapFrame {
+  inset: 0;
+  position: absolute;
+}
+
+.mapFilm {
+  background: #03071a;
+  filter: brightness(0.92) saturate(0.9);
+  transform: translate3d(0.25%, 0.12%, 0) scale(1.012);
+  transform-origin: 50% 50%;
+  z-index: 1;
+}
+
+.playing .mapFilm {
+  animation: cameraFlight 2150ms cubic-bezier(0.16, 0.72, 0.18, 1) both;
+  will-change: transform;
+}
+
+.mapFrame {
+  background-image: var(--frame-image);
+  background-position: var(--focus-x) var(--focus-y);
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0;
+  transform: translate3d(var(--align-x), var(--align-y), 0) scale(var(--frame-scale));
+  transform-origin: 50% 50%;
+  will-change: opacity, transform;
+}
+
+.frame0 { opacity: 1; }
+
+.playing .frame0 { animation: cameraFrame0 2150ms linear both; }
+.playing .frame1 { animation: cameraFrame1 2150ms linear both; }
+.playing .frame2 { animation: cameraFrame2 2150ms linear both; }
+.playing .frame3 { animation: cameraFrame3 2150ms linear both; }
+.playing .frame4 { animation: cameraFrame4 2150ms linear both; }
+.playing .frame5 { animation: cameraFrame5 2150ms linear both; }
+.playing .frame6 { animation: cameraFrame6 2150ms linear both; }
+
+.worldMask {
+  background: radial-gradient(circle at 50% 50%, transparent 0 25vmin, rgba(3, 7, 26, 0.96) 27vmin 100%);
+  inset: 0;
+  opacity: 1;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.playing .worldMask {
+  animation: worldMaskOpen 230ms cubic-bezier(0.32, 0, 0.12, 1) both;
+}
+
+.cinematicShade {
+  background:
+    radial-gradient(ellipse at 50% 47%, transparent 38%, rgba(2, 6, 23, 0.08) 66%, rgba(2, 6, 23, 0.58) 126%),
+    linear-gradient(to bottom, rgba(2, 6, 23, 0.2), transparent 21%, transparent 70%, rgba(2, 6, 23, 0.46));
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 3;
+}
+
+.techGrid {
+  background-image:
+    linear-gradient(rgba(94, 234, 212, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94, 234, 212, 0.035) 1px, transparent 1px);
+  background-size: 84px 84px;
+  inset: 0;
+  mask-image: radial-gradient(circle at center, black, transparent 78%);
+  opacity: 0.16;
+  pointer-events: none;
+  position: absolute;
+  z-index: 4;
+}
+
+.markerLayer {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 8;
+}
+
+.markerAnchor,
+.impactAnchor {
+  height: 0;
+  position: absolute;
+  width: 0;
+}
+
+.mapPin {
+  display: block;
+  left: 0;
+  position: absolute;
+  top: 0;
+  transform-origin: 50% 100%;
+}
+
+.targetAnchor .mapPin {
+  animation: targetDrop 280ms cubic-bezier(0.2, 0.82, 0.24, 1.08) both;
+}
+
+.playerAnchor .mapPin {
+  animation: playerDrop 300ms cubic-bezier(0.18, 0.86, 0.2, 1.08) both;
+}
+
+.connection {
+  background: linear-gradient(90deg, rgba(167, 243, 208, 0.22), #34d399 46%, rgba(244, 63, 94, 0.9));
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.62);
+  height: 2px;
+  opacity: 0;
+  position: absolute;
+  transform: rotate(53deg) scaleX(0);
+  transform-origin: 0 50%;
+  width: clamp(2rem, 3.2vw, 3.6rem);
+}
+
+.impact .connection,
+.success .connection {
+  animation: connectionDraw 220ms ease-out both;
+}
+
+.impactFlash,
+.impactRing {
+  border-radius: 50%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  transform: translate3d(-50%, -50%, 0);
+}
+
+.impactFlash {
+  animation: impactFlash 420ms ease-out both;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(52, 211, 153, 0.72) 20%, transparent 68%);
+  height: clamp(8rem, 17vw, 15rem);
+  width: clamp(8rem, 17vw, 15rem);
+}
+
+.impactRing {
+  animation: impactRing 560ms ease-out both;
+  border: 1px solid rgba(52, 211, 153, 0.82);
+  height: clamp(4.5rem, 8vw, 8rem);
+  width: clamp(4.5rem, 8vw, 8rem);
+}
+
+.impactRing:nth-child(3) { animation-delay: 70ms; }
+.impactRing:nth-child(4) { animation-delay: 140ms; }
+
+.successScene {
+  align-items: center;
+  animation: successVeil 320ms ease-out both;
+  background:
+    linear-gradient(rgba(94, 234, 212, 0.035) 1px, transparent 1px) 0 0 / 84px 84px,
+    linear-gradient(90deg, rgba(94, 234, 212, 0.035) 1px, transparent 1px) 0 0 / 84px 84px,
+    radial-gradient(circle at top left, rgba(52, 211, 153, 0.16), transparent 32rem),
+    radial-gradient(circle at 78% 14%, rgba(129, 140, 248, 0.16), transparent 30rem),
+    linear-gradient(135deg, #020617 0%, #0f172a 46%, #111827 100%);
+  display: flex;
+  flex-direction: column;
+  inset: 0;
+  justify-content: center;
+  overflow: hidden;
+  padding: 2rem 1rem;
+  position: absolute;
+  z-index: 16;
+}
+
+.successSweep {
+  animation: successSweep 480ms ease-out both;
+  background: linear-gradient(90deg, transparent, rgba(110, 231, 183, 0.22), rgba(255, 255, 255, 0.16), transparent);
+  height: 1px;
+  left: -20%;
+  position: absolute;
+  top: 50%;
+  width: 140%;
+}
+
+.successAura {
+  animation: auraIn 520ms ease-out both;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.18), rgba(52, 211, 153, 0.04) 35%, transparent 67%);
+  height: min(72vw, 72vh);
+  left: 50%;
+  position: absolute;
+  top: 47%;
+  transform: translate(-50%, -50%);
+  width: min(72vw, 72vh);
+}
+
+.successRing {
+  animation: successRing 660ms ease-out both;
+  border: 1px solid rgba(110, 231, 183, 0.62);
+  border-radius: 50%;
+  height: min(34rem, 62vmin);
+  left: 50%;
+  position: absolute;
+  top: 47%;
+  transform: translate(-50%, -50%);
+  width: min(34rem, 62vmin);
+}
+
+.successRingDelay { animation-delay: 90ms; }
+
+.heroMarker {
+  animation: heroPinIn 360ms cubic-bezier(0.18, 0.86, 0.2, 1.08) both;
+  display: block;
+  height: clamp(3.8rem, 7vmin, 5.5rem);
+  margin-bottom: 1rem;
+  position: relative;
+  width: clamp(3.2rem, 6vmin, 4.6rem);
+  z-index: 2;
+}
+
+.heroMarker > span {
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(clamp(1.45, 0.18vw + 1.25, 2));
+  transform-origin: 50% 50%;
+}
+
+.successCopy {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  min-width: min(35rem, calc(100vw - 2rem));
+  padding: clamp(1rem, 2.5vh, 1.5rem) clamp(1.4rem, 4vw, 3rem);
+  position: relative;
+  text-align: center;
+  z-index: 2;
+}
+
+.successCopy p {
+  animation: copyIn 280ms ease-out 40ms both;
+  color: #a7f3d0;
+  font-size: clamp(0.62rem, 0.9vw, 0.8rem);
+  font-weight: 950;
+  letter-spacing: 0.32em;
+  margin: 0;
+  text-transform: uppercase;
+  text-shadow: 0 0 1.4rem rgba(2, 44, 34, 0.36);
+}
+
+.successCopy h2 {
+  animation: titleIn 400ms cubic-bezier(0.16, 0.84, 0.2, 1.04) 70ms both;
+  color: #fff;
+  font-size: clamp(3rem, 7.5vw, 7rem);
+  font-weight: 950;
+  letter-spacing: -0.06em;
+  line-height: 0.92;
+  margin: clamp(0.65rem, 1.6vh, 1rem) 0 0;
+  text-shadow: 0 0 2.4rem rgba(236, 253, 245, 0.42), 0 0.1em 0 rgba(6, 78, 59, 0.7);
+}
+
+.success .markerLayer,
+.curtain .markerLayer {
+  opacity: 0;
+  transition: opacity 140ms ease-out;
+}
+
+.attribution {
+  background: rgba(2, 6, 23, 0.62);
+  bottom: 0;
+  color: rgba(226, 232, 240, 0.72);
+  font-size: 0.6rem;
+  left: 0;
+  line-height: 1.3;
+  padding: 0.2rem 0.38rem;
+  position: absolute;
+  z-index: 25;
+}
+
+.attribution a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.attribution a:hover,
+.attribution a:focus-visible {
+  color: #a7f3d0;
+  text-decoration: underline;
+}
+
+.curtain.intro {
+  animation: introOut 240ms cubic-bezier(0.42, 0, 1, 1) both;
+}
+
+@keyframes cameraFlight {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  74% { transform: translate3d(-0.12%, -0.08%, 0) scale(1.026); }
+  to { transform: translate3d(-0.16%, -0.1%, 0) scale(1.034); }
+}
+
+@keyframes cameraFrame0 {
+  0%, 9% { opacity: 1; }
+  22%, 100% { opacity: 0; }
+}
+
+@keyframes cameraFrame1 {
+  0%, 9% { opacity: 0; }
+  19%, 23% { opacity: 1; }
+  36%, 100% { opacity: 0; }
+}
+
+@keyframes cameraFrame2 {
+  0%, 23% { opacity: 0; }
+  33%, 37% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes cameraFrame3 {
+  0%, 37% { opacity: 0; }
+  47%, 51% { opacity: 1; }
+  64%, 100% { opacity: 0; }
+}
+
+@keyframes cameraFrame4 {
+  0%, 51% { opacity: 0; }
+  61%, 65% { opacity: 1; }
+  78%, 100% { opacity: 0; }
+}
+
+@keyframes cameraFrame5 {
+  0%, 65% { opacity: 0; }
+  75%, 79% { opacity: 1; }
+  92%, 100% { opacity: 0; }
+}
+
+@keyframes cameraFrame6 {
+  0%, 79% { opacity: 0; }
+  89%, 100% { opacity: 1; }
+}
+
+@keyframes loadingSceneOut {
+  from { opacity: 1; visibility: visible; }
+  to { opacity: 0; visibility: hidden; }
+}
+
+@keyframes worldMaskOpen {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(4.2); }
+}
+
+@keyframes targetDrop {
+  0% { opacity: 0; transform: translate3d(-50%, calc(-100% - 18vh), 0) scale(1.04); }
+  72% { opacity: 1; transform: translate3d(-50%, -95%, 0) scale(1.04, 0.96); }
+  88% { transform: translate3d(-50%, -103%, 0) scale(1, 1.04); }
+  100% { filter: drop-shadow(0 0 0.6rem rgba(244, 63, 94, 0.5)); opacity: 1; transform: translate3d(-50%, -100%, 0) scale(1.03); }
+}
+
+@keyframes playerDrop {
+  0% { opacity: 0; transform: translate3d(-50%, calc(-100% - 30vh), 0) scale(1.08); }
+  70% { opacity: 1; transform: translate3d(-50%, -94%, 0) scale(1.06, 0.94); }
+  87% { transform: translate3d(-50%, -104%, 0) scale(1, 1.05); }
+  100% { filter: drop-shadow(0 0 0.9rem rgba(52, 211, 153, 0.78)); opacity: 1; transform: translate3d(-50%, -100%, 0) scale(1.05); }
+}
+
+@keyframes connectionDraw {
+  from { opacity: 0; transform: rotate(53deg) scaleX(0); }
+  to { opacity: 1; transform: rotate(53deg) scaleX(1); }
+}
+
+@keyframes impactFlash {
+  0% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(0.08); }
+  18% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.45); }
+}
+
+@keyframes impactRing {
+  0% { opacity: 0; transform: translate3d(-50%, -50%, 0) rotateX(62deg) scale(0.12); }
+  18% { opacity: 0.82; }
+  100% { opacity: 0; transform: translate3d(-50%, -50%, 0) rotateX(62deg) scale(2.3); }
+}
+
+@keyframes successVeil { from { opacity: 0; } to { opacity: 1; } }
+@keyframes successSweep { from { opacity: 0; transform: scaleX(0.06); } 25% { opacity: 1; } to { opacity: 0; transform: scaleX(1); } }
+@keyframes auraIn { from { opacity: 0; transform: translate(-50%, -50%) scale(0.35); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes successRing { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.15); } 18% { opacity: 0.72; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.55); } }
+@keyframes heroPinIn { from { opacity: 0; transform: translateY(-8vh) scale(0.78); } 74% { opacity: 1; transform: translateY(0.2rem) scale(1.04); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes copyIn { from { opacity: 0; transform: translateY(0.55rem); } to { opacity: 1; transform: translateY(0); } }
+@keyframes titleIn { from { opacity: 0; transform: translateY(1rem) scale(0.92); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes introOut { from { opacity: 1; } to { opacity: 0; visibility: hidden; } }
+
+@media (max-aspect-ratio: 4 / 3) {
+  .mapFrame {
+    transform: translate3d(0, var(--align-y), 0) scale(var(--frame-scale));
+  }
+}
+
+@media (max-width: 640px) {
+  .successCopy {
+    min-width: min(28rem, calc(100vw - 1.5rem));
+    padding-inline: 1rem;
+  }
+
+  .successCopy h2 {
+    font-size: clamp(2.6rem, 12vw, 4.3rem);
+    white-space: nowrap;
+  }
+
+  .successCopy p { letter-spacing: 0.22em; }
+  .heroMarker { margin-bottom: 0.8rem; }
+  .techGrid { background-size: 46px 46px; }
+}
+
+@media (max-height: 460px) and (orientation: landscape) {
+  .successScene {
+    flex-direction: row;
+    gap: clamp(1.4rem, 4vw, 3rem);
+    padding: 0.75rem 1.5rem;
+  }
+
+  .heroMarker { margin: 0; }
+  .successCopy { min-width: 0; }
+  .successCopy h2 { font-size: clamp(2.8rem, 8vw, 5rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapFilm,
+  .mapFrame { animation: none !important; transform: none; }
+
+  .mapFrame { opacity: 0; }
+  .frame6 { opacity: 1; }
+  .loadingScene { animation: none; transition: none; }
+  .worldMask,
+  .markerLayer,
+  .techGrid { display: none; }
+
+  .successScene,
+  .successSweep,
+  .successAura,
+  .successRing,
+  .heroMarker,
+  .successCopy p,
+  .successCopy h2 {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+
+  .heroMarker > span { transform: translate(-50%, -50%) scale(1.8); }
+  .curtain.intro { animation-duration: 1ms; }
+}

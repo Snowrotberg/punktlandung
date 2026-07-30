@@ -11,14 +11,16 @@ ergänzt. Leere Felder bedeuten nicht null, sondern „noch nicht erhoben“.
 | Kennzahl | Ausgangswert |
 | --- | --- |
 | kanonische Domain | `https://punktlandung.app` |
-| Sitemap | erreichbar, 11 beabsichtigte URLs |
+| Sitemap | erreichbar, in Google Search Console erfolgreich, 13 beabsichtigte URLs |
 | robots.txt | erreichbar |
 | KI-Suchcrawler | erlaubt |
 | getrennte Trainings-Crawler | gesperrt |
-| indexierbare Kernseiten im Repository | 11 |
-| `noindex`-Funktionsseiten | 9 inklusive `/zugang` |
-| Produktions-Build | erfolgreich am 28. Juli 2026 |
-| TypeScript-Prüfung | erfolgreich am 28. Juli 2026 |
+| indexierbare Kernseiten im Repository | 13 |
+| `noindex`-Funktionsseiten | 8 |
+| Produktions-Build | erfolgreich am 29. Juli 2026 |
+| TypeScript-Prüfung | erfolgreich am 29. Juli 2026 |
+| Responsive-Checks | Startseite und zwei neue Kernseiten jeweils 6/6 bestanden |
+| lokale Lighthouse-Baseline | dokumentiert am 29. Juli 2026 |
 | aktiver Orts-/Aufgabenkatalog | 1.462 spielbare Einträge |
 
 Katalogverteilung nach den aktiven Qualitätsfiltern: 379 Städte,
@@ -26,8 +28,9 @@ Katalogverteilung nach den aktiven Qualitätsfiltern: 379 Städte,
 
 ## Google Search Console
 
-Die Browser-Sitzung war am 28. Juli 2026 nicht bei Google angemeldet. Die
-folgenden Werte werden vor der ersten größeren Inhaltsänderung ergänzt.
+Die Domain-Property ist per DNS bestätigt und die Sitemap wurde erfolgreich
+verarbeitet. Die folgenden Leistungswerte werden ergänzt, sobald Search Console
+ausreichend Daten gesammelt hat.
 
 | Zeitraum | Impressionen | Klicks | CTR | mittlere Position |
 | --- | ---: | ---: | ---: | ---: |

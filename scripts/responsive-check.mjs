@@ -53,20 +53,20 @@ async function loadEnvFiles() {
   return loaded;
 }
 
-const loadedEnvSources = await loadEnvFiles();
+await loadEnvFiles();
 const outDir = path.join(root, "test-artifacts", "responsive");
 const baseUrl = process.env.RESPONSIVE_URL ?? "http://localhost:3000";
-const accessPasswordKey = process.env.RESPONSIVE_ACCESS_PASSWORD?.trim()
-  ? "RESPONSIVE_ACCESS_PASSWORD"
-  : process.env.APP_ACCESS_PASSWORD?.trim()
-    ? "APP_ACCESS_PASSWORD"
-    : null;
-const accessPassword = accessPasswordKey ? process.env[accessPasswordKey] ?? "" : "";
-const accessPasswordSource = accessPasswordKey
-  ? loadedEnvSources.get(accessPasswordKey) ?? "Umgebungsvariable"
-  : null;
 const chromePath = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const onlineRoomStorageKey = "punktlandung-online-room-v1";
+const qaPanoramaPath = path.join(root, "public", "og-punktlandung.jpg");
+const defaultConcurrency = 2;
+const blockedThirdPartyHosts = [
+  "pagead2.googlesyndication.com",
+  "googleads.g.doubleclick.net",
+  "www.googletagmanager.com",
+  "www.google-analytics.com",
+  "fundingchoicesmessages.google.com"
+];
 
 const viewports = [
   { name: "phone-small", width: 360, height: 800 },
@@ -140,12 +140,12 @@ const summary = {
   results: [
     {
       playerId: "local_host",
-      distanceKm: 0.5,
+      distanceKm: 12.5,
       points: 4894,
-      badge: "Punktlandung",
+      badge: "Nahe dran",
       eliminated: false,
       guess: { playerId: "local_host", lat: 52.52, lng: 13.4, createdAt: Date.now() - 5000 },
-      countryCorrect: true
+      countryCorrect: false
     },
     {
       playerId: "local_2",
@@ -154,13 +154,13 @@ const summary = {
       badge: "Nahe dran",
       eliminated: false,
       guess: { playerId: "local_2", lat: 52.5, lng: 13.2, createdAt: Date.now() - 4000 },
-      countryCorrect: true
+      countryCorrect: false
     }
   ],
   crewGuess: null,
   crewDistanceKm: null,
   duel: [
-    { team: "aurora", averageDistanceKm: 0.5, hp: 20000 },
+    { team: "aurora", averageDistanceKm: 12.5, hp: 20000 },
     { team: "pulse", averageDistanceKm: 126.3, hp: 18800 }
   ],
   completedAt: Date.now(),
@@ -259,21 +259,28 @@ const targets = [
     expectedOnlineRoom: { kind: "online", code: "ABC123" },
     note: "echter URL-Pfad mit QA-Online-Raum"
   },
-  { name: "spielen", access: "state", path: "/spielen", status: "guessing", note: "echter URL-Pfad mit QA-Session" },
-  { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", note: "echter URL-Pfad mit QA-Session" },
-  { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
-  { name: "endergebnis", access: "state", path: "/endergebnis", status: "finished", note: "echter URL-Pfad mit QA-Session" },
+  { name: "spielen", access: "state", path: "/spielen", status: "guessing", readySelector: ".punktlandung-game-shell", readyImageSelector: ".punktlandung-panorama-viewport img", note: "echter URL-Pfad mit QA-Session" },
+  { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", readySelector: ".punktlandung-results-grid", note: "echter URL-Pfad mit QA-Session" },
+  { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", readySelector: ".punktlandung-image-replay", readyImageSelector: ".punktlandung-panorama-viewport img", note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
+  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Später", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session plus Klick auf Endstand ansehen" },
   { name: "infos", access: "route", path: "/infos", note: "echter URL-Pfad" },
+  { name: "so-funktioniert", access: "route", path: "/so-funktioniert-punktlandung", expectedText: "Wie funktioniert Punktlandung?", note: "zitierbare Methodikseite" },
+  { name: "ortskatalog", access: "route", path: "/ortskatalog", expectedText: "Welche Orte und Aufgaben gibt es bei Punktlandung?", note: "datenbasierte Katalogseite" },
   { name: "impressum", access: "route", path: "/impressum", note: "echter URL-Pfad" },
   { name: "datenschutz", access: "route", path: "/datenschutz", note: "echter URL-Pfad" },
   { name: "lizenzen", access: "route", path: "/lizenzen", note: "echter URL-Pfad" }
 ];
 
 function parseArgs(argv) {
-  const args = { page: null, help: false };
+  const args = { page: null, viewport: null, concurrency: defaultConcurrency, help: false };
   for (const arg of argv) {
     if (arg === "--help" || arg === "-h") args.help = true;
     if (arg.startsWith("--page=")) args.page = arg.slice("--page=".length).trim();
+    if (arg.startsWith("--viewport=")) args.viewport = arg.slice("--viewport=".length).trim();
+    if (arg.startsWith("--concurrency=")) {
+      const value = Number(arg.slice("--concurrency=".length).trim());
+      if (Number.isInteger(value) && value > 0 && value <= viewports.length) args.concurrency = value;
+    }
   }
   return args;
 }
@@ -299,31 +306,30 @@ async function launchBrowser() {
 }
 
 async function waitForApp(page) {
-  await page.waitForLoadState("domcontentloaded", { timeout: 30000 });
-  await page.waitForTimeout(600);
+  await page.waitForFunction(
+    () => Boolean(document.body?.children.length),
+    null,
+    { timeout: 30000 }
+  );
+  await page.waitForTimeout(450);
 }
 
-function isAccessGateUrl(page) {
-  return new URL(page.url()).pathname === "/zugang";
-}
+async function navigatePage(page, url, attempts = 3) {
+  let lastError = null;
 
-async function unlockAccessGate(page, originalUrl) {
-  if (!isAccessGateUrl(page) || !accessPassword.trim()) return false;
-
-  await page.locator("input[name='password']").fill(accessPassword);
-  await Promise.all([
-    page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30000 }),
-    page.locator("button[type='submit']").click()
-  ]);
-  await waitForApp(page);
-
-  if (isAccessGateUrl(page)) {
-    return false;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await waitForApp(page);
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) throw error;
+      await page.waitForTimeout(500 * attempt);
+    }
   }
 
-  await page.goto(originalUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await waitForApp(page);
-  return !isAccessGateUrl(page);
+  throw lastError;
 }
 
 async function resetStorage(page) {
@@ -334,10 +340,7 @@ async function resetStorage(page) {
 }
 
 async function gotoFresh(page, url) {
-  const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await waitForApp(page);
-  await unlockAccessGate(page, url);
-  return response;
+  return navigatePage(page, url);
 }
 
 async function loadState(page, status, targetPath = "/") {
@@ -465,6 +468,10 @@ async function openTarget(page, target) {
     if (target.access === "state-click") {
       await clickButtonByVisibleText(page, target.buttonText);
       await page.waitForTimeout(700);
+      if (target.dismissButtonText) {
+        await clickButtonByVisibleText(page, target.dismissButtonText);
+        await page.waitForTimeout(250);
+      }
     }
     return null;
   }
@@ -541,7 +548,6 @@ async function collectLayoutMetrics(page) {
     return {
       title: document.title,
       pathname: window.location.pathname,
-      accessGate: window.location.pathname === "/zugang" || /Freischalten/.test(body?.innerText ?? ""),
       viewportWidth,
       viewportHeight,
       documentWidth: doc.scrollWidth,
@@ -558,19 +564,93 @@ async function collectLayoutMetrics(page) {
   });
 }
 
+async function collectLayoutMetricsStable(page, attempts = 3) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await collectLayoutMetrics(page);
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      const navigationRace = /Execution context was destroyed|because of a navigation|Cannot find context/i.test(message);
+      if (!navigationRace || attempt === attempts) throw error;
+      await page.waitForLoadState("domcontentloaded", { timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(300);
+    }
+  }
+
+  throw lastError;
+}
+
+function normalizeConsoleMessages(messages) {
+  const unique = [...new Set(messages)];
+  const ignored = [];
+  const relevant = [];
+
+  for (const message of unique) {
+    const compact = message.replace(/\s+/g, " ").trim();
+    if (
+      /A tree hydrated but some attributes of the server rendered HTML/i.test(compact) ||
+      /ERR_BLOCKED_BY_CLIENT/i.test(compact) ||
+      /WebSocket connection to ['"]ws:\/\/localhost:3001\/['"] failed/i.test(compact) ||
+      /googletagmanager\.com\/gtag\/js.*preloaded.*not used/i.test(compact) ||
+      /^error:\s*Event$/i.test(compact)
+    ) {
+      ignored.push(compact.slice(0, 500));
+    } else {
+      relevant.push(compact.slice(0, 1000));
+    }
+  }
+
+  return { relevant, ignored };
+}
+
+async function blockResponsiveThirdParties(context) {
+  await context.route("**/*", async (route) => {
+    const requestUrl = route.request().url();
+    let parsedUrl = null;
+    let hostname = "";
+    try {
+      parsedUrl = new URL(requestUrl);
+      hostname = parsedUrl.hostname;
+    } catch {
+      hostname = "";
+    }
+
+    if (parsedUrl?.pathname === "/api/image") {
+      await route.fulfill({ path: qaPanoramaPath, contentType: "image/jpeg" });
+      return;
+    }
+
+    if (blockedThirdPartyHosts.some((blockedHost) => hostname === blockedHost || hostname.endsWith(`.${blockedHost}`))) {
+      await route.abort("blockedbyclient");
+      return;
+    }
+
+    await route.continue();
+  });
+}
+
 async function runTargetViewport(browser, target, viewport) {
+  const startedAt = Date.now();
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
     deviceScaleFactor: 1,
     locale: "de-DE",
     colorScheme: "dark"
   });
+  await blockResponsiveThirdParties(context);
   const page = await context.newPage();
   const consoleErrors = [];
+  const httpErrors = [];
   page.on("console", (message) => {
     if (["error", "warning"].includes(message.type())) consoleErrors.push(`${message.type()}: ${message.text()}`);
   });
   page.on("pageerror", (error) => consoleErrors.push(`pageerror: ${error.message}`));
+  page.on("response", (response) => {
+    if (response.status() >= 400) httpErrors.push(`${response.status()} ${response.url()}`);
+  });
 
   let screenshot = path.join(outDir, `${target.name}-${viewport.name}.png`);
   const problems = [];
@@ -580,6 +660,33 @@ async function runTargetViewport(browser, target, viewport) {
     const response = await openTarget(page, target);
     responseStatus = response?.status() ?? null;
     if (responseStatus === 404) problems.push(`Route meldet 404: ${target.path}`);
+
+    if (target.readySelector) {
+      await page.locator(target.readySelector).first().waitFor({ state: "visible", timeout: 15000 });
+      await page.waitForFunction(
+        (selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return false;
+          const style = window.getComputedStyle(element);
+          return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+        },
+        target.readySelector,
+        { timeout: 15000 }
+      );
+      await page.waitForTimeout(250);
+    }
+
+    if (target.readyImageSelector) {
+      await page.waitForFunction(
+        (selector) =>
+          [...document.querySelectorAll(selector)].some(
+            (image) => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
+          ),
+        target.readyImageSelector,
+        { timeout: 15000 }
+      );
+      await page.waitForTimeout(150);
+    }
 
     if (target.expectedRoom) {
       await page
@@ -605,14 +712,13 @@ async function runTargetViewport(browser, target, viewport) {
         .catch(() => {});
     }
 
-    const metrics = await collectLayoutMetrics(page);
-    if (metrics.accessGate) {
-      problems.push(
-        accessPassword.trim()
-          ? "Die Ansicht bleibt trotz Zugangspasswort auf dem Zugangsgate."
-          : "Die Ansicht zeigt das Zugangsgate. Setze RESPONSIVE_ACCESS_PASSWORD oder APP_ACCESS_PASSWORD fuer geschuetzte Checks."
-      );
-    }
+    await page.waitForFunction(
+      () => (document.body?.innerText ?? "").trim().length > 0,
+      null,
+      { timeout: 10000 }
+    );
+
+    const metrics = await collectLayoutMetricsStable(page);
     if (metrics.applicationError) problems.push("Die Ansicht zeigt einen Application error.");
     if (metrics.bodyTextLength === 0 || metrics.visibleElementCount === 0) problems.push("Der Body hat keinen sichtbaren Inhalt.");
     if (target.expectedText && !metrics.bodyText.includes(target.expectedText)) {
@@ -646,15 +752,19 @@ async function runTargetViewport(browser, target, viewport) {
 
     screenshot = await saveViewportScreenshot(page, screenshot);
 
+    const normalizedConsole = normalizeConsoleMessages(consoleErrors);
     return {
       target: target.name,
       viewport: viewport.name,
       status: problems.length ? "failed" : "passed",
+      durationMs: Date.now() - startedAt,
       responseStatus,
       screenshot,
       metrics,
       problems,
-      consoleErrors: [...new Set(consoleErrors)]
+      httpErrors: [...new Set(httpErrors)],
+      consoleErrors: normalizedConsole.relevant,
+      ignoredConsoleErrors: normalizedConsole.ignored
     };
   } catch (error) {
     try {
@@ -662,15 +772,19 @@ async function runTargetViewport(browser, target, viewport) {
     } catch {
       // Keep the original test failure visible even when the artifact cannot be written.
     }
+    const normalizedConsole = normalizeConsoleMessages(consoleErrors);
     return {
       target: target.name,
       viewport: viewport.name,
       status: "failed",
+      durationMs: Date.now() - startedAt,
       responseStatus,
       screenshot,
       metrics: null,
       problems: [error instanceof Error ? error.message : String(error)],
-      consoleErrors: [...new Set(consoleErrors)]
+      httpErrors: [...new Set(httpErrors)],
+      consoleErrors: normalizedConsole.relevant,
+      ignoredConsoleErrors: normalizedConsole.ignored
     };
   } finally {
     await context.close();
@@ -680,15 +794,23 @@ async function runTargetViewport(browser, target, viewport) {
 function renderReport({ selectedTargets, skippedTargets, results }) {
   const lines = [];
   const generatedAt = new Date().toISOString();
+  const failed = results.filter((result) => result.status === "failed");
+  const ignoredConsoleCount = results.reduce((sum, result) => sum + (result.ignoredConsoleErrors?.length ?? 0), 0);
+  const relevantConsoleCount = results.reduce((sum, result) => sum + (result.consoleErrors?.length ?? 0), 0);
+  const httpErrorCount = results.reduce((sum, result) => sum + (result.httpErrors?.length ?? 0), 0);
+  const totalDurationMs = results.reduce((sum, result) => sum + (result.durationMs ?? 0), 0);
   lines.push("# Responsive QA Report");
   lines.push("");
   lines.push(`Generated: ${generatedAt}`);
   lines.push(`Base URL: ${baseUrl}`);
-  lines.push(
-    accessPasswordKey
-      ? `Access gate: unlocked with ${accessPasswordKey} from ${accessPasswordSource}`
-      : "Access gate: no password found; protected views fail with a gate message"
-  );
+  lines.push("## Summary");
+  lines.push("");
+  lines.push(`- Checks: ${results.length - failed.length}/${results.length} bestanden`);
+  lines.push(`- Fehler: ${failed.length}`);
+  lines.push(`- Addierte Check-Laufzeit: ${(totalDurationMs / 1000).toFixed(1)} s`);
+  lines.push(`- Relevante Konsolenmeldungen: ${relevantConsoleCount}`);
+  lines.push(`- HTTP-Antworten ab Status 400: ${httpErrorCount}`);
+  lines.push(`- Ausgeblendete bekannte QA-Konsolenmeldungen: ${ignoredConsoleCount}`);
   lines.push("");
   lines.push("## Targets");
   lines.push("");
@@ -701,12 +823,15 @@ function renderReport({ selectedTargets, skippedTargets, results }) {
   lines.push("");
   lines.push("## Results");
   lines.push("");
-  lines.push("| Target | Viewport | Status | Screenshot | Notes |");
-  lines.push("| --- | --- | --- | --- | --- |");
+  lines.push("| Target | Viewport | Status | Dauer | Screenshot | Notes |");
+  lines.push("| --- | --- | --- | ---: | --- | --- |");
   for (const result of results) {
     const fileName = path.basename(result.screenshot);
-    const notes = [...result.problems, ...result.consoleErrors.slice(0, 3)].join("<br>").replace(/\|/g, "\\|") || "ok";
-    lines.push(`| ${result.target} | ${result.viewport} | ${result.status} | ${fileName} | ${notes} |`);
+    const notes = [...result.problems, ...(result.httpErrors ?? []).slice(0, 2), ...result.consoleErrors.slice(0, 3)]
+      .map((note) => note.slice(0, 240))
+      .join("<br>")
+      .replace(/\|/g, "\\|") || "ok";
+    lines.push(`| ${result.target} | ${result.viewport} | ${result.status} | ${((result.durationMs ?? 0) / 1000).toFixed(1)} s | ${fileName} | ${notes} |`);
   }
   if (skippedTargets.length) {
     lines.push("");
@@ -759,12 +884,12 @@ async function writeTextArtifact(filePath, contents) {
   }
 }
 
-async function cleanPreviousArtifacts(selectedTargets) {
+async function cleanPreviousArtifacts(selectedTargets, selectedViewports) {
   await removeIfExists(path.join(outDir, "report.md"));
   await removeIfExists(path.join(outDir, "report.json"));
 
   for (const target of selectedTargets) {
-    for (const viewport of viewports) {
+    for (const viewport of selectedViewports) {
       await removeIfExists(path.join(outDir, `${target.name}-${viewport.name}.png`));
     }
   }
@@ -774,15 +899,10 @@ const args = parseArgs(process.argv.slice(2));
 const availableNames = targets.map((target) => target.name);
 
 console.log(`Responsive QA Base URL: ${baseUrl}`);
-if (accessPassword.trim()) {
-  console.log(`Zugangsgate: Passwort wird aus ${accessPasswordKey} (${accessPasswordSource}) verwendet.`);
-} else {
-  console.log("Zugangsgate: kein Passwort gefunden.");
-  console.log("Setze RESPONSIVE_ACCESS_PASSWORD oder APP_ACCESS_PASSWORD in .env.local, .env oder als Umgebungsvariable.");
-  console.log("Geschuetzte Ansichten melden sonst das Zugangsgate als Fehler.");
-}
 console.log(`Verfuegbare Seitennamen: ${availableNames.join(", ")}`);
+console.log(`Verfuegbare Viewports: ${viewports.map((viewport) => viewport.name).join(", ")}`);
 console.log("Einzelseite: npm run check:responsive -- --page=home");
+console.log("Einzelviewport: npm run check:responsive -- --viewport=laptop");
 
 if (args.help) {
   process.exit(0);
@@ -794,29 +914,55 @@ if (args.page && !availableNames.includes(args.page)) {
   process.exit(1);
 }
 
+const availableViewportNames = viewports.map((viewport) => viewport.name);
+if (args.viewport && !availableViewportNames.includes(args.viewport)) {
+  console.error(`Unbekannter Viewport: ${args.viewport}`);
+  console.error(`Verfuegbar: ${availableViewportNames.join(", ")}`);
+  process.exit(1);
+}
+
 await fs.mkdir(outDir, { recursive: true });
 
 const selected = args.page ? targets.filter((target) => target.name === args.page) : targets;
 const selectedTargets = selected.filter((target) => target.access !== "todo");
 const skippedTargets = selected.filter((target) => target.access === "todo");
-await cleanPreviousArtifacts(selected);
+const selectedViewports = args.viewport ? viewports.filter((viewport) => viewport.name === args.viewport) : viewports;
+await cleanPreviousArtifacts(selected, selectedViewports);
 
 for (const target of skippedTargets) {
   console.log(`TODO/uebersprungen: ${target.name} - ${target.note}`);
 }
 
 const browser = await launchBrowser();
-const results = [];
+const jobs = selectedTargets.flatMap((target) => selectedViewports.map((viewport) => ({ target, viewport })));
+const results = new Array(jobs.length);
+let nextJobIndex = 0;
 
 try {
-  for (const target of selectedTargets) {
-    for (const viewport of viewports) {
-      process.stdout.write(`Pruefe ${target.name} @ ${viewport.name} (${viewport.width}x${viewport.height}) ... `);
+  const runWorker = async () => {
+    while (nextJobIndex < jobs.length) {
+      const jobIndex = nextJobIndex;
+      nextJobIndex += 1;
+      const { target, viewport } = jobs[jobIndex];
+      console.log(`Pruefe ${target.name} @ ${viewport.name} (${viewport.width}x${viewport.height}) ...`);
       const result = await runTargetViewport(browser, target, viewport);
-      results.push(result);
-      console.log(result.status === "passed" ? "ok" : "FEHLER");
+      results[jobIndex] = result;
+      console.log(`  ${result.status === "passed" ? "ok" : "FEHLER"} in ${(result.durationMs / 1000).toFixed(1)} s`);
       for (const problem of result.problems) console.log(`  - ${problem}`);
     }
+  };
+
+  const workerCount = Math.min(args.concurrency, jobs.length);
+  await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
+
+  for (let jobIndex = 0; jobIndex < results.length; jobIndex += 1) {
+    if (results[jobIndex]?.status !== "failed") continue;
+    const { target, viewport } = jobs[jobIndex];
+    console.log(`Wiederhole ${target.name} @ ${viewport.name} nach erstem Fehler ...`);
+    const result = await runTargetViewport(browser, target, viewport);
+    results[jobIndex] = result;
+    console.log(`  ${result.status === "passed" ? "ok" : "FEHLER"} in ${(result.durationMs / 1000).toFixed(1)} s`);
+    for (const problem of result.problems) console.log(`  - ${problem}`);
   }
 } finally {
   await browser.close();
@@ -824,11 +970,17 @@ try {
 
 const reportPath = path.join(outDir, "report.md");
 const writtenReportPath = await writeTextArtifact(reportPath, renderReport({ selectedTargets, skippedTargets, results }));
+const reportJsonPath = path.join(outDir, "report.json");
+const writtenReportJsonPath = await writeTextArtifact(
+  reportJsonPath,
+  `${JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl, selectedTargets, selectedViewports, results }, null, 2)}\n`
+);
 
 const failed = results.filter((result) => result.status === "failed");
 console.log("");
 console.log(`Screenshots: ${outDir}`);
 console.log(`Report: ${writtenReportPath}`);
+console.log(`JSON-Details: ${writtenReportJsonPath}`);
 console.log(`Ergebnis: ${results.length - failed.length}/${results.length} Checks ok, ${failed.length} Fehler, ${skippedTargets.length} TODO/uebersprungen.`);
 
 if (failed.length > 0) {

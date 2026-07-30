@@ -8,6 +8,7 @@ import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
 import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
 import type { GameSettings, LatLng, RoomState, RoundStatus, TeamId } from "@/types/game";
 import { AdContainer } from "./AdContainer";
+import { ENABLE_FULLSCREEN_INTRO, FullscreenIntro } from "./FullscreenIntro";
 import { GameView } from "./GameView";
 import { LegalLinks } from "./LegalLinks";
 import { LobbyView } from "./LobbyView";
@@ -23,9 +24,9 @@ const modePreview: Array<{
   icon: string;
   badge?: string;
 }> = [
-  { id: "solo", title: "Solo-Modus", text: "Eine Person setzt pro Runde einen Pin.", available: true, icon: "/mode-icons/solo-modus-crop.png" },
-  { id: "couch", title: "Party-Modus", text: "Reihum tippen, Punkte jagen.", available: true, icon: "/mode-icons/party-modus-crop.png" },
-  { id: "online", title: "Online-Modus", text: "Code teilen und live gegeneinander spielen.", available: true, icon: "/mode-icons/online-modus-crop.png" }
+  { id: "solo", title: "Solo-Modus", text: "Eine Person setzt pro Runde einen Pin.", available: true, icon: "/mode-icons/solo-modus-crop.webp" },
+  { id: "couch", title: "Party-Modus", text: "Reihum tippen, Punkte jagen.", available: true, icon: "/mode-icons/party-modus-crop.webp" },
+  { id: "online", title: "Online-Modus", text: "Code teilen und live gegeneinander spielen.", available: true, icon: "/mode-icons/online-modus-crop.webp" }
 ];
 
 export type InitialGameMode = "home" | GameSettings["localMode"] | "online";
@@ -91,9 +92,12 @@ function HeroMapPreview() {
   return (
     <div className="absolute inset-0 overflow-hidden bg-[#efeae0]">
       <img
-        src="/punktlandung-kartenbild.jpg"
+        src="/punktlandung-kartenbild.webp"
         alt=""
         aria-hidden="true"
+        width={1833}
+        height={958}
+        fetchPriority="high"
         className="punktlandung-home-map-image absolute inset-0 h-full w-full object-cover"
         draggable={false}
       />
@@ -573,7 +577,9 @@ export function GameApp({
   }
 
   return (
-    <main className="min-h-dvh overflow-x-hidden overflow-y-auto bg-slate-950 p-4 text-slate-50 lg:h-dvh lg:overflow-hidden">
+    <>
+      {ENABLE_FULLSCREEN_INTRO ? <FullscreenIntro /> : null}
+      <main className="min-h-dvh overflow-x-hidden overflow-y-auto bg-slate-950 p-4 text-slate-50 lg:h-dvh lg:overflow-hidden">
       <div className="punktlandung-home-shell mx-auto grid min-h-full min-w-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px]">
         <AdContainer
           placement="home-left-rail"
@@ -747,7 +753,7 @@ export function GameApp({
                 <label className="block">
                   <span className="punktlandung-home-mode-content punktlandung-home-room-content">
                     <span className="punktlandung-home-mode-icon punktlandung-home-mode-icon-room" aria-hidden="true">
-                      <img src="/mode-icons/online-raum3-crop.png" alt="" draggable={false} />
+                      <img src="/mode-icons/online-raum3-crop.webp" alt="" draggable={false} />
                     </span>
                     <span className="punktlandung-home-room-main min-w-0">
                       <span className="punktlandung-home-room-heading">
@@ -809,6 +815,7 @@ export function GameApp({
           {error}
         </button>
       )}
-    </main>
+      </main>
+    </>
   );
 }

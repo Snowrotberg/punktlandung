@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ButtonLink } from "@/components/Button";
 import { InfoPageShell } from "@/components/InfoPageShell";
+import { JsonLd } from "@/components/StructuredData";
 import { absoluteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -22,13 +23,52 @@ const scoreExamples = [
   { distance: "5.000 km", points: "335" }
 ];
 
+const howToStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "@id": `${absoluteUrl("/so-funktioniert-punktlandung")}#spielablauf`,
+  name: "Wie funktioniert Punktlandung?",
+  description:
+    "In vier Schritten einen Ort einschätzen, den Tipp auf der Karte setzen und bis zu 5.000 Punkte sammeln.",
+  inLanguage: "de-DE",
+  url: absoluteUrl("/so-funktioniert-punktlandung"),
+  step: [
+    {
+      "@type": "HowToStep",
+      position: 1,
+      name: "Hinweis ansehen",
+      text: "Sieh dir das Bild oder die geografische Aufgabe aus der gewählten Kategorie an."
+    },
+    {
+      "@type": "HowToStep",
+      position: 2,
+      name: "Ort einschätzen",
+      text: "Suche auf der Weltkarte die Stelle, an der du das gezeigte Ziel vermutest."
+    },
+    {
+      "@type": "HowToStep",
+      position: 3,
+      name: "Pin setzen",
+      text: "Setze deinen Kartentipp für die aktuelle Runde."
+    },
+    {
+      "@type": "HowToStep",
+      position: 4,
+      name: "Ergebnis vergleichen",
+      text: "Vergleiche Ziel, Entfernung und die erreichten Punkte."
+    }
+  ]
+};
+
 export default function SoFunktioniertPunktlandungPage() {
   return (
-    <InfoPageShell
-      eyebrow="Spielregeln und Methodik"
-      title="Wie funktioniert Punktlandung?"
-      intro="Punktlandung zeigt dir einen Ort, ein Wahrzeichen, eine Landschaft, eine Stadt oder eine Flagge. Du setzt deinen Tipp auf der Weltkarte. Je kleiner die Entfernung zum Ziel, desto mehr der maximal 5.000 Punkte erhältst du."
-    >
+    <>
+      <JsonLd data={howToStructuredData} />
+      <InfoPageShell
+        eyebrow="Spielregeln und Methodik"
+        title="Wie funktioniert Punktlandung?"
+        intro="Punktlandung zeigt dir einen Ort, ein Wahrzeichen, eine Landschaft, eine Stadt oder eine Flagge. Du setzt deinen Tipp auf der Weltkarte. Je kleiner die Entfernung zum Ziel, desto mehr der maximal 5.000 Punkte erhältst du."
+      >
       <p className="text-sm text-slate-400">Inhaltlich geprüft: 28. Juli 2026</p>
 
       <section className="mt-6">
@@ -124,10 +164,13 @@ export default function SoFunktioniertPunktlandungPage() {
           Standardmäßig startet eine Partie mit 15 Runden und 60 Sekunden pro Runde. Kategorie, Rundenzahl und Zeit
           lassen sich in den Spieleinstellungen anpassen.
         </p>
-        <ButtonLink href="/" tone="primary" className="mt-4 w-fit normal-case">
-          Punktlandung kostenlos starten
-        </ButtonLink>
+        <div className="mt-4 flex">
+          <ButtonLink href="/" tone="primary" className="inline-flex w-fit items-center justify-center normal-case">
+            Punktlandung kostenlos starten
+          </ButtonLink>
+        </div>
       </section>
-    </InfoPageShell>
+      </InfoPageShell>
+    </>
   );
 }

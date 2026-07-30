@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { ButtonLink } from "@/components/Button";
 import { InfoPageShell } from "@/components/InfoPageShell";
+import { JsonLd } from "@/components/StructuredData";
 import { builtInLocations } from "@/data/locations";
 import { absoluteUrl } from "@/lib/seo";
 import type { LocationCategory } from "@/types/game";
 
 export const metadata: Metadata = {
-  title: "Der Punktlandung-Ortskatalog: Umfang, Kategorien und Quellen",
+  title: "Welche Orte und Aufgaben gibt es bei Punktlandung?",
   description:
-    "Transparenter Einblick in den Punktlandung-Ortskatalog: aktuelle Anzahl spielbarer Aufgaben, Kategorien, Länderabdeckung, Auswahl und Bildquellen.",
+    "Welche Inhalte bietet Punktlandung? Übersicht über spielbare Orte, Flaggen, Kategorien, Länderabdeckung, Bildauswahl und Quellen.",
   alternates: {
     canonical: absoluteUrl("/ortskatalog")
   }
@@ -39,13 +40,44 @@ const categoryCounts = builtInLocations.reduce<Record<string, number>>((counts, 
 
 const countryCount = new Set(builtInLocations.map((location) => location.countryCode).filter(Boolean)).size;
 
+const catalogStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "@id": `${absoluteUrl("/ortskatalog")}#collection`,
+  name: "Punktlandung-Ortskatalog",
+  url: absoluteUrl("/ortskatalog"),
+  description: `Übersicht über ${builtInLocations.length.toLocaleString("de-DE")} spielbare Orts- und Flaggenaufgaben in fünf Kategorien.`,
+  inLanguage: "de-DE",
+  dateModified: "2026-07-28",
+  isPartOf: {
+    "@id": `${absoluteUrl("/")}#website`
+  },
+  about: categoryOrder.map((category) => ({
+    "@type": "Thing",
+    name: categoryLabels[category]
+  })),
+  mainEntity: {
+    "@type": "ItemList",
+    name: "Spielbare Kategorien bei Punktlandung",
+    numberOfItems: categoryOrder.length,
+    itemListElement: categoryOrder.map((category, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: categoryLabels[category],
+      description: `${(categoryCounts[category] ?? 0).toLocaleString("de-DE")} spielbare Aufgaben`
+    }))
+  }
+};
+
 export default function OrtskatalogPage() {
   return (
-    <InfoPageShell
-      eyebrow="Eigene Produktdaten"
-      title="Der Punktlandung-Ortskatalog"
-      intro={`Punktlandung enthält aktuell ${builtInLocations.length.toLocaleString("de-DE")} spielbare Orts- und Flaggenaufgaben in fünf Kategorien. Die Zahlen werden beim Build direkt aus dem tatsächlich verwendeten Spielkatalog berechnet.`}
-    >
+    <>
+      <JsonLd data={catalogStructuredData} />
+      <InfoPageShell
+        eyebrow="Spielinhalte und Quellen"
+        title="Welche Orte und Aufgaben gibt es bei Punktlandung?"
+        intro={`Diese Seite zeigt, welche Inhalte im Spiel vorkommen: aktuell ${builtInLocations.length.toLocaleString("de-DE")} spielbare Aufgaben mit Städten, Hauptstädten, Wahrzeichen, Landschaften und Flaggen. Außerdem erklären wir, wie die Motive ausgewählt und geprüft werden.`}
+      >
       <p className="text-sm text-slate-400">Datenstand der Katalogversion: Juli 2026</p>
 
       <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -56,8 +88,8 @@ export default function OrtskatalogPage() {
         </div>
         <div className="rounded-md bg-slate-950/72 p-5 ring-1 ring-slate-700">
           <p className="text-4xl font-black text-indigo-300">{countryCount.toLocaleString("de-DE")}</p>
-          <h2 className="mt-2 text-lg font-black text-white">Ländercodes</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-400">Im aktiven Katalog vertreten.</p>
+          <h2 className="mt-2 text-lg font-black text-white">Länder und Gebiete</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">Über eindeutige Ländercodes im aktiven Katalog vertreten.</p>
         </div>
         <div className="rounded-md bg-slate-950/72 p-5 ring-1 ring-slate-700 sm:col-span-2 xl:col-span-1">
           <p className="text-4xl font-black text-amber-300">5</p>
@@ -112,20 +144,22 @@ export default function OrtskatalogPage() {
       </section>
 
       <section className="mt-8 rounded-md border border-slate-700 bg-slate-950/60 p-5">
-        <h2 className="text-[22px] font-black leading-tight text-white">Quellen nachvollziehen</h2>
+        <h2 className="text-[22px] font-black leading-tight text-white">Woher stammen die Inhalte?</h2>
         <p className="mt-2 leading-7 text-slate-300">
-          Die Lizenzseite nennt die verwendeten Daten- und Bildquellen und führt zu den Bildnachweisen des Katalogs.
-          Die Zahlen auf dieser Seite sind keine Marketing-Schätzung, sondern werden aus dem aktiven Datenbestand berechnet.
+          Die Bilder stammen aus Wikimedia Commons. Die Lizenzseite nennt die verwendeten Daten- und Bildquellen und
+          führt zu den einzelnen Bildnachweisen. Die Zahlen auf dieser Seite sind keine Marketing-Schätzung, sondern
+          werden direkt aus dem aktiven Spieldatenbestand berechnet.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <ButtonLink href="/lizenzen" tone="ghost" className="w-fit normal-case">
+          <ButtonLink href="/lizenzen" tone="ghost" className="inline-flex w-fit items-center justify-center normal-case">
             Quellen und Lizenzen ansehen
           </ButtonLink>
-          <ButtonLink href="/" tone="primary" className="w-fit normal-case">
-            Katalog im Spiel erleben
+          <ButtonLink href="/" tone="primary" className="inline-flex w-fit items-center justify-center normal-case">
+            Punktlandung kostenlos starten
           </ButtonLink>
         </div>
       </section>
-    </InfoPageShell>
+      </InfoPageShell>
+    </>
   );
 }

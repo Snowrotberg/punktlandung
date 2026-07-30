@@ -12,7 +12,8 @@ function sameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get("origin");
   if (!origin || request.headers.get("sec-fetch-site") === "cross-site") return false;
   try {
-    return new URL(origin).host === request.nextUrl.host;
+    const requestHost = request.headers.get("host") ?? request.nextUrl.host;
+    return new URL(origin).host === requestHost;
   } catch {
     return false;
   }

@@ -2,12 +2,23 @@ import { absoluteUrl, defaultDescription, faqItems, ogImage, siteName } from "@/
 
 const graph = [
   {
+    "@type": "Organization",
+    "@id": `${absoluteUrl("/")}#organization`,
+    name: siteName,
+    url: absoluteUrl("/"),
+    logo: absoluteUrl("/icon.png"),
+    sameAs: ["https://www.youtube.com/@punktlandungapp"]
+  },
+  {
     "@type": "WebSite",
     "@id": `${absoluteUrl("/")}#website`,
     url: absoluteUrl("/"),
     name: siteName,
     inLanguage: "de-DE",
-    description: defaultDescription
+    description: defaultDescription,
+    publisher: {
+      "@id": `${absoluteUrl("/")}#organization`
+    }
   },
   {
     "@type": "VideoGame",
@@ -20,7 +31,18 @@ const graph = [
     gamePlatform: "Web browser",
     genre: ["Geo-Guessing", "Geografie-Quiz", "Partyspiel"],
     playMode: ["SinglePlayer", "MultiPlayer"],
+    numberOfPlayers: {
+      "@type": "QuantitativeValue",
+      minValue: 1,
+      maxValue: 10
+    },
+    isAccessibleForFree: true,
+    operatingSystem: "Web browser",
+    browserRequirements: "JavaScript enabled",
     inLanguage: "de-DE",
+    publisher: {
+      "@id": `${absoluteUrl("/")}#organization`
+    },
     offers: {
       "@type": "Offer",
       price: "0",
@@ -44,27 +66,25 @@ const faqGraph = {
   }))
 };
 
-export function StructuredData() {
+type JsonLdProps = {
+  data: Record<string, unknown>;
+};
+
+export function JsonLd({ data }: JsonLdProps) {
   return (
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
-        __html: JSON.stringify({
-          "@context": "https://schema.org",
-          "@graph": graph
-        })
+        __html: JSON.stringify(data)
       }}
     />
   );
 }
 
+export function StructuredData() {
+  return <JsonLd data={{ "@context": "https://schema.org", "@graph": graph }} />;
+}
+
 export function FaqStructuredData() {
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify(faqGraph)
-      }}
-    />
-  );
+  return <JsonLd data={faqGraph} />;
 }

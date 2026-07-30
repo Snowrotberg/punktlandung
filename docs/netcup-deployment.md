@@ -25,6 +25,11 @@ Diese Weiterleitung gehört in die Host-Konfiguration des Reverse-Proxys und
 nicht in die Next.js-Oberfläche. Dadurch wird die doppelte Domain bereits vor
 dem Rendern vereinheitlicht.
 
+Als zusätzliche Absicherung leitet auch die Next.js-Middleware den exakten
+`www`-Host mit Status 308 auf die in `NEXT_PUBLIC_APP_URL` konfigurierte
+Hauptdomain um. Die Reverse-Proxy-Regel bleibt trotzdem die bevorzugte erste
+Schicht.
+
 ## Erforderliche Prüfungen vor einem Release
 
 ```bash
@@ -44,11 +49,10 @@ Die vollständige Liste und sichere Beispielwerte stehen in `.env.example`. Vor 
 - `FEEDBACK_GMAIL_USER`, `FEEDBACK_GMAIL_APP_PASSWORD`, `FEEDBACK_TO_EMAIL`
 - `WS_HOST=127.0.0.1`, erlaubte Origins und Schutzgrenzen
 - `USAGE_METRICS_FILE` und `USAGE_REPORT_TO_EMAIL`
-- während des geschützten Tests weiterhin `APP_ACCESS_PASSWORD`
 
 ## Protokolle und Aufbewahrung
 
-Die Vorlage `ops/logrotate/punktlandung-pm2` begrenzt die PM2-Protokolle auf 14 Tage. Beim geschützten Produktionscheck muss zusätzlich bestätigt werden, dass die Zugriffs- und Fehlerprotokolle des Reverse-Proxys ebenfalls spätestens nach 14 Tagen gelöscht werden.
+Die Vorlage `ops/logrotate/punktlandung-pm2` begrenzt die PM2-Protokolle auf 14 Tage. Beim Produktionscheck muss zusätzlich bestätigt werden, dass die Zugriffs- und Fehlerprotokolle des Reverse-Proxys ebenfalls spätestens nach 14 Tagen gelöscht werden.
 
 ## Sicherer Release-Ablauf
 

@@ -1,6 +1,6 @@
 # SEO-, AEO- und GEO-Umsetzungsplan für Punktlandung
 
-Stand: 28. Juli 2026
+Stand: 29. Juli 2026
 
 ## Zielbild
 
@@ -72,16 +72,18 @@ stattdessen überprüfbare Voraussetzungen und verbessern sie anhand echter Date
 **Ziel:** Jede gewünschte öffentliche Seite ist unter genau einer produktiven
 URL erreichbar, indexierbar und intern auffindbar.
 
-- [ ] Finale Hauptdomain und `www`-Variante festlegen.
+- [x] Finale Hauptdomain `https://punktlandung.app` festgelegt; `www` wird auf
+  diese Variante weitergeleitet.
 - [x] `NEXT_PUBLIC_APP_URL=https://…` in Produktion anhand der live
   ausgegebenen Canonicals und Sitemap geprüft.
-- [ ] HTTP, HTTPS, `www` und non-`www` auf eine Variante weiterleiten.
+- [ ] HTTP, HTTPS, `www` und non-`www` auf eine Variante weiterleiten. Die
+  zusätzliche 308-Weiterleitung in der Next.js-Middleware ist implementiert und
+  wird nach dem nächsten Deployment live geprüft.
 - [x] Live-Ausgabe von Canonical, `robots.txt` und `sitemap.xml` geprüft.
 - [x] Nur öffentliche Informations- und Spiel-Einstiegsseiten indexieren.
   Temporäre Raum-, Warte-, Ergebnis-, Zugangs- und API-Seiten bewusst auf
   Indexierbarkeit prüfen.
-- [x] Sitemap in Google Search Console einreichen; erster Abruf ist noch in
-  Verarbeitung und wird erneut kontrolliert.
+- [x] Sitemap in Google Search Console eingereicht und erfolgreich verarbeitet.
 - [ ] Sitemap in Bing Webmaster Tools einreichen.
 - [ ] Wichtige URLs per URL-Prüfung testen.
 - [ ] Rich-Results-/Schema-Validierung für Startseite und FAQ durchführen.
@@ -141,16 +143,21 @@ werden.
 **Ziel:** Nutzer und Antwortsysteme verstehen den Inhalt eines Abschnitts schon
 in den ersten ein bis zwei Sätzen.
 
-- [ ] Pro Zielseite eine konkrete Nutzerfrage und eine eindeutige Hauptantwort
+- [x] Für die beiden neuen Kernseiten eine konkrete Nutzerfrage und eine
+  eindeutige Hauptantwort
   definieren.
-- [ ] Direkt unter jeder H1 eine kurze Antwort mit Produktname, Nutzen und
+- [x] Direkt unter den H1 der beiden Kernseiten eine kurze Antwort mit
+  Produktname, Nutzen und
   Einschränkung schreiben.
-- [ ] Überschriften als echte Fragen oder klare Themen formulieren.
-- [ ] Wo passend Listen, Vergleichstabellen und kurze Schrittfolgen nutzen.
-- [ ] Behauptungen mit konkreten, überprüfbaren Fakten statt Adjektiven stützen.
+- [x] Überschriften der beiden Kernseiten als echte Fragen oder klare Themen
+  formulieren.
+- [x] Wo passend Listen, Vergleichstabellen und kurze Schrittfolgen nutzen.
+- [x] Behauptungen auf den Kernseiten mit konkreten, überprüfbaren Fakten statt
+  Adjektiven stützen.
 - [ ] Ein sichtbares, ehrliches Aktualisierungsdatum nur bei substanzieller
   Überarbeitung anzeigen.
-- [ ] Wichtige Aussagen in normalem HTML-Text ausgeben; nicht nur in Bildern,
+- [x] Wichtige Aussagen der Kernseiten in normalem HTML-Text ausgeben; nicht nur
+  in Bildern,
   Canvas oder Interaktionen.
 - [ ] FAQ nur um Fragen erweitern, die Nutzer tatsächlich stellen. Keine
   Massen-FAQ zur Keyword-Abdeckung.
@@ -205,9 +212,9 @@ von den passenden Landingpages verlinkt werden.
 **Ziel:** Keine Sammlung austauschbarer oder konkurrierender Seiten.
 
 - [ ] Search-Console-Daten prüfen, bevor weitere Keyword-Seiten entstehen.
-- [ ] Für jede vorhandene Landingpage festhalten:
+- [x] Für jede vorhandene Landingpage festhalten:
   Zielanfrage, Nutzerproblem, einzigartige Antwort und gewünschte Aktion.
-- [ ] Überschneidungen zwischen
+- [x] Überschneidungen zwischen
   `/geoguessr-alternative-deutsch`,
   `/kostenloses-geoguessing-spiel`,
   `/geografie-spiel` und
@@ -226,17 +233,20 @@ und nicht nur dieselbe Produktbeschreibung umformuliert.
 
 **Ziel:** Gute mobile Nutzererfahrung und zuverlässig lesbarer Server-Output.
 
-- [ ] Lighthouse/PageSpeed-Baseline für Startseite und wichtigste
+- [x] Lighthouse-Baseline für Startseite und wichtigste
   Informationsseite auf Mobile und Desktop erfassen.
 - [ ] LCP, INP und CLS mit Feldwerten aus Search Console bzw. GA4 ergänzen,
   sobald genug Daten vorliegen.
-- [ ] Große Start-, Karten-, Kategorie- und Share-Bilder auf Format, Maße,
-  Kompression und responsive Auslieferung prüfen.
+- [x] Große Start-, Karten-, Kategorie- und Modus-Bilder auf Format, Maße und
+  Kompression prüfen; die 13 unmittelbar verwendeten PNG-/JPEG-Dateien wurden
+  als WebP von rund 12,3 MiB auf rund 1,0 MiB reduziert.
 - [ ] Nicht sichtbare Spiel-Assets lazy laden, sofern dadurch der Spielstart
   nicht schlechter wird.
-- [ ] Servergerendertes HTML stichprobenartig ohne JavaScript lesen.
+- [x] Servergerendertes HTML der Informationsseiten stichprobenartig lesen.
 - [ ] Überschriftenhierarchie, Linktexte, Bild-Alternativtexte, Tastaturbedienung
   und Farbkontraste prüfen.
+- [x] Einen reproduzierbaren Responsive-Check für Startseite und beide neue
+  Kernseiten in sechs Viewports hinterlegen.
 - [ ] Budgets festlegen, z. B. keine Regression bei LCP/INP/CLS und
   Informationsseiten ohne schwere Spielinitialisierung.
 

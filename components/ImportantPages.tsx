@@ -4,6 +4,8 @@ import { usePathname } from "next/navigation";
 import { CookieSettingsButton } from "@/components/CookieSettingsButton";
 
 const seoLinks = [
+  { href: "/so-funktioniert-punktlandung", label: "So funktioniert's" },
+  { href: "/ortskatalog", label: "Orte und Aufgaben" },
   { href: "/geoguessr-alternative-deutsch", label: "GeoGuessr Alternative" },
   { href: "/geografie-spiel", label: "Geografie-Spiel" },
   { href: "/orte-erraten-spiel", label: "Orte erraten" },
@@ -13,8 +15,6 @@ const seoLinks = [
 
 const legalLinks = [
   { href: "/infos", label: "Infos" },
-  { href: "/so-funktioniert-punktlandung", label: "So funktioniert's" },
-  { href: "/ortskatalog", label: "Ortskatalog" },
   { href: "/feedback", label: "Feedback" },
   { href: "/impressum", label: "Impressum" },
   { href: "/datenschutz", label: "Datenschutz" },
