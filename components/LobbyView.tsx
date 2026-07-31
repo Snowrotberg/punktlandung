@@ -253,7 +253,7 @@ export function LobbyView({
   if (isOnlineRoom && isRoomOnline) {
     return (
       <main className="punktlandung-lobby punktlandung-online-waiting-room h-dvh overflow-hidden bg-slate-950 p-2 text-slate-50 md:p-4">
-        <div className="mx-auto grid h-full min-h-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-2 md:gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px]">
+        <div className="punktlandung-lobby-shell mx-auto grid h-full min-h-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-2 md:gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px]">
           <AdContainer
             placement="online-left-rail"
             variant="rail"
@@ -438,7 +438,7 @@ export function LobbyView({
 
   return (
     <main className="punktlandung-lobby h-dvh overflow-hidden bg-slate-950 p-2 text-slate-50 md:p-4">
-      <div className="mx-auto grid h-full min-h-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-2 md:gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px]">
+      <div className="punktlandung-lobby-shell mx-auto grid h-full min-h-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-2 md:gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px]">
         <AdContainer
           placement={leftRailPlacement}
           variant="rail"
@@ -851,6 +851,9 @@ export function LobbyView({
                     </span>
                   </button>
                 ))}
+              </div>
+              <div className="punktlandung-tv-category-legal hidden">
+                <LegalLinks preserveSession className="border-t border-slate-800/85 pt-3" />
               </div>
               <div className="punktlandung-mobile-category-legal lg:hidden">
                 <LegalLinks preserveSession className="border-t border-slate-800/85 pt-3" />

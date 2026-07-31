@@ -3,15 +3,17 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, MouseEvent, ReactNode } from "react";
 import { useSound } from "./SoundProvider";
 
+export type ButtonTone = "primary" | "selected" | "good" | "bad" | "ghost";
+
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  tone?: "primary" | "selected" | "good" | "bad" | "ghost";
+  tone?: ButtonTone;
   sound?: "none" | "click" | "select";
   children: ReactNode;
 };
 
 type ButtonLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "onClick"> & {
   href: string;
-  tone?: "primary" | "selected" | "good" | "bad" | "ghost";
+  tone?: ButtonTone;
   sound?: "none" | "click" | "select";
   onNavigate?: () => void;
   children: ReactNode;
@@ -26,7 +28,7 @@ const toneClass = {
   ghost: "border-slate-600/80 bg-slate-950/45 text-slate-100 hover:border-slate-400/90 hover:bg-slate-800/70"
 };
 
-function buttonClassName(tone: keyof typeof toneClass, className: string): string {
+export function buttonClassName(tone: ButtonTone, className: string): string {
   const casingClass = className.includes("normal-case") ? "" : "uppercase";
   return `punktlandung-interactive-control rounded-md border-3 px-4 py-3 text-sm font-black ${casingClass} tracking-wide transition ${toneClass[tone]} ${className}`;
 }

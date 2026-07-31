@@ -8735,6 +8735,621 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 }
 
+/* Keep the user-approved 4K home finishing touches last in the cascade. */
+@media (min-width: 2200px) and (min-height: 1200px) and (orientation: landscape) {
+  body .punktlandung-tv-home {
+    --home-category-heading-gap: 1.85rem;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy {
+    transform: translateY(0.75rem) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-art {
+    padding-right: 4rem !important;
+    transform: translateX(-1rem) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel
+    nav[aria-label="Rechtliche Informationen"] {
+    column-gap: 1rem !important;
+    font-size: 1.05rem !important;
+    justify-content: space-between !important;
+    line-height: 1.25 !important;
+    padding: 0 0.75rem 0.85rem !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel
+    nav[aria-label="Rechtliche Informationen"] > * {
+    font-size: inherit !important;
+  }
+}
+
+/* 4K television pass: the layout already uses the available canvas, but most
+ * controls and copy still inherited laptop-scale values. Keep the immersive
+ * map/image surfaces large and raise the readable UI to living-room scale. */
+@media (min-width: 2200px) and (min-height: 1200px) and (orientation: landscape) {
+  /* Home refinements requested after the first 4K readability pass. */
+  body .punktlandung-tv-home {
+    --home-category-heading-gap: 1.85rem;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy {
+    transform: translateY(0.75rem) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-art {
+    padding-right: 4rem !important;
+    transform: translateX(-1rem) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel
+    nav[aria-label="Rechtliche Informationen"] {
+    column-gap: 1rem !important;
+    font-size: 1.05rem !important;
+    justify-content: space-between !important;
+    line-height: 1.25 !important;
+    padding: 0 0.75rem 0.85rem !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel
+    nav[aria-label="Rechtliche Informationen"] > * {
+    font-size: inherit !important;
+  }
+
+  /* Setup pages (solo, party and online). */
+  body main.punktlandung-lobby {
+    padding: 2rem !important;
+  }
+
+  body main.punktlandung-lobby > div,
+  body main.punktlandung-lobby > div > div,
+  body .punktlandung-lobby-config-stage,
+  body .punktlandung-lobby-config-section {
+    gap: 1.5rem !important;
+  }
+
+  body .punktlandung-lobby-header {
+    min-height: 13rem !important;
+    padding: 2rem 2.5rem !important;
+  }
+
+  body .punktlandung-lobby-header .punktlandung-beta-context-row > p {
+    font-size: 1.15rem !important;
+  }
+
+  body .punktlandung-lobby-header h1 {
+    font-size: 4.25rem !important;
+    line-height: 1.04 !important;
+    margin-top: 0.55rem !important;
+  }
+
+  body .punktlandung-lobby-header h1 + p {
+    font-size: 1.55rem !important;
+    line-height: 1.45 !important;
+    margin-top: 0.7rem !important;
+  }
+
+  body .punktlandung-lobby-header h1 svg {
+    height: 4.3rem !important;
+    width: 3.45rem !important;
+  }
+
+  body .punktlandung-lobby-header .punktlandung-mode-action,
+  body .punktlandung-lobby-header .punktlandung-command-button {
+    font-size: 1.35rem !important;
+    min-height: 5rem !important;
+    min-width: 11rem !important;
+    padding: 1rem 1.5rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-settings,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-categories,
+  body .punktlandung-lobby-config-stage .punktlandung-lobby-party-aside {
+    padding: 2rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-settings-heading,
+  body .punktlandung-lobby-config-stage .punktlandung-category-heading h2 {
+    font-size: 2.75rem !important;
+    line-height: 1.1 !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-category-heading > p {
+    font-size: 1.4rem !important;
+    line-height: 1.4 !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-mode-list {
+    gap: 1.25rem !important;
+    margin-top: 1.5rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-mode-choice {
+    min-height: 8rem !important;
+    padding: 1.4rem 1.75rem 1.4rem 2.4rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-mode-choice .punktlandung-mode-title,
+  body .punktlandung-lobby-config-stage .punktlandung-mode-choice > p:first-of-type {
+    font-size: 2rem !important;
+    line-height: 1.1 !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-mode-choice p:not(:first-of-type) {
+    font-size: 1.25rem !important;
+    line-height: 1.35 !important;
+    margin-top: 0.45rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-player-card,
+  body .punktlandung-lobby-config-stage .punktlandung-online-host-card {
+    margin-top: 1.5rem !important;
+    padding: 1.25rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-player-card :is(p, span, button),
+  body .punktlandung-lobby-config-stage .punktlandung-online-host-card :is(p, span, label) {
+    font-size: 1.05rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-player-slots {
+    gap: 0.75rem !important;
+    margin-top: 1rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-slot {
+    min-height: 4rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-rules.punktlandung-setup-rules {
+    margin-top: 1.5rem !important;
+    padding-top: 1.25rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-party-rules legend,
+  body .punktlandung-lobby-config-stage .punktlandung-party-rules > p,
+  body .punktlandung-lobby-config-stage .punktlandung-party-rules fieldset > p {
+    font-size: 1.15rem !important;
+    line-height: 1.3 !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-setting-choice,
+  body .punktlandung-lobby-config-stage .punktlandung-round-stepper {
+    font-size: 1.35rem !important;
+    height: 4.75rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-restriction-choice {
+    font-size: 1.05rem !important;
+    gap: 0.8rem !important;
+    min-height: 4.5rem !important;
+    padding: 0.7rem 0.85rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-restriction-choice > span:first-child {
+    height: 1.55rem !important;
+    width: 1.55rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-settings-legal {
+    column-gap: 1rem !important;
+    font-size: 1.05rem !important;
+    justify-content: space-between !important;
+    margin-top: 1.5rem !important;
+    padding-top: 1.25rem !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-settings-legal > * {
+    font-size: inherit !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-category-grid--preview {
+    gap: 1rem !important;
+    margin-top: 1.5rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-category-card {
+    padding: 2rem 2.25rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-category-title {
+    font-size: 2.35rem !important;
+    line-height: 1.12 !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-category-copy > span:last-child,
+  body .punktlandung-lobby-config-stage .punktlandung-category-copy > p {
+    font-size: 1.4rem !important;
+    line-height: 1.4 !important;
+    margin-top: 0.7rem !important;
+  }
+
+  body .punktlandung-lobby-config-stage .punktlandung-category-soon-badge {
+    font-size: 1.05rem !important;
+    padding: 0.3rem 0.65rem !important;
+  }
+
+  /* Immersive game and replay overlays. */
+  body .punktlandung-game-hud {
+    inset-inline: 2rem !important;
+    top: 2rem !important;
+  }
+
+  body .punktlandung-game-hud-grid {
+    gap: 1.5rem !important;
+  }
+
+  body .punktlandung-game-stats {
+    gap: 1rem !important;
+  }
+
+  body .punktlandung-game-stat {
+    min-height: 6rem !important;
+    padding: 0.9rem 1.35rem !important;
+  }
+
+  body .punktlandung-game-stat p:first-child,
+  body .punktlandung-task-card p:first-child {
+    font-size: 0.95rem !important;
+  }
+
+  body .punktlandung-game-stat p:last-child {
+    font-size: 2rem !important;
+  }
+
+  body .punktlandung-task-card {
+    max-width: 30rem !important;
+    min-height: 6rem !important;
+    padding: 1rem 2rem !important;
+  }
+
+  body .punktlandung-task-card-title {
+    font-size: 2rem !important;
+  }
+
+  body .punktlandung-game-back-button {
+    font-size: 1.25rem !important;
+    min-height: 6rem !important;
+    min-width: 9rem !important;
+    padding: 1rem 1.35rem !important;
+  }
+
+  body .punktlandung-game-back-button svg {
+    height: 1.4rem !important;
+    width: 1.4rem !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--closed,
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--open,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--closed,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--open {
+    bottom: 2rem !important;
+    height: 28rem !important;
+    right: 2rem !important;
+    width: 42rem !important;
+    padding: 1.25rem !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--open,
+  body .punktlandung-image-replay .punktlandung-guess-map-panel--open {
+    height: 38rem !important;
+    width: 56rem !important;
+  }
+
+  body .punktlandung-map-panel-title {
+    font-size: 1rem !important;
+  }
+
+  body :is(.punktlandung-map-size-button, .punktlandung-map-secondary-button, .punktlandung-map-primary-button, .punktlandung-map-close-button) {
+    font-size: 1rem !important;
+    min-height: 4rem !important;
+    min-width: 9rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  body .punktlandung-source-chip {
+    bottom: 2rem !important;
+    max-width: 34rem !important;
+    padding: 0.8rem 1.25rem !important;
+  }
+
+  body .punktlandung-source-chip p {
+    font-size: 0.9rem !important;
+  }
+
+  body .punktlandung-source-chip h1 {
+    font-size: 1.25rem !important;
+  }
+
+  body .punktlandung-focus-tab {
+    font-size: 1rem !important;
+    padding: 1.25rem 0.8rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-header {
+    left: 2rem !important;
+    right: 2rem !important;
+    top: 2rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-info {
+    max-width: 54rem !important;
+    padding: 1.5rem 2rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-info p:first-child {
+    font-size: 1rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-info h1 {
+    font-size: 3rem !important;
+    margin-top: 0.45rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-info > p:last-child {
+    font-size: 1.25rem !important;
+    margin-top: 0.45rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-top-actions {
+    gap: 1rem !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-replay-top-actions button,
+  body .punktlandung-image-replay .punktlandung-replay-top-actions a {
+    font-size: 1.15rem !important;
+    min-height: 4.75rem !important;
+    padding: 0.9rem 1.25rem !important;
+  }
+
+  /* Round result / resolution. The map keeps the majority of the canvas. */
+  body main:has(.punktlandung-results-grid),
+  body main:has(.punktlandung-final-standings-grid) {
+    padding: 2rem !important;
+  }
+
+  body .punktlandung-results-grid {
+    gap: 1.5rem !important;
+    grid-template-columns: minmax(0, 1fr) 42rem !important;
+  }
+
+  body .punktlandung-results-grid > section,
+  body .punktlandung-results-sidebar {
+    gap: 1.25rem !important;
+  }
+
+  body .punktlandung-results-hero,
+  body .punktlandung-results-panel,
+  body .punktlandung-results-sidebar > div {
+    padding: 1.75rem 2rem !important;
+  }
+
+  body .punktlandung-results-hero > p,
+  body .punktlandung-results-hero-header > div > p:first-child,
+  body .punktlandung-results-hero-header > div > p:nth-child(2) {
+    font-size: 0.95rem !important;
+  }
+
+  body .punktlandung-results-hero h1 {
+    font-size: 3rem !important;
+    line-height: 1.05 !important;
+  }
+
+  body .punktlandung-results-hero h1 + p {
+    font-size: 1.25rem !important;
+  }
+
+  body .punktlandung-results-hero button {
+    font-size: 1.1rem !important;
+    min-height: 4.5rem !important;
+    padding-inline: 1.25rem !important;
+  }
+
+  body .punktlandung-results-panel h2,
+  body .punktlandung-results-sidebar > div > h2 {
+    font-size: 2rem !important;
+  }
+
+  body .punktlandung-results-list {
+    margin-top: 1rem !important;
+  }
+
+  body .punktlandung-results-row {
+    min-height: 5.25rem !important;
+    padding-block: 0.85rem !important;
+    padding-left: 1.5rem !important;
+  }
+
+  body .punktlandung-results-round-grid,
+  body .punktlandung-results-total-row {
+    grid-template-columns: minmax(0, 1.25fr) minmax(13rem, 0.8fr) !important;
+  }
+
+  body .punktlandung-results-rank,
+  body .punktlandung-results-player,
+  body .punktlandung-results-points {
+    font-size: 1.25rem !important;
+  }
+
+  body .punktlandung-results-distance {
+    font-size: 1rem !important;
+  }
+
+  body .punktlandung-results-scorebar {
+    height: 0.8rem !important;
+  }
+
+  body .punktlandung-results-panel nav[aria-label="Rechtliche Informationen"] {
+    font-size: 1rem !important;
+    padding-top: 1rem !important;
+  }
+
+  body .punktlandung-map-label {
+    font-size: 1rem !important;
+    padding: 0.6rem 0.85rem !important;
+  }
+
+  /* Final standings. */
+  body .punktlandung-final-standings-grid {
+    gap: 1.5rem !important;
+    grid-template-columns: minmax(0, 1.08fr) minmax(50rem, 0.92fr) !important;
+    max-width: none !important;
+  }
+
+  body .punktlandung-final-left {
+    gap: 1.5rem !important;
+  }
+
+  body .punktlandung-final-left > div,
+  body .punktlandung-final-table {
+    padding: 2rem !important;
+  }
+
+  body .punktlandung-final-left > div:first-child > div > div > p:first-child,
+  body .punktlandung-final-table > div:nth-child(2) p:first-child {
+    font-size: 1rem !important;
+  }
+
+  body .punktlandung-final-left h1 {
+    font-size: 3.5rem !important;
+  }
+
+  body .punktlandung-final-left h1 + p {
+    font-size: 1.3rem !important;
+  }
+
+  body .punktlandung-final-left h2,
+  body .punktlandung-final-table h2 {
+    font-size: 2.4rem !important;
+  }
+
+  body .punktlandung-final-highlights {
+    gap: 1rem !important;
+    margin-top: 1.25rem !important;
+  }
+
+  body .punktlandung-final-highlights > div {
+    padding: 1.25rem 1.25rem 1.25rem 2rem !important;
+  }
+
+  body .punktlandung-final-highlights > div > p:first-of-type,
+  body .punktlandung-final-player-metrics,
+  body .punktlandung-final-player-metrics > p {
+    font-size: 1rem !important;
+  }
+
+  body .punktlandung-final-highlights > div > p:nth-of-type(2) {
+    font-size: 1.55rem !important;
+  }
+
+  body .punktlandung-final-table > div:first-child button {
+    font-size: 1.05rem !important;
+    min-height: 4.5rem !important;
+    padding-inline: 1.2rem !important;
+  }
+
+  body .punktlandung-final-table > div:nth-child(3) {
+    gap: 0.75rem !important;
+    margin-top: 1.25rem !important;
+  }
+
+  body .punktlandung-final-table > div:nth-child(3) > div {
+    padding: 0.8rem 1rem !important;
+  }
+
+  body .punktlandung-final-table > div:nth-child(3) p,
+  body .punktlandung-final-table > div:nth-child(3) span {
+    font-size: 1rem !important;
+  }
+
+  body .punktlandung-final-table > div:nth-child(3) > div > div:first-child p:first-of-type {
+    font-size: 1.2rem !important;
+  }
+
+  body .punktlandung-final-table nav[aria-label="Rechtliche Informationen"] {
+    font-size: 1rem !important;
+  }
+
+  /* Information, imprint and legal pages. */
+  body .punktlandung-info-header {
+    min-height: 12rem !important;
+    padding: 2rem 2.5rem !important;
+  }
+
+  body .punktlandung-info-header .punktlandung-beta-context-row > p {
+    font-size: 1rem !important;
+  }
+
+  body .punktlandung-info-header h1 {
+    font-size: 3.75rem !important;
+    line-height: 1.08 !important;
+    margin-top: 0.6rem !important;
+  }
+
+  body .punktlandung-info-header h1 + p {
+    font-size: 1.35rem !important;
+    line-height: 1.5 !important;
+    margin-top: 0.7rem !important;
+    max-width: 70rem !important;
+  }
+
+  body .punktlandung-info-header a,
+  body .punktlandung-info-header button {
+    font-size: 1.15rem !important;
+    min-height: 4.5rem !important;
+    padding: 0.85rem 1.25rem !important;
+  }
+
+  body .punktlandung-info-content,
+  body .punktlandung-info-navigation {
+    padding: 2rem !important;
+  }
+
+  body .punktlandung-info-content h2 {
+    font-size: 2.4rem !important;
+    line-height: 1.15 !important;
+  }
+
+  body .punktlandung-info-content h3 {
+    font-size: 1.75rem !important;
+    line-height: 1.2 !important;
+  }
+
+  body .punktlandung-info-content :is(p, li, dd, dt) {
+    font-size: 1.25rem !important;
+    line-height: 1.65 !important;
+  }
+
+  body .punktlandung-info-content :is(section, article, details) {
+    gap: 1rem !important;
+  }
+
+  body .punktlandung-info-navigation > h2 {
+    font-size: 2rem !important;
+  }
+
+  body .punktlandung-info-navigation nav {
+    margin-top: 1.25rem !important;
+  }
+
+  body .punktlandung-info-navigation nav > div {
+    gap: 0.75rem !important;
+  }
+
+  body .punktlandung-info-navigation-button {
+    font-size: 1.15rem !important;
+    min-height: 4rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+}
+
 @keyframes float-emoji {
   0% {
     transform: translateY(0) scale(0.8) rotate(-8deg);
@@ -18424,6 +19039,244 @@ body :is(.punktlandung-back-button, .punktlandung-back-link):not(:disabled):not(
   }
 }
 
+/* Monitor home alignment: keep both card columns on the same row rhythm and
+ * lift the legal links clear of the panel's lower border. */
+@media (min-width: 1600px) and (max-width: 2199px) and (orientation: landscape) {
+  body .punktlandung-tv-home .punktlandung-home-category-grid
+    > .punktlandung-home-category-card:nth-child(3),
+  body .punktlandung-tv-home .punktlandung-home-category-grid
+    > .punktlandung-home-category-card:nth-child(4) {
+    transform: translateY(-0.25rem) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-grid
+    > .punktlandung-home-category-card:nth-child(5),
+  body .punktlandung-tv-home .punktlandung-home-category-grid
+    > .punktlandung-home-category-card:nth-child(6) {
+    transform: translateY(-0.5rem) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-grid
+    > .punktlandung-home-category-card:nth-child(7),
+  body .punktlandung-tv-home .punktlandung-home-category-grid
+    > .punktlandung-home-category-card:nth-child(8) {
+    transform: translateY(-0.75rem) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel
+    nav[aria-label="Rechtliche Informationen"] {
+    padding-bottom: 0.4rem !important;
+  }
+}
+
+/* 4K television: use the same 12px row rhythm as the mode cards and remove
+ * the small heading-baseline offset so all four horizontal edges line up. */
+@media (min-width: 2200px) and (orientation: landscape) {
+  body .punktlandung-tv-home > section
+    .grid.auto-rows-fr.grid-cols-2.punktlandung-home-category-grid {
+    gap: var(--home-grid-gap) !important;
+    transform: none !important;
+  }
+}
+
+/* 4K television readability: use the available canvas for a living-room
+ * viewing distance instead of keeping the laptop-sized content caps. */
+@media (min-width: 2200px) and (min-height: 1200px) and (orientation: landscape) {
+  body main:has(> .punktlandung-home-shell) {
+    padding: 2rem !important;
+  }
+
+  body .punktlandung-home-shell,
+  body .punktlandung-tv-home {
+    gap: 1.5rem !important;
+  }
+
+  body .punktlandung-tv-home {
+    --home-panel-pad: 2rem;
+    --home-hero-h: 15rem;
+    --home-map-gap: 1.5rem;
+    --home-map-h: clamp(18rem, 18vh, 24rem);
+    --home-category-heading-gap: 1.5rem;
+    --home-category-heading-h: 3.5rem;
+    --home-category-list-gap: 1rem;
+    --home-grid-gap: 1rem;
+    --home-category-card-h: 13rem;
+    --home-login-h: 18rem;
+    --home-start-heading-h: 3.5rem;
+    --home-start-list-gap: var(--home-category-list-gap);
+  }
+
+  body .punktlandung-tv-home > section > div:last-child {
+    padding: var(--home-panel-pad) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel {
+    padding: 0 var(--home-panel-pad) var(--home-panel-pad) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy h1 {
+    font-size: 5.5rem !important;
+    line-height: 1.02 !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy > div:first-child {
+    gap: 1.25rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy > div:first-child > svg {
+    height: 5rem !important;
+    width: 4rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy > p:first-of-type {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+    margin-top: 0.8rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy > p:last-of-type {
+    font-size: 1.75rem !important;
+    line-height: 2.25rem !important;
+    margin-top: 0.35rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-map > div > div::before {
+    display: none !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-map-image {
+    left: 0 !important;
+    width: 100% !important;
+    object-fit: cover !important;
+    object-position: center 55% !important;
+    transform: none !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-heading h2,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel
+    :is(.punktlandung-home-login-block, .punktlandung-home-start-stack) > h2 {
+    font-size: 2.75rem !important;
+    line-height: 3.5rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card {
+    --home-category-icon-slot: 11rem;
+    column-gap: 2.5rem !important;
+    padding: 1.75rem 2.25rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-copy > p:first-child {
+    font-size: 2.15rem !important;
+    line-height: 1.1 !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-copy > p:last-child {
+    font-size: 1.4rem !important;
+    line-height: 1.45 !important;
+    margin-top: 0.45rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-art {
+    height: 10rem !important;
+    padding-right: 2.5rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-card:not(.punktlandung-preview-dash) > span.absolute {
+    font-size: 1.5rem !important;
+    right: 1.75rem !important;
+    top: 1.5rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-soon-badge {
+    font-size: 1.1rem !important;
+    padding: 0.3rem 0.65rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-statuses--side {
+    gap: 0.85rem !important;
+    right: 2rem !important;
+    top: 2rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-statuses--side > * {
+    font-size: 0.95rem !important;
+    min-height: 2.5rem !important;
+    padding: 0.55rem 0.85rem !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-beta-badge {
+    font-size: 0.95rem !important;
+    min-height: 2.5rem !important;
+    padding: 0.55rem 0.85rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block > div {
+    gap: 1.2rem !important;
+    margin-top: 1.2rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block label > span {
+    font-size: 1.2rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-login-block input {
+    font-size: 1.5rem !important;
+    height: 4rem !important;
+    margin-top: 0.45rem !important;
+    padding-inline: 1rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-card,
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-card {
+    padding: 1.75rem 2.25rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-content {
+    gap: 2.25rem !important;
+    grid-template-columns: 8.5rem minmax(0, 1fr) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel :is(
+    .punktlandung-home-mode-icon,
+    .punktlandung-home-mode-icon-solo,
+    .punktlandung-home-mode-icon-couch,
+    .punktlandung-home-mode-icon-online,
+    .punktlandung-home-mode-icon-room
+  ) {
+    height: 8rem !important;
+    width: 8.5rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-title {
+    font-size: 2.15rem !important;
+    line-height: 1.1 !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-text {
+    font-size: 1.4rem !important;
+    line-height: 1.35 !important;
+    margin-top: 0.45rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-mode-text + span {
+    font-size: 1.05rem !important;
+    margin-top: 0.6rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-controls {
+    gap: 1rem !important;
+    margin-top: 0.85rem !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel .punktlandung-home-room-controls :is(input, button) {
+    font-size: 1.2rem !important;
+    height: 4rem !important;
+    padding-inline: 1rem !important;
+  }
+}
+
 /* The compact results-header back control must not reappear after the shared
  * canonical back-button display rule later in the cascade. */
 @media (min-width: 640px) {
@@ -18470,5 +19323,355 @@ body :is(.punktlandung-back-button, .punktlandung-back-link):not(:disabled):not(
   body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-inline-action-icon {
     height: 0.7rem !important;
     width: 0.7rem !important;
+  }
+}
+
+/* Final 4K home cascade lock. */
+@media (min-width: 2200px) and (min-height: 1200px) and (orientation: landscape) {
+  body .punktlandung-tv-home {
+    --home-category-heading-gap: 1.85rem;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-hero-copy {
+    transform: translateY(0.75rem) !important;
+  }
+
+  body .punktlandung-tv-home .punktlandung-home-category-art {
+    padding-right: 4rem !important;
+    transform: translateX(-1rem) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel
+    nav[aria-label="Rechtliche Informationen"] {
+    column-gap: 1rem !important;
+    font-size: 1.05rem !important;
+    justify-content: space-between !important;
+    line-height: 1.25 !important;
+    padding: 0 0.75rem 0.85rem !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel
+    nav[aria-label="Rechtliche Informationen"] > * {
+    font-size: inherit !important;
+  }
+
+  /* Setup controls have older high-specificity desktop locks; keep their final
+   * 4K values here so time, rounds and restrictions match the enlarged shell. */
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-mode-choice {
+    min-height: 8rem !important;
+    padding: 1.4rem 1.75rem 1.4rem 2.4rem !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-mode-choice > p:first-child,
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-mode-choice .punktlandung-mode-title {
+    font-size: 2rem !important;
+    line-height: 1.1 !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-mode-choice > p + p {
+    font-size: 1.25rem !important;
+    line-height: 1.35 !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-setting-choice,
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-round-stepper {
+    font-size: 1.35rem !important;
+    height: 4.75rem !important;
+    min-height: 4.75rem !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-restriction-choice {
+    font-size: 1.05rem !important;
+    gap: 0.8rem !important;
+    height: auto !important;
+    min-height: 4.5rem !important;
+    padding: 0.7rem 0.85rem !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories .punktlandung-category-title {
+    font-size: 2.35rem !important;
+    line-height: 1.12 !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories .punktlandung-category-copy > span:last-child,
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories .punktlandung-category-copy > p {
+    font-size: 1.4rem !important;
+    line-height: 1.4 !important;
+    margin-top: 0.7rem !important;
+  }
+
+  body main.punktlandung-lobby
+    .punktlandung-lobby-config-section.punktlandung-online-layout
+    .punktlandung-online-settings .punktlandung-mode-list {
+    grid-auto-rows: auto !important;
+    grid-template-rows: 8rem !important;
+    height: 8rem !important;
+    min-height: 8rem !important;
+  }
+
+  body main.punktlandung-lobby
+    .punktlandung-lobby-config-section.punktlandung-online-layout
+    .punktlandung-online-settings .punktlandung-mode-choice {
+    height: 8rem !important;
+    max-height: none !important;
+    min-height: 8rem !important;
+    padding: 1rem 1.4rem 1rem 2rem !important;
+  }
+
+  body main.punktlandung-lobby
+    .punktlandung-lobby-config-section.punktlandung-online-layout
+    .punktlandung-online-settings
+    .punktlandung-mode-choice > p:first-child {
+    font-size: 1.6rem !important;
+  }
+
+  body main.punktlandung-lobby
+    .punktlandung-lobby-config-section.punktlandung-online-layout
+    .punktlandung-online-settings .punktlandung-online-host-card {
+    margin-top: 1rem !important;
+  }
+}
+
+/* 4K proportional layout: retain the roughly 10 / 80 / 10 outer split used
+ * by laptop and monitor layouts. Inside the content area, keep the established
+ * 2 / 1 home and setup split, give information navigation a useful fifth of
+ * the width, and preserve the 2 / 1 map-to-ranking split on result pages. */
+@media (min-width: 3000px) and (min-height: 1200px) and (orientation: landscape) {
+  body .punktlandung-home-shell,
+  body .punktlandung-lobby-shell,
+  body .punktlandung-info-shell {
+    grid-template-columns:
+      clamp(22rem, 10vw, 24rem)
+      minmax(0, 1fr)
+      clamp(22rem, 10vw, 24rem) !important;
+  }
+
+  body .punktlandung-info-body:has(> .punktlandung-info-navigation) {
+    grid-template-columns: minmax(0, 4fr) minmax(34rem, 1fr) !important;
+  }
+
+  body .punktlandung-results-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(56rem, 1fr) !important;
+  }
+
+  /* 4K setup page: retain the established shell proportions while using the
+   * vertical canvas for clearer grouping and a dedicated lower legal row. */
+  body main.punktlandung-lobby .punktlandung-lobby-header {
+    min-height: 17rem !important;
+    padding: 3rem 3rem !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-mode-list {
+    margin-top: 2.25rem !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-settings-legal {
+    display: none !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories .punktlandung-category-grid--preview {
+    flex: 0 0 auto !important;
+    grid-template-rows: repeat(4, 16rem) !important;
+    height: auto !important;
+    margin-top: 2.25rem !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories .punktlandung-category-card {
+    min-height: 0 !important;
+    padding-left: 3.25rem !important;
+    padding-right: 2.5rem !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories .punktlandung-category-art {
+    transform: translateX(-4.25rem) !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories .punktlandung-category-art > img {
+    scale: 1.1 !important;
+    transform-origin: center center !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories
+    .punktlandung-category-card:is(
+      [data-category-id="satellite-preview"],
+      [data-category-id="streetview-preview"]
+    )
+    .punktlandung-category-art > img {
+    scale: 1.2 !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-tv-category-legal {
+    display: block !important;
+    margin-top: auto !important;
+    margin-left: auto !important;
+    padding: 2.5rem 0 0.75rem !important;
+    width: 50% !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-tv-category-legal > nav[aria-label="Rechtliche Informationen"] {
+    align-items: center !important;
+    column-gap: 1.5rem !important;
+    display: grid !important;
+    font-size: 1.15rem !important;
+    grid-template-columns: repeat(6, max-content) !important;
+    justify-content: space-between !important;
+    line-height: 1.25 !important;
+    padding-top: 1.25rem !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-tv-category-legal > nav[aria-label="Rechtliche Informationen"] > * {
+    font-size: inherit !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-party-rules.punktlandung-setup-rules {
+    --setup-rule-control-height: 4.75rem !important;
+    --setup-rule-stepper-width: 4rem !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-round-stepper {
+    grid-template-columns: minmax(0, 1fr) var(--setup-rule-stepper-width) !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-round-stepper-controls {
+    height: var(--setup-rule-control-height) !important;
+    min-height: var(--setup-rule-control-height) !important;
+    min-width: var(--setup-rule-stepper-width) !important;
+    width: var(--setup-rule-stepper-width) !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    .punktlandung-round-stepper
+    .punktlandung-round-stepper-controls > .punktlandung-round-stepper-button {
+    align-items: center !important;
+    color: rgb(226 232 240) !important;
+    display: grid !important;
+    font-size: 2rem !important;
+    height: calc(var(--setup-rule-control-height) / 2) !important;
+    justify-items: center !important;
+    line-height: 1 !important;
+    max-height: calc(var(--setup-rule-control-height) / 2) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    place-items: center !important;
+    text-indent: 0 !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    .punktlandung-round-stepper-controls > .punktlandung-round-stepper-button::before,
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    .punktlandung-round-stepper-controls > .punktlandung-round-stepper-button::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-restriction-choice {
+    font-size: 1.3rem !important;
+    gap: 1rem !important;
+    min-height: 4.75rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings
+    .punktlandung-party-rules.punktlandung-setup-rules
+    .punktlandung-restriction-choice > span:last-child {
+    font-size: 1.3rem !important;
+    line-height: 1.1 !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-settings .punktlandung-restriction-indicator {
+    height: 1.75rem !important;
+    width: 1.75rem !important;
+  }
+
+  body main.punktlandung-lobby .punktlandung-lobby-config-stage
+    .punktlandung-lobby-categories .punktlandung-category-heading > p {
+    transform: translateY(1rem) !important;
+  }
+
+  body .punktlandung-tv-home > aside > .punktlandung-home-side-panel
+    nav[aria-label="Rechtliche Informationen"] {
+    font-size: 1.15rem !important;
+  }
+
+  /* Keep the beta marker aligned with the status controls in the adjacent
+   * panel and tune the home illustrations individually at television size. */
+  body .punktlandung-tv-home .punktlandung-home-header-meta {
+    right: 2rem !important;
+    top: 2rem !important;
+  }
+
+  body .punktlandung-tv-home
+    .punktlandung-home-category-card:is(
+      [data-category-id="mixed"],
+      [data-category-id="landmarks"],
+      [data-category-id="cities"],
+      [data-category-id="landscapes"]
+    )
+    .punktlandung-home-category-art > img {
+    scale: 1.1 !important;
+  }
+
+  body .punktlandung-tv-home
+    .punktlandung-home-category-card[data-category-id="flags"]
+    .punktlandung-home-category-art > img {
+    scale: 1 !important;
+  }
+
+  body .punktlandung-tv-home
+    .punktlandung-home-category-card[data-category-id="capitals"]
+    .punktlandung-home-category-art > img {
+    scale: 1.05 !important;
+  }
+
+  body .punktlandung-tv-home
+    .punktlandung-home-category-card:is(
+      [data-category-id="satellite-preview"],
+      [data-category-id="streetview-preview"]
+    )
+    .punktlandung-home-category-art > img {
+    scale: 1.15 !important;
   }
 }

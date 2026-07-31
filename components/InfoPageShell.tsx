@@ -25,7 +25,7 @@ export function InfoPageShell({
 }: InfoPageShellProps) {
   return (
     <main className={`min-h-dvh bg-slate-950 p-2 text-slate-100 md:p-4 ${fillDesktop ? "xl:h-dvh xl:overflow-hidden" : ""}`}>
-      <div className={`mx-auto grid w-full max-w-[132rem] grid-cols-1 items-start gap-2 md:gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2200px]:max-w-[calc(100vw-1rem)] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px] ${fillDesktop ? "xl:h-full" : ""}`}>
+      <div className={`punktlandung-info-shell mx-auto grid w-full max-w-[132rem] grid-cols-1 items-start gap-2 md:gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2200px]:max-w-[calc(100vw-1rem)] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px] ${fillDesktop ? "xl:h-full" : ""}`}>
         <AdContainer
           placement="home-left-rail"
           variant="rail"
@@ -50,7 +50,7 @@ export function InfoPageShell({
             </div>
           </header>
 
-          <div className={`grid min-w-0 gap-2 md:gap-4 ${fillDesktop ? "xl:h-full xl:min-h-0 xl:items-stretch" : "items-start"} ${showImportantPages ? "lg:grid-cols-[minmax(0,1fr)_18rem] 2xl:grid-cols-[minmax(0,1fr)_20rem]" : ""}`}>
+          <div className={`punktlandung-info-body grid min-w-0 gap-2 md:gap-4 ${fillDesktop ? "xl:h-full xl:min-h-0 xl:items-stretch" : "items-start"} ${showImportantPages ? "lg:grid-cols-[minmax(0,1fr)_18rem] 2xl:grid-cols-[minmax(0,1fr)_20rem]" : ""}`}>
             <article className={`arcade-panel punktlandung-info-content min-w-0 rounded-md border-slate-700/80 p-4 md:p-6 ${fillDesktop ? "xl:h-full xl:overflow-auto" : ""} ${contentClassName}`}>
               {children}
             </article>

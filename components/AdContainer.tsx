@@ -22,7 +22,7 @@ declare global {
 function variantShape(variant: AdVariant) {
   if (variant === "rail") return "min-h-[420px] w-full";
   if (variant === "game") {
-    return "h-[11rem] w-[min(92vw,240px)] sm:h-[11rem] sm:w-[min(92vw,240px)] min-[1900px]:h-[11.5rem] min-[1900px]:w-[min(92vw,260px)]";
+    return "h-[11rem] w-[min(92vw,240px)] sm:h-[11rem] sm:w-[min(92vw,240px)] min-[1900px]:h-[11.5rem] min-[1900px]:w-[min(92vw,260px)] min-[3000px]:h-[20rem] min-[3000px]:w-[30rem]";
   }
   return "min-h-[96px] w-full";
 }

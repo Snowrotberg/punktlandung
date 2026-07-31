@@ -3,8 +3,19 @@ import { siteUrl } from "@/lib/seo";
 
 const canonicalSiteUrl = new URL(siteUrl);
 
-export function canonicalRedirectUrl(requestUrl: URL): URL | null {
-  if (requestUrl.hostname !== `www.${canonicalSiteUrl.hostname}`) return null;
+function hostnameFromHeader(value: string | null): string | null {
+  const firstValue = value?.split(",", 1)[0]?.trim();
+  if (!firstValue) return null;
+
+  try {
+    return new URL(`http://${firstValue}`).hostname;
+  } catch {
+    return null;
+  }
+}
+
+export function canonicalRedirectUrl(requestUrl: URL, requestHostname = requestUrl.hostname): URL | null {
+  if (requestHostname !== `www.${canonicalSiteUrl.hostname}`) return null;
 
   const canonicalUrl = new URL(requestUrl);
   canonicalUrl.protocol = canonicalSiteUrl.protocol;
@@ -14,7 +25,11 @@ export function canonicalRedirectUrl(requestUrl: URL): URL | null {
 }
 
 export function middleware(request: NextRequest) {
-  const canonicalUrl = canonicalRedirectUrl(request.nextUrl);
+  const requestHostname =
+    hostnameFromHeader(request.headers.get("x-forwarded-host")) ??
+    hostnameFromHeader(request.headers.get("host")) ??
+    request.nextUrl.hostname;
+  const canonicalUrl = canonicalRedirectUrl(request.nextUrl, requestHostname);
   if (canonicalUrl) {
     return NextResponse.redirect(canonicalUrl, 308);
   }
