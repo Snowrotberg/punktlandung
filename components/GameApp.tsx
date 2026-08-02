@@ -15,6 +15,7 @@ import { LobbyView } from "./LobbyView";
 import { PublicBetaBadge } from "./PublicBetaBadge";
 import { ResultsView } from "./ResultsView";
 import { useSound } from "./SoundProvider";
+import { RedesignHomeView } from "./redesign/RedesignHomeView";
 
 const modePreview: Array<{
   id: GameSettings["localMode"] | "online";
@@ -36,6 +37,7 @@ const sessionResetStorageKey = "punktlandung-reset-session-v1";
 const historyStateKey = "punktlandung-history-v1";
 const trackedGameStartPrefix = "punktlandung-ga-game-start-";
 const trackedGameCompletePrefix = "punktlandung-ga-game-complete-";
+const redesignHomeEnabled = process.env.NEXT_PUBLIC_REDESIGN_HOME !== "false";
 
 function analyticsGameType(room: RoomState): "solo" | "party" | "online" {
   if (room.kind === "online") return "online";
@@ -291,6 +293,7 @@ export function GameApp({
   const [pendingOnlineSettings, setPendingOnlineSettings] = useState<GameSettings | null>(null);
   const [routeGuardReady, setRouteGuardReady] = useState(!requiredStatus);
   const initialModeHandledRef = useRef(false);
+  const pendingDirectStartRef = useRef(false);
 
   const isOnlineFlow = Boolean(onlineGame.room) || Boolean(pendingJoinCode);
   const activeGame = isOnlineFlow ? onlineGame : localGame;
@@ -392,6 +395,13 @@ export function GameApp({
   }, [initialMode, localGame, name]);
 
   useEffect(() => {
+    if (!pendingDirectStartRef.current) return;
+    if (!localGame.room || localGame.room.status !== "lobby" || localGame.room.settings.localMode !== "solo") return;
+    pendingDirectStartRef.current = false;
+    localGame.startRound();
+  }, [localGame]);
+
+  useEffect(() => {
     if (!pendingOnlineSettings || !onlineGame.room || !onlineGame.isHost || onlineGame.room.status !== "lobby") return;
     onlineGame.updateSettings(pendingOnlineSettings);
     setPendingOnlineSettings(null);
@@ -427,6 +437,13 @@ export function GameApp({
   const handleJoinOnlineRoomSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     handleJoinOnlineRoom();
+  };
+  const handleDirectPlay = () => {
+    playSelect();
+    initialModeHandledRef.current = true;
+    pendingDirectStartRef.current = true;
+    setPendingJoinCode(null);
+    localGame.createSolo(name, "solo");
   };
   const handleUpdateSettings = (settings: Partial<GameSettings>) => {
     updateSettings(settings);
@@ -563,6 +580,49 @@ export function GameApp({
           connectionStatus={onlineGame.status}
           onHostParticipationChange={room.kind === "online" && !onlineGame.room ? localGame.updateHostParticipation : undefined}
           onCreateLiveRoom={room.kind === "online" && !onlineGame.room ? handleCreateLiveOnlineRoom : undefined}
+        />
+        {error && (
+          <button
+            onClick={clearError}
+            className="fixed bottom-4 left-4 z-[100] rounded-md border-3 border-rose-500 bg-rose-950 px-4 py-3 text-sm font-black text-rose-100"
+          >
+            {error}
+          </button>
+        )}
+      </>
+    );
+  }
+
+  if (redesignHomeEnabled) {
+    return (
+      <>
+        <RedesignHomeView
+          playerName={name}
+          serverStatus={(
+            <>
+              <ServerStatus status={onlineGame.status} />
+              <SoundToggle />
+            </>
+          )}
+          betaBadge={<PublicBetaBadge />}
+          mapPreview={<HeroMapPreview />}
+          modes={modePreview.filter((mode) => mode.available).map((mode) => ({
+            id: mode.id,
+            title: mode.title,
+            text: mode.text,
+            href: appPathWithMode(mode.id)
+          }))}
+          categories={categoryOptions.map((category) => ({
+            id: category.id,
+            title: category.title,
+            short: category.short,
+            disabled: category.disabled
+          }))}
+          joinCode={joinCodeInput}
+          onJoinCodeChange={(value) => setJoinCodeInput(value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
+          onJoin={handleJoinByCode}
+          onDirectPlay={handleDirectPlay}
+          onModeSelect={playSelect}
         />
         {error && (
           <button
