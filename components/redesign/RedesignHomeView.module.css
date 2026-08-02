@@ -68,9 +68,17 @@
 }
 
 .serverStatus {
+  min-width: 6.75rem;
+  min-height: 2.25rem;
+  justify-content: center;
   gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--pl-red) 48%, transparent);
+  border-radius: var(--pl-radius-control);
   color: var(--pl-muted);
+  background: color-mix(in srgb, var(--pl-red) 8%, var(--pl-surface-strong));
   font-size: 0.78rem;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -80,8 +88,24 @@
   color: var(--pl-red);
 }
 
-.serverStatus[data-online="true"] svg {
+.serverStatus[data-state="online"] {
+  border-color: color-mix(in srgb, var(--pl-mint) 48%, transparent);
   color: var(--pl-mint);
+  background: color-mix(in srgb, var(--pl-mint) 8%, var(--pl-surface-strong));
+}
+
+.serverStatus[data-state="online"] svg {
+  color: var(--pl-mint);
+}
+
+.serverStatus[data-state="connecting"] {
+  border-color: color-mix(in srgb, var(--pl-violet) 52%, transparent);
+  color: color-mix(in srgb, var(--pl-violet) 76%, white);
+  background: color-mix(in srgb, var(--pl-violet) 10%, var(--pl-surface-strong));
+}
+
+.serverStatus[data-state="connecting"] svg {
+  color: var(--pl-violet);
 }
 
 .iconButton {
@@ -327,18 +351,19 @@
   }
 
   .brand {
-    font-size: 1.25rem;
+    font-size: 2rem;
   }
 
   .brandMark,
   .iconButton {
-    width: 3.25rem;
-    height: 3.25rem;
+    width: 4rem;
+    height: 4rem;
   }
 
   .serverStatus,
   .betaBadge {
-    font-size: 0.95rem;
+    min-height: 3.25rem;
+    font-size: 1.15rem;
   }
 
   .content {
@@ -353,22 +378,22 @@
 
   .eyebrow,
   .sectionLabel {
-    font-size: 1.05rem;
+    font-size: 1.35rem;
   }
 
   .hero h1 {
-    font-size: clamp(5.5rem, 4.3vw, 8rem);
+    font-size: clamp(8rem, 4.2vw, 10rem);
   }
 
   .heroCopy > p {
     max-width: 48rem;
-    font-size: 1.45rem;
+    font-size: 2rem;
   }
 
   .directButton {
-    min-height: 3.75rem;
-    padding-inline: 1.5rem;
-    font-size: 1.15rem;
+    min-height: 4.75rem;
+    padding-inline: 2rem;
+    font-size: 1.45rem;
   }
 
   .heroMap {
@@ -376,13 +401,13 @@
   }
 
   .sectionHead h2 {
-    font-size: 2.35rem;
+    font-size: 3.15rem;
   }
 
   .modeCard {
-    min-height: 7.5rem;
+    min-height: 9rem;
     padding: 1.3rem 1.5rem;
-    font-size: 1.2rem;
+    font-size: 1.5rem;
   }
 
   .modeIcon {
@@ -396,13 +421,24 @@
   }
 
   .modeCard small {
-    font-size: 1rem;
+    font-size: 1.25rem;
   }
 
   .footerSlot {
     min-height: 5rem;
     padding-inline: 3rem;
     font-size: 1rem;
+  }
+}
+
+@media (min-width: 100rem) and (max-width: 149.999rem) {
+  .brand {
+    font-size: 1.12rem;
+  }
+
+  .brandMark {
+    width: 2.75rem;
+    height: 2.75rem;
   }
 }
 
@@ -478,6 +514,14 @@
   }
 
   .serverStatus {
+    width: 2rem;
+    min-width: 2rem;
+    min-height: 2rem;
+    padding: 0;
+    border-radius: 50%;
+  }
+
+  .serverStatus span {
     display: none;
   }
 

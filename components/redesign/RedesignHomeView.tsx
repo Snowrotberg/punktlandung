@@ -48,8 +48,8 @@ export function RedesignHomeView({
   onModeSelect,
   onSoundToggle
 }: RedesignHomeViewProps) {
-  const serverOnline = connectionStatus === "open";
-  const serverLabel = serverOnline ? "Server online" : connectionStatus === "connecting" ? "Server wird verbunden" : "Server offline";
+  const serverState = connectionStatus === "open" ? "online" : connectionStatus === "connecting" ? "connecting" : "offline";
+  const serverLabel = serverState === "online" ? "Server verbunden" : serverState === "connecting" ? "Server wird verbunden" : "Server getrennt";
 
   return (
     <main className={styles.page}>
@@ -63,9 +63,13 @@ export function RedesignHomeView({
               <span>Punktlandung</span>
             </a>
             <div className={styles.topActions}>
-              <span className={styles.serverStatus} data-online={serverOnline || undefined} title={serverLabel} role="status">
+              <a className={styles.betaBadge} href="/feedback">
+                <CircleDot aria-hidden="true" />
+                <span>Öffentliche Beta</span>
+              </a>
+              <span className={styles.serverStatus} data-state={serverState} title={serverLabel} aria-label={serverLabel} role="status">
                 <Radio aria-hidden="true" />
-                <span>{serverLabel}</span>
+                <span>Server</span>
               </span>
               <button
                 type="button"
@@ -77,10 +81,6 @@ export function RedesignHomeView({
               >
                 {soundEnabled ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
               </button>
-              <a className={styles.betaBadge} href="/feedback">
-                <CircleDot aria-hidden="true" />
-                <span>Öffentliche Beta</span>
-              </a>
               <button type="button" className={styles.iconButton} aria-label={`Account von ${playerName}`} title={`Account · ${playerName}`}>
                 <UserRound aria-hidden="true" />
               </button>

@@ -16,6 +16,7 @@ import { PublicBetaBadge } from "./PublicBetaBadge";
 import { ResultsView } from "./ResultsView";
 import { useSound } from "./SoundProvider";
 import { RedesignHomeView } from "./redesign/RedesignHomeView";
+import { RedesignSetupView } from "./redesign/RedesignSetupView";
 
 const modePreview: Array<{
   id: GameSettings["localMode"] | "online";
@@ -558,6 +559,27 @@ export function GameApp({
   }
 
   if (room?.status === "lobby") {
+    const isLiveOnlineWaitingRoom = room.kind === "online" && Boolean(onlineGame.room);
+    if (redesignHomeEnabled && !isLiveOnlineWaitingRoom) {
+      return (
+        <RedesignSetupView
+          roomKind={room.kind}
+          settings={room.settings}
+          players={room.players}
+          playerName={name}
+          hostParticipation={room.hostParticipation}
+          connectionStatus={onlineGame.status}
+          soundEnabled={soundEnabled}
+          canStart={room.kind === "online" ? onlineGame.status === "open" : isHost && room.players.length > 0}
+          onSettings={handleUpdateSettings}
+          onRenamePlayer={renamePlayer}
+          onHostParticipationChange={room.kind === "online" ? localGame.updateHostParticipation : undefined}
+          onStart={room.kind === "online" ? handleCreateLiveOnlineRoom : handleStartRound}
+          onBack={handleLeaveToHome}
+          onSoundToggle={toggleSound}
+        />
+      );
+    }
     return (
       <>
         <LobbyView
