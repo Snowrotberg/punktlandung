@@ -1,0 +1,25 @@
+# Redesign-Fundament
+
+Die erste technische Redesign-Schicht liegt isoliert unter `components/redesign`. Solange keine bestehende Seite diese Bausteine importiert, verändert sie die Live-Oberfläche nicht.
+
+## Enthaltene Bausteine
+
+- `RedesignShell`, `RedesignHeader` und `RedesignFooter`
+- `RedesignButton` und `RedesignButtonLink` in den Tönen `primary`, `secondary`, `quiet` und `text`
+- `Surface` für Karten und Inhaltsflächen
+- `SegmentGroup` für Modus-, Zeit-, Runden-, Schwierigkeits- und Regelwahl
+- `PlayerAvatar` mit stabiler Spielerpalette
+- `ScoreBar` mit proportionaler Füllung von Violett über Blau zu Mint
+- `RedesignAdFrame` als Layoutplatzhalter für die vorhandene Anzeigenlogik
+
+## Gestaltungslogik
+
+- Mint kennzeichnet primäre Aktionen und aktive Auswahlzustände.
+- Flächen bleiben dunkel und ruhig; Konturen bilden die Hierarchie statt zusätzlicher Effekte.
+- Das Grid hat 56 Pixel Abstand. Mint- und Violett-Verläufe driften langsam und werden bei `prefers-reduced-motion` angehalten.
+- Buttons haben dieselbe Grundgeometrie. Die Wichtigkeit entsteht über Fläche und Farbe, nicht über unterschiedliche Radien.
+- Spieler 1 ist Rot, Spieler 2 Blau. Die weiteren acht Farben sind stabil definiert.
+
+## Integrationsregel
+
+Jede bestehende Seite wird als eigene vertikale Scheibe migriert. Spiellogik, WebSocket-Protokoll und gespeicherte Sitzungen werden nicht innerhalb eines rein visuellen Commits verändert.
