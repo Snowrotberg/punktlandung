@@ -1,11 +1,11 @@
 "use client";
 
-import type { KeyboardEvent, ReactNode } from "react";
-import { useState } from "react";
+import "@fontsource-variable/inter";
+import { ArrowRight, CircleDot, Globe2, MapPin, Radio, UserRound, UsersRound, Volume2, VolumeX } from "lucide-react";
 import { AdContainer } from "@/components/AdContainer";
 import { LegalLinks } from "@/components/LegalLinks";
+import { TriangleIcon } from "@/components/TriangleIcon";
 import {
-  PlayerAvatar,
   RedesignButton,
   RedesignButtonLink,
   RedesignFooter,
@@ -21,50 +21,35 @@ type HomeMode = {
   href: string;
 };
 
-type HomeCategory = {
-  id: string;
-  title: string;
-  short: string;
-  disabled?: boolean;
-};
-
 type RedesignHomeViewProps = {
   playerName: string;
-  serverStatus: ReactNode;
-  betaBadge: ReactNode;
-  mapPreview: ReactNode;
+  connectionStatus: "connecting" | "open" | "closed";
+  soundEnabled: boolean;
+  mapPreview: React.ReactNode;
   modes: ReadonlyArray<HomeMode>;
-  categories: ReadonlyArray<HomeCategory>;
-  joinCode: string;
-  onJoinCodeChange: (value: string) => void;
-  onJoin: () => void;
   onDirectPlay: () => void;
   onModeSelect: () => void;
+  onSoundToggle: () => void;
 };
 
-function ModeGlyph({ mode }: { mode: HomeMode["id"] }) {
-  if (mode === "solo") return <span aria-hidden="true">◎</span>;
-  if (mode === "couch") return <span aria-hidden="true">◉◉</span>;
-  return <span aria-hidden="true">◌</span>;
+function ModeIcon({ mode }: { mode: HomeMode["id"] }) {
+  if (mode === "solo") return <UserRound aria-hidden="true" />;
+  if (mode === "couch") return <UsersRound aria-hidden="true" />;
+  return <Globe2 aria-hidden="true" />;
 }
 
 export function RedesignHomeView({
   playerName,
-  serverStatus,
-  betaBadge,
+  connectionStatus,
+  soundEnabled,
   mapPreview,
   modes,
-  categories,
-  joinCode,
-  onJoinCodeChange,
-  onJoin,
   onDirectPlay,
-  onModeSelect
+  onModeSelect,
+  onSoundToggle
 }: RedesignHomeViewProps) {
-  const [joinVisible, setJoinVisible] = useState(false);
-  const handleJoinKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" && joinCode.trim()) onJoin();
-  };
+  const serverOnline = connectionStatus === "open";
+  const serverLabel = serverOnline ? "Server online" : connectionStatus === "connecting" ? "Server wird verbunden" : "Server offline";
 
   return (
     <main className={styles.page}>
@@ -73,17 +58,32 @@ export function RedesignHomeView({
 
         <RedesignShell className={styles.app}>
           <RedesignHeader className={styles.header}>
-            <div className={styles.brand}>
-              <span className={styles.brandMark} aria-hidden="true">⌖</span>
+            <a href="/" className={styles.brand} aria-label="Punktlandung Startseite">
+              <span className={styles.brandMark}><MapPin aria-hidden="true" /></span>
               <span>Punktlandung</span>
-            </div>
+            </a>
             <div className={styles.topActions}>
-              <span className={styles.status}>{serverStatus}</span>
-              {betaBadge}
-              <span className={styles.profile}>
-                <PlayerAvatar name={playerName} size="2rem" />
-                <span>{playerName}</span>
+              <span className={styles.serverStatus} data-online={serverOnline || undefined} title={serverLabel} role="status">
+                <Radio aria-hidden="true" />
+                <span>{serverLabel}</span>
               </span>
+              <button
+                type="button"
+                className={styles.iconButton}
+                onClick={onSoundToggle}
+                aria-label={soundEnabled ? "Sound ausschalten" : "Sound einschalten"}
+                title={soundEnabled ? "Sound an" : "Sound aus"}
+                aria-pressed={soundEnabled}
+              >
+                {soundEnabled ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
+              </button>
+              <a className={styles.betaBadge} href="/feedback">
+                <CircleDot aria-hidden="true" />
+                <span>Öffentliche Beta</span>
+              </a>
+              <button type="button" className={styles.iconButton} aria-label={`Account von ${playerName}`} title={`Account · ${playerName}`}>
+                <UserRound aria-hidden="true" />
+              </button>
             </div>
           </RedesignHeader>
 
@@ -92,38 +92,16 @@ export function RedesignHomeView({
               <div className={styles.heroCopy}>
                 <span className={styles.eyebrow}>Das Geo-Spiel für alle</span>
                 <h1 id="home-title">Wie gut kennst du die Welt?</h1>
-                <p>Orte, Städte und Wahrzeichen erraten. Allein, gemeinsam oder live im Raum.</p>
+                <p>Orte, Städte und Wahrzeichen erraten. Allein, zusammen oder live im Raum.</p>
                 <div className={styles.heroActions}>
-                  <RedesignButton tone="primary" onClick={onDirectPlay}>Direkt spielen&nbsp; →</RedesignButton>
-                  <RedesignButton tone="secondary" onClick={() => setJoinVisible((visible) => !visible)} aria-expanded={joinVisible}>
-                    Raum beitreten
+                  <RedesignButton tone="primary" className={styles.directButton} onClick={onDirectPlay}>
+                    <span>Direkt spielen</span>
+                    <TriangleIcon direction="right" />
                   </RedesignButton>
                 </div>
-                {joinVisible && (
-                  <div className={styles.joinPanel}>
-                    <input
-                      aria-label="Raumcode"
-                      value={joinCode}
-                      onChange={(event) => onJoinCodeChange(event.target.value)}
-                      onKeyDown={handleJoinKeyDown}
-                      maxLength={6}
-                      placeholder="Raumcode"
-                    />
-                    <RedesignButton tone="primary" disabled={!joinCode.trim()} onClick={onJoin}>Beitreten</RedesignButton>
-                  </div>
-                )}
               </div>
               <div className={styles.heroMap} aria-hidden="true">{mapPreview}</div>
             </section>
-
-            <AdContainer
-              placement="home-mobile-tablet"
-              variant="banner"
-              adFormat="horizontal"
-              label="Anzeige"
-              className={styles.mobileAd}
-              fullWidthResponsive
-            />
 
             <section className={styles.modeSection} aria-labelledby="mode-title">
               <div className={styles.sectionHead}>
@@ -135,28 +113,25 @@ export function RedesignHomeView({
               <div className={styles.modeGrid}>
                 {modes.map((mode) => (
                   <RedesignButtonLink key={mode.id} href={mode.href} tone="secondary" className={styles.modeCard} onClick={onModeSelect}>
-                    <span className={styles.modeIcon}><ModeGlyph mode={mode.id} /></span>
-                    <span>
+                    <span className={styles.modeIcon}><ModeIcon mode={mode.id} /></span>
+                    <span className={styles.modeCopy}>
                       <strong>{mode.title}</strong>
                       <small>{mode.text}</small>
                     </span>
-                    <span className={styles.modeArrow} aria-hidden="true">→</span>
+                    <ArrowRight className={styles.modeArrow} aria-hidden="true" />
                   </RedesignButtonLink>
                 ))}
               </div>
             </section>
 
-            <section className={styles.categories} aria-label="Spielkategorien">
-              {categories.map((category, index) => (
-                <article key={category.id} className={styles.categoryCard} data-disabled={category.disabled || undefined}>
-                  <span className={styles.categoryIcon} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                  <span>
-                    <strong>{category.title}</strong>
-                    <small>{category.short}</small>
-                  </span>
-                </article>
-              ))}
-            </section>
+            <AdContainer
+              placement="home-mobile-tablet"
+              variant="banner"
+              adFormat="horizontal"
+              label="Anzeige"
+              className={styles.mobileAd}
+              fullWidthResponsive
+            />
           </div>
 
           <RedesignFooter className={styles.footerSlot}>

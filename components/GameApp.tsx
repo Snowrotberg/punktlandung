@@ -285,7 +285,7 @@ export function GameApp({
   const routeInitialMode: InitialLocalGameMode | undefined = initialMode === "home" ? undefined : initialMode;
   const localGame = useLocalGame(routeInitialMode, Boolean(requiredStatus));
   const onlineGame = useOnlineRoomSocket();
-  const { playSelect } = useSound();
+  const { enabled: soundEnabled, toggle: toggleSound, playSelect } = useSound();
   const [name, setName] = useState("Spieler 1");
   const [password, setPassword] = useState("");
   const [pendingJoinCode, setPendingJoinCode] = useState<string | null>(null);
@@ -598,13 +598,8 @@ export function GameApp({
       <>
         <RedesignHomeView
           playerName={name}
-          serverStatus={(
-            <>
-              <ServerStatus status={onlineGame.status} />
-              <SoundToggle />
-            </>
-          )}
-          betaBadge={<PublicBetaBadge />}
+          connectionStatus={onlineGame.status}
+          soundEnabled={soundEnabled}
           mapPreview={<HeroMapPreview />}
           modes={modePreview.filter((mode) => mode.available).map((mode) => ({
             id: mode.id,
@@ -612,17 +607,9 @@ export function GameApp({
             text: mode.text,
             href: appPathWithMode(mode.id)
           }))}
-          categories={categoryOptions.map((category) => ({
-            id: category.id,
-            title: category.title,
-            short: category.short,
-            disabled: category.disabled
-          }))}
-          joinCode={joinCodeInput}
-          onJoinCodeChange={(value) => setJoinCodeInput(value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
-          onJoin={handleJoinByCode}
           onDirectPlay={handleDirectPlay}
           onModeSelect={playSelect}
+          onSoundToggle={toggleSound}
         />
         {error && (
           <button
