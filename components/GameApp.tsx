@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { categoryOptions } from "@/lib/categories";
 import { trackAnalyticsEvent } from "@/lib/analytics";
+import { preferLocalRequiredSession } from "@/lib/gameSessionSelection";
 import { useLocalGame } from "@/hooks/useLocalGame";
 import { useRankedSoloGame } from "@/hooks/useRankedSoloGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
@@ -306,8 +307,14 @@ export function GameApp({
   const rankedSoloEnabled = Boolean(accountAuthenticated) || resumeRankedGame;
   const rankedSoloGame = useRankedSoloGame(rankedSoloEnabled);
   const routeAllowsRankedSolo = initialMode !== "couch" && initialMode !== "online";
+  const localRequiredSessionHasPriority = preferLocalRequiredSession(
+    requiredStatus,
+    localGame.restoring,
+    localGame.room?.status
+  );
   const rankedSoloContext = rankedSoloEnabled
     && routeAllowsRankedSolo
+    && !localRequiredSessionHasPriority
     && (initialMode === "solo" || Boolean(requiredStatus) || Boolean(rankedSoloGame.room));
   const rankedRestoring = rankedSoloContext && rankedSoloGame.restoring;
   const onlineGame = useOnlineRoomSocket();
