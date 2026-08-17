@@ -90,7 +90,11 @@
 .redesign :global(.punktlandung-command-button),
 .redesign :global(.punktlandung-results-action-back),
 .redesign :global(.punktlandung-action-back-button),
-.redesign :global(.punktlandung-back-button) {
+.redesign :global(.punktlandung-back-button),
+.redesign :global(.punktlandung-results-mobile-actions button),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-size-button),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-secondary-button),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-primary-button) {
   min-height: 3rem !important;
   padding: 0.75rem 1rem !important;
   border-width: 1px !important;
@@ -110,8 +114,10 @@
 }
 
 .redesign :global(.punktlandung-command-button::before),
-.redesign :global(.punktlandung-map-primary-button::before) {
+.redesign :global(.punktlandung-map-primary-button::before),
+.redesign :global(.punktlandung-primary-action::before) {
   display: none !important;
+  content: none !important;
 }
 
 .redesign :global(.punktlandung-primary-action) {

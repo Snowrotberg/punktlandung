@@ -579,7 +579,7 @@
 }
 
 @media (max-width: 30rem) {
-  .brandGroup { gap: .35rem; transform: translateX(-.95rem); }
+  .brandGroup { gap: .35rem; }
   .brand {
     gap: 0.45rem;
     font-size: 0.88rem;
@@ -588,8 +588,9 @@
   .brandIcon {
     width: 2rem;
     height: 2rem;
+    margin-left: 0;
     border-radius: 0.6rem;
-    transform: scale(1.15);
+    transform: translateX(-0.75rem) scale(1.25);
   }
 
   .statusControls {
@@ -637,9 +638,10 @@
   }
 
   .brandIcon {
-    width: 2.55rem;
-    height: 2.55rem;
+    width: 2.15rem;
+    height: 2.15rem;
     margin-left: 0;
+    transform: translateX(-0.75rem) scale(1.25);
   }
 
   .brandBadgeMark {
@@ -662,9 +664,10 @@
   }
 
   .brandIcon {
-    width: 2.45rem;
-    height: 2.45rem;
+    width: 2rem;
+    height: 2rem;
     margin-left: 0;
+    transform: translateX(-0.75rem) scale(1.25);
   }
 
   .brandBadgeMark {
@@ -680,6 +683,13 @@
 
   .brandBadgeMark {
     font-size: 0.605rem;
+  }
+
+  .brandIcon {
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-left: 0;
+    transform: translateX(-0.75rem) scale(1.25);
   }
 }
 

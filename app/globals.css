@@ -8429,7 +8429,14 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   .punktlandung-legal-links {
     width: 100%;
     justify-content: center !important;
+    font-size: 12px;
     text-align: center !important;
+  }
+}
+
+@media (min-width: 52.001rem) and (max-width: 60rem) and (orientation: landscape) {
+  .punktlandung-legal-links {
+    font-size: 12px;
   }
 }
 
@@ -8442,19 +8449,28 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   .punktlandung-legal-links-support,
   .punktlandung-legal-links-rest {
     display: flex;
-    width: 100%;
     flex-wrap: nowrap;
     align-items: center;
-    justify-content: space-evenly;
-    gap: .5rem;
     white-space: nowrap;
+  }
+
+  .punktlandung-legal-links-support {
+    width: auto;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .punktlandung-legal-links-rest {
+    width: 100%;
+    justify-content: space-between;
+    gap: .35rem;
   }
 }
 
 @media (max-width: 23.75rem) and (orientation: portrait) {
   .punktlandung-legal-links-support,
   .punktlandung-legal-links-rest {
-    font-size: 10px;
+    font-size: inherit;
   }
 }
 

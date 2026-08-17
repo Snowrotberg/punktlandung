@@ -377,9 +377,12 @@
     padding-inline: 1rem;
   }
 
-  .article,
-  .titlePanel {
+  .article {
     padding: 1rem;
+  }
+
+  .titlePanel {
+    padding: 1rem 0;
   }
 
   .footer { margin-top: 0; padding-inline: 1rem; }
@@ -428,7 +431,7 @@
     align-items: center;
     flex-direction: row;
     gap: .35rem;
-    padding: .75rem;
+    padding: .75rem 1rem;
   }
 
   .headerActions {

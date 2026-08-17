@@ -193,7 +193,7 @@
   .ideaList { padding-inline: .85rem; }
 }
 @media (max-width: 30rem) {
-  .header { align-items: center; flex-direction: row; gap: .35rem; padding: .75rem; }
+  .header { align-items: center; flex-direction: row; gap: .35rem; padding: .75rem 1rem; }
   .headerActions { min-width: 0; width: auto; justify-content: flex-end; gap: .35rem; }
   .playLink { display: inline-grid; width: 2.5rem; min-width: 2.5rem; min-height: 2.5rem; padding: 0; place-items: center; border-radius: 50%; font-size: 0; overflow: hidden; position: relative; text-indent: -9999px; }
   .playLink::before { content: "▶"; position: absolute; inset: 0; display: grid; place-items: center; font-size: .72rem; text-indent: 0; }

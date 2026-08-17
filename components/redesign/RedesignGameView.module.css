@@ -206,11 +206,44 @@
 
 @media (max-width: 52rem) {
   .redesign :global(.punktlandung-game-hud) {
-    inset-inline: 0.65rem !important;
-    top: 0.65rem !important;
+    inset-inline: 0 !important;
+    top: 0 !important;
   }
 
   .redesign :global(.punktlandung-guess-map-panel) {
     border-radius: 0.85rem !important;
+  }
+}
+
+@media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
+  .redesign :global(.punktlandung-game-hud) {
+    left: calc(65% + 1rem) !important;
+    right: 1rem !important;
+    top: 1rem !important;
+  }
+
+  .redesign :global(.punktlandung-guess-map-panel--closed),
+  .redesign :global(.punktlandung-guess-map-panel--open) {
+    left: calc(65% + 1rem) !important;
+    right: 1rem !important;
+    bottom: 1rem !important;
+  }
+
+  .redesign :global(.punktlandung-task-card) {
+    min-height: 4rem !important;
+  }
+
+  .redesign :global(.punktlandung-game-viewer .punktlandung-source-chip--compact) {
+    min-height: 1.35rem !important;
+    padding: 0.16rem 0.45rem !important;
+    gap: 0.3rem !important;
+  }
+
+  .redesign :global(.punktlandung-game-viewer .punktlandung-source-chip--compact p) {
+    font-size: 0.44rem !important;
+  }
+
+  .redesign :global(.punktlandung-game-viewer .punktlandung-source-chip--compact h1) {
+    font-size: 0.62rem !important;
   }
 }

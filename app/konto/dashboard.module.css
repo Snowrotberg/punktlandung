@@ -330,7 +330,7 @@
     align-items: center;
     flex-direction: row;
     gap: .35rem;
-    padding: .75rem;
+    padding: .75rem 1rem;
   }
   .toplinks {
     min-width: 0;

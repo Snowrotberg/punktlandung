@@ -32,6 +32,7 @@ import {
   type LocationDifficultyOverride
 } from "@/lib/locationDifficulty";
 import { readUsageEvents, type UsageEvent } from "@/lib/usageMetrics.server";
+import { leaderboardPeriodKey } from "@/lib/leaderboards";
 import { readRoomServerHealth } from "@/lib/roomServerHealth.server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin.server";
 import { distributeProgress, gameProgressBands, pointProgressBands } from "@/lib/accountProgress";
@@ -46,11 +47,11 @@ export const dynamic = "force-dynamic";
 
 const periods = {
   all: { days: null, label: "Gesamt" },
+  today: { days: 2, label: "Heute" },
   "7d": { days: 7, label: "7 Tage" },
   "30d": { days: 30, label: "30 Tage" },
   "3m": { days: 90, label: "3 Monate" },
-  "6m": { days: 180, label: "6 Monate" },
-  "1y": { days: 365, label: "1 Jahr" }
+  "6m": { days: 180, label: "6 Monate" }
 } as const;
 
 type PeriodKey = keyof typeof periods;
@@ -145,7 +146,7 @@ function buildUsageTimeline(events: UsageEvent[], periodKey: PeriodKey, since: D
   const fallbackStart = now.getTime() - 30 * dayMs;
   const requestedStart = since?.getTime() ?? (validEventTimes.length ? Math.min(...validEventTimes) : fallbackStart);
   const startMs = Math.min(requestedStart, now.getTime() - 1);
-  const bucketTargets: Record<Exclude<PeriodKey, "all">, number> = { "7d": 7, "30d": 15, "3m": 13, "6m": 13, "1y": 12 };
+  const bucketTargets: Record<Exclude<PeriodKey, "all">, number> = { today: 1, "7d": 7, "30d": 15, "3m": 13, "6m": 13 };
   const bucketCount = periodKey === "all"
     ? Math.min(12, Math.max(1, Math.ceil((now.getTime() - startMs) / dayMs)))
     : bucketTargets[periodKey];
@@ -154,7 +155,7 @@ function buildUsageTimeline(events: UsageEvent[], periodKey: PeriodKey, since: D
   const buckets = Array.from({ length: bucketCount }, (_, index): TimelineBucket => {
     const bucketDate = new Date(startMs + index * bucketDuration);
     return {
-      label: bucketDate.toLocaleDateString("de-DE", showYear
+      label: periodKey === "today" ? "Heute" : bucketDate.toLocaleDateString("de-DE", showYear
         ? { month: "short", year: "2-digit" }
         : { day: "2-digit", month: "2-digit" }),
       pageViews: 0,
@@ -270,7 +271,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const now = new Date();
   const since = period.days === null ? undefined : new Date(now.getTime() - period.days * 24 * 60 * 60 * 1000);
   const staleGameThreshold = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString();
-  const [accountProgress, completed, verified, active, staleActive, events, difficultyMetrics, roomServerHealth] = await Promise.all([
+  const [accountProgress, completed, verified, active, staleActive, usageEvents, difficultyMetrics, roomServerHealth] = await Promise.all([
     readAccountProgress(admin),
     admin.from("ranked_games").select("game_id", { count: "exact", head: true }).eq("status", "completed"),
     admin.from("ranked_games").select("game_id", { count: "exact", head: true }).eq("integrity_status", "verified"),
@@ -281,6 +282,13 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       .select("location_id, verified_rounds, suggested_difficulty, confidence, calculated_at"),
     readRoomServerHealth()
   ]);
+  const todayKey = leaderboardPeriodKey(now.getTime(), "daily");
+  const events = periodKey === "today"
+    ? usageEvents.filter((event) => {
+        const timestamp = Date.parse(event.at);
+        return Number.isFinite(timestamp) && leaderboardPeriodKey(timestamp, "daily") === todayKey;
+      })
+    : usageEvents;
   const count = (name: string) => events.filter((event) => event.event === name).length;
   const starts = count("game_start");
   const finishes = count("game_complete");
@@ -348,7 +356,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     (roadmapPage - 1) * ROADMAP_PAGE_SIZE,
     roadmapPage * ROADMAP_PAGE_SIZE
   );
-  const periodHeading = periodKey === "all" ? "Gesamt" : `letzte ${period.label}`;
+  const periodHeading = periodKey === "all" ? "Gesamt" : periodKey === "today" ? "Heute" : `letzte ${period.label}`;
 
   return <main className={layoutStyles.page}><div className={`${layoutStyles.frame} ${layoutStyles.frameNoAds}`}>
     <RedesignShell className={layoutStyles.app}>

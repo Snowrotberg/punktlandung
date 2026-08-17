@@ -333,3 +333,146 @@
   .app { --pl-content-inset: 1rem; }
   .header, .intro, .workspace { padding-inline: var(--pl-content-inset); }
 }
+
+/* Phone Landscape scrolls as one page. Controls keep a thumb-friendly size;
+   the settings panel must never become a second, nested scroll container. */
+@media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
+  .page {
+    height: auto;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .frame,
+  .app {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .app {
+    overflow: visible;
+  }
+
+  .header {
+    min-height: 4rem;
+    padding: .65rem 1rem;
+  }
+
+  .intro {
+    align-items: end;
+    padding: .75rem 1rem .6rem;
+  }
+
+  .intro h1 {
+    font-size: 1.75rem;
+  }
+
+  .intro p,
+  .introActions > small {
+    font-size: .78rem;
+  }
+
+  .introActions button {
+    min-height: 2.75rem;
+    padding: .65rem .8rem;
+    font-size: .78rem;
+  }
+
+  .workspace {
+    align-items: start;
+    grid-template-columns: minmax(22rem, .44fr) minmax(0, .56fr);
+    gap: .75rem;
+    padding: 0 1rem .75rem;
+    overflow: visible;
+  }
+
+  .settingsColumn,
+  .categoriesColumn {
+    gap: .45rem;
+  }
+
+  .columnHeading {
+    min-height: 1.1rem;
+    font-size: .68rem;
+  }
+
+  .settingsPanel {
+    gap: .45rem;
+    padding: .75rem;
+    overflow: visible;
+  }
+
+  .controlGroup {
+    gap: .28rem;
+  }
+
+  .controlGroup label,
+  .modeHeading button,
+  .resetButton,
+  .namesButton {
+    font-size: .68rem !important;
+  }
+
+  .modeTabs,
+  .fiveOptions,
+  .fourOptions,
+  .threeOptions,
+  .roundOptions {
+    gap: .3rem;
+  }
+
+  .modeTabs a,
+  .controlGroup button,
+  .customRounds {
+    min-height: 2.75rem;
+    border-radius: .6rem;
+    font-size: .72rem;
+  }
+
+  .customRounds {
+    grid-template-columns: minmax(2.8rem, 1fr) 1.8rem 1.8rem;
+  }
+
+  .resetButton {
+    min-height: 2.25rem;
+  }
+
+  .categories {
+    min-height: 0;
+    grid-template-rows: repeat(4, minmax(3.4rem, auto));
+    gap: .45rem;
+  }
+
+  .categories > button {
+    min-height: 3.4rem;
+    gap: .55rem;
+    padding: .55rem .65rem;
+    border-radius: .7rem;
+  }
+
+  .categoryIcon {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .categoryIcon svg {
+    width: 1.05rem;
+  }
+
+  .categories strong {
+    font-size: .78rem;
+  }
+
+  .categories small,
+  .categories > button > b {
+    font-size: .6rem;
+    line-height: 1.2;
+  }
+
+  .footer {
+    min-height: 3rem;
+    padding: .5rem 1rem;
+    font-size: 12px;
+  }
+}

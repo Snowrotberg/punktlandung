@@ -69,13 +69,14 @@ export function LegalLinks({ className = "", includeInfos = true, align = "start
       className={`punktlandung-legal-links flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold text-slate-500 ${alignmentClasses[align]} ${className}`}
     >
       <span className="punktlandung-legal-links-support">
-        {visibleLinks.filter((link) => link.href !== "/datenschutz").map((link) => (
+        {visibleLinks.filter((link) => link.href !== "/feedback" && link.href !== "/datenschutz").map((link) => (
           <a key={link.href} href={link.href} onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">
             {link.label}
           </a>
         ))}
       </span>
       <span className="punktlandung-legal-links-rest">
+        <a href="/feedback" onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">Feedback</a>
         <a href="/datenschutz" onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">Datenschutz</a>
         <CookieSettingsButton className="p-0 font-bold text-inherit transition hover:text-emerald-300 focus-visible:text-emerald-300" />
         <a href="/impressum" onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">Impressum</a>

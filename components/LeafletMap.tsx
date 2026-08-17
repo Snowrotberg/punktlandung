@@ -28,10 +28,12 @@ type LeafletMapProps = {
   resultPaddingScale?: number;
   /** Applies an exact zoom scale after the normal fitted result view. */
   resultZoomScale?: number;
-  /** Uses stable pin-relative label anchors for the decorative home preview. */
-  resultLabelLayout?: "auto" | "home-preview";
+  /** Uses specialized label anchors for decorative previews or compact account-history maps. */
+  resultLabelLayout?: "auto" | "home-preview" | "account-history";
   /** Pulls home-preview badges one third of their width toward the map center. */
   resultLabelInset?: boolean;
+  /** Keeps result pins and labels clear of the top-right zoom controls. */
+  resultControlInset?: boolean;
   /** Defers the decorative result-connector animation until its poster is ready to fade. */
   animateResultConnector?: boolean;
   currentPlayerColor?: string;
@@ -642,7 +644,8 @@ function ResultBounds({
   resultPaddingScale,
   resultZoomScale,
   resizeSignal,
-  resultLabelLayout
+  resultLabelLayout,
+  resultControlInset
 }: {
   summary?: RoundSummary | null;
   players?: Player[];
@@ -650,7 +653,8 @@ function ResultBounds({
   resultPaddingScale?: number;
   resultZoomScale?: number;
   resizeSignal?: number | string | boolean;
-  resultLabelLayout?: "auto" | "home-preview";
+  resultLabelLayout?: "auto" | "home-preview" | "account-history";
+  resultControlInset?: boolean;
 }) {
   const map = useMap();
 
@@ -676,9 +680,15 @@ function ResultBounds({
         map.invalidateSize(false);
         const previousZoomSnap = map.options.zoomSnap;
         map.options.zoomSnap = 1;
+        const [paddingX, fittedPaddingY] = resultBoundsPadding(map, showLabels, resultPaddingScale);
+        const paddingY = resultControlInset
+          ? Math.max(fittedPaddingY, Math.min(104, container.clientHeight * 0.4))
+          : fittedPaddingY;
+        const controlInset = resultControlInset ? Math.min(76, Math.max(58, container.clientWidth * 0.22)) : 0;
         map.fitBounds(bounds, {
           animate: false,
-          padding: resultBoundsPadding(map, showLabels, resultPaddingScale),
+          paddingTopLeft: [paddingX, paddingY],
+          paddingBottomRight: [paddingX + controlInset, paddingY],
           maxZoom: RESULT_MAX_ZOOM
         });
         if (resultZoomScale && resultZoomScale !== 1) {
@@ -715,7 +725,7 @@ function ResultBounds({
       observer.disconnect();
       if (frame !== null) window.cancelAnimationFrame(frame);
     };
-  }, [map, summary, players, showLabels, resultPaddingScale, resultZoomScale, resizeSignal, resultLabelLayout]);
+  }, [map, summary, players, showLabels, resultPaddingScale, resultZoomScale, resizeSignal, resultLabelLayout, resultControlInset]);
 
   return null;
 }
@@ -843,13 +853,14 @@ function clampLabelPlacementToViewport(
   placement: LabelPlacement,
   viewportWidth: number,
   viewportHeight: number,
-  margin = 30
+  margin = 30,
+  rightMargin = margin
 ): { placement: LabelPlacement; rect: LabelRect } {
   const { width, height } = placement.size;
   const centerX = anchor.x + placement.offset[0];
   const centerY = anchor.y + placement.offset[1];
   const minCenterX = margin + width / 2;
-  const maxCenterX = Math.max(minCenterX, viewportWidth - margin - width / 2);
+  const maxCenterX = Math.max(minCenterX, viewportWidth - rightMargin - width / 2);
   const minCenterY = margin + height / 2;
   const maxCenterY = Math.max(minCenterY, viewportHeight - margin - height / 2);
   const clampedCenterX = Math.min(Math.max(centerX, minCenterX), maxCenterX);
@@ -955,7 +966,9 @@ function resultTooltipPlacement(
   occupied: LabelRect[],
   blockedSegments: PixelSegment[],
   actual = false,
-  preferredVector?: PixelPoint
+  preferredVector?: PixelPoint,
+  controlInset = false,
+  strictVerticalSide = false
 ): { placement: LabelPlacement; rect: LabelRect } {
   const pixel = map.latLngToContainerPoint([point.lat, point.lng]);
   const size = map.getSize();
@@ -964,10 +977,10 @@ function resultTooltipPlacement(
   const candidates = placementCandidates(dimensions.width, dimensions.height, actual, preferredVector, compact);
   const viewportMargin = compact ? 18 : 30;
   const pinRect: LabelRect = {
-    left: pixel.x - 18,
-    top: pixel.y - 44,
-    right: pixel.x + 18,
-    bottom: pixel.y + 14
+    left: pixel.x - 28,
+    top: pixel.y - 56,
+    right: pixel.x + 28,
+    bottom: pixel.y + 20
   };
 
   let best:
@@ -991,7 +1004,8 @@ function resultTooltipPlacement(
       { offset: [candidate.dx, candidate.dy], size: dimensions },
       size.x,
       size.y,
-      viewportMargin
+      viewportMargin,
+      controlInset ? Math.min(82, Math.max(viewportMargin, size.x * 0.28)) : viewportMargin
     );
     const overflow = viewportOverflow(rect, size.x, size.y, viewportMargin);
     const overlap = occupied.reduce((sum, other) => sum + overlapArea(rect, other), 0);
@@ -1001,6 +1015,9 @@ function resultTooltipPlacement(
     const preferredPenalty = preferredVector
       ? Math.max(0, -(placement.offset[0] * preferredVector.x + placement.offset[1] * preferredVector.y)) * (actual ? 6 : 10)
       : 0;
+    const verticalSidePenalty = strictVerticalSide && preferredVector?.y
+      ? Math.max(0, -(placement.offset[1] * preferredVector.y)) * 1200
+      : 0;
     const hasHardConflict = overflow > 0 || overlap > 0 || pinOverlap > 0 || linePenalty > 0;
     const cleanNearBonus = !hasHardConflict && anchorDistance < (actual ? 96 : 112) ? -3600 : 0;
     const score =
@@ -1008,6 +1025,7 @@ function resultTooltipPlacement(
       overlap * 28000 +
       pinOverlap * 52000 +
       linePenalty +
+      verticalSidePenalty +
       preferredPenalty * (actual ? 0.35 : 2.4) +
       anchorDistance * (actual ? 3.2 : 3.6) +
       (actual && placement.offset[1] > 0 ? placement.offset[1] * 0.38 : Math.abs(placement.offset[1]) * 0.12) +
@@ -1034,10 +1052,10 @@ function resultTooltipPlacement(
 function pinBlockRect(map: LeafletMapInstance, point: LatLng): LabelRect {
   const pixel = map.latLngToContainerPoint([point.lat, point.lng]);
   return {
-    left: pixel.x - 20,
-    top: pixel.y - 48,
-    right: pixel.x + 20,
-    bottom: pixel.y + 18
+    left: pixel.x - 28,
+    top: pixel.y - 56,
+    right: pixel.x + 28,
+    bottom: pixel.y + 20
   };
 }
 
@@ -1204,6 +1222,7 @@ function ResultsMarkers({
   showLabels,
   resultLabelLayout,
   resultLabelInset,
+  resultControlInset,
   animateResultConnector = true,
   resizeSignal
 }: {
@@ -1211,8 +1230,9 @@ function ResultsMarkers({
   players?: Player[];
   guesses: Guess[];
   showLabels: boolean;
-  resultLabelLayout?: "auto" | "home-preview";
+  resultLabelLayout?: "auto" | "home-preview" | "account-history";
   resultLabelInset?: boolean;
+  resultControlInset?: boolean;
   animateResultConnector?: boolean;
   resizeSignal?: number | string | boolean;
 }) {
@@ -1258,6 +1278,13 @@ function ResultsMarkers({
     const mapCenter = { x: mapSize.x / 2, y: mapSize.y / 2 };
     const displayLocation = displayGeometry.location;
     const locationPoint = map.latLngToContainerPoint([displayLocation.lat, displayLocation.lng]);
+    const accountHistoryLayout = resultLabelLayout === "account-history";
+    const firstGuess = rankedResults[0]
+      ? displayGeometry.resultGuesses.get(rankedResults[0].playerId)
+      : undefined;
+    const firstGuessPoint = firstGuess
+      ? map.latLngToContainerPoint([firstGuess.lat, firstGuess.lng])
+      : null;
     const blockedSegments: PixelSegment[] = rankedResults.flatMap((result) => {
       const displayGuess = displayGeometry.resultGuesses.get(result.playerId);
       if (!result.guess || !displayGuess) return [];
@@ -1266,9 +1293,18 @@ function ResultsMarkers({
       return [{ a: { x: guessPoint.x, y: guessPoint.y }, b: { x: locationPoint.x, y: locationPoint.y } }];
     });
 
+    if (resultControlInset) {
+      occupied.push({
+        left: Math.max(0, mapSize.x - 82),
+        top: 0,
+        right: mapSize.x,
+        bottom: Math.min(mapSize.y, 132)
+      });
+    }
+
     for (const result of rankedResults) {
       const displayGuess = displayGeometry.resultGuesses.get(result.playerId);
-      if (displayGuess) occupied.push(pinBlockRect(map, displayGuess));
+      if (displayGuess) occupied.push(paddedRect(pinBlockRect(map, displayGuess), 8));
     }
 
     const homePlacements = homePreviewPlacements(
@@ -1301,10 +1337,14 @@ function ResultsMarkers({
       occupied,
       blockedSegments.map((segment) => trimSegment(segment, 0, 54)),
       true,
-      undefined
+      accountHistoryLayout && firstGuessPoint
+        ? { x: 0, y: locationPoint.y <= firstGuessPoint.y ? -1 : 1 }
+        : undefined,
+      resultControlInset,
+      accountHistoryLayout
     );
     occupied.push(paddedRect(actualPlacement.rect, 12));
-    occupied.push(pinBlockRect(map, displayLocation));
+    occupied.push(paddedRect(pinBlockRect(map, displayLocation), 8));
 
     for (const [index, result] of rankedResults.entries()) {
       const displayGuess = displayGeometry.resultGuesses.get(result.playerId);
@@ -1315,6 +1355,12 @@ function ResultsMarkers({
       const label = `#${index + 1} ${playerName(players, result.playerId)} · ${resultLabel}`;
       const outwardVector = vectorAwayFrom(guessPoint, mapCenter);
       const targetVector = vectorAwayFrom(guessPoint, locationPoint);
+      const preferredVector = accountHistoryLayout
+        ? { x: 0, y: guessPoint.y <= locationPoint.y ? -1 : 1 }
+        : blendedVector([
+            { vector: outwardVector, weight: 1.85 },
+            { vector: targetVector, weight: 1.15 }
+          ]);
       const playerDimensions = labelSize(label, false, mapSize.x <= 520 && mapSize.y >= mapSize.x);
       const placement = resultLabelLayout === "home-preview"
         ? {
@@ -1334,17 +1380,16 @@ function ResultsMarkers({
         occupied,
         blockedSegments,
         false,
-        blendedVector([
-          { vector: outwardVector, weight: 1.85 },
-          { vector: targetVector, weight: 1.15 }
-        ])
+        preferredVector,
+        resultControlInset,
+        accountHistoryLayout
       );
       occupied.push(paddedRect(placement.rect, 12));
       playerPlacements.set(result.playerId, placement.placement);
     }
 
     return { actual: actualPlacement.placement, players: playerPlacements };
-  }, [showLabels, location, rankedResults, map, players, viewportVersion, resizeSignal, displayGeometry, resultLabelLayout, resultLabelInset]);
+  }, [showLabels, location, rankedResults, map, players, viewportVersion, resizeSignal, displayGeometry, resultLabelLayout, resultLabelInset, resultControlInset]);
 
   return (
     <>
@@ -1509,7 +1554,7 @@ function FlowingResultConnector({ color, animate = true, positions }: FlowingRes
       pathOptions={{
         color,
         opacity: 0.82,
-        weight: 1.25,
+        weight: 1.375,
         dashArray: "6 9",
         lineCap: "round"
       }}
@@ -1532,6 +1577,7 @@ export function LeafletMap({
   resultZoomScale,
   resultLabelLayout,
   resultLabelInset,
+  resultControlInset,
   animateResultConnector = true,
   currentPlayerColor,
   resizeSignal,
@@ -1577,6 +1623,7 @@ export function LeafletMap({
           resultZoomScale={resultZoomScale}
           resizeSignal={resizeSignal}
           resultLabelLayout={resultLabelLayout}
+          resultControlInset={resultControlInset}
         />
       )}
       <MapLibreBaseLayer renderWorldCopies={!restrictToSingleWorld} onReady={onBaseMapReady} />
@@ -1603,6 +1650,7 @@ export function LeafletMap({
           showLabels={showLabels}
           resultLabelLayout={resultLabelLayout}
           resultLabelInset={resultLabelInset}
+          resultControlInset={resultControlInset}
           animateResultConnector={animateResultConnector}
           resizeSignal={resizeSignal}
         />

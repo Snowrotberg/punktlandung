@@ -91,8 +91,8 @@
     justify-content: flex-start;
     gap: .15rem;
     overflow-x: auto;
-    padding: 0 .75rem;
-    scroll-padding-inline: .75rem;
+    padding: 0 1rem;
+    scroll-padding-inline: 1rem;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
     mask-image: linear-gradient(to right, transparent, #000 .7rem, #000 calc(100% - .7rem), transparent);
@@ -139,7 +139,7 @@
 }
 
 @media (max-width: 23rem) and (orientation: portrait) {
-  .bar { padding-inline: .75rem; }
+  .bar { padding-inline: 0; }
   .links a,
   .cookieButton { font-size: .64rem; }
 }
