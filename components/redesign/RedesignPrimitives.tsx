@@ -67,8 +67,8 @@ type StatusControlsProps = {
   onSoundToggle: () => void;
 };
 
-export function RedesignStatusControls({ soundEnabled, playerName, accountHref, accountAuthenticated = false, communityHref = "/community", onSoundToggle }: StatusControlsProps) {
-  const accountLabel = playerName ? `Account von ${playerName}` : "Account";
+export function RedesignStatusControls({ soundEnabled, accountHref, accountAuthenticated = false, communityHref = "/community", onSoundToggle }: StatusControlsProps) {
+  const signedOutAccountHref = !accountHref || accountHref === "/konto" ? "/anmelden" : accountHref;
 
   return (
     <div className={styles.statusControls}>
@@ -90,21 +90,17 @@ export function RedesignStatusControls({ soundEnabled, playerName, accountHref, 
       >
         <MessagesSquare aria-hidden="true" />
       </Link>
-      {accountHref && accountAuthenticated ? (
+      {accountAuthenticated ? (
         <AccountMenu authenticated showPlayLink={false} />
-      ) : accountHref ? (
-        <a
-          href={accountHref}
+      ) : (
+        <Link
+          href={signedOutAccountHref}
           className={styles.roundControl}
-          aria-label={accountAuthenticated ? "Spielerkonto" : "Anmelden"}
-          data-tooltip={accountAuthenticated ? "Spielerkonto" : "Anmelden"}
+          aria-label="Anmelden"
+          data-tooltip="Anmelden"
         >
           <UserRound aria-hidden="true" />
-        </a>
-      ) : (
-        <button type="button" className={styles.roundControl} aria-label={accountLabel} data-tooltip="Bald verfügbar" disabled>
-          <UserRound aria-hidden="true" />
-        </button>
+        </Link>
       )}
     </div>
   );
