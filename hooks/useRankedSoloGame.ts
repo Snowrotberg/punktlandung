@@ -378,7 +378,7 @@ export function useRankedSoloGame(enabled: boolean) {
     return () => { cancelled = true; };
   }, [enabled, prepareRankedPrompt, request]);
 
-  const applyResolved = useCallback((next: PublicRankedGame, guess: Guess | null) => {
+  const applyResolved = useCallback((next: PublicRankedGame, guess: Guess | null, timedOut = false) => {
     setGame(next);
     const resolved = next.resolvedRounds.at(-1);
     setRoom((value) => {
@@ -387,7 +387,7 @@ export function useRankedSoloGame(enabled: boolean) {
         ? value.summaries
         : [...value.summaries, summaryFor(resolved, guess)];
       const nextPlayer = makePlayer(value.players[0]?.name ?? "Spieler 1", next.score);
-      return { ...value, status: next.status === "completed" ? "finished" : "results", players: [nextPlayer], location: resolvedLocation(resolved), guesses: guess ? [guess] : [], summaries, currentRound: resolved.roundNumber, roundEndsAt: null, roundStartedAt: null };
+      return { ...value, status: next.status === "completed" ? "finished" : "results", players: [nextPlayer], location: resolvedLocation(resolved), guesses: guess ? [guess] : [], timedOutPlayerIds: timedOut ? [playerId] : [], summaries, currentRound: resolved.roundNumber, roundEndsAt: null, roundStartedAt: null };
     });
   }, []);
 
@@ -509,9 +509,27 @@ export function useRankedSoloGame(enabled: boolean) {
   }, [applyResolved, game, request, room]);
 
   useEffect(() => {
-    if (!enabled || !game?.activeRound || !room || room.status !== "guessing" || !room.roundEndsAt) return;
+    if (!enabled || !game || !room || room.status !== "guessing" || !room.roundEndsAt) return;
 
-    const roundId = game.activeRound.roundId;
+    // `game.activeRound` can already point at the next pending round after the
+    // server committed an expiry while the visible room still shows the old
+    // round. Reconcile against the round that is actually on screen.
+    const roundId = room.location
+      ? roundIdFromPromptLocationId(room.location.id)
+      : game.activeRound?.roundId;
+    if (!roundId) return;
+    const reconcileResolvedRound = async () => {
+      if (Date.now() <= room.roundEndsAt!) return false;
+      try {
+        const latest = await request(`/api/v1/ranked-games/${encodeURIComponent(game.gameId)}`);
+        if (!latest.resolvedRounds.some((round) => round.roundNumber === room.currentRound)) return false;
+        removeRankedUpload(`expire:${game.gameId}:${roundId}`);
+        applyResolved(latest, null, true);
+        return true;
+      } catch {
+        return false;
+      }
+    };
     const expire = async () => {
       if (expiryAttemptedRef.current.has(roundId) || Date.now() <= room.roundEndsAt!) return;
       expiryAttemptedRef.current.add(roundId);
@@ -525,40 +543,56 @@ export function useRankedSoloGame(enabled: boolean) {
           body: uploadBody
         });
         removeRankedUpload(uploadId);
-        const resolved = next.resolvedRounds.at(-1);
-        setGame(next);
-        setRoom((value) => {
-          if (!value || !resolved || value.status !== "guessing") return value;
-          const summaries = value.summaries.some((summary) => summary.roundNumber === resolved.roundNumber)
-            ? value.summaries
-            : [...value.summaries, summaryFor(resolved, null)];
-          const nextPlayer = makePlayer(value.players[0]?.name ?? "Spieler 1", next.score);
-          return {
-            ...value,
-            status: next.status === "completed" ? "finished" : "results",
-            players: [nextPlayer],
-            location: resolvedLocation(resolved),
-            guesses: [],
-            timedOutPlayerIds: [playerId],
-            summaries,
-            currentRound: resolved.roundNumber,
-            roundEndsAt: null,
-            roundStartedAt: null
-          };
-        });
+        applyResolved(next, null, true);
       } catch (cause) {
-        enqueueRankedUpload({ id: uploadId, kind: "expire", gameId: game.gameId, roundId, url: `/api/v1/ranked-games/${encodeURIComponent(game.gameId)}/expire`, body: uploadBody });
+        // The server may have committed the expiry even when the mutation
+        // response was interrupted. Re-read the game before queueing a retry
+        // so the browser cannot remain on a round that is already resolved.
+        try {
+          const latest = await request(`/api/v1/ranked-games/${encodeURIComponent(game.gameId)}`);
+          if (latest.resolvedRounds.some((round) => round.roundNumber === room.currentRound)) {
+            removeRankedUpload(uploadId);
+            applyResolved(latest, null, true);
+            return;
+          }
+        } catch {
+          // The normal upload queue remains the offline/transient fallback.
+        }
+        // A client timer can reach the deadline a fraction before the server
+        // clock does. Do not permanently mark the round as handled when that
+        // first expiry request is rejected; the interval must be able to retry
+        // and move the UI from 0s to the round result.
+        expiryAttemptedRef.current.delete(roundId);
+        const nonRetryableClientError = cause instanceof RankedRequestError
+          && cause.status >= 400
+          && cause.status < 500
+          && cause.status !== 408
+          && cause.status !== 429;
+        if (nonRetryableClientError) {
+          removeRankedUpload(uploadId);
+        } else {
+          enqueueRankedUpload({ id: uploadId, kind: "expire", gameId: game.gameId, roundId, url: `/api/v1/ranked-games/${encodeURIComponent(game.gameId)}/expire`, body: uploadBody });
+        }
         setPendingUploadCount(pendingUploadsForGame(activeGameIdRef.current));
-        setError(cause instanceof Error ? cause.message : "Die abgelaufene Runde konnte nicht geprüft werden.");
+        if (!(cause instanceof RankedRequestError) || cause.status !== 409) {
+          setError(cause instanceof Error ? cause.message : "Die abgelaufene Runde konnte nicht geprüft werden.");
+        }
       } finally {
         setUploading(false);
       }
     };
 
     void expire();
-    const timer = window.setInterval(() => void expire(), 250);
-    return () => window.clearInterval(timer);
-  }, [enabled, game, request, room]);
+    void reconcileResolvedRound();
+    // Stay below the server's per-minute expiry guard even when the browser
+    // clock is noticeably ahead of the server clock.
+    const timer = window.setInterval(() => void expire(), 4000);
+    const reconciliationTimer = window.setInterval(() => void reconcileResolvedRound(), 2000);
+    return () => {
+      window.clearInterval(timer);
+      window.clearInterval(reconciliationTimer);
+    };
+  }, [applyResolved, enabled, game, request, room]);
 
   const flushUploads = useCallback(async () => {
     if (!enabled || uploadFlushInFlightRef.current) return;
@@ -577,7 +611,7 @@ export function useRankedSoloGame(enabled: boolean) {
             const body = JSON.parse(item.body ?? "{}") as { lat?: number; lng?: number; countryCode?: string };
             applyResolved(next, { playerId, lat: body.lat ?? 0, lng: body.lng ?? 0, countryCode: body.countryCode, createdAt: item.createdAt, responseTimeMs: undefined });
           } else if (item.kind === "expire" && belongsToVisibleGame) {
-            applyResolved(next, null);
+            applyResolved(next, null, true);
           } else if (item.kind === "ready" && belongsToVisibleGame) {
             setGame(next);
             setRoom((value) => value ? { ...value, roundStartedAt: next.activeRound?.startedAt ?? null, roundEndsAt: next.activeRound?.deadlineAt ?? null } : value);

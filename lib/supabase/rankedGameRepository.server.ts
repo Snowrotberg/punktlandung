@@ -3,12 +3,14 @@ import type { Json } from "./database.types";
 import type { RankedGame, RankedRound } from "@/lib/rankedGame";
 import type { RankedGameRepository } from "@/lib/rankedGameRepository";
 import type { GeoLocation, RoundResult } from "@/types/game";
+import { evaluatePlayerGuess } from "@/lib/roundEvaluation";
 import { createSupabaseAdminClient } from "./admin.server";
 import type { Database } from "./database.types";
 
 type GameRow = Database["public"]["Tables"]["ranked_games"]["Row"];
 type RoundRow = Database["public"]["Tables"]["ranked_rounds"]["Row"];
 type GuessRow = Database["public"]["Tables"]["ranked_guesses"]["Row"];
+type PersistedRankedLocation = GeoLocation & { __rankedPromptVersion?: number };
 
 function timestamp(value: string | null): number | null {
   if (value === null) return null;
@@ -24,9 +26,14 @@ function jsonObject<T>(value: Json, label: string): T {
   return value as T;
 }
 
-function mapRound(round: RoundRow, guess: GuessRow | undefined): RankedRound {
-  const location = jsonObject<GeoLocation>(round.location_snapshot, "ranked location");
-  const result = guess ? jsonObject<RoundResult>(guess.result_snapshot, "ranked result") : null;
+function mapRound(round: RoundRow, guess: GuessRow | undefined, playerId: string): RankedRound {
+  const storedLocation = jsonObject<PersistedRankedLocation>(round.location_snapshot, "ranked location");
+  const { __rankedPromptVersion, ...location } = storedLocation;
+  const result = guess
+    ? jsonObject<RoundResult>(guess.result_snapshot, "ranked result")
+    : round.status === "resolved"
+      ? evaluatePlayerGuess(playerId, location, null)
+      : null;
   return {
     roundId: round.round_id,
     roundNumber: round.round_number,
@@ -45,7 +52,8 @@ function mapRound(round: RoundRow, guess: GuessRow | undefined): RankedRound {
       createdAt: timestamp(guess.submitted_at) as number,
       responseTimeMs: guess.response_time_ms
     } : null,
-    result
+    result,
+    promptVersion: Number.isInteger(__rankedPromptVersion) ? __rankedPromptVersion : 0
   };
 }
 
@@ -71,7 +79,7 @@ function mapGame(game: GameRow, rounds: RoundRow[], guesses: GuessRow[]): Ranked
     completedAt: timestamp(game.completed_at),
     score: game.score,
     totalResponseTimeMs: Number(game.total_response_time_ms),
-    rounds: rounds.sort((a, b) => a.round_number - b.round_number).map((round) => mapRound(round, guessesByRound.get(round.round_id)))
+    rounds: rounds.sort((a, b) => a.round_number - b.round_number).map((round) => mapRound(round, guessesByRound.get(round.round_id), game.account_id ?? "guest"))
   };
 }
 
@@ -111,7 +119,7 @@ function statePayload(game: RankedGame) {
     round_number: round.roundNumber,
     status: round.status,
     location_id: round.location.id,
-    location_snapshot: round.location,
+    location_snapshot: { ...round.location, __rankedPromptVersion: round.promptVersion ?? 0 },
     started_at: iso(round.startedAt),
     deadline_at: iso(round.deadlineAt),
     resolved_at: iso(round.resolvedAt)

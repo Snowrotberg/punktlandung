@@ -800,6 +800,14 @@ async function blockResponsiveThirdParties(context) {
       return;
     }
 
+    // Local production QA intentionally runs without the separate WebSocket
+    // process. A report-only CSP event is expected there and must not flood
+    // the report endpoint until its rate limit masks real layout results.
+    if (parsedUrl?.pathname === "/api/security/csp-report") {
+      await route.fulfill({ status: 204, body: "" });
+      return;
+    }
+
     if (blockedThirdPartyHosts.some((blockedHost) => hostname === blockedHost || hostname.endsWith(`.${blockedHost}`))) {
       await route.abort("blockedbyclient");
       return;
@@ -915,6 +923,10 @@ async function runTargetViewport(browser, target, viewport) {
       else await targetLabel.dispatchEvent("mouseover");
       const infoPopup = page.locator(".punktlandung-location-info-popup").first();
       await infoPopup.waitFor({ state: "visible", timeout: 5000 });
+      // Opening a Leaflet popup can auto-pan the map with a short animation.
+      // Measure only after that movement has settled, otherwise the check
+      // intermittently captures the popup between its old and final position.
+      await page.waitForTimeout(450);
       const popupPlacement = await infoPopup.evaluate((popup) => {
         const visiblePopup = popup.querySelector(".leaflet-popup-content-wrapper") ?? popup;
         const popupRect = visiblePopup.getBoundingClientRect();

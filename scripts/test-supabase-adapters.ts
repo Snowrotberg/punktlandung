@@ -7,7 +7,7 @@ import { createSupabaseAdminClient } from "../lib/supabase/admin.server";
 import { SupabaseAccountIdentityRepository } from "../lib/supabase/accountIdentityRepository.server";
 import { SupabaseAccountProfileRepository } from "../lib/supabase/accountProfileRepository.server";
 import { SupabaseRankedGameRepository } from "../lib/supabase/rankedGameRepository.server";
-import { createRankedGame, submitRankedGuess } from "../lib/rankedGame";
+import { activateRankedRound, createRankedGame, expireOpenRound, replaceRankedRoundLocation, submitRankedGuess } from "../lib/rankedGame";
 import { builtInLocations } from "../data/locations";
 import type { Database } from "../lib/supabase/database.types";
 
@@ -18,6 +18,7 @@ const backendUserId = `test-user-${suffix}`;
 const providerSubject = `test-subject-${suffix}`;
 const now = Date.now();
 const rankedGameId = `ranked_test_${suffix}`;
+const expiredRankedGameId = `ranked_expired_test_${suffix}`;
 
 const principal: ExternalAuthPrincipal = {
   authBackend: "supabase",
@@ -92,9 +93,32 @@ async function main() {
   assert.equal(completed.status, "completed");
   assert.equal((await rankedGames.findById(rankedGameId))?.rounds[0].guess?.lat, 0);
 
+  const expiring = createRankedGame({
+    gameId: expiredRankedGameId,
+    createRequestId: `expire_test_${suffix}`,
+    guestIdHash: `expired_guest_hash_${suffix}`,
+    locations: [builtInLocations[1]],
+    roundIds: [`expired_round_test_${suffix}`],
+    now,
+    roundDurationMs: 15_000,
+    deferRoundStart: true
+  });
+  await rankedGames.create(expiring);
+  await rankedGames.updateAtomically(expiredRankedGameId, (current) => replaceRankedRoundLocation(current, current.rounds[0].roundId, builtInLocations[2]));
+  const restoredReroll = await rankedGames.findById(expiredRankedGameId);
+  assert.equal(restoredReroll?.rounds[0].location.id, builtInLocations[2].id);
+  assert.equal(restoredReroll?.rounds[0].promptVersion, 1);
+  await rankedGames.updateAtomically(expiredRankedGameId, (current) => activateRankedRound(current, current.rounds[0].roundId, now));
+  await rankedGames.updateAtomically(expiredRankedGameId, (current) => expireOpenRound(current, now + 15_001));
+  const restoredExpiry = await rankedGames.findById(expiredRankedGameId);
+  assert.equal(restoredExpiry?.rounds[0].status, "resolved");
+  assert.equal(restoredExpiry?.rounds[0].guess, null);
+  assert.equal(restoredExpiry?.rounds[0].result?.points, 0);
+  assert.equal(restoredExpiry?.rounds[0].result?.guess, null);
+
     console.log("Supabase adapter smoke test passed: identity, profile CAS, ranked-state transaction and browser isolation.");
   } finally {
-    await admin.from("ranked_games").delete().eq("game_id", rankedGameId);
+    await admin.from("ranked_games").delete().in("game_id", [rankedGameId, expiredRankedGameId]);
     await admin.from("accounts").delete().in("account_id", [accountOne, accountTwo]);
   }
 }
