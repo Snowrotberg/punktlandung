@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { adConfig, type AdPlacement, type AdVariant, isAdPlacementConfigured } from "@/lib/ads";
 
 type AdContainerProps = {
@@ -48,14 +48,25 @@ export function AdContainer({
   const shape = variantShape(variant);
   const positionClass = position === "absolute" ? "absolute" : "relative";
   const defaultFormat = adFormat ?? variantFormat(variant);
+  const radiusClass = variant === "rail" ? "rounded-[1.5rem]" : variant === "game" ? "rounded-2xl" : "rounded-xl";
+  const [deliveryState, setDeliveryState] = useState<"pending" | "filled" | "unfilled">(
+    placementConfigured ? "pending" : "unfilled"
+  );
 
   useEffect(() => {
     const adElement = adElementRef.current;
-    if (!placementConfigured || !adElement || requestedRef.current) return;
+    if (!placementConfigured || !adElement || requestedRef.current) {
+      if (!placementConfigured) setDeliveryState("unfilled");
+      return;
+    }
 
     let timeout: number | undefined;
+    let statusTimeout: number | undefined;
     let didPush = false;
-    const isSettingsBlock = placement === "solo-settings-banner" || placement === "party-settings-banner";
+    const isSettingsBlock =
+      placement === "solo-settings-banner" ||
+      placement === "party-settings-banner" ||
+      placement === "game-bottom-left";
     const guardedAncestors: HTMLElement[] = [];
     let ancestor = adElement.parentElement;
 
@@ -97,11 +108,25 @@ export function AdContainer({
           window.adsbygoogle = window.adsbygoogle || [];
           window.adsbygoogle.push({});
           didPush = true;
+          statusTimeout = window.setTimeout(() => {
+            if (!adElement.dataset.adStatus) setDeliveryState("unfilled");
+          }, 6000);
         } catch {
           requestedRef.current = false;
+          setDeliveryState("unfilled");
         }
       }, 80);
     };
+
+    const syncDeliveryState = () => {
+      const status = adElement.dataset.adStatus;
+      if (status === "filled") setDeliveryState("filled");
+      if (status === "unfilled") setDeliveryState("unfilled");
+    };
+
+    const statusObserver = new MutationObserver(syncDeliveryState);
+    statusObserver.observe(adElement, { attributes: true, attributeFilter: ["data-ad-status"] });
+    syncDeliveryState();
 
     requestAd();
     const resizeObserver = new ResizeObserver(requestAd);
@@ -110,17 +135,33 @@ export function AdContainer({
     return () => {
       resizeObserver.disconnect();
       layoutObserver.disconnect();
+      statusObserver.disconnect();
       if (timeout !== undefined) {
         window.clearTimeout(timeout);
         if (!didPush) requestedRef.current = false;
       }
+      if (statusTimeout !== undefined) window.clearTimeout(statusTimeout);
     };
   }, [defaultFormat, placement, placementConfigured]);
+
+  const unavailable = deliveryState === "unfilled";
+  const deliveryClass = unavailable
+    ? variant === "rail" ? "invisible pointer-events-none" : "hidden"
+    : deliveryState === "pending" ? "opacity-0 pointer-events-none" : "opacity-100";
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("punktlandung-ad-delivery-change", {
+      detail: { placement, deliveryState }
+    }));
+  }, [deliveryState, placement]);
 
   return (
     <aside
       aria-label={label}
-      className={`arcade-panel ${positionClass} overflow-hidden rounded-md border-indigo-500/55 bg-slate-900/82 ${shape} ${className}`}
+      aria-hidden={deliveryState !== "filled" || undefined}
+      data-ad-placement={placement}
+      data-ad-delivery={deliveryState}
+      className={`arcade-panel ${positionClass} overflow-hidden ${radiusClass} border-indigo-500/55 bg-slate-900/82 transition-opacity duration-200 ${shape} ${deliveryClass} ${className}`}
     >
       {placementConfigured ? (
         <ins
@@ -134,12 +175,7 @@ export function AdContainer({
           data-full-width-responsive={fullWidthResponsive ? "true" : "false"}
         />
       ) : (
-        <div className="absolute inset-0 grid place-items-center p-4 text-center">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-300">{label}</p>
-            <p className="mt-2 text-xs leading-5 text-slate-400">AdSense-ready Fläche.</p>
-          </div>
-        </div>
+        null
       )}
     </aside>
   );

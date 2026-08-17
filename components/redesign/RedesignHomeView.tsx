@@ -1,16 +1,16 @@
 "use client";
 
-import "@fontsource-variable/inter";
-import { ArrowRight, CircleDot, Globe2, MapPin, Radio, UserRound, UsersRound, Volume2, VolumeX } from "lucide-react";
+import { Globe2, UserRound, UsersRound } from "lucide-react";
 import { AdContainer } from "@/components/AdContainer";
 import { LegalLinks } from "@/components/LegalLinks";
 import { TriangleIcon } from "@/components/TriangleIcon";
 import {
-  RedesignButton,
   RedesignButtonLink,
+  RedesignBrand,
   RedesignFooter,
   RedesignHeader,
-  RedesignShell
+  RedesignShell,
+  RedesignStatusControls
 } from "@/components/redesign";
 import styles from "./RedesignHomeView.module.css";
 
@@ -25,10 +25,12 @@ type RedesignHomeViewProps = {
   playerName: string;
   connectionStatus: "connecting" | "open" | "closed";
   soundEnabled: boolean;
+  accountHref?: string;
+  accountAuthenticated?: boolean;
   mapPreview: React.ReactNode;
   modes: ReadonlyArray<HomeMode>;
   onDirectPlay: () => void;
-  onModeSelect: () => void;
+  onModeSelect: (href: string) => void;
   onSoundToggle: () => void;
 };
 
@@ -42,15 +44,14 @@ export function RedesignHomeView({
   playerName,
   connectionStatus,
   soundEnabled,
+  accountHref,
+  accountAuthenticated,
   mapPreview,
   modes,
   onDirectPlay,
   onModeSelect,
   onSoundToggle
 }: RedesignHomeViewProps) {
-  const serverState = connectionStatus === "open" ? "online" : connectionStatus === "connecting" ? "connecting" : "offline";
-  const serverLabel = serverState === "online" ? "Server verbunden" : serverState === "connecting" ? "Server wird verbunden" : "Server getrennt";
-
   return (
     <main className={styles.page}>
       <div className={styles.frame}>
@@ -58,67 +59,56 @@ export function RedesignHomeView({
 
         <RedesignShell className={styles.app}>
           <RedesignHeader className={styles.header}>
-            <a href="/" className={styles.brand} aria-label="Punktlandung Startseite">
-              <span className={styles.brandMark}><MapPin aria-hidden="true" /></span>
-              <span>Punktlandung</span>
-            </a>
-            <div className={styles.topActions}>
-              <a className={styles.betaBadge} href="/feedback">
-                <CircleDot aria-hidden="true" />
-                <span>Öffentliche Beta</span>
-              </a>
-              <span className={styles.serverStatus} data-state={serverState} title={serverLabel} aria-label={serverLabel} role="status">
-                <Radio aria-hidden="true" />
-                <span>Server</span>
-              </span>
-              <button
-                type="button"
-                className={styles.iconButton}
-                onClick={onSoundToggle}
-                aria-label={soundEnabled ? "Sound ausschalten" : "Sound einschalten"}
-                title={soundEnabled ? "Sound an" : "Sound aus"}
-                aria-pressed={soundEnabled}
-              >
-                {soundEnabled ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
-              </button>
-              <button type="button" className={styles.iconButton} aria-label={`Account von ${playerName}`} title={`Account · ${playerName}`}>
-                <UserRound aria-hidden="true" />
-              </button>
-            </div>
+            <RedesignBrand />
+            <RedesignStatusControls connectionStatus={connectionStatus} soundEnabled={soundEnabled} playerName={playerName} accountHref={accountHref} accountAuthenticated={accountAuthenticated} onSoundToggle={onSoundToggle} />
           </RedesignHeader>
 
           <div className={styles.content}>
             <section className={styles.hero} aria-labelledby="home-title">
               <div className={styles.heroCopy}>
                 <span className={styles.eyebrow}>Das Geo-Spiel für alle</span>
-                <h1 id="home-title">Wie gut kennst du die Welt?</h1>
-                <p>Orte, Städte und Wahrzeichen erraten. Allein, zusammen oder live im Raum.</p>
+                <h1 id="home-title">
+                  <span className={styles.titleWide}>Wie gut kennst du</span><span className={styles.titleWide}>die Welt?</span>
+                  <span className={styles.titleCompact}>Wie gut kennst</span><span className={styles.titleCompact}>du die Welt?</span>
+                </h1>
+                <p><span>Errate Orte, Städte, Wahrzeichen &amp; mehr.</span><span>Spiel für dich, gemeinsam mit Freunden oder online.</span></p>
                 <div className={styles.heroActions}>
-                  <RedesignButton tone="primary" className={styles.directButton} onClick={onDirectPlay}>
+                    <RedesignButtonLink
+                      href="/solo-modus/direct?rounds=15&time=60&difficulty=medium&category=mixed"
+                      tone="primary"
+                      className={styles.directButton}
+                    onClick={onDirectPlay}
+                  >
                     <span>Direkt spielen</span>
                     <TriangleIcon direction="right" />
-                  </RedesignButton>
+                  </RedesignButtonLink>
                 </div>
               </div>
-              <div className={styles.heroMap} aria-hidden="true">{mapPreview}</div>
+              <div className={styles.heroMap} role="region" aria-label="Beispiel einer Spielauflösung">{mapPreview}</div>
             </section>
 
             <section className={styles.modeSection} aria-labelledby="mode-title">
               <div className={styles.sectionHead}>
                 <div>
                   <span className={styles.sectionLabel}>Spielweise</span>
-                  <h2 id="mode-title">Wähle deinen Modus</h2>
+                  <h2 id="mode-title">Wie möchtest du spielen?</h2>
                 </div>
               </div>
               <div className={styles.modeGrid}>
                 {modes.map((mode) => (
-                  <RedesignButtonLink key={mode.id} href={mode.href} tone="secondary" className={styles.modeCard} onClick={onModeSelect}>
+                  <RedesignButtonLink
+                    key={mode.id}
+                    href={mode.href}
+                    tone="secondary"
+                    className={styles.modeCard}
+                    onClick={() => onModeSelect(mode.href)}
+                  >
                     <span className={styles.modeIcon}><ModeIcon mode={mode.id} /></span>
                     <span className={styles.modeCopy}>
                       <strong>{mode.title}</strong>
                       <small>{mode.text}</small>
                     </span>
-                    <ArrowRight className={styles.modeArrow} aria-hidden="true" />
+                    <TriangleIcon direction="right" className={styles.modeArrow} />
                   </RedesignButtonLink>
                 ))}
               </div>

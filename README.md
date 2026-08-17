@@ -1,12 +1,13 @@
 # Punktlandung
 
-Kostenloses Geo-Quiz-Spiel mit Next.js und Leaflet.
+Kostenloses Geo-Quiz-Spiel mit Next.js, MapLibre und Leaflet.
 
-Der erste Release ist bewusst serverlos:
+Punktlandung wird als vollstaendige Serveranwendung betrieben:
 
 - Solo
 - Party-Modus am selben Bildschirm
-- statisches Hosting auf Netcup-Webhosting
+- Online-Raeume ueber den separaten WebSocket-Server
+- Next.js- und WebSocket-Prozesse auf dem Netcup-VPS
 
 ## Entwicklung
 
@@ -23,7 +24,7 @@ Das startet lokal:
 
 Die Netcup/GitHub-Deployment-Anleitung liegt in [docs/netcup-deployment.md](docs/netcup-deployment.md).
 
-Kurzfassung: GitHub baut eine statische Version und laedt den Ordner `out/` per FTPS zu Netcup hoch. Online-Raeume ueber mehrere Geraete sind in dieser serverlosen Variante deaktiviert.
+Kurzfassung: Der gepruefte Release-Commit wird auf dem Netcup-VPS aktualisiert, dort als vollstaendige Next.js-Anwendung gebaut und anschliessend zusammen mit dem WebSocket-Server kontrolliert ueber PM2 neu geladen. Das fruehere statische FTPS-Deployment ist deaktiviert.
 
 ## SEO und AI-Suche
 

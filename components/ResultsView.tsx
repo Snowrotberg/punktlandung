@@ -1,17 +1,36 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  Activity,
+  Award,
+  BarChart3,
+  Clock3,
+  Eye,
+  Gauge,
+  Images,
+  MapPin,
+  Medal,
+  MessageSquareText,
+  RotateCcw,
+  Sparkles,
+  Target,
+  Trophy
+} from "lucide-react";
 import type { LocationCategory, Player, RoomState, RoundResult, RoundSummary } from "@/types/game";
 import { formatDistance, rankResults } from "@/lib/geo";
 import { BackButton } from "./BackButton";
 import { Button } from "./Button";
-import { AdContainer } from "./AdContainer";
 import { GuessMap } from "./GuessMap";
 import { FeedbackDialog } from "./FeedbackDialog";
 import { LegalLinks } from "./LegalLinks";
 import { PanoramaViewer } from "./PanoramaViewer";
 import { TriangleIcon } from "./TriangleIcon";
 import { useSound } from "./SoundProvider";
+import redesignStyles from "./redesign/RedesignResultsView.module.css";
+import { saveCompletedGame } from "@/app/endergebnis/actions";
+import type { RankedSyncStatus } from "@/hooks/useRankedSoloGame";
+import { playerColorAt } from "@/lib/playerPalette";
 
 const punktlandungDistanceKm = 0.5;
 const punktlandungDelayMs = 850;
@@ -51,8 +70,9 @@ const overallRankingTitles = [
   "Falschfahrer"
 ] as const;
 const scoreHeatmapGradient = "linear-gradient(90deg, #f43f5e 0%, #fb923c 36%, #facc15 64%, #34d399 100%)";
+const redesignScoreGradient = "linear-gradient(90deg, #7567e8 0%, #938cff 42%, #56c7c0 72%, #5ee7bd 100%)";
 const categoryLabels: Record<LocationCategory, string> = {
-  mixed: "Gemischt",
+  mixed: "Gemischte Kategorien",
   landmarks: "Wahrzeichen",
   cities: "Städte",
   landscapes: "Landschaft",
@@ -82,7 +102,7 @@ type PlayerFinalStats = {
   hits: number;
   bestRoundPoints: number;
   bestRoundLabel: string;
-  bestCategoryLabel: string;
+  scoreDeviation: number | null;
   timedGuesses: number;
   totalGuessSeconds: number | null;
   averageGuessSeconds: number | null;
@@ -94,17 +114,25 @@ type FinalHighlight = {
   detail: string;
   color?: string;
   tone?: "metric" | "category";
+  icon: "closest" | "round" | "hits" | "speed" | "distance" | "consistency";
 };
 
 type ResultsViewProps = {
   room: RoomState;
   isHost: boolean;
   meId?: string | null;
-  onNext: () => void;
+  onNext: () => void | Promise<void>;
   onReadyNextRound?: () => void;
   onBackToLobby: () => void;
   onRestart: () => void;
   onLeave: () => void;
+  redesign?: boolean;
+  accountsEnabled?: boolean;
+  accountAuthenticated?: boolean;
+  serverRanked?: boolean;
+  rankedSyncStatus?: RankedSyncStatus;
+  pendingUploadCount?: number;
+  initialSurface?: "resolution" | "final";
 };
 
 function playerFor(players: Player[], id: string): Player | undefined {
@@ -149,7 +177,7 @@ function postponeFeedbackPrompt(durationMs: number): void {
   }
 }
 
-function playerAccentStyle(color = "#f43f5e"): CSSProperties {
+function playerAccentStyle(color = playerColorAt(0)): CSSProperties {
   return {
     background: color,
     boxShadow: `0 0 10px ${color}cc, 0 0 22px ${color}66`,
@@ -196,6 +224,18 @@ function formatSeconds(seconds: number | null): string {
   return `${Math.round(seconds)} s`;
 }
 
+function roundsPlayedLabel(rounds: number): string {
+  return `${rounds} ${rounds === 1 ? "Runde" : "Runden"}`;
+}
+
+function formatGuessTime(milliseconds: number | undefined): string | null {
+  if (typeof milliseconds !== "number" || !Number.isFinite(milliseconds)) return null;
+  const seconds = milliseconds / 1000;
+  return `${seconds.toLocaleString("de-DE", {
+    maximumFractionDigits: seconds < 10 ? 1 : 0
+  })} s`;
+}
+
 function buildFinalStats(players: Player[], summaries: RoundSummary[]): PlayerFinalStats[] {
   const rankedPlayers = [...players].sort((a, b) => b.score - a.score);
 
@@ -220,35 +260,23 @@ function buildFinalStats(players: Player[], summaries: RoundSummary[]): PlayerFi
         distanceKm: entry.result.distanceKm
       };
     }, null);
-    const categoryStats = new Map<LocationCategory, { count: number; points: number; hits: number }>();
-
-    playerResults.forEach(({ result, round }) => {
-      const category = round.location.category;
-      const current = categoryStats.get(category) ?? { count: 0, points: 0, hits: 0 };
-      current.count += 1;
-      current.points += result.points;
-      current.hits += isResultHit(result) ? 1 : 0;
-      categoryStats.set(category, current);
-    });
-
-    const bestCategory = [...categoryStats.entries()].sort(([, a], [, b]) => {
-      const averageDiff = b.points / Math.max(1, b.count) - a.points / Math.max(1, a.count);
-      if (averageDiff !== 0) return averageDiff;
-      return b.hits / Math.max(1, b.count) - a.hits / Math.max(1, a.count);
-    })[0]?.[0];
+    const averagePoints = roundsPlayed > 0 ? player.score / roundsPlayed : 0;
+    const scoreDeviation = roundsPlayed > 1
+      ? Math.sqrt(playerResults.reduce((sum, { result }) => sum + (result.points - averagePoints) ** 2, 0) / roundsPlayed)
+      : null;
 
     return {
       player,
       rank: index + 1,
       title: overallRankingTitleFor(index, rankedPlayers.length),
       roundsPlayed,
-      averagePoints: roundsPlayed > 0 ? player.score / roundsPlayed : 0,
+      averagePoints,
       averageDistanceKm: distances.length > 0 ? distances.reduce((sum, distance) => sum + distance, 0) / distances.length : null,
       hitRate: roundsPlayed > 0 ? (hits / roundsPlayed) * 100 : 0,
       hits,
       bestRoundPoints: bestRound?.points ?? 0,
       bestRoundLabel: bestRound ? `${bestRound.label} · ${formatDistance(bestRound.distanceKm)}` : "Keine Runde",
-      bestCategoryLabel: bestCategory ? categoryLabels[bestCategory] : "Keine",
+      scoreDeviation,
       timedGuesses: guessSeconds.length,
       totalGuessSeconds: guessSeconds.length > 0 ? guessSeconds.reduce((sum, seconds) => sum + seconds, 0) : null,
       averageGuessSeconds: guessSeconds.length > 0 ? guessSeconds.reduce((sum, seconds) => sum + seconds, 0) / guessSeconds.length : null
@@ -271,6 +299,9 @@ function buildFinalHighlights(stats: PlayerFinalStats[], summaries: RoundSummary
   const mostLandings = [...stats]
     .filter((stat) => stat.hits > 0)
     .sort((a, b) => b.hits - a.hits || b.hitRate - a.hitRate || b.averagePoints - a.averagePoints)[0];
+  const mostConsistent = [...stats]
+    .filter((stat) => stat.scoreDeviation !== null)
+    .sort((a, b) => (a.scoreDeviation ?? Infinity) - (b.scoreDeviation ?? Infinity) || b.averagePoints - a.averagePoints)[0];
 
   return [
     closest
@@ -278,7 +309,8 @@ function buildFinalHighlights(stats: PlayerFinalStats[], summaries: RoundSummary
           label: "Knappster Tipp",
           value: playerFor(players, closest.result.playerId)?.name ?? "Spieler",
           detail: `${formatDistance(closest.result.distanceKm)} bei ${closest.round.location.title}`,
-          color: playerFor(players, closest.result.playerId)?.color
+          color: playerFor(players, closest.result.playerId)?.color,
+          icon: "closest"
         }
       : null,
     strongestRound
@@ -286,7 +318,8 @@ function buildFinalHighlights(stats: PlayerFinalStats[], summaries: RoundSummary
           label: "Beste Einzelrunde",
           value: playerFor(players, strongestRound.result.playerId)?.name ?? "Spieler",
           detail: `${formatPoints(strongestRound.result.points)} Punkte bei ${strongestRound.round.location.title}`,
-          color: playerFor(players, strongestRound.result.playerId)?.color
+          color: playerFor(players, strongestRound.result.playerId)?.color,
+          icon: "round"
         }
       : null,
     mostLandings
@@ -294,7 +327,8 @@ function buildFinalHighlights(stats: PlayerFinalStats[], summaries: RoundSummary
           label: "Meiste Punktlandungen",
           value: mostLandings.player.name,
           detail: `${mostLandings.hits}/${Math.max(1, mostLandings.roundsPlayed)} Runden · ${formatPercent(mostLandings.hitRate)}`,
-          color: mostLandings.player.color
+          color: mostLandings.player.color,
+          icon: "hits"
         }
       : null,
     fastest
@@ -302,7 +336,8 @@ function buildFinalHighlights(stats: PlayerFinalStats[], summaries: RoundSummary
           label: "Schnellster Tipper",
           value: fastest.player.name,
           detail: `${formatSeconds(fastest.totalGuessSeconds)} gesamt · Ø ${formatSeconds(fastest.averageGuessSeconds)}`,
-          color: fastest.player.color
+          color: fastest.player.color,
+          icon: "speed"
         }
       : null,
     mostAccurate
@@ -310,57 +345,76 @@ function buildFinalHighlights(stats: PlayerFinalStats[], summaries: RoundSummary
           label: "Bester Entfernungsschnitt",
           value: mostAccurate.player.name,
           detail: mostAccurate.averageDistanceKm === null ? "Keine Wertung" : `${formatDistance(mostAccurate.averageDistanceKm)} im Schnitt`,
-          color: mostAccurate.player.color
+          color: mostAccurate.player.color,
+          icon: "distance"
+        }
+      : null,
+    mostConsistent
+      ? {
+          label: "Konstanteste Leistung",
+          value: mostConsistent.player.name,
+          detail: `Ø ${formatPoints(mostConsistent.averagePoints)} Punkte · ± ${formatPoints(mostConsistent.scoreDeviation ?? 0)}`,
+          color: mostConsistent.player.color,
+          icon: "consistency"
         }
       : null
   ].filter(Boolean) as FinalHighlight[];
 }
 
-function buildCategoryHighlights(summaries: RoundSummary[], players: Player[]): FinalHighlight[] {
-  const byCategory = new Map<LocationCategory, Map<string, { points: number; rounds: number; hits: number }>>();
+const resultsSurfaceStorageKey = "punktlandung-results-surface-v1";
 
-  summaries.forEach((round) => {
-    const category = round.location.category;
-    const categoryStats = byCategory.get(category) ?? new Map<string, { points: number; rounds: number; hits: number }>();
-    round.results.forEach((result) => {
-      const current = categoryStats.get(result.playerId) ?? { points: 0, rounds: 0, hits: 0 };
-      current.points += result.points;
-      current.rounds += 1;
-      current.hits += isResultHit(result) ? 1 : 0;
-      categoryStats.set(result.playerId, current);
-    });
-    byCategory.set(category, categoryStats);
-  });
-
-  return [...byCategory.entries()]
-    .filter(([, playerStats]) => playerStats.size > 0)
-    .map(([category, playerStats]) => {
-      const [playerId, stats] = [...playerStats.entries()].sort(([, a], [, b]) => {
-        const averageDiff = b.points / Math.max(1, b.rounds) - a.points / Math.max(1, a.rounds);
-        if (averageDiff !== 0) return averageDiff;
-        return b.hits - a.hits;
-      })[0];
-      const player = playerFor(players, playerId);
-      return {
-        label: categoryLabels[category],
-        value: player?.name ?? "Spieler",
-        detail: `Ø ${formatPoints(stats.points / Math.max(1, stats.rounds))} Punkte · ${stats.hits}/${stats.rounds} Punktlandungen`,
-        color: player?.color,
-        tone: "category" as const
-      };
-    })
-    .sort((a, b) => a.label.localeCompare(b.label, "de"));
+function resultsSessionId(room: RoomState): string {
+  return `${room.code}:${room.summaries.at(-1)?.completedAt ?? 0}`;
 }
 
-export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBackToLobby, onRestart }: ResultsViewProps) {
+function readStoredFinalSurface(room: RoomState): boolean {
+  if (typeof window === "undefined" || room.status !== "finished") return false;
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(resultsSurfaceStorageKey) ?? "null") as { sessionId?: string; surface?: string } | null;
+    return stored?.sessionId === resultsSessionId(room) && stored.surface === "final";
+  } catch {
+    return false;
+  }
+}
+
+function writeStoredFinalSurface(room: RoomState, showFinal: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (showFinal) {
+      window.localStorage.setItem(resultsSurfaceStorageKey, JSON.stringify({ sessionId: resultsSessionId(room), surface: "final" }));
+      return;
+    }
+    const stored = JSON.parse(window.localStorage.getItem(resultsSurfaceStorageKey) ?? "null") as { sessionId?: string } | null;
+    if (stored?.sessionId === resultsSessionId(room)) window.localStorage.removeItem(resultsSurfaceStorageKey);
+  } catch {
+    // The result view remains usable when browser storage is unavailable.
+  }
+}
+
+export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBackToLobby, onRestart, redesign = false, accountsEnabled = false, accountAuthenticated = false, serverRanked = false, rankedSyncStatus = "secured", pendingUploadCount = 0, initialSurface }: ResultsViewProps) {
   const { playSuccess } = useSound();
   const [revealed, setRevealed] = useState(false);
   const [nowTick, setNowTick] = useState(Date.now());
   const [showLanding, setShowLanding] = useState(false);
   const [showImageReplay, setShowImageReplay] = useState(false);
-  const [showFinalStandings, setShowFinalStandings] = useState(false);
+  const [showFinalStandings, setShowFinalStandings] = useState(() => initialSurface === "final" || readStoredFinalSurface(room));
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "auth" | "error">("idle");
+  const [saveOfferDismissed, setSaveOfferDismissed] = useState(false);
   const [replayMapSize, setReplayMapSize] = useState<"closed" | "open" | "full">("closed");
+  const [advancingRound, setAdvancingRound] = useState(false);
+
+  useEffect(() => {
+    if (!room.nextRoundPreviewUrl) return;
+    const image = new Image();
+    image.decoding = "async";
+    image.fetchPriority = "high";
+    image.src = room.nextRoundPreviewUrl;
+    return () => {
+      image.onload = null;
+      image.onerror = null;
+    };
+  }, [room.nextRoundPreviewUrl]);
   const [replayChromeHidden, setReplayChromeHidden] = useState(false);
   const [replayChromeHoverHidden, setReplayChromeHoverHidden] = useState(false);
   const [isReplayMobilePortrait, setIsReplayMobilePortrait] = useState(false);
@@ -369,19 +423,15 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const summary = room.summaries?.[room.summaries.length - 1] ?? null;
   const location = summary?.location ?? null;
   const ranked = useMemo(() => rankResults(summary?.results ?? []), [summary]);
-  const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
-  const finalStats = useMemo(() => buildFinalStats(room.players, room.summaries ?? []), [room.players, room.summaries]);
-  const finalHighlights = useMemo(() => buildFinalHighlights(finalStats, room.summaries ?? [], room.players), [finalStats, room.players, room.summaries]);
-  const showMixedCategoryStats = room.settings.category === "mixed";
-  const finalCategoryHighlights = useMemo(
-    () => (showMixedCategoryStats ? buildCategoryHighlights(room.summaries ?? [], room.players) : []),
-    [room.players, room.summaries, showMixedCategoryStats]
+  const canonicalPlayers = useMemo(
+    () => room.players.map((player, index) => ({ ...player, color: player.color || playerColorAt(index) })),
+    [room.players]
   );
-  const displayedFinalHighlights = useMemo(
-    () => [...finalHighlights, ...finalCategoryHighlights],
-    [finalCategoryHighlights, finalHighlights]
-  );
+  const sortedPlayers = [...canonicalPlayers].sort((a, b) => b.score - a.score);
+  const finalStats = useMemo(() => buildFinalStats(canonicalPlayers, room.summaries ?? []), [canonicalPlayers, room.summaries]);
+  const finalHighlights = useMemo(() => buildFinalHighlights(finalStats, room.summaries ?? [], canonicalPlayers), [canonicalPlayers, finalStats, room.summaries]);
   const completedRounds = room.summaries?.length ?? room.settings.rounds;
+  const displayedFinalHighlights = finalHighlights.slice(0, 6);
   const champion = sortedPlayers[0] ?? null;
   const runnerUp = sortedPlayers[1] ?? null;
   const lastPlayer = sortedPlayers.length > 1 ? sortedPlayers[sortedPlayers.length - 1] : null;
@@ -390,6 +440,54 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const bestRoundResult = ranked[0] ?? null;
   const latestResultByPlayerId = useMemo(() => new Map(ranked.map((result) => [result.playerId, result])), [ranked]);
   const finished = room.status === "finished";
+  const showFinalSurface = () => {
+    writeStoredFinalSurface(room, true);
+    setShowFinalStandings(true);
+  };
+  const showResolutionSurface = () => {
+    writeStoredFinalSurface(room, false);
+    setShowFinalStandings(false);
+  };
+  const meStats = finalStats.find((entry) => entry.player.id === meId) ?? finalStats[0] ?? null;
+  const saveGame = async () => {
+    if (!meStats || saveState === "saving" || saveState === "saved") return;
+    setSaveState("saving");
+    const result = await saveCompletedGame({
+      saveKey: `${room.code}:${room.summaries[0]?.roundStartedAt ?? room.summaries[0]?.completedAt ?? 0}:${meStats.player.id}`,
+      category: room.settings.category,
+      timeLimitSec: room.settings.timeLimitSec,
+      difficulty: room.settings.difficulty === "easy" || room.settings.difficulty === "hard" ? room.settings.difficulty : "medium",
+      noZoom: room.settings.noZoom,
+      score: meStats.player.score,
+      completedRounds,
+      roundDurationMs: Math.max(1000, room.settings.timeLimitSec * 1000),
+      totalResponseTimeMs: Math.round((meStats.totalGuessSeconds ?? 0) * 1000),
+      startedAt: room.summaries[0]?.roundStartedAt ?? room.summaries[0]?.completedAt ?? Date.now(),
+      completedAt: room.summaries.at(-1)?.completedAt ?? Date.now(),
+      rounds: room.summaries.map((round, index) => ({
+        roundId: `${room.code}_${index + 1}`,
+        roundNumber: index + 1,
+        locationId: round.location.id,
+        locationSnapshot: round.location as unknown as Record<string, unknown>,
+        startedAt: round.roundStartedAt ?? Math.max(1, round.completedAt - Math.max(1000, room.settings.timeLimitSec * 1000)),
+        resolvedAt: round.completedAt,
+        result: round.results.find((entry) => entry.playerId === meStats.player.id) ?? {
+          points: 0,
+          distanceKm: 20_015,
+          badge: "Keine Abgabe",
+          countryCorrect: false,
+          eliminated: false,
+          guess: null
+        }
+      }))
+    });
+    setSaveState(result.ok ? "saved" : result.code === "auth_required" ? "auth" : "error");
+  };
+
+  useEffect(() => {
+    if (serverRanked || !finished || !accountAuthenticated || saveState !== "idle") return;
+    void saveGame();
+  }, [accountAuthenticated, finished, serverRanked, summary?.completedAt]);
   const isFlagRound = location?.category === "flags";
   const landingHits = useMemo(
     () => ranked.filter((result) => result.guess && (result.distanceKm <= punktlandungDistanceKm || result.countryCorrect)),
@@ -408,8 +506,8 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const continentLabel = displayContinent(location?.continent ?? "");
   const onlineNextRoundGate = room.kind === "online" && room.status === "results";
   const activeOnlinePlayers = useMemo(
-    () => room.players.filter((player) => player.connected && player.status === "active"),
-    [room.players]
+    () => canonicalPlayers.filter((player) => player.connected && player.status === "active"),
+    [canonicalPlayers]
   );
   const readyPlayerIds = useMemo(() => new Set(room.nextRoundReadyPlayerIds ?? []), [room.nextRoundReadyPlayerIds]);
   const readyPlayerCount = activeOnlinePlayers.filter((player) => readyPlayerIds.has(player.id)).length;
@@ -425,42 +523,58 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
           ? readyStatusText
           : "Bereit für nächste Runde"
         : "Nächste Runde";
-  const nextRoundButtonDisabled = onlineNextRoundGate
+  const nextRoundButtonDisabled = advancingRound || (onlineNextRoundGate
     ? isHost
       ? Boolean(room.nextRoundStartsAt)
       : isMeReadyForNextRound || !onReadyNextRound
-    : !isHost;
-  const handleNextRoundButton = () => {
+    : !isHost);
+  const scoreGradient = redesign ? redesignScoreGradient : scoreHeatmapGradient;
+  const handleNextRoundButton = async () => {
+    if (advancingRound) return;
     if (onlineNextRoundGate && !isHost) {
       onReadyNextRound?.();
       return;
     }
-    onNext();
+    setAdvancingRound(true);
+    // Leave the replay surface immediately. Preparing the already prefetched
+    // image can still take a moment on slower connections; keeping the old
+    // image visible made the click look broken and invited duplicate clicks.
+    setReplayMapSize("closed");
+    setShowImageReplay(false);
+    try {
+      await Promise.resolve(onNext());
+    } finally {
+      setAdvancingRound(false);
+    }
   };
   const replayMapPanelLayout = replayMapFull
-    ? "fixed bottom-3 right-3 h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] sm:bottom-4 sm:right-4 sm:h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)]"
+    ? "fixed bottom-3 right-3 h-[calc(100svh-1.5rem)] w-[calc(100vw-1.5rem)] sm:bottom-4 sm:right-4 sm:h-[calc(100svh-2rem)] sm:w-[calc(100vw-2rem)]"
     : replayMapExpanded
-      ? "absolute bottom-3 left-3 right-3 h-[min(56dvh,470px)] sm:bottom-4 sm:left-auto sm:right-4 sm:h-[min(56dvh,540px)] sm:w-[min(58vw,720px)] min-[1900px]:h-[min(56dvh,580px)] min-[1900px]:w-[min(52vw,820px)] min-[2400px]:w-[min(48vw,980px)]"
+      ? "absolute bottom-3 left-3 right-3 h-[min(56svh,470px)] sm:bottom-4 sm:left-auto sm:right-4 sm:h-[min(56svh,540px)] sm:w-[min(58vw,720px)] min-[1900px]:h-[min(56svh,580px)] min-[1900px]:w-[min(52vw,820px)] min-[2400px]:w-[min(48vw,980px)]"
       : "absolute bottom-3 left-3 right-3 h-[14.5rem] cursor-pointer sm:bottom-4 sm:left-auto sm:right-4 sm:h-[16.5rem] sm:w-[min(52vw,440px)] min-[1900px]:h-[18rem] min-[1900px]:w-[min(48vw,520px)] sm:hover:-translate-y-1";
 
   useEffect(() => {
     setRevealed(false);
     setShowLanding(false);
     setShowImageReplay(false);
-    setShowFinalStandings(false);
+    setShowFinalStandings(readStoredFinalSurface(room));
     setFeedbackDialogOpen(false);
     setReplayMapSize("closed");
     setReplayChromeHidden(false);
     setReplayChromeHoverHidden(false);
-    const timer = window.setTimeout(() => setRevealed(true), 900);
+    // The result is already calculated when this view mounts. Keep only a
+    // short visual handover so submitting a pin feels immediate instead of
+    // looking unresponsive for almost a full second.
+    const timer = window.setTimeout(() => setRevealed(true), 180);
     return () => window.clearTimeout(timer);
-  }, [summary?.roundNumber, summary?.completedAt]);
+  }, [room.code, room.status, summary?.roundNumber, summary?.completedAt]);
 
   useEffect(() => {
     if (!finished || !showFinalStandings || !feedbackPromptAllowed()) return;
+    if (accountsEnabled && !accountAuthenticated && !saveOfferDismissed) return;
     const timer = window.setTimeout(() => setFeedbackDialogOpen(true), 1100);
     return () => window.clearTimeout(timer);
-  }, [finished, showFinalStandings, summary?.completedAt]);
+  }, [accountAuthenticated, accountsEnabled, finished, saveOfferDismissed, showFinalStandings, summary?.completedAt]);
 
   useEffect(() => {
     if (!replayChromeHidden) return;
@@ -553,7 +667,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   if (!summary || !location) return null;
 
   return (
-    <main className="h-dvh overflow-x-hidden overflow-y-auto bg-slate-950 p-2 text-slate-50 md:p-4 xl:overflow-hidden">
+    <main className={`punktlandung-results-shell h-dvh overflow-x-hidden overflow-y-auto bg-slate-950 p-2 text-slate-50 md:p-4 xl:overflow-hidden ${redesign ? redesignStyles.redesign : ""}`}>
       {!revealed && (
         <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950 p-4">
           <div className="w-full max-w-md rounded-md bg-slate-900/90 p-6 text-center shadow-[0_24px_70px_rgba(0,0,0,0.38)] ring-1 ring-indigo-300/40">
@@ -585,18 +699,18 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
               <p className="text-xs font-black uppercase tracking-[0.34em] text-emerald-200 drop-shadow-[0_0_18px_rgba(52,211,153,0.85)]">{landingLabel}</p>
               <h2 className="mt-2 text-4xl font-black leading-none text-white drop-shadow-[0_0_28px_rgba(52,211,153,0.58)] md:text-6xl">Punktlandung!</h2>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {landingHits.map((result) => {
-                  const player = playerFor(room.players, result.playerId);
+                {landingHits.map((result, index) => {
+                  const player = playerFor(canonicalPlayers, result.playerId);
                   return (
                     <span
                       key={result.playerId}
                       className="punktlandung-hit-chip rounded-md px-3 py-1.5 text-sm font-black text-white shadow-[0_10px_26px_rgba(0,0,0,0.25)] drop-shadow-[0_2px_14px_rgba(0,0,0,0.80)]"
                       style={{ "--player-color": player?.color ?? "#34d399" } as CSSProperties}
                     >
-                      {player?.name ?? "Spieler"}
+                      #{index + 1} {player?.name ?? "Spieler"}
                       <span className="punktlandung-hit-chip-detail">
                         {" "}
-                        - {result.countryCorrect ? "voll getroffen" : `${formatDistance(result.distanceKm)} entfernt`}
+                        · {result.countryCorrect ? "voll getroffen" : `${formatDistance(result.distanceKm)} entfernt`}
                       </span>
                     </span>
                   );
@@ -607,8 +721,13 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
         </div>
       )}
 
-      {showImageReplay && (
-        <div className="punktlandung-image-replay fixed inset-0 z-[100] overflow-hidden bg-slate-950">
+      <div
+        aria-hidden={!showImageReplay}
+        inert={!showImageReplay}
+        className={`punktlandung-image-replay fixed inset-0 z-[100] overflow-hidden bg-slate-950 transition-opacity duration-150 ${
+          showImageReplay ? "visible pointer-events-auto opacity-100" : "invisible pointer-events-none opacity-0"
+        }`}
+      >
           <div className="punktlandung-replay-viewer absolute inset-0 overflow-hidden">
             <PanoramaViewer
               location={location}
@@ -621,9 +740,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             />
           </div>
 
-          {!replayChromeSuppressed && <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.42)_0%,rgba(2,6,23,0)_28%,rgba(2,6,23,0.04)_68%,rgba(2,6,23,0.36)_100%)]" />}
+          {showImageReplay && !replayChromeSuppressed && <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.42)_0%,rgba(2,6,23,0)_28%,rgba(2,6,23,0.04)_68%,rgba(2,6,23,0.36)_100%)]" />}
 
-          {!replayChromeSuppressed && (
+          {showImageReplay && !replayChromeSuppressed && (
             <div className="punktlandung-replay-header absolute left-3 right-3 top-3 z-30 grid grid-cols-[minmax(0,min(36rem,calc(100vw-6rem)))_auto] items-start justify-between gap-2 sm:left-4 sm:right-4 sm:top-4">
               <div className="punktlandung-replay-info max-w-[min(36rem,calc(100vw-1.5rem))] rounded-md bg-slate-950/58 px-4 py-3 shadow-[0_18px_46px_rgba(0,0,0,0.34)] ring-1 ring-slate-600/60 backdrop-blur-md sm:px-5">
                 <p className="text-[11px] font-black uppercase tracking-[0.28em] text-indigo-300">Bild nochmal ansehen</p>
@@ -644,25 +763,25 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 />
                 {finished ? (
                   showFinalStandings ? (
-                    <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={!isHost} onClick={onRestart}>
+                    <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-12 text-xs normal-case" disabled={!isHost} onClick={onRestart}>
                       Neue Partie
                     </Button>
                   ) : (
                     <Button
                       sound="select"
                       tone="selected"
-                      className="punktlandung-command-button min-h-12 text-xs normal-case"
+                      className="punktlandung-command-button punktlandung-primary-action min-h-12 text-xs normal-case"
                       onClick={() => {
                         setReplayMapSize("closed");
                         setShowImageReplay(false);
-                        setShowFinalStandings(true);
+                        showFinalSurface();
                       }}
                     >
                       Endstand ansehen
                     </Button>
                   )
                 ) : (
-                  <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
+                  <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-12 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                     <span className="punktlandung-inline-action-content">
                       <span>{nextRoundButtonLabel}</span>
                       <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
@@ -686,18 +805,11 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             }`}
             title={replayChromeSuppressed ? "Einblendungen wieder anzeigen" : "Einblendungen für 5 Sekunden ausblenden"}
           >
-            <span className="punktlandung-focus-tab-text">{replayChromeSuppressed ? "Einblenden" : "Bild frei"}</span>
+            <span className="punktlandung-focus-tab-content">
+              <span className="punktlandung-focus-tab-text">{replayChromeSuppressed ? "Einblenden" : "Bild frei"}</span>
+              <Eye className="punktlandung-focus-tab-icon" aria-hidden="true" />
+            </span>
           </button>
-          )}
-
-          {!replayChromeSuppressed && !replayMapFull && (
-            <AdContainer
-              placement="game-bottom-left"
-              variant="game"
-              label="Anzeige"
-              position="absolute"
-              className="pointer-events-auto bottom-3 left-3 z-40 hidden lg:block sm:bottom-4 sm:left-4"
-            />
           )}
 
           {!replayChromeSuppressed && (
@@ -743,25 +855,25 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                   </Button>
                   {finished ? (
                     showFinalStandings ? (
-                      <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={!isHost} onClick={onRestart}>
+                      <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button punktlandung-primary-action min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={!isHost} onClick={onRestart}>
                         Neue Partie
                       </Button>
                     ) : (
                       <Button
                         sound="select"
                         tone="selected"
-                        className="punktlandung-replay-map-next punktlandung-map-primary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
+                        className="punktlandung-replay-map-next punktlandung-map-primary-button punktlandung-primary-action min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
                         onClick={() => {
                           setReplayMapSize("closed");
                           setShowImageReplay(false);
-                          setShowFinalStandings(true);
+                          showFinalSurface();
                         }}
                       >
                         Endstand ansehen
                       </Button>
                     )
                   ) : (
-                    <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
+                    <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button punktlandung-primary-action min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                       <span className="punktlandung-inline-action-content">
                         <span>{nextRoundButtonLabel}</span>
                         <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
@@ -787,7 +899,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 <div className={replayMapInteractive ? "h-full w-full" : "pointer-events-none h-full w-full"}>
                   <GuessMap
                     mode="results"
-                    players={room.players}
+                    players={canonicalPlayers}
                     summary={summary}
                     guesses={room.guesses}
                     noPan={!replayMapInteractive}
@@ -801,8 +913,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             </div>
           </section>
           )}
-        </div>
-      )}
+      </div>
 
       {finished && showFinalStandings && !showImageReplay && (
         <div
@@ -811,24 +922,27 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
           }`}
         >
           <section className="punktlandung-final-left grid min-h-0 gap-3 xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
-            <div className="relative isolate overflow-hidden rounded-md border border-emerald-300/35 bg-slate-900/78 p-4 shadow-[0_26px_70px_rgba(0,0,0,0.34)] ring-1 ring-emerald-300/20">
+            <div className="punktlandung-final-hero relative isolate overflow-hidden rounded-md border border-emerald-300/35 bg-slate-900/78 p-4 shadow-[0_26px_70px_rgba(0,0,0,0.34)] ring-1 ring-emerald-300/20">
               <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.34em] text-emerald-300">Endstand</p>
-                  <h1 className="mt-2 text-3xl font-black leading-none text-white md:text-4xl">Partie entschieden</h1>
-                  <p className="mt-2 text-sm font-semibold text-slate-300">
-                    {completedRounds} Runden gespielt
+                  <p className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.34em] text-emerald-300">
+                    <Trophy aria-hidden="true" className="h-4 w-4" />
+                    Endstand
                   </p>
+                  <h1 className="mt-2 text-3xl font-black leading-none text-white md:text-4xl">Partie abgeschlossen</h1>
                 </div>
               </div>
 
-              <div className="relative z-10 mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.04fr)_minmax(18rem,0.96fr)]">
-                <div className="rounded-md bg-slate-950/62 p-4 shadow-[0_18px_46px_rgba(0,0,0,0.24)] ring-1 ring-emerald-300/40">
-                  <p className="text-sm font-black uppercase tracking-[0.22em] text-emerald-200">Sieger der Partie</p>
+              <div className="relative z-10 mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.04fr)_minmax(15rem,0.96fr)]">
+                <div className="punktlandung-final-winner-card rounded-md bg-slate-950/62 p-4 shadow-[0_18px_46px_rgba(0,0,0,0.24)] ring-1 ring-emerald-300/40" style={{ "--player-color": champion?.color ?? "#5ee7bd" } as CSSProperties}>
+                  <p className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.22em] text-emerald-200">
+                    <Medal aria-hidden="true" className="h-5 w-5" />
+                    Sieger der Partie
+                  </p>
                   <div className="mt-3 flex min-w-0 items-center gap-3">
-                    <span aria-hidden="true" className="h-14 w-2 rounded-full" style={playerAccentStyle(champion?.color)} />
+                    <span aria-hidden="true" className="punktlandung-final-player-accent h-14 w-2 rounded-full" style={playerAccentStyle(champion?.color)} />
                     <div className="min-w-0">
-                      <p className="truncate text-4xl font-black leading-none text-white md:text-5xl">{champion?.name ?? "Niemand"}</p>
+                      <p className="punktlandung-final-winner-name break-words text-[clamp(1.85rem,3.2vw,3rem)] font-black leading-[0.95] text-white">{champion?.name ?? "Niemand"}</p>
                       <p className="mt-2 text-sm font-semibold text-emerald-300">
                         {champion ? `${formatPoints(champion.score)} Punkte` : "Keine Wertung"}
                         {runnerUp ? ` · ${formatPoints(lead)} Vorsprung` : ""}
@@ -840,119 +954,174 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                   </div>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-4 lg:grid-cols-2">
+                <div className="punktlandung-final-summary-column min-w-0">
+                  <p className="punktlandung-final-rounds-played mb-2 inline-flex w-full items-center justify-end gap-2 text-sm font-semibold text-slate-300">
+                    <RotateCcw aria-hidden="true" className="h-4 w-4 text-indigo-300" />
+                    {roundsPlayedLabel(completedRounds)} gespielt
+                  </p>
+                  <div className="punktlandung-final-summary-metrics grid grid-cols-2 gap-2">
                   <div className="rounded-md bg-slate-950/52 p-3 ring-1 ring-slate-700/70">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-300">Punkte je Runde</p>
+                    <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-indigo-300"><Gauge aria-hidden="true" className="h-4 w-4 shrink-0" />Punkte je Runde</p>
                     <p className="mt-1 text-xl font-black">{championStats ? formatPoints(championStats.averagePoints) : "0"}</p>
                   </div>
                   <div className="rounded-md bg-slate-950/52 p-3 ring-1 ring-slate-700/70">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-300">Punktlandungen</p>
-                    <p className="mt-1 text-xl font-black">{championStats ? `${championStats.hits}/${Math.max(1, championStats.roundsPlayed)}` : "0/0"}</p>
+                    <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-indigo-300"><Target aria-hidden="true" className="h-4 w-4 shrink-0" />Trefferquote</p>
+                    <p className="mt-1 text-xl font-black">{championStats ? formatPercent(championStats.hitRate) : "0 %"}</p>
                   </div>
-                  {showMixedCategoryStats ? (
-                    <div className="rounded-md bg-slate-950/52 p-3 ring-1 ring-slate-700/70">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-300">Beste Kategorie</p>
-                      <p className="mt-1 truncate text-xl font-black">{championStats?.bestCategoryLabel ?? "Keine"}</p>
-                    </div>
-                  ) : (
-                    <div className="rounded-md bg-slate-950/52 p-3 ring-1 ring-slate-700/70">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-300">Durchschnittliche Entfernung</p>
-                      <p className="mt-1 truncate text-xl font-black">{championStats?.averageDistanceKm == null ? "-" : formatDistance(championStats.averageDistanceKm)}</p>
-                    </div>
-                  )}
                   <div className="rounded-md bg-slate-950/52 p-3 ring-1 ring-slate-700/70">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-300">Tippzeit gesamt</p>
+                    <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-indigo-300"><MapPin aria-hidden="true" className="h-4 w-4 shrink-0" />Ø Entfernung</p>
+                    <p className="mt-1 truncate text-xl font-black">{championStats?.averageDistanceKm == null ? "-" : formatDistance(championStats.averageDistanceKm)}</p>
+                  </div>
+                  <div className="rounded-md bg-slate-950/52 p-3 ring-1 ring-slate-700/70">
+                    <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-indigo-300"><Clock3 aria-hidden="true" className="h-4 w-4 shrink-0" />Tippzeit gesamt</p>
                     <p className="mt-1 text-xl font-black">{formatSeconds(championStats?.totalGuessSeconds ?? null)}</p>
+                  </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="min-h-0 rounded-md border border-slate-700/55 bg-slate-900/72 p-4 xl:overflow-hidden">
-              <div className="flex items-end justify-between gap-3">
-                <h2 className="text-[22px] font-black leading-tight">Partie in Zahlen</h2>
-                <p className="text-xs font-semibold text-slate-400">Bestwerte</p>
+            <div className="punktlandung-final-highlights-panel min-h-0 rounded-md border border-slate-700/55 bg-slate-900/72 p-4 xl:overflow-hidden">
+              <div>
+                <h2 className="flex items-center gap-2 text-[22px] font-black leading-tight"><BarChart3 aria-hidden="true" className="h-5 w-5 text-emerald-300" />Partie in Zahlen</h2>
               </div>
               <div className="punktlandung-final-highlights mt-3 grid min-h-0 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                  {displayedFinalHighlights.map((highlight) => (
-                    <div key={`${highlight.tone ?? "metric"}-${highlight.label}`} className="relative min-w-0 overflow-hidden rounded-md bg-slate-950/48 p-3 pl-5 ring-1 ring-slate-700/55">
-                      <span aria-hidden="true" className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full" style={playerAccentStyle(highlight.color)} />
-                      <p className={`font-black uppercase text-indigo-300 ${highlight.tone === "category" ? "text-[11px] tracking-[0.18em]" : "text-xs tracking-[0.14em]"}`}>
-                        {highlight.tone === "category" ? `Kat. ${highlight.label}` : highlight.label}
+                  {displayedFinalHighlights.map((highlight) => {
+                    const HighlightIcon = highlight.icon === "closest"
+                      ? MapPin
+                      : highlight.icon === "round"
+                        ? Award
+                        : highlight.icon === "hits"
+                          ? Target
+                          : highlight.icon === "speed"
+                            ? Clock3
+                            : highlight.icon === "distance"
+                              ? Gauge
+                            : highlight.icon === "consistency"
+                              ? Activity
+                              : Sparkles;
+                    return (
+                    <div key={`${highlight.tone ?? "metric"}-${highlight.label}`} className="punktlandung-final-player-row relative min-w-0 overflow-hidden rounded-md bg-slate-950/48 p-3 ring-1 ring-slate-700/55" style={{ "--player-color": highlight.color } as CSSProperties}>
+                      {highlight.color ? (
+                        <span aria-hidden="true" className="punktlandung-final-player-accent absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full" style={playerAccentStyle(highlight.color)} />
+                      ) : null}
+                      <p className={`flex items-center gap-1.5 font-black uppercase text-indigo-300 ${highlight.tone === "category" ? "text-[11px] tracking-[0.18em]" : "text-xs tracking-[0.14em]"}`}>
+                        <HighlightIcon aria-hidden="true" className="h-4 w-4 shrink-0 text-emerald-300" />
+                        {highlight.label}
                       </p>
-                      <p className="mt-1 truncate text-xl font-black leading-tight text-white">{highlight.value}</p>
-                      <p className="mt-0.5 truncate text-[13px] font-semibold text-slate-300">{highlight.detail}</p>
+                      <p className="mt-1 break-words text-xl font-black leading-tight text-white">{highlight.value}</p>
+                      <p className="mt-0.5 line-clamp-2 min-h-8 break-words text-[13px] font-semibold leading-4 text-slate-300">{highlight.detail}</p>
                     </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
           </section>
 
           <aside className="punktlandung-final-table min-h-0 rounded-md border border-slate-700/55 bg-slate-900/72 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.24)] xl:overflow-hidden">
-            <div className="mb-3 flex flex-wrap justify-end gap-2">
+            <div className={`punktlandung-final-topbar mb-3 flex items-center gap-2 border-b border-slate-700/55 pb-3${accountsEnabled && !accountAuthenticated && !saveOfferDismissed ? " is-expanded-save-offer" : ""}`}>
+            {accountsEnabled && (
+              <section className="punktlandung-final-save-status min-w-0 flex-1 rounded-xl border border-emerald-300/35 bg-emerald-400/10 px-3 py-2 text-left" aria-live="polite">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-300">{accountAuthenticated ? "Automatisch speichern" : "Spielstand mitnehmen"}</p>
+                {serverRanked && finished ? (
+                  rankedSyncStatus === "verified" ? (
+                    <p className="mt-1 text-sm font-semibold text-emerald-100">Verifiziert · im Konto gespeichert.</p>
+                  ) : rankedSyncStatus === "uploading" ? (
+                    <p className="mt-1 text-sm font-semibold text-slate-200">Lokal gesichert · Übertragung läuft …</p>
+                  ) : rankedSyncStatus === "pending" ? (
+                    <p className="mt-1 text-sm font-semibold text-amber-100">Lokal gesichert · {pendingUploadCount} Übertragung{pendingUploadCount === 1 ? "" : "en"} ausstehend. Wir versuchen es automatisch erneut.</p>
+                  ) : (
+                    <p className="mt-1 text-sm font-semibold text-slate-200">Lokal gesichert · Serverbestätigung wird vorbereitet.</p>
+                  )
+                ) : saveState === "saved" ? (
+                  <p className="mt-1 text-sm font-semibold text-emerald-100">Gespeichert. Deine Partie erscheint jetzt im Spielverlauf.</p>
+                ) : accountAuthenticated && saveState === "saving" ? (
+                  <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird gerade automatisch gespeichert …</p>
+                ) : saveState === "auth" ? (
+                  <p className="mt-1 text-sm font-semibold text-slate-200">Melde dich an, um diese Runde dauerhaft zu speichern. <a className="text-emerald-300 underline" href="/anmelden?returnTo=%2Fendergebnis">Jetzt anmelden</a></p>
+                ) : !accountAuthenticated && saveOfferDismissed ? (
+                  <p className="mt-1 text-sm font-semibold text-slate-300">Nicht gespeichert.</p>
+                ) : !accountAuthenticated ? (
+                  <div className="mt-1 grid gap-2">
+                    <p className="text-sm font-semibold text-slate-200">Möchtest du diese Partie dauerhaft speichern? Das Spiel bleibt auch ohne Konto kostenlos.</p>
+                    <div className="flex flex-wrap gap-2">
+                      <a className="inline-flex min-h-9 items-center rounded-lg bg-emerald-300 px-3 text-xs font-black text-slate-950" href="/anmelden?returnTo=%2Fendergebnis">Anmelden &amp; speichern</a>
+                      <Button tone="ghost" className="min-h-9 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-200">{saveState === "error" ? "Das automatische Speichern hat noch nicht geklappt." : "Ergebnisse und Punktzahl werden automatisch deinem Konto hinzugefügt."}</p>
+                    <Button tone="selected" className="min-h-9 text-xs normal-case" disabled={saveState === "saving"} onClick={saveGame}>
+                      {saveState === "saving" ? "Speichere …" : "Erneut versuchen"}
+                    </Button>
+                  </div>
+                )}
+              </section>
+            )}
+            <div className="punktlandung-final-actions flex shrink-0 flex-wrap justify-end gap-2">
               <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setFeedbackDialogOpen(true)}>
-                Feedback geben
+                <span className="punktlandung-inline-action-content"><MessageSquareText aria-hidden="true" className="h-4 w-4" /><span>Feedback geben</span></span>
               </Button>
-              <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setShowFinalStandings(false)}>
-                Letzte Auflösung
+              <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={showResolutionSurface}>
+                <span className="punktlandung-inline-action-content"><Images aria-hidden="true" className="h-4 w-4" /><span>Letzte Auflösung</span></span>
               </Button>
               <BackButton className="min-h-11" disabled={!isHost} onClick={onBackToLobby} label="Zurueck" />
-              <Button tone="selected" className="punktlandung-command-button min-h-11 text-xs normal-case" disabled={!isHost} onClick={onRestart}>
-                Neue Partie
+              <Button tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" disabled={!isHost} onClick={onRestart}>
+                <span className="punktlandung-inline-action-content"><RotateCcw aria-hidden="true" className="h-4 w-4" /><span>Neue Partie</span></span>
               </Button>
             </div>
-            <div className="flex flex-wrap items-end justify-between gap-2">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.26em] text-indigo-300">Bis zu 10 Spieler</p>
-                <h2 className="text-[24px] font-black leading-tight">Finaltabelle</h2>
-              </div>
+            </div>
+            <div className="punktlandung-final-table-heading flex flex-wrap items-end justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-[24px] font-black leading-tight"><Award aria-hidden="true" className="h-6 w-6 text-emerald-300" />Finaltabelle</h2>
               <p className="text-xs font-semibold text-slate-400">{finalStats.length} gewertet</p>
             </div>
-            <div className="mt-3 grid gap-1.5">
+            <div className={`punktlandung-final-table-list mt-3 grid gap-1.5${finalStats.length >= 6 ? " is-dense" : ""}`}>
               {finalStats.map((stat) => {
                 const maxScore = Math.max(1, champion?.score ?? stat.player.score);
                 const percent = Math.max(4, Math.min(100, (stat.player.score / maxScore) * 100));
                 const barBackgroundSize = `${10000 / Math.max(1, percent)}% 100%`;
+                const hasLongPlayerName = Array.from(stat.player.name).length >= 14;
                 return (
-                  <div key={stat.player.id} className="rounded-md bg-slate-950/45 px-3 py-1.5 ring-1 ring-slate-700/55">
-                    <div className="flex min-w-0 items-start gap-3">
+                  <div key={stat.player.id} className={`punktlandung-final-player-row rounded-md bg-slate-950/45 px-3 py-1.5 ring-1 ring-slate-700/55${hasLongPlayerName ? " has-long-name" : ""}`} style={{ "--player-color": stat.player.color } as CSSProperties}>
+                      <div className="punktlandung-final-player-identity flex min-w-0 items-start gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <span className="w-7 shrink-0 text-base font-black text-indigo-200">#{stat.rank}</span>
-                        <span aria-hidden="true" className="h-7 w-1 rounded-full" style={playerAccentStyle(stat.player.color)} />
-                        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                          <p className="break-words text-[15px] font-black leading-tight">{stat.player.name}</p>
-                          {stat.title ? <p className="text-[11px] italic text-emerald-300">· {badgeWithArticle(stat.title)}</p> : null}
+                        <span aria-hidden="true" className="punktlandung-final-player-accent h-7 w-1 rounded-full" style={playerAccentStyle(stat.player.color)} />
+                        <div className="punktlandung-final-player-name-line flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                          <span className="punktlandung-final-player-name break-words text-[15px] font-black leading-tight">{stat.player.name}</span>
+                          {stat.title ? <span className="punktlandung-final-player-title text-[11px] italic text-emerald-300">· {badgeWithArticle(stat.title)}</span> : null}
                         </div>
                       </div>
                     </div>
-                    <div className="mt-1.5 grid grid-cols-[minmax(0,1fr)_max-content] items-center gap-3">
+                    <div className="punktlandung-final-player-score mt-1.5 grid grid-cols-[minmax(0,1fr)_max-content] items-center gap-3">
                       <div className="h-1.5 overflow-hidden rounded-sm bg-slate-800">
                         <div
                           className="h-full rounded-sm"
                           style={{
                             width: `${percent}%`,
-                            background: scoreHeatmapGradient,
+                            background: scoreGradient,
                             backgroundSize: barBackgroundSize,
                             boxShadow: "0 0 12px rgba(52, 211, 153, 0.22)"
                           }}
                         />
                       </div>
-                      <span className="min-w-[4.5rem] shrink-0 text-right text-lg font-black text-emerald-300">
+                      <span className="min-w-[4.5rem] shrink-0 text-right text-lg font-black text-emerald-300" title="Punkte insgesamt">
+                        <small className="mr-1 text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">Gesamt</small>
                         {formatPoints(stat.player.score)}
                       </span>
                     </div>
-                    <div className="punktlandung-final-player-metrics mt-1 grid gap-x-2 gap-y-1 text-[10px] text-slate-300">
-                      <p><span className="font-black text-indigo-300">Punkte je Runde</span> {formatPoints(stat.averagePoints)}</p>
-                      <p><span className="font-black text-indigo-300">Punktlandungen</span> {stat.hits}/{Math.max(1, stat.roundsPlayed)}</p>
-                      <p><span className="font-black text-indigo-300">Durchschnittliche Entfernung</span> {stat.averageDistanceKm === null ? "-" : formatDistance(stat.averageDistanceKm)}</p>
-                      <p><span className="font-black text-indigo-300">{showMixedCategoryStats ? "Beste Kategorie" : "Spielmodus"}</span> {showMixedCategoryStats ? stat.bestCategoryLabel : categoryLabels[room.settings.category]}</p>
-                      <p><span className="font-black text-indigo-300">Tippzeit gesamt</span> {formatSeconds(stat.totalGuessSeconds)}</p>
+                    <div className="punktlandung-final-player-metrics mt-2 grid gap-x-2 gap-y-1.5 text-[10px] text-slate-300">
+                      <p title={`Punkte je Runde: ${formatPoints(stat.averagePoints)}`}><Gauge aria-hidden="true" /><span className="font-black text-indigo-300">Punkte je Runde</span><strong>{formatPoints(stat.averagePoints)}</strong></p>
+                      <p title={`Trefferquote: ${formatPercent(stat.hitRate)}`}><Target aria-hidden="true" /><span className="font-black text-indigo-300">Trefferquote</span><strong>{formatPercent(stat.hitRate)} · {stat.hits}/{Math.max(1, stat.roundsPlayed)}</strong></p>
+                      <p title={`Durchschnittliche Entfernung: ${stat.averageDistanceKm === null ? "keine Wertung" : formatDistance(stat.averageDistanceKm)}`}><MapPin aria-hidden="true" /><span className="font-black text-indigo-300">Ø Entfernung</span><strong>{stat.averageDistanceKm === null ? "-" : formatDistance(stat.averageDistanceKm)}</strong></p>
+                      <p title={`Tippzeit insgesamt: ${formatSeconds(stat.totalGuessSeconds)}`}><Clock3 aria-hidden="true" /><span className="font-black text-indigo-300">Tippzeit gesamt</span><strong>{formatSeconds(stat.totalGuessSeconds)}</strong></p>
                     </div>
                   </div>
                 );
               })}
             </div>
-            <LegalLinks preserveSession className="mt-3 border-t border-slate-700/55 pt-3" align="end" />
+            <LegalLinks preserveSession className="punktlandung-final-footer mt-auto border-t border-slate-700/55 pt-3" align="end" />
           </aside>
         </div>
       )}
@@ -967,9 +1136,8 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
           <div className="punktlandung-results-hero relative rounded-md bg-slate-900/72 p-3 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-4">
             <div className="punktlandung-results-hero-header flex flex-wrap items-end justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs font-black uppercase tracking-[0.35em] text-indigo-300">Auflösung</p>
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-indigo-300">
-                  Runde {summary.roundNumber}/{room.settings.rounds}
+                <p className="text-xs font-black uppercase tracking-[0.28em] text-indigo-300">
+                  Auflösung · Runde {summary.roundNumber} von {room.settings.rounds}
                 </p>
                 <h1 className="mt-1 text-2xl font-black leading-tight md:text-3xl">{location.title}</h1>
                 <p className="mt-1 text-sm text-slate-300">
@@ -988,14 +1156,14 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                   Bild nochmal ansehen
                 </Button>
                 {!finished ? (
-                  <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
+                  <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-12 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                     <span className="punktlandung-inline-action-content">
                       <span>{nextRoundButtonLabel}</span>
                       <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
                     </span>
                   </Button>
                 ) : (
-                  <Button sound="select" tone="selected" className="punktlandung-command-button min-h-12 text-xs normal-case" onClick={() => setShowFinalStandings(true)}>
+                  <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-12 text-xs normal-case" onClick={showFinalSurface}>
                     Endstand ansehen
                   </Button>
                 )}
@@ -1004,7 +1172,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
           </div>
 
           <div className="punktlandung-results-map min-h-0 overflow-hidden rounded-md bg-slate-900 shadow-[0_22px_58px_rgba(0,0,0,0.28)] ring-1 ring-slate-700/70">
-            <GuessMap mode="results" players={room.players} summary={summary} guesses={room.guesses} noPan={false} noZoom={false} />
+            <GuessMap mode="results" players={canonicalPlayers} summary={summary} guesses={room.guesses} noPan={false} noZoom={false} />
           </div>
 
           <div className="punktlandung-results-mobile-actions grid grid-cols-3 gap-2 sm:hidden">
@@ -1018,14 +1186,14 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
               Bild nochmal ansehen
             </Button>
             {!finished ? (
-              <Button sound="select" tone="selected" className="min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
+              <Button sound="select" tone="selected" className="punktlandung-primary-action min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                 <span className="punktlandung-inline-action-content">
                   <span>{nextRoundButtonLabel}</span>
                   <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
                 </span>
               </Button>
             ) : (
-              <Button sound="select" tone="selected" className="min-h-12 w-full px-3 py-2 text-xs normal-case" onClick={() => setShowFinalStandings(true)}>
+              <Button sound="select" tone="selected" className="punktlandung-primary-action min-h-12 w-full px-3 py-2 text-xs normal-case" onClick={showFinalSurface}>
                 Endstand ansehen
               </Button>
             )}
@@ -1034,23 +1202,25 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
 
         <aside
           className={`punktlandung-results-sidebar grid min-h-0 gap-2 md:gap-3 ${
-            hasModePanel ? "grid-rows-[minmax(0,1fr)_auto_minmax(0,1fr)]" : "grid-rows-[minmax(0,1fr)_minmax(0,1fr)]"
+            hasModePanel ? "grid-rows-[minmax(0,1fr)_auto_minmax(0,1fr)_auto]" : "grid-rows-[minmax(0,1fr)_minmax(0,1fr)_auto]"
           }`}
         >
-          <div className="punktlandung-results-panel min-h-0 overflow-hidden rounded-md bg-slate-900/72 p-3 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-4">
-            <h2 className="text-[22px] font-black leading-tight">Rundenrang</h2>
+          <div className="punktlandung-results-panel punktlandung-results-ranking-panel min-h-0 overflow-hidden rounded-md bg-slate-900/72 p-3 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-4">
+            <h2 className="flex items-center gap-2 text-[22px] font-black leading-tight"><Medal aria-hidden="true" className="h-5 w-5 text-emerald-300" />Rundenrang</h2>
             <div className="punktlandung-results-list punktlandung-results-flat-list mt-2 grid min-h-0">
               {ranked.map((result, index) => {
-                const player = playerFor(room.players, result.playerId);
+                const player = playerFor(canonicalPlayers, result.playerId);
                 const scorePercent = scoreHeatmapPercent(result.points);
+                const guessTime = formatGuessTime(result.guess?.responseTimeMs);
                 return (
                   <div
                     key={result.playerId}
-                    className="punktlandung-results-row relative min-w-0 overflow-hidden border-b border-slate-700/45 pl-4 last:border-b-0"
+                    className="punktlandung-results-row punktlandung-player-bordered-row relative min-w-0 overflow-hidden rounded-md px-3"
+                    style={{ "--player-color": player?.color ?? playerColorAt(0) } as CSSProperties}
                   >
                     <span
                       aria-hidden="true"
-                      className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full"
+                      className="punktlandung-final-player-accent absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full"
                       style={playerAccentStyle(player?.color)}
                     />
                     <div className="punktlandung-results-round-grid w-full min-w-0">
@@ -1061,6 +1231,14 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                           <span className="punktlandung-results-distance text-xs text-slate-300">
                             · {isFlagRound && result.countryCorrect ? "richtiges Land" : `${formatDistance(result.distanceKm)} entfernt`}
                           </span>
+                          {guessTime ? (
+                            <span
+                              className="punktlandung-results-secondary-metrics"
+                              title={`Tippzeit in dieser Runde: ${guessTime}`}
+                            >
+                              · {guessTime} Tippzeit
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                       <div className="punktlandung-results-scoreline min-w-0">
@@ -1069,7 +1247,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                             className="h-full rounded-sm"
                             style={{
                               width: `${scorePercent}%`,
-                              background: scoreHeatmapGradient,
+                              background: scoreGradient,
                               backgroundSize: `${10000 / scorePercent}% 100%`,
                               boxShadow: "0 0 12px rgba(52, 211, 153, 0.22)"
                             }}
@@ -1112,20 +1290,22 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             </div>
           )}
 
-          <div className="punktlandung-results-panel min-h-0 overflow-hidden rounded-md bg-slate-900/72 p-3 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-4">
-            <h2 className="text-[22px] font-black leading-tight">Gesamtwertung</h2>
+          <div className="punktlandung-results-panel punktlandung-results-overall-panel min-h-0 overflow-hidden rounded-md bg-slate-900/72 p-3 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-4">
+            <h2 className="flex items-center gap-2 text-[22px] font-black leading-tight"><Trophy aria-hidden="true" className="h-5 w-5 text-emerald-300" />Gesamtwertung</h2>
             <div className="punktlandung-results-list punktlandung-results-flat-list mt-2 grid min-h-0">
               {sortedPlayers.map((player, index) => {
                 const overallTitle = overallRankingTitleFor(index, sortedPlayers.length);
                 const totalPercent = Math.max(4, Math.min(100, (player.score / Math.max(1, champion?.score ?? player.score)) * 100));
+                const playerStats = finalStats.find((stats) => stats.player.id === player.id);
                 return (
                   <div
                     key={player.id}
-                    className="punktlandung-results-row punktlandung-results-total-row relative min-w-0 overflow-hidden border-b border-slate-700/45 pl-4 last:border-b-0"
+                    className="punktlandung-results-row punktlandung-results-total-row punktlandung-player-bordered-row relative min-w-0 overflow-hidden rounded-md px-3"
+                    style={{ "--player-color": player.color } as CSSProperties}
                   >
                     <span
                       aria-hidden="true"
-                      className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full"
+                      className="punktlandung-final-player-accent absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full"
                       style={playerAccentStyle(player.color)}
                     />
                     <div className="punktlandung-results-topline min-w-0">
@@ -1137,6 +1317,17 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                             · {badgeWithArticle(overallTitle)}
                           </span>
                         ) : null}
+                        {playerStats ? (
+                          <span
+                            className="punktlandung-results-secondary-metrics"
+                            title={`Durchschnitt: ${formatPoints(playerStats.averagePoints)} Punkte pro Runde${
+                              playerStats.averageDistanceKm === null ? "" : ` und ${formatDistance(playerStats.averageDistanceKm)} Entfernung`
+                            }`}
+                          >
+                            · Ø {formatPoints(playerStats.averagePoints)} Pkt./R.
+                            {playerStats.averageDistanceKm === null ? null : <> · Ø {formatDistance(playerStats.averageDistanceKm)}</>}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                     <div className="punktlandung-results-scoreline min-w-0">
@@ -1145,7 +1336,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                           className="h-full rounded-sm"
                           style={{
                             width: `${totalPercent}%`,
-                            background: scoreHeatmapGradient,
+                            background: scoreGradient,
                             backgroundSize: `${10000 / totalPercent}% 100%`,
                             boxShadow: "0 0 12px rgba(52, 211, 153, 0.22)"
                           }}
@@ -1157,8 +1348,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 );
               })}
             </div>
-            <LegalLinks preserveSession className="mt-3 border-t border-slate-700/55 pt-2" />
           </div>
+          <LegalLinks preserveSession className="punktlandung-results-footer pt-1" align="start" />
+          <LegalLinks preserveSession className="punktlandung-results-footer-mobile pt-1" align="end" />
         </aside>
         </div>
       )}

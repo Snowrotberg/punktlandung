@@ -1,22 +1,31 @@
 ﻿"use client";
 
+import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { categoryOptions } from "@/lib/categories";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { useLocalGame } from "@/hooks/useLocalGame";
+import { useRankedSoloGame } from "@/hooks/useRankedSoloGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
 import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
 import type { GameSettings, LatLng, RoomState, RoundStatus, TeamId } from "@/types/game";
 import { AdContainer } from "./AdContainer";
 import { ENABLE_FULLSCREEN_INTRO, FullscreenIntro } from "./FullscreenIntro";
-import { GameView } from "./GameView";
+import { HomeMapPreview } from "./HomeMapPreview";
 import { LegalLinks } from "./LegalLinks";
 import { LobbyView } from "./LobbyView";
 import { PublicBetaBadge } from "./PublicBetaBadge";
-import { ResultsView } from "./ResultsView";
 import { useSound } from "./SoundProvider";
 import { RedesignHomeView } from "./redesign/RedesignHomeView";
 import { RedesignSetupView } from "./redesign/RedesignSetupView";
+import { RedesignWaitingRoomView } from "./redesign/RedesignWaitingRoomView";
+
+// Leaflet/MapLibre and the result visualizations are the heaviest client
+// modules. Setup and landing pages do not need them, so load them only when a
+// round or its result is actually shown.
+const GameView = dynamic(() => import("./GameView").then((module) => module.GameView), { ssr: false });
+const ResultsView = dynamic(() => import("./ResultsView").then((module) => module.ResultsView), { ssr: false });
 
 const modePreview: Array<{
   id: GameSettings["localMode"] | "online";
@@ -26,9 +35,9 @@ const modePreview: Array<{
   icon: string;
   badge?: string;
 }> = [
-  { id: "solo", title: "Solo-Modus", text: "Eine Person setzt pro Runde einen Pin.", available: true, icon: "/mode-icons/solo-modus-crop.webp" },
-  { id: "couch", title: "Party-Modus", text: "Reihum tippen, Punkte jagen.", available: true, icon: "/mode-icons/party-modus-crop.webp" },
-  { id: "online", title: "Online-Modus", text: "Code teilen und live gegeneinander spielen.", available: true, icon: "/mode-icons/online-modus-crop.webp" }
+  { id: "solo", title: "Solo", text: "Spiele für dich und in deinem Tempo.", available: true, icon: "/mode-icons/solo-modus-crop.webp" },
+  { id: "couch", title: "Party", text: "Gemeinsam oder gegeneinander an einem Gerät.", available: true, icon: "/mode-icons/party-modus-crop.webp" },
+  { id: "online", title: "Online-Raum", text: "Erstelle einen Raum oder tritt per Code bei.", available: true, icon: "/mode-icons/online-modus-crop.webp" }
 ];
 
 export type InitialGameMode = "home" | GameSettings["localMode"] | "online";
@@ -93,17 +102,8 @@ function SvgPin({ className, color }: { className?: string; color: string }) {
 
 function HeroMapPreview() {
   return (
-    <div className="absolute inset-0 overflow-hidden bg-[#efeae0]">
-      <img
-        src="/punktlandung-kartenbild.webp"
-        alt=""
-        aria-hidden="true"
-        width={1833}
-        height={958}
-        fetchPriority="high"
-        className="punktlandung-home-map-image absolute inset-0 h-full w-full object-cover"
-        draggable={false}
-      />
+    <div className="absolute inset-0 overflow-hidden bg-slate-950">
+      <HomeMapPreview />
     </div>
   );
 }
@@ -210,9 +210,12 @@ function statusLabel(status: RequiredGameStatus) {
 function GameStateLoading() {
   return (
     <main className="grid min-h-dvh place-items-center bg-slate-950 p-4 text-slate-50">
-      <section className="arcade-panel w-full max-w-md rounded-md border-slate-700/80 p-5">
+      <section className="arcade-panel w-fit max-w-[calc(100vw-2rem)] rounded-xl border-slate-700/80 p-5 text-center">
         <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Punktlandung</p>
-        <h1 className="mt-2 text-3xl font-black leading-tight">Spielrunde wird geladen</h1>
+        <h1 className="mt-2 text-3xl font-black leading-tight">
+          <span className="sm:hidden">Spielrunde<br />wird geladen</span>
+          <span className="hidden sm:inline">Spielrunde wird geladen</span>
+        </h1>
       </section>
     </main>
   );
@@ -221,7 +224,7 @@ function GameStateLoading() {
 function GameStateGuard({ requiredStatus, currentStatus }: { requiredStatus: RequiredGameStatus; currentStatus?: RoundStatus }) {
   return (
     <main className="grid min-h-dvh place-items-center bg-slate-950 p-4 text-slate-50">
-      <section className="arcade-panel w-full max-w-md rounded-md border-slate-700/80 p-5">
+      <section className="arcade-panel w-full max-w-md rounded-xl border-slate-700/80 p-5">
         <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Punktlandung</p>
         <h1 className="mt-2 text-3xl font-black leading-tight">Keine passende Spielrunde</h1>
         <p className="mt-2 text-sm leading-6 text-slate-300">
@@ -232,7 +235,7 @@ function GameStateGuard({ requiredStatus, currentStatus }: { requiredStatus: Req
             href="/solo-modus"
             className="inline-flex min-h-12 items-center justify-center rounded-md bg-emerald-400/14 px-4 text-sm font-black uppercase tracking-[0.1em] text-emerald-100 ring-1 ring-emerald-300/65 transition hover:bg-emerald-400/20"
           >
-            Solo-Modus
+            Solo
           </a>
           <a
             href="/"
@@ -249,18 +252,18 @@ function GameStateGuard({ requiredStatus, currentStatus }: { requiredStatus: Req
 function OnlineWaitingRoomGuard() {
   return (
     <main className="grid min-h-dvh place-items-center bg-slate-950 p-4 text-slate-50">
-      <section className="arcade-panel w-full max-w-md rounded-md border-slate-700/80 p-5">
+      <section className="arcade-panel w-full max-w-md rounded-xl border-slate-700/80 p-5">
         <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Online-Warteraum</p>
         <h1 className="mt-2 text-3xl font-black leading-tight">Kein aktiver Warteraum</h1>
         <p className="mt-2 text-sm leading-6 text-slate-300">
-          Oeffne zuerst im Online-Modus einen Raum. Danach ist der Warteraum mit QR-Code und Raumcode hier erreichbar.
+          Öffne zuerst online einen Raum. Danach ist der Warteraum mit QR-Code und Raumcode hier erreichbar.
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <a
             href="/online-modus"
             className="inline-flex min-h-12 items-center justify-center rounded-md bg-emerald-400/14 px-4 text-sm font-black uppercase tracking-[0.1em] text-emerald-100 ring-1 ring-emerald-300/65 transition hover:bg-emerald-400/20"
           >
-            Online-Modus
+            Online-Raum
           </a>
           <a
             href="/"
@@ -276,28 +279,57 @@ function OnlineWaitingRoomGuard() {
 
 export function GameApp({
   initialMode = "home",
+  directStart = false,
   requiredStatus,
-  requireOnlineWaitingRoom = false
+  requireOnlineWaitingRoom = false,
+  accountsEnabled = false,
+  accountAuthenticated = false,
+  accountDisplayName = null,
+  resumeRankedGame = false
 }: {
   initialMode?: InitialGameMode;
+  directStart?: boolean;
   requiredStatus?: RequiredGameStatus;
   requireOnlineWaitingRoom?: boolean;
+  accountsEnabled?: boolean;
+  accountAuthenticated?: boolean;
+  accountDisplayName?: string | null;
+  resumeRankedGame?: boolean;
 }) {
+  const router = useRouter();
   const routeInitialMode: InitialLocalGameMode | undefined = initialMode === "home" ? undefined : initialMode;
   const localGame = useLocalGame(routeInitialMode, Boolean(requiredStatus));
+  // An explicit signed guest resume link must use the server-backed ranked
+  // game even when no player account is signed in. Falling back to useLocalGame
+  // here can silently replace the requested game with an unrelated browser
+  // session.
+  const rankedSoloEnabled = Boolean(accountAuthenticated) || resumeRankedGame;
+  const rankedSoloGame = useRankedSoloGame(rankedSoloEnabled);
+  const routeAllowsRankedSolo = initialMode !== "couch" && initialMode !== "online";
+  const rankedSoloContext = rankedSoloEnabled
+    && routeAllowsRankedSolo
+    && (initialMode === "solo" || Boolean(requiredStatus) || Boolean(rankedSoloGame.room));
+  const rankedRestoring = rankedSoloContext && rankedSoloGame.restoring;
   const onlineGame = useOnlineRoomSocket();
   const { enabled: soundEnabled, toggle: toggleSound, playSelect } = useSound();
-  const [name, setName] = useState("Spieler 1");
+  const [name, setName] = useState(accountDisplayName || "Spieler 1");
   const [password, setPassword] = useState("");
   const [pendingJoinCode, setPendingJoinCode] = useState<string | null>(null);
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [pendingOnlineSettings, setPendingOnlineSettings] = useState<GameSettings | null>(null);
-  const [routeGuardReady, setRouteGuardReady] = useState(!requiredStatus);
+  const [startingRound, setStartingRound] = useState(directStart);
   const initialModeHandledRef = useRef(false);
+  const initialSetupSettingsHandledRef = useRef(false);
   const pendingDirectStartRef = useRef(false);
+  const directStartConsumedRef = useRef(false);
+
+  useEffect(() => {
+    if (!directStart) directStartConsumedRef.current = false;
+  }, [directStart]);
 
   const isOnlineFlow = Boolean(onlineGame.room) || Boolean(pendingJoinCode);
-  const activeGame = isOnlineFlow ? onlineGame : localGame;
+  const singlePlayerGame = rankedSoloContext ? rankedSoloGame : localGame;
+  const activeGame = isOnlineFlow ? onlineGame : singlePlayerGame;
   const {
     playerId,
     room,
@@ -313,10 +345,10 @@ export function GameApp({
     cancelRound,
     skipLocation,
     restart,
-    leaveRoom,
     setTeam,
     readyNextRound
   } = activeGame;
+  const markLocationReady = "markLocationReady" in activeGame ? activeGame.markLocationReady : undefined;
 
   useEffect(() => {
     if (!room) return;
@@ -332,7 +364,7 @@ export function GameApp({
 
   useEffect(() => {
     try {
-      const savedName = window.localStorage.getItem("punktlandung-name");
+      const savedName = accountDisplayName ? null : window.localStorage.getItem("punktlandung-name");
       if (savedName) setName(savedName);
     } catch {
       // Local storage can be unavailable in restricted browser modes.
@@ -352,24 +384,77 @@ export function GameApp({
     const roomCode = params.get("room")?.toUpperCase().replace(/[^A-Z0-9]/g, "") ?? null;
     if (!roomCode) return;
     setPendingJoinCode(roomCode);
-  }, []);
+  }, [accountDisplayName]);
+
+  useEffect(() => {
+    if (!accountDisplayName) return;
+    setName(accountDisplayName);
+    if (rankedSoloGame.room?.players[0] && rankedSoloGame.room.players[0].name !== accountDisplayName) {
+      rankedSoloGame.renamePlayer(rankedSoloGame.room.players[0].id, accountDisplayName);
+    }
+    const localAccountPlayer = localGame.room?.players.find((player) => player.id === localGame.playerId);
+    if (localAccountPlayer && localAccountPlayer.name !== accountDisplayName) {
+      localGame.renamePlayer(localAccountPlayer.id, accountDisplayName);
+    }
+  }, [accountDisplayName, localGame, rankedSoloGame]);
+
+  useEffect(() => {
+    const setupGame = rankedSoloContext ? rankedSoloGame : localGame;
+    if (rankedRestoring) return;
+    if (initialSetupSettingsHandledRef.current || !setupGame.room || setupGame.room.status !== "lobby") return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("rounds") && !params.has("time")) {
+      initialSetupSettingsHandledRef.current = true;
+      return;
+    }
+    const difficulty = params.get("difficulty");
+    setupGame.updateSettings({
+      rounds: Number(params.get("rounds")) || (setupGame.room?.settings.rounds ?? 15),
+      timeLimitSec: Number(params.get("time")) || 0,
+      category: (params.get("category") || setupGame.room?.settings.category || "mixed") as GameSettings["category"],
+      difficulty: difficulty === "mixed" || difficulty === "easy" || difficulty === "medium" || difficulty === "hard"
+        ? difficulty
+        : (setupGame.room?.settings.difficulty ?? "medium"),
+      noMove: params.get("noMove") === "1",
+      noPan: params.get("noPan") === "1",
+      noZoom: params.get("noZoom") === "1"
+    });
+    initialSetupSettingsHandledRef.current = true;
+  }, [localGame, rankedRestoring, rankedSoloContext, rankedSoloGame]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    if (rankedRestoring) return;
     if (params.get("room")) return;
     const queryMode = params.get("mode");
     const pathMode = modeFromPathname(window.location.pathname);
     const routeMode = initialMode === "home" ? pathMode : initialMode;
     const mode = queryMode ?? routeMode;
     if (mode !== "solo" && mode !== "couch" && mode !== "online") return;
-    if (roomMatchesInitialMode(localGame.room, mode)) {
+    const modeGame = mode === "solo" && rankedSoloEnabled ? rankedSoloGame : localGame;
+    let directStartRequested = (directStart || params.get("direct") === "1") && mode === "solo";
+    try {
+      if (mode === "solo" && window.sessionStorage.getItem("punktlandung-direct-start") === "1") {
+        directStartRequested = true;
+        window.sessionStorage.removeItem("punktlandung-direct-start");
+      }
+    } catch {
+      // The explicit route prop/query remains available as a fallback.
+    }
+    if (roomMatchesInitialMode(modeGame.room, mode)) {
       initialModeHandledRef.current = true;
+      if (directStartRequested && !directStartConsumedRef.current && modeGame.room?.status === "lobby") {
+        directStartConsumedRef.current = true;
+        setStartingRound(true);
+        void Promise.resolve(modeGame.startRound()).finally(() => setStartingRound(false));
+      }
       return;
     }
     if (initialModeHandledRef.current) return;
 
     initialModeHandledRef.current = true;
     setPendingJoinCode(null);
+    pendingDirectStartRef.current = directStartRequested;
     if (routeMode) {
       try {
         window.localStorage.removeItem(activeSessionStorageKey);
@@ -379,12 +464,16 @@ export function GameApp({
     }
     let playerName = name;
     try {
-      playerName = window.localStorage.getItem("punktlandung-name") || name;
+      playerName = accountDisplayName || window.localStorage.getItem("punktlandung-name") || name;
     } catch {
       // Keep URL-start usable when localStorage is unavailable.
     }
 
-    if (mode === "solo" || mode === "couch") {
+    if (mode === "solo") {
+      modeGame.createSolo(playerName, mode);
+      return;
+    }
+    if (mode === "couch") {
       localGame.createSolo(playerName, mode);
       return;
     }
@@ -393,24 +482,23 @@ export function GameApp({
       hostParticipation: "host_player",
       playerName
     });
-  }, [initialMode, localGame, name]);
+  }, [accountDisplayName, directStart, initialMode, localGame, name, rankedRestoring, rankedSoloEnabled, rankedSoloGame]);
 
   useEffect(() => {
     if (!pendingDirectStartRef.current) return;
-    if (!localGame.room || localGame.room.status !== "lobby" || localGame.room.settings.localMode !== "solo") return;
+    const startGame = rankedSoloEnabled ? rankedSoloGame : localGame;
+    if (!startGame.room || startGame.room.status !== "lobby" || startGame.room.settings.localMode !== "solo") return;
     pendingDirectStartRef.current = false;
-    localGame.startRound();
-  }, [localGame]);
+    directStartConsumedRef.current = true;
+    setStartingRound(true);
+    void Promise.resolve(startGame.startRound()).finally(() => setStartingRound(false));
+  }, [localGame.room, rankedSoloEnabled, rankedSoloGame.room]);
 
   useEffect(() => {
     if (!pendingOnlineSettings || !onlineGame.room || !onlineGame.isHost || onlineGame.room.status !== "lobby") return;
     onlineGame.updateSettings(pendingOnlineSettings);
     setPendingOnlineSettings(null);
   }, [pendingOnlineSettings, onlineGame]);
-
-  useEffect(() => {
-    if (requiredStatus) setRouteGuardReady(true);
-  }, [requiredStatus]);
 
   const handleCreateLiveOnlineRoom = () => {
     trackAnalyticsEvent("online_room_create_attempt");
@@ -441,17 +529,52 @@ export function GameApp({
   };
   const handleDirectPlay = () => {
     playSelect();
-    initialModeHandledRef.current = true;
-    pendingDirectStartRef.current = true;
     setPendingJoinCode(null);
-    localGame.createSolo(name, "solo");
+    try {
+      // The dedicated /solo-modus/direct route owns the one-shot start.
+      // Leaving a second session flag behind could start the same transition
+      // twice while the homepage component was unmounting.
+      window.sessionStorage.removeItem("punktlandung-direct-start");
+      window.localStorage.removeItem(activeSessionStorageKey);
+      window.localStorage.removeItem("punktlandung-ranked-active-game-v1");
+    } catch {
+      // The explicit direct route remains sufficient without browser storage.
+    }
+  };
+  const handleModeSelect = (_href: string) => {
+    playSelect();
+    try {
+      window.localStorage.removeItem(activeSessionStorageKey);
+      window.localStorage.removeItem("punktlandung-ranked-active-game-v1");
+    } catch {
+      // Explicit mode navigation still works when browser storage is unavailable.
+    }
   };
   const handleUpdateSettings = (settings: Partial<GameSettings>) => {
     updateSettings(settings);
   };
-  const handleStartRound = () => startRound();
+  const handleStartRound = async () => {
+    if (startingRound) return;
+    setStartingRound(true);
+    try {
+      await Promise.resolve(startRound());
+    } finally {
+      setStartingRound(false);
+    }
+  };
   const handleSubmitGuess = (guess: LatLng & { countryCode?: string }, targetPlayerId?: string) => submitGuess(guess, targetPlayerId);
   const handleSetTeam = (team: TeamId) => setTeam(team);
+  const handleCancelRound = () => {
+    cancelRound();
+    if (window.location.pathname === "/solo-modus/direct") {
+      try {
+        window.sessionStorage.removeItem("punktlandung-direct-start");
+      } catch {
+        // Route replacement remains sufficient when sessionStorage is unavailable.
+      }
+      router.replace("/solo-modus");
+    }
+  };
   const handleLeaveToHome = () => {
     initialModeHandledRef.current = true;
     setPendingJoinCode(null);
@@ -470,8 +593,10 @@ export function GameApp({
     } catch {
       // The in-memory leave still works when browser storage is unavailable.
     }
-    leaveRoom();
-    window.location.href = "/";
+    // Keep the current screen mounted until Next has committed the homepage.
+    // Clearing the in-memory room here made the route guard render the
+    // full-screen "Spielrunde wird geladen" state during the transition.
+    router.push("/");
   };
   const handleLeaveWaitingRoom = () => {
     initialModeHandledRef.current = true;
@@ -482,7 +607,14 @@ export function GameApp({
     }
   };
 
-  if (requiredStatus && !routeGuardReady) {
+  const restorationPending = localGame.restoring || onlineGame.restoring || rankedRestoring;
+
+  if (
+    restorationPending
+    || (initialMode !== "home" && !room)
+    || (directStart && startingRound)
+    || (startingRound && room?.status === "results")
+  ) {
     return <GameStateLoading />;
   }
 
@@ -536,9 +668,13 @@ export function GameApp({
         me={me}
         isHost={isHost}
         onGuess={handleSubmitGuess}
-        onCancelRound={cancelRound}
+        onCancelRound={handleCancelRound}
         onSkipLocation={skipLocation}
+        onImageReady={markLocationReady}
         onLeave={handleLeaveToHome}
+        redesign={redesignHomeEnabled}
+        rankedSyncStatus={rankedSoloContext ? rankedSoloGame.syncStatus : undefined}
+        pendingUploadCount={rankedSoloContext ? rankedSoloGame.pendingUploadCount : 0}
       />
     );
   }
@@ -551,15 +687,42 @@ export function GameApp({
         meId={playerId}
         onNext={handleStartRound}
         onReadyNextRound={readyNextRound}
-        onBackToLobby={cancelRound}
+        onBackToLobby={handleCancelRound}
         onRestart={restart}
         onLeave={handleLeaveToHome}
+        redesign={redesignHomeEnabled}
+        accountsEnabled={accountsEnabled}
+        accountAuthenticated={accountAuthenticated}
+        serverRanked={rankedSoloContext && room.kind === "solo" && room.settings.localMode === "solo"}
+        rankedSyncStatus={rankedSoloContext ? rankedSoloGame.syncStatus : undefined}
+        pendingUploadCount={rankedSoloContext ? rankedSoloGame.pendingUploadCount : 0}
       />
     );
   }
 
   if (room?.status === "lobby") {
     const isLiveOnlineWaitingRoom = room.kind === "online" && Boolean(onlineGame.room);
+    if (redesignHomeEnabled && isLiveOnlineWaitingRoom) {
+      return (
+        <RedesignWaitingRoomView
+          code={room.code}
+          players={room.players}
+          meId={playerId}
+          isHost={isHost}
+          settings={room.settings}
+          hostParticipation={room.hostParticipation}
+          connectionStatus={onlineGame.status}
+          soundEnabled={soundEnabled}
+          accountHref={accountsEnabled ? "/konto" : undefined}
+          accountAuthenticated={accountAuthenticated}
+          canStart={Boolean(onlineGame.room)}
+          onStart={handleStartRound}
+          onTeam={handleSetTeam}
+          onLeave={handleLeaveWaitingRoom}
+          onSoundToggle={toggleSound}
+        />
+      );
+    }
     if (redesignHomeEnabled && !isLiveOnlineWaitingRoom) {
       return (
         <RedesignSetupView
@@ -570,7 +733,11 @@ export function GameApp({
           hostParticipation={room.hostParticipation}
           connectionStatus={onlineGame.status}
           soundEnabled={soundEnabled}
-          canStart={room.kind === "online" ? onlineGame.status === "open" : isHost && room.players.length > 0}
+          accountHref={accountsEnabled ? "/konto" : undefined}
+          accountAuthenticated={accountAuthenticated}
+          error={error}
+          canStart={!startingRound && (room.kind === "online" ? onlineGame.status === "open" : isHost && room.players.length > 0)}
+          starting={startingRound}
           onSettings={handleUpdateSettings}
           onRenamePlayer={renamePlayer}
           onHostParticipationChange={room.kind === "online" ? localGame.updateHostParticipation : undefined}
@@ -622,6 +789,8 @@ export function GameApp({
           playerName={name}
           connectionStatus={onlineGame.status}
           soundEnabled={soundEnabled}
+          accountHref={accountsEnabled ? "/konto" : undefined}
+          accountAuthenticated={accountAuthenticated}
           mapPreview={<HeroMapPreview />}
           modes={modePreview.filter((mode) => mode.available).map((mode) => ({
             id: mode.id,
@@ -630,7 +799,7 @@ export function GameApp({
             href: appPathWithMode(mode.id)
           }))}
           onDirectPlay={handleDirectPlay}
-          onModeSelect={playSelect}
+          onModeSelect={handleModeSelect}
           onSoundToggle={toggleSound}
         />
         {error && (

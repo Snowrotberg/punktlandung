@@ -1,9 +1,10 @@
 .root {
   --pl-page: #070b14;
   --pl-shell: #0a101c;
-  --pl-surface: #111a2a;
+  --pl-surface: #0e1527;
   --pl-surface-strong: #162236;
-  --pl-surface-soft: #0e1726;
+  --pl-surface-soft: #0e1527;
+  --pl-button-surface: #162236;
   --pl-text: #f7fafc;
   --pl-muted: #a9b5c7;
   --pl-line: #26354a;
@@ -15,8 +16,15 @@
   --pl-red: #ff4775;
   --pl-shadow: rgb(0 0 0 / 0.28);
   --pl-grid: rgb(148 163 184 / 0.055);
+  --pl-grid-size: 56px;
+  --pl-grid-line-width: 1px;
+  --pl-horizontal-grid-color: var(--pl-grid);
   --pl-mint-glow: rgb(52 211 153 / 0.18);
   --pl-violet-glow: rgb(99 102 241 / 0.18);
+  --pl-page-title-size: clamp(2.1rem, 4.8vw, 3.25rem);
+  --pl-page-title-weight: 400;
+  --pl-page-title-tracking: -.055em;
+  --pl-page-title-leading: .95;
 
   --pl-space-1: 0.25rem;
   --pl-space-2: 0.5rem;
@@ -35,6 +43,17 @@
 }
 
 .shell {
+  --pl-ambient-mint-origin-x: 10%;
+  --pl-ambient-mint-origin-y: 28%;
+  --pl-ambient-mint-radius: 34rem;
+  --pl-ambient-violet-origin-x: 88%;
+  --pl-ambient-violet-origin-y: 70%;
+  --pl-ambient-violet-radius: 36rem;
+  --pl-grid-attachment: fixed;
+  --pl-horizontal-grid-position: 0 0;
+  --pl-header-separator-color: var(--pl-line);
+  --pl-header-separator-width: 1px;
+
   position: relative;
   isolation: isolate;
   min-height: 100%;
@@ -43,15 +62,75 @@
   border-radius: var(--pl-radius-shell);
   background-color: var(--pl-shell);
   background-image:
-    radial-gradient(circle at 10% 28%, var(--pl-mint-glow), transparent 30rem),
-    radial-gradient(circle at 88% 70%, var(--pl-violet-glow), transparent 32rem),
-    linear-gradient(90deg, var(--pl-grid) 1px, transparent 1px),
-    linear-gradient(0deg, var(--pl-grid) 1px, transparent 1px);
-  background-position: -2% -1%, 2% 1%, 0 0, 0 0;
+    radial-gradient(
+      circle var(--pl-ambient-mint-radius) at calc(var(--pl-ambient-mint-origin-x) + var(--punktlandung-ambient-mint-x, 0px)) calc(var(--pl-ambient-mint-origin-y) + var(--punktlandung-ambient-mint-y, 0px)),
+      var(--pl-mint-glow),
+      transparent
+    ),
+    radial-gradient(
+      circle var(--pl-ambient-violet-radius) at calc(var(--pl-ambient-violet-origin-x) + var(--punktlandung-ambient-indigo-x, 0px)) calc(var(--pl-ambient-violet-origin-y) + var(--punktlandung-ambient-indigo-y, 0px)),
+      var(--pl-violet-glow),
+      transparent
+    ),
+    linear-gradient(90deg, var(--pl-grid) var(--pl-grid-line-width), transparent var(--pl-grid-line-width)),
+    linear-gradient(180deg, var(--pl-horizontal-grid-color) var(--pl-grid-line-width), transparent var(--pl-grid-line-width));
+  background-position: 0 0, 0 0, 0 0, var(--pl-horizontal-grid-position);
   background-repeat: no-repeat, no-repeat, repeat, repeat;
-  background-size: 112% 112%, 112% 112%, 56px 56px, 56px 56px;
+  background-size: 100% 100%, 100% 100%, var(--pl-grid-size) var(--pl-grid-size), var(--pl-grid-size) var(--pl-grid-size);
+  background-attachment: fixed, fixed, var(--pl-grid-attachment), var(--pl-grid-attachment);
   box-shadow: 0 1.5rem 4rem var(--pl-shadow);
-  animation: backgroundDrift 18s ease-in-out infinite alternate;
+}
+
+@media (min-width: 150rem) {
+  .root { --pl-page-title-size: 5rem; }
+}
+
+/* Keep the laptop composition proportional on monitor and television sizes.
+   The radii scale with the viewport while retaining the current laptop size. */
+@media (min-width: 80rem) {
+  .shell {
+    --pl-ambient-mint-origin-x: 21%;
+    --pl-ambient-mint-radius: max(34rem, 40vw);
+    --pl-ambient-violet-origin-x: 78%;
+    --pl-ambient-violet-origin-y: 84%;
+    --pl-ambient-violet-radius: max(36rem, 42vw);
+    --pl-grid-size: max(56px, 4.1vw);
+    --pl-grid-line-width: max(1px, 0.075vw);
+  }
+}
+
+@media (min-width: 100rem) {
+  .shell {
+    --pl-header-separator-color: color-mix(in srgb, var(--pl-line) 82%, #94a3b8 18%);
+    --pl-header-separator-width: max(1px, 0.075vw);
+  }
+}
+
+@media (min-width: 150rem) {
+  .shell {
+    --pl-grid: rgb(148 163 184 / 0.07);
+    --pl-header-separator-color: color-mix(in srgb, var(--pl-line) 70%, #94a3b8 30%);
+  }
+}
+
+/* Portrait phones keep the green light high and left. Only the violet
+   counterweight moves per viewport, as requested. */
+@media (max-width: 23.999rem) and (orientation: portrait) {
+  .shell {
+    --pl-ambient-violet-origin-x: 94%;
+  }
+}
+
+@media (min-width: 24rem) and (max-width: 54.999rem) and (orientation: portrait) {
+  .shell {
+    --pl-ambient-violet-origin-y: 78%;
+  }
+}
+
+@media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
+  .shell {
+    --pl-ambient-violet-origin-x: 91%;
+  }
 }
 
 .header,
@@ -65,7 +144,207 @@
 
 .header {
   justify-content: space-between;
-  border-bottom: 1px solid var(--pl-line);
+  border-bottom: var(--pl-header-separator-width) solid var(--pl-header-separator-color);
+}
+
+.brandGroup {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brand {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--pl-text);
+  font-size: 1.3rem;
+  font-weight: 720;
+  letter-spacing: -0.015em;
+  text-decoration: none;
+}
+
+.brandBadge {
+  position: relative;
+  top: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.3rem;
+  color: color-mix(in srgb, var(--pl-violet) 78%, white);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.brandBadge:hover,
+.brandBadge:focus-visible {
+  color: white;
+  outline: none;
+}
+
+.brandBadgeMark {
+  color: var(--pl-violet);
+  font-size: 0.55rem;
+  letter-spacing: 0.16em;
+}
+
+.brandIcon {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  margin-left: -1.121rem;
+  border-radius: 0.8rem;
+  transform: scale(1.25);
+  transform-origin: left center;
+}
+
+.statusControls,
+.betaControl,
+.serverControl {
+  display: flex;
+  align-items: center;
+}
+
+.statusControls {
+  min-width: 0;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.statusControls > [data-tooltip] {
+  position: relative;
+}
+
+.statusControls > [data-tooltip]::after {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 0.65rem);
+  left: 50%;
+  max-width: min(15rem, 80vw);
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--pl-line);
+  border-radius: 0.55rem;
+  color: var(--pl-text);
+  background: rgb(10 16 28 / 0.97);
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.34);
+  content: attr(data-tooltip);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  text-transform: none;
+  transform: translate(-50%, -0.25rem);
+  transition: opacity 140ms ease, transform 140ms ease;
+  white-space: nowrap;
+}
+
+.statusControls > [data-tooltip]:last-child::after {
+  right: 0;
+  left: auto;
+  transform: translateY(-0.25rem);
+}
+
+.statusControls > [data-tooltip]:is(:hover, :focus-visible)::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.statusControls > [data-tooltip]:last-child:is(:hover, :focus-visible)::after {
+  transform: translateY(0);
+}
+
+.statusControls > details[open][data-tooltip]::after {
+  display: none;
+}
+
+.betaControl {
+  min-height: 2.5rem;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--pl-violet) 58%, transparent);
+  border-radius: var(--pl-radius-control);
+  color: color-mix(in srgb, var(--pl-violet) 76%, white);
+  background: color-mix(in srgb, var(--pl-violet) 8%, var(--pl-surface-strong));
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.serverControl,
+.roundControl {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: var(--pl-text);
+  background: var(--pl-button-surface);
+}
+
+.serverControl {
+  position: relative;
+  color: var(--pl-text);
+  background: var(--pl-surface);
+}
+
+.serverControl[data-state="online"] {
+  border-color: transparent;
+}
+
+.serverControl[data-state="connecting"] {
+  border-color: transparent;
+}
+
+.serverControl:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.roundControl {
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.betaControl:hover,
+.betaControl:focus-visible {
+  border-color: var(--pl-violet);
+  color: color-mix(in srgb, var(--pl-violet) 84%, white);
+  background: color-mix(in srgb, var(--pl-violet) 16%, var(--pl-surface-strong));
+  outline: none;
+}
+
+.roundControl:hover,
+.roundControl:focus-visible {
+  border-color: var(--pl-mint);
+  background: color-mix(in srgb, var(--pl-button-surface) 88%, var(--pl-mint) 12%);
+  outline: none;
+}
+
+.betaControl svg,
+.serverControl svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.roundControl svg {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .footer {
@@ -104,7 +383,7 @@
   border: 1px solid var(--pl-line);
   border-radius: var(--pl-radius-control);
   color: var(--pl-text);
-  background: var(--pl-surface);
+  background: var(--pl-button-surface);
   font: inherit;
   font-weight: 700;
   line-height: 1;
@@ -115,8 +394,12 @@
 
 .button:hover:not(:disabled) {
   border-color: var(--pl-mint);
-  background: var(--pl-mint-soft);
   transform: translateY(-1px);
+}
+
+.secondary:hover:not(:disabled),
+.quiet:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--pl-surface-strong) 88%, var(--pl-mint) 12%);
 }
 
 .button:focus-visible,
@@ -132,17 +415,17 @@
 
 .primary {
   border-color: var(--pl-mint);
-  color: var(--pl-mint-ink);
+  color: #031b22 !important;
   background: var(--pl-mint);
 }
 
 .primary:hover:not(:disabled) {
-  color: var(--pl-mint-ink);
+  color: #031b22 !important;
   background: color-mix(in srgb, var(--pl-mint) 88%, white);
 }
 
 .secondary {
-  background: var(--pl-surface);
+  background: var(--pl-button-surface);
 }
 
 .quiet {
@@ -193,6 +476,10 @@
   border-color: var(--pl-mint);
 }
 
+.segment:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--pl-surface-strong) 88%, var(--pl-mint) 12%);
+}
+
 .segmentSelected {
   background: var(--pl-mint-soft);
 }
@@ -241,27 +528,203 @@
 
 .adRail {
   --pl-ad-min-height: 28rem;
+  border-radius: var(--pl-radius-shell);
   writing-mode: vertical-rl;
   text-orientation: mixed;
 }
 
-@keyframes backgroundDrift {
-  from {
-    background-position: -2% -1%, 2% 1%, 0 0, 0 0;
-  }
-  to {
-    background-position: 5% 3%, -4% -2%, 0 0, 0 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .shell {
-    animation: none;
-  }
-
   .button,
   .segment {
     scroll-behavior: auto;
     transition-duration: 0.01ms;
+  }
+}
+
+@media (hover: none) {
+  .statusControls > [data-tooltip]::after {
+    display: none;
+  }
+}
+
+@media (min-width: 150rem) {
+  .brandGroup { gap: 1.2rem; }
+  .brand {
+    gap: 1rem;
+    font-size: 2rem;
+  }
+
+  .brandIcon {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .statusControls {
+    gap: 0.9rem;
+  }
+
+  .brandBadge { font-size: .82rem; }
+
+  .serverControl,
+  .roundControl {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .serverControl svg,
+  .roundControl svg {
+    width: 1.65rem;
+    height: 1.65rem;
+  }
+}
+
+@media (max-width: 30rem) {
+  .brandGroup { gap: .35rem; }
+  .brand {
+    gap: 0.45rem;
+    font-size: 0.88rem;
+  }
+
+  .brandIcon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.6rem;
+    transform: scale(1.15);
+  }
+
+  .statusControls {
+    gap: 0.3rem;
+  }
+
+  .brandBadge {
+    top: .2rem;
+    max-width: 3.75rem;
+    padding: .2rem 0;
+    margin-left: .1rem;
+    font-size: .42rem;
+    letter-spacing: .05em;
+    line-height: 1.1;
+    white-space: normal;
+  }
+
+  .serverControl,
+  .roundControl {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .serverControl svg,
+  .roundControl svg {
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+}
+
+/* Home/header wordmark tuning by the viewport presets used during visual QA.
+   The pin-to-word gap is tightened independently from the Punktlandung/WEB gap. */
+.brand {
+  gap: 0.3rem;
+}
+
+/* Phone Large: text +10%, then the complete brand +10%. */
+@media (min-width: 24.001rem) and (max-width: 30rem) and (orientation: portrait) {
+  .header :global(a[href="/solo-modus"]) {
+    display: none;
+  }
+
+  .brand {
+    font-size: 1.24rem;
+  }
+
+  .brandIcon {
+    width: 2.55rem;
+    height: 2.55rem;
+    margin-left: 0;
+  }
+
+  .brandBadgeMark {
+    font-size: 0.666rem;
+  }
+}
+
+/* Phone Small: text +5%, then the complete brand +5%. */
+@media (max-width: 24rem) and (orientation: portrait) {
+  .header :global(a[href="/solo-modus"]) {
+    display: none;
+  }
+
+  .brandBadge {
+    display: none;
+  }
+
+  .brand {
+    font-size: 1.16rem;
+  }
+
+  .brandIcon {
+    width: 2.45rem;
+    height: 2.45rem;
+    margin-left: 0;
+  }
+
+  .brandBadgeMark {
+    font-size: 0.606rem;
+  }
+}
+
+/* Phone Landscape: wordmark and WEB +10%; pin remains unchanged. */
+@media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
+  .brand {
+    font-size: 1.43rem;
+  }
+
+  .brandBadgeMark {
+    font-size: 0.605rem;
+  }
+}
+
+/* Laptop: wordmark and WEB +10%; pin remains unchanged. */
+@media (min-width: 80rem) and (max-width: 99.999rem) {
+  .brand {
+    font-size: 1.43rem;
+  }
+
+  .brandBadgeMark {
+    font-size: 0.605rem;
+  }
+}
+
+/* Monitor: complete brand +10%. */
+@media (min-width: 100rem) and (max-width: 149.999rem) {
+  .brand {
+    font-size: 1.43rem;
+  }
+
+  .brandIcon {
+    width: 3.025rem;
+    height: 3.025rem;
+    margin-left: -1.233rem;
+  }
+
+  .brandBadgeMark {
+    font-size: 0.605rem;
+  }
+}
+
+/* 4K television: complete brand +5%. */
+@media (min-width: 150rem) {
+  .brand {
+    gap: 0.8rem;
+    font-size: 2.1rem;
+  }
+
+  .brandIcon {
+    width: 4.2rem;
+    height: 4.2rem;
+    margin-left: -1.712rem;
+  }
+
+  .brandBadgeMark {
+    font-size: 0.861rem;
   }
 }

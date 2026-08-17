@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-export const siteUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+export const siteUrl = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://punktlandung.app").replace(/\/$/, "");
 
 export const siteName = "Punktlandung";
 
@@ -18,42 +18,10 @@ export const seoRoutes = [
     changeFrequency: "weekly"
   },
   {
-    path: "/geoguessr-alternative-deutsch",
-    title: "GeoGuessr Alternative Deutsch - Punktlandung kostenlos spielen",
-    description:
-      "Punktlandung ist eine deutschsprachige GeoGuessr-Alternative fuer Browser, Party-Runden und schnelle Geografie-Quizspiele ohne Anmeldung.",
-    priority: 0.9,
-    changeFrequency: "monthly"
-  },
-  {
-    path: "/geografie-spiel",
-    title: "Geografie-Spiel online - Orte, Laender und Wahrzeichen erraten",
-    description:
-      "Spiele ein kostenloses Geografie-Spiel im Browser: erkenne Orte, Staedte, Landschaften, Flaggen und Wahrzeichen und sammle Punkte.",
-    priority: 0.85,
-    changeFrequency: "monthly"
-  },
-  {
-    path: "/orte-erraten-spiel",
-    title: "Orte erraten Spiel - Bild ansehen und Standort tippen",
-    description:
-      "Beim Orte-erraten-Spiel Punktlandung setzt du deinen Pin auf die Karte und bekommst Punkte nach Entfernung zum richtigen Standort.",
-    priority: 0.85,
-    changeFrequency: "monthly"
-  },
-  {
     path: "/partyspiel-geografie",
     title: "Geografie-Partyspiel - Punktlandung fuer Gruppen",
     description:
       "Punktlandung eignet sich als Geografie-Partyspiel fuer Gruppen am selben Bildschirm: Namen eintragen, Kategorie waehlen und gemeinsam Orte tippen.",
-    priority: 0.8,
-    changeFrequency: "monthly"
-  },
-  {
-    path: "/kostenloses-geoguessing-spiel",
-    title: "Kostenloses GeoGuessing-Spiel - Punktlandung im Browser",
-    description:
-      "Punktlandung ist ein kostenloses GeoGuessing-Spiel fuer den Browser mit Solo-Modus, Party-Modus und Kategorien wie Staedte, Flaggen und Wahrzeichen.",
     priority: 0.8,
     changeFrequency: "monthly"
   },

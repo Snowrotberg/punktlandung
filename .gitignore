@@ -2,6 +2,8 @@ node_modules/
 .npm-cache/
 .next/
 .next-check/
+.next-dev-*/
+.next-*/
 out/
 dist/
 coverage/
@@ -13,9 +15,15 @@ data/runtime/
 .env.*.local
 # Responsive-Test
 test-artifacts/
+artifacts/
+server-*.pid
 
 # Local Codex attachments
 .codex-remote-attachments/
 
 # Temporäre lokale Dateien
 Textdokument (neu).txt
+
+# Einmalige lokale Diagnose- und Rettungsskripte
+scripts/inspect-current-ranked-game.ts
+scripts/inspect-ranked-recovery.ts

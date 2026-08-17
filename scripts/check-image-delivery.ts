@@ -4,23 +4,28 @@ import { GET } from "../app/api/image/route";
 import type { GeoLocation } from "../types/game";
 
 async function main() {
-  const sampleCount = Math.max(1, Math.min(20, Number(process.env.IMAGE_CHECK_COUNT) || 6));
   const catalogUrl = new URL("../data/generated/locations.generated.json", import.meta.url);
   const catalog = JSON.parse(await readFile(catalogUrl, "utf8")) as GeoLocation[];
-  const categorySamples = new Map<string, GeoLocation>();
+  const sampleCount = Math.max(1, Math.min(catalog.length, Number(process.env.IMAGE_CHECK_COUNT) || 6));
+  const categoryBuckets = new Map<string, GeoLocation[]>();
 
   for (const location of catalog) {
-    if (!categorySamples.has(location.category)) categorySamples.set(location.category, location);
-    if (categorySamples.size >= sampleCount) break;
+    const bucket = categoryBuckets.get(location.category) ?? [];
+    bucket.push(location);
+    categoryBuckets.set(location.category, bucket);
   }
 
-  const samples = Array.from(categorySamples.values()).slice(0, sampleCount);
-  const selectedIds = new Set(samples.map((location) => location.id));
-  for (const location of catalog) {
-    if (samples.length >= sampleCount) break;
-    if (selectedIds.has(location.id)) continue;
-    selectedIds.add(location.id);
-    samples.push(location);
+  const buckets = Array.from(categoryBuckets.values());
+  const samples: GeoLocation[] = [];
+  for (let bucketIndex = 0; samples.length < sampleCount; bucketIndex += 1) {
+    let added = false;
+    for (const bucket of buckets) {
+      const location = bucket[bucketIndex];
+      if (!location || samples.length >= sampleCount) continue;
+      samples.push(location);
+      added = true;
+    }
+    if (!added) break;
   }
   let failures = 0;
 

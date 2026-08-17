@@ -24,6 +24,10 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     console.error("Punktlandung render error", error, info);
   }
 
+  reloadPage = () => {
+    window.location.reload();
+  };
+
   resetSession = () => {
     try {
       recoverableStorageKeys.forEach((key) => window.localStorage.removeItem(key));
@@ -42,12 +46,19 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
           <p className="text-xs font-black uppercase tracking-[0.26em] text-rose-300">Seite reparieren</p>
           <h1 className="mt-3 text-3xl font-black">Punktlandung neu laden</h1>
           <p className="mt-3 text-sm leading-6 text-slate-300">
-            Die Seite konnte nicht korrekt dargestellt werden. Gespeicherte Spieldaten werden zur Sicherheit
-            zurückgesetzt.
+            Die Seite konnte nicht korrekt dargestellt werden. Lade sie zuerst neu – dein gespeicherter
+            Spielstand bleibt dabei erhalten.
           </p>
-          <Button className="mt-5 min-h-12 w-full" onClick={this.resetSession}>
-            Sitzung zurücksetzen
+          <Button className="mt-5 min-h-12 w-full" onClick={this.reloadPage}>
+            Seite neu laden
           </Button>
+          <button
+            type="button"
+            className="mt-3 text-xs font-semibold text-slate-400 underline decoration-slate-600 underline-offset-4 hover:text-rose-200"
+            onClick={this.resetSession}
+          >
+            Beschädigten lokalen Spielstand verwerfen
+          </button>
         </div>
       </main>
     );

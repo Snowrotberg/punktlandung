@@ -36,7 +36,9 @@ const consentRequiredPlacements: Partial<Record<AdPlacement, boolean>> = {
 };
 
 export const adConfig = {
-  enabled: process.env.NEXT_PUBLIC_ADSENSE_ENABLED !== "false",
+  // Ads are opt-in. A missing variable must never reserve an empty rail or let
+  // a blank AdSense iframe push the application out of the viewport locally.
+  enabled: process.env.NEXT_PUBLIC_ADSENSE_ENABLED === "true",
   clientId: process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() || ADSENSE_CLIENT_ID,
   requireConsent: process.env.NEXT_PUBLIC_ADS_REQUIRE_CONSENT === "true",
   testMode: process.env.NEXT_PUBLIC_ADSENSE_TEST_MODE === "true",

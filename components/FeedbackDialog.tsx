@@ -80,7 +80,7 @@ export function FeedbackDialog({ open, context, onClose, onSubmitted }: Feedback
         </button>
 
         <div className="pr-12">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">Öffentliche Beta</p>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">Web-Version</p>
           <h2 id={titleId} className="mt-2 text-2xl font-black leading-tight text-white sm:text-3xl">Wie war deine Partie?</h2>
           <p id={descriptionId} className="mt-2 text-sm leading-6 text-slate-300">Dein freiwilliges Feedback hilft uns, Fehler zu finden und Punktlandung weiterzuentwickeln.</p>
         </div>

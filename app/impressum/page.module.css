@@ -1,0 +1,42 @@
+.grid {
+  display: grid;
+  gap: .75rem;
+}
+
+.card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--pl-line);
+  border-radius: .75rem;
+  background: rgb(14 21 39 / .58);
+  box-shadow: 0 .8rem 2rem rgb(0 0 0 / .1);
+}
+
+.card h2 {
+  margin: 0 0 .5rem;
+  color: white;
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.card p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: .85rem;
+  line-height: 1.55;
+}
+
+.card p + p { margin-top: .65rem; }
+.card a { color: #6ee7b7; font-weight: 800; }
+
+@media (min-width: 48rem) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 80rem) and (max-height: 55rem) {
+  .grid { gap: .6rem; }
+  .card { padding: .8rem .9rem; }
+  .card h2 { font-size: .95rem; }
+  .card p { font-size: .76rem; line-height: 1.42; }
+}

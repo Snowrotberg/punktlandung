@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { builtInLocations } from "@/data/locations";
-import { averageGuess, badgeFor, countryCodeFromGuess, haversineDistanceKm, isGuessInCountry, scoreDistance } from "@/lib/geo";
-import { evaluateTerritoryGuess } from "@/lib/locationBoundaries";
+import { averageGuess, haversineDistanceKm } from "@/lib/geo";
+import { prepareLocationImage } from "@/lib/imagePreload.client";
+import { shuffledLocationIds } from "@/lib/locationSelection";
 import { consumeLegalReturn } from "@/lib/legalNavigation";
+import { PLAYER_PALETTE } from "@/lib/playerPalette";
+import { evaluatePlayerGuess } from "@/lib/roundEvaluation";
+import { readStoredSetupSettings, writeStoredSetupSettings } from "@/lib/setupSettings.client";
 import type {
   Cosmetic,
   GameSettings,
@@ -20,14 +23,20 @@ import type {
   TeamId
 } from "@/types/game";
 
-const playerColors = ["#2563eb", "#f43f5e", "#f59e0b", "#06b6d4", "#7c3aed", "#f97316", "#ec4899", "#eab308", "#0ea5e9", "#dc2626"];
+const playerColors = PLAYER_PALETTE;
 const recentLocationsStorageKey = "punktlandung-recent-location-ids";
 const sessionStorageKey = "punktlandung-active-session-v1";
 const sessionResetStorageKey = "punktlandung-reset-session-v1";
 const recentLocationLimit = 400;
 const sessionTtlMs = 1000 * 60 * 60 * 6;
-const locationCategories = new Set(["mixed", "landmarks", "cities", "landscapes", "flags", "capitals", "streetview"]);
 const historyStateKey = "punktlandung-history-v1";
+const locationCategories = new Set(["mixed", "landmarks", "cities", "landscapes", "flags", "capitals", "streetview"]);
+let locationCatalogPromise: Promise<GeoLocation[]> | null = null;
+
+function loadLocationCatalog(): Promise<GeoLocation[]> {
+  locationCatalogPromise ??= import("@/data/locations").then((module) => module.builtInLocations);
+  return locationCatalogPromise;
+}
 
 const defaultSettings: GameSettings = {
   mode: "classic",
@@ -39,8 +48,13 @@ const defaultSettings: GameSettings = {
   noPan: false,
   noZoom: false,
   mapPackId: "world-party",
-  category: "mixed"
+  category: "mixed",
+  difficulty: "medium"
 };
+
+function pauseGuessingRoomUntilImageReady(room: RoomState): RoomState {
+  return room.status === "guessing" ? { ...room, roundEndsAt: null, roundStartedAt: null } : room;
+}
 
 function id(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
@@ -58,6 +72,10 @@ function randomIndex(maxExclusive: number): number {
 
 function uniqueIds(ids: string[]): string[] {
   return Array.from(new Set(ids.filter(Boolean)));
+}
+
+function prefetchLocationImage(location: GeoLocation): void {
+  void prepareLocationImage(location);
 }
 
 function readStoredRecentLocationIds(): string[] {
@@ -84,7 +102,7 @@ type StoredSession = {
   room: RoomState;
   recentLocationIds: string[];
   locationQueue: string[];
-  queueCategory: GameSettings["category"] | null;
+  queueCategory: string | null;
   lastLocationId: string | null;
 };
 
@@ -372,26 +390,6 @@ function syncLocalPlayers(room: RoomState): RoomState {
   };
 }
 
-function shuffledLocationIds(category: GameSettings["category"], recentLocationIds: string[], previousLocationId?: string | null): string[] {
-  const pool = category === "mixed" ? builtInLocations : builtInLocations.filter((location) => location.category === category);
-  const sourceBase = pool.length > 0 ? pool : builtInLocations;
-  const recent = new Set(recentLocationIds);
-  const fresh = sourceBase.filter((location) => !recent.has(location.id));
-  const ids = (fresh.length > 0 ? fresh : sourceBase).map((location) => location.id);
-
-  for (let index = ids.length - 1; index > 0; index -= 1) {
-    const swapIndex = randomIndex(index + 1);
-    [ids[index], ids[swapIndex]] = [ids[swapIndex], ids[index]];
-  }
-
-  if (ids.length > 1 && ids[0] === previousLocationId) {
-    const swapIndex = 1 + randomIndex(ids.length - 1);
-    [ids[0], ids[swapIndex]] = [ids[swapIndex], ids[0]];
-  }
-
-  return ids;
-}
-
 function activePlayers(room: RoomState): Player[] {
   return room.players.filter((player) => player.connected && player.status === "active");
 }
@@ -418,33 +416,9 @@ function evaluateRound(room: RoomState): RoomState {
   const location = room.location;
   const guessesByPlayer = new Map(room.guesses.map((guess) => [guess.playerId, guess]));
   const contenders = room.players.filter((player) => player.status === "active");
-  const evaluated = contenders.map((player): RoundResult => {
-    const guess = guessesByPlayer.get(player.id) ?? null;
-    if (!guess) {
-      return { playerId: player.id, distanceKm: 20038, points: 0, badge: "Verschollen", eliminated: false, guess, countryCorrect: false };
-    }
-
-    const distanceKm = haversineDistanceKm(guess, location);
-    const guessedCountry = guess.countryCode ?? countryCodeFromGuess(guess);
-    const countryCorrect =
-      location.category === "flags" && (guessedCountry === location.countryCode || isGuessInCountry(guess, location.countryCode));
-    const territoryMatch = evaluateTerritoryGuess(location, guess);
-    const sameContinent = countryCorrect || guessedCountry === location.countryCode || guessedCountry === location.continent;
-    const finalDistanceKm = territoryMatch?.distanceKm ?? distanceKm;
-    const finalPoints = countryCorrect ? 5000 : territoryMatch?.points ?? scoreDistance(distanceKm);
-    const finalBadge = countryCorrect ? "Richtiges Land" : territoryMatch?.badge ?? badgeFor(distanceKm, sameContinent);
-    const territoryCorrect = territoryMatch?.isTerritoryHit ?? false;
-
-    return {
-      playerId: player.id,
-      distanceKm: finalDistanceKm,
-      points: finalPoints,
-      badge: finalBadge,
-      eliminated: false,
-      guess,
-      countryCorrect: countryCorrect || territoryCorrect
-    };
-  });
+  const evaluated = contenders.map((player): RoundResult =>
+    evaluatePlayerGuess(player.id, location, guessesByPlayer.get(player.id) ?? null)
+  );
 
   const nextPlayers = room.players.map((player) => {
     const result = evaluated.find((item) => item.playerId === player.id);
@@ -490,6 +464,7 @@ function createInitialRoom(playerId: string, playerName: string, mode: InitialLo
       status: "lobby",
       settings: {
         ...defaultSettings,
+        ...readStoredSetupSettings(defaultSettings),
         localMode: "solo",
         localPlayerCount: 1
       },
@@ -518,6 +493,7 @@ function createInitialRoom(playerId: string, playerName: string, mode: InitialLo
     status: "lobby",
     settings: {
       ...defaultSettings,
+      ...readStoredSetupSettings(defaultSettings),
       localMode: normalizedLocalMode,
       localPlayerCount: normalizedLocalMode === "couch" ? 2 : 1
     },
@@ -539,20 +515,32 @@ function createInitialRoom(playerId: string, playerName: string, mode: InitialLo
 export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSession = false) {
   const [playerId] = useState("local_host");
   const [room, setRoom] = useState<RoomState | null>(() => (initialMode ? createInitialRoom("local_host", "Geo-Gast", initialMode) : null));
+  const [restoring, setRestoring] = useState(Boolean(initialMode || restoreStoredSession));
   const [error, setError] = useState<string | null>(null);
   const [recentLocationIds, setRecentLocationIds] = useState<string[]>([]);
+  const locationsRef = useRef<GeoLocation[]>([]);
   const locationQueueRef = useRef<string[]>([]);
-  const queueCategoryRef = useRef<GameSettings["category"] | null>(null);
+  const queueCategoryRef = useRef<string | null>(null);
   const lastLocationIdRef = useRef<string | null>(null);
   const isRestoringHistoryRef = useRef(false);
   const previousRoomRef = useRef<RoomState | null>(null);
+  const roomRef = useRef<RoomState | null>(room);
+  roomRef.current = room;
+
+  const ensureLocationCatalog = useCallback(async () => {
+    if (locationsRef.current.length === 0) locationsRef.current = await loadLocationCatalog();
+    return locationsRef.current;
+  }, []);
 
   const drawLocation = useCallback(
     (settings: GameSettings, forcedRecentIds = recentLocationIds) => {
+      const locations = locationsRef.current;
+      if (locations.length === 0) return null;
       const avoidIds = uniqueIds([...forcedRecentIds, ...readStoredRecentLocationIds()]);
-      if (queueCategoryRef.current !== settings.category || locationQueueRef.current.length === 0) {
-        locationQueueRef.current = shuffledLocationIds(settings.category, avoidIds, lastLocationIdRef.current);
-        queueCategoryRef.current = settings.category;
+      const queueSettingsKey = `${settings.category}:${settings.difficulty}`;
+      if (queueCategoryRef.current !== queueSettingsKey || locationQueueRef.current.length === 0) {
+        locationQueueRef.current = shuffledLocationIds(locations, settings.category, settings.difficulty, settings.rounds, avoidIds, lastLocationIdRef.current);
+        queueCategoryRef.current = queueSettingsKey;
       }
 
       if (locationQueueRef.current.length > 1 && locationQueueRef.current[0] === lastLocationIdRef.current) {
@@ -560,12 +548,38 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
         [locationQueueRef.current[0], locationQueueRef.current[swapIndex]] = [locationQueueRef.current[swapIndex], locationQueueRef.current[0]];
       }
 
-      const nextId = locationQueueRef.current.shift() ?? builtInLocations[0].id;
+      const nextId = locationQueueRef.current.shift() ?? locations[0].id;
       lastLocationIdRef.current = nextId;
-      return builtInLocations.find((location) => location.id === nextId) ?? builtInLocations[0];
+      return locations.find((location) => location.id === nextId) ?? locations[0];
     },
     [recentLocationIds]
   );
+
+  // Build the first package while the player is still in the setup screen and
+  // warm exactly one upcoming Wikimedia thumbnail. Subsequent rounds warm the
+  // next queue entry while the current image is already being played.
+  useEffect(() => {
+    if (!room || (room.status !== "lobby" && room.status !== "guessing" && room.status !== "results")) return;
+    const timer = window.setTimeout(async () => {
+      const locations = await ensureLocationCatalog();
+      const queueSettingsKey = `${room.settings.category}:${room.settings.difficulty}`;
+      if (queueCategoryRef.current !== queueSettingsKey || locationQueueRef.current.length === 0) {
+        const usedInThisGame = room.summaries.map((summary) => summary.location.id);
+        locationQueueRef.current = shuffledLocationIds(
+          locations,
+          room.settings.category,
+          room.settings.difficulty,
+          room.settings.rounds,
+          uniqueIds([...recentLocationIds, ...usedInThisGame]),
+          lastLocationIdRef.current
+        );
+        queueCategoryRef.current = queueSettingsKey;
+      }
+      const nextLocation = locations.find((location) => location.id === locationQueueRef.current[0]);
+      if (nextLocation) prefetchLocationImage(nextLocation);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [ensureLocationCatalog, recentLocationIds, room?.currentRound, room?.location?.id, room?.settings.category, room?.settings.difficulty, room?.settings.rounds, room?.status]);
 
   useEffect(() => {
     if (consumeSessionResetFlag()) {
@@ -574,24 +588,32 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       previousRoomRef.current = null;
       setRoom(null);
       setRecentLocationIds(readStoredRecentLocationIds());
+      setRestoring(false);
       return;
     }
 
     if (initialMode) {
       const storedSession = readStoredSession(playerId);
       const returningFromLegalPage = consumeLegalReturn(window.location.pathname);
-      if (returningFromLegalPage && storedSession && storedRoomMatchesInitialMode(storedSession.room, initialMode)) {
+      const canRestoreRouteSession = storedSession
+        && storedRoomMatchesInitialMode(storedSession.room, initialMode)
+        && (returningFromLegalPage || restoreStoredSession || storedSession.room.status !== "lobby");
+      if (canRestoreRouteSession) {
         locationQueueRef.current = storedSession.locationQueue;
         queueCategoryRef.current = storedSession.queueCategory;
         lastLocationIdRef.current = storedSession.lastLocationId ?? storedSession.room.location?.id ?? null;
         previousRoomRef.current = storedSession.room;
         setRecentLocationIds(storedSession.recentLocationIds.length ? storedSession.recentLocationIds : readStoredRecentLocationIds());
-        setRoom(storedSession.room);
+        setRoom(pauseGuessingRoomUntilImageReady(storedSession.room));
+        setRestoring(false);
         return;
       }
       clearStoredSession();
-      previousRoomRef.current = room;
+      const clientInitialRoom = createInitialRoom(playerId, "Geo-Gast", initialMode);
+      previousRoomRef.current = clientInitialRoom;
+      setRoom(clientInitialRoom);
       setRecentLocationIds(readStoredRecentLocationIds());
+      setRestoring(false);
       return;
     }
 
@@ -599,9 +621,10 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
     const storedSession = readStoredSession(playerId);
     if (browserState?.room) {
       previousRoomRef.current = browserState.room;
-      setRoom(browserState.room);
+      setRoom(pauseGuessingRoomUntilImageReady(browserState.room));
       lastLocationIdRef.current = browserState.room.location?.id ?? browserState.room.summaries.at(-1)?.location.id ?? null;
       setRecentLocationIds(readStoredRecentLocationIds());
+      setRestoring(false);
       return;
     }
 
@@ -610,7 +633,8 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       queueCategoryRef.current = storedSession.queueCategory;
       lastLocationIdRef.current = storedSession.lastLocationId ?? storedSession.room.location?.id ?? null;
       setRecentLocationIds(storedSession.recentLocationIds.length ? storedSession.recentLocationIds : readStoredRecentLocationIds());
-      setRoom(storedSession.room);
+      setRoom(pauseGuessingRoomUntilImageReady(storedSession.room));
+      setRestoring(false);
       return;
     }
 
@@ -618,11 +642,13 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       previousRoomRef.current = null;
       setRoom(null);
       setRecentLocationIds(readStoredRecentLocationIds());
+      setRestoring(false);
       return;
     }
 
     writeBrowserHistoryState(null, "replace");
     setRecentLocationIds(readStoredRecentLocationIds());
+    setRestoring(false);
   }, []);
 
   useEffect(() => {
@@ -691,21 +717,10 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       return;
     }
 
-    const previousStatus = previousRoom?.status ?? null;
-    const nextStatus = room?.status ?? null;
-    const previousMode = previousRoom?.settings.localMode ?? null;
-    const nextMode = room?.settings.localMode ?? null;
-    const previousRound = previousRoom?.currentRound ?? null;
-    const nextRound = room?.currentRound ?? null;
-
-    const shouldPush =
-      (!previousRoom && !!room) ||
-      (!!previousRoom && !room) ||
-      previousStatus !== nextStatus ||
-      previousMode !== nextMode ||
-      previousRound !== nextRound;
-
-    writeBrowserHistoryState(room, shouldPush ? "push" : "replace");
+    // Game state belongs to the current route. Pushing one browser-history entry
+    // per lobby/round/status change made Back restore an older running timer
+    // instead of leaving the game page.
+    writeBrowserHistoryState(room, "replace");
     previousRoomRef.current = room;
   }, [room]);
 
@@ -725,6 +740,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       status: "lobby",
       settings: {
         ...defaultSettings,
+        ...readStoredSetupSettings(defaultSettings),
         localMode: normalizedLocalMode,
         localPlayerCount: normalizedLocalMode === "couch" ? 2 : 1
       },
@@ -760,6 +776,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       status: "lobby",
       settings: {
         ...defaultSettings,
+        ...readStoredSetupSettings(defaultSettings),
         localMode: "solo",
         localPlayerCount: 1
       },
@@ -793,6 +810,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       };
       if (nextSettings.localMode === "couch" && nextSettings.localPlayerCount < 2) nextSettings.localPlayerCount = 2;
       if (nextSettings.localMode === "solo") nextSettings.localPlayerCount = 1;
+      writeStoredSetupSettings(nextSettings);
       return syncLocalPlayers({ ...current, settings: nextSettings });
     });
   }, []);
@@ -818,32 +836,55 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
     });
   }, []);
 
-  const startRound = useCallback(() => {
-    setRoom((current) => {
-      if (!current || current.status === "guessing") return current;
-      if (current.currentRound >= current.settings.rounds) return { ...current, status: "finished" };
+  const startRound = useCallback(async () => {
+    const current = roomRef.current;
+    if (!current || current.status === "guessing") return;
+    if (current.currentRound >= current.settings.rounds) {
+      setRoom((value) => value ? { ...value, status: "finished" } : value);
+      return;
+    }
 
-      const usedInThisGame = current.summaries.map((summary) => summary.location.id);
-      const location = drawLocation(current.settings, uniqueIds([...recentLocationIds, ...usedInThisGame]));
-      const roundStartedAt = Date.now();
-      setRecentLocationIds((ids) => rememberLocationId(location.id, ids));
+    setError(null);
+    await ensureLocationCatalog();
+    const usedInThisGame = current.summaries.map((summary) => summary.location.id);
+    const attemptedIds: string[] = [];
+    let location: GeoLocation | null = null;
+    for (let attempt = 0; attempt < 4 && !location; attempt += 1) {
+      const candidate = drawLocation(
+        current.settings,
+        uniqueIds([...recentLocationIds, ...usedInThisGame, ...attemptedIds])
+      );
+      if (!candidate) break;
+      attemptedIds.push(candidate.id);
+      location = await prepareLocationImage(candidate);
+    }
 
-      return {
-        ...current,
-        currentRound: current.currentRound + 1,
+    if (!location) {
+      setError("Die Bilder sind gerade nicht erreichbar. Bitte versuche es noch einmal.");
+      return;
+    }
+
+    setRecentLocationIds((ids) => rememberLocationId(location!.id, ids));
+    setRoom((latest) => {
+      if (!latest || latest.status === "guessing" || latest.currentRound !== current.currentRound) return latest;
+      const nextRoom: RoomState = {
+        ...latest,
+        currentRound: latest.currentRound + 1,
         status: "guessing",
         location,
         guesses: [],
         timedOutPlayerIds: [],
         emojiEvents: [],
-        roundEndsAt: turnEndFrom(roundStartedAt, current.settings),
-        roundStartedAt,
+        roundEndsAt: null,
+        roundStartedAt: null,
         adGateUntil: null,
         nextRoundReadyPlayerIds: [],
         nextRoundStartsAt: null
       };
+      roomRef.current = nextRoom;
+      return nextRoom;
     });
-  }, [drawLocation]);
+  }, [drawLocation, ensureLocationCatalog, recentLocationIds]);
 
   const submitGuess = useCallback((guess: LatLng & { countryCode?: string }, targetPlayerId?: string) => {
     setRoom((current) => {
@@ -904,8 +945,15 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
         ? [current.location.id, ...recentLocationIds.filter((item) => item !== current.location?.id)].slice(0, recentLocationLimit)
         : recentLocationIds;
       locationQueueRef.current = locationQueueRef.current.filter((id) => id !== current.location?.id);
-      const location = drawLocation(current.settings, nextRecent);
-      const roundStartedAt = Date.now();
+      let location = drawLocation(current.settings, nextRecent);
+      if (!location) {
+        void ensureLocationCatalog();
+        return current;
+      }
+      if (location.id === current.location?.id) {
+        location = drawLocation(current.settings, uniqueIds([...nextRecent, location.id]));
+        if (!location) return current;
+      }
       setRecentLocationIds((ids) => rememberLocationId(location.id, uniqueIds([...nextRecent, ...ids])));
       return {
         ...current,
@@ -913,11 +961,25 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
         guesses: [],
         timedOutPlayerIds: [],
         emojiEvents: [],
+        roundEndsAt: null,
+        roundStartedAt: null
+      };
+    });
+  }, [drawLocation, ensureLocationCatalog, recentLocationIds]);
+
+  const markLocationReady = useCallback((locationId: string, ready: boolean) => {
+    setRoom((current) => {
+      if (!current || current.status !== "guessing" || current.location?.id !== locationId) return current;
+      if (!ready) return current.roundEndsAt || current.roundStartedAt ? { ...current, roundEndsAt: null, roundStartedAt: null } : current;
+      if (current.roundEndsAt) return current;
+      const roundStartedAt = Date.now();
+      return {
+        ...current,
         roundEndsAt: turnEndFrom(roundStartedAt, current.settings),
         roundStartedAt
       };
     });
-  }, [drawLocation, recentLocationIds]);
+  }, []);
 
   const restart = useCallback(() => {
     const persistedRecentIds = readStoredRecentLocationIds();
@@ -959,6 +1021,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
     () => ({
       playerId,
       room,
+      restoring,
       error,
       status: "open" as const,
       isHost: Boolean(room),
@@ -972,6 +1035,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       submitGuess,
       cancelRound,
       skipLocation,
+      markLocationReady,
       restart,
       readyNextRound: () => undefined,
       leaveRoom,
@@ -979,6 +1043,6 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       setTeam,
       unlockCosmetic
     }),
-    [cancelRound, createOnlineSetup, createSolo, error, leaveRoom, playerId, renamePlayer, restart, room, setTeam, skipLocation, startRound, submitGuess, unlockCosmetic, updateHostParticipation, updateSettings]
+    [cancelRound, createOnlineSetup, createSolo, error, leaveRoom, markLocationReady, playerId, renamePlayer, restart, restoring, room, setTeam, skipLocation, startRound, submitGuess, unlockCosmetic, updateHostParticipation, updateSettings]
   );
 }

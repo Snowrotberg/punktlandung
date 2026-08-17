@@ -10,11 +10,11 @@ export function PublicBetaBadge({ compact = false, className = "" }: PublicBetaB
     <Link
       href="/feedback"
       className={`punktlandung-beta-badge ${compact ? "punktlandung-beta-badge--compact" : ""} ${className}`.trim()}
-      aria-label="Öffentliche Beta: Feedback zu Punktlandung geben"
-      title="Feedback zur öffentlichen Beta geben"
+      aria-label="Punktlandung Web-Version"
+      title="Punktlandung im Browser"
     >
       <span className="punktlandung-beta-badge-dot" aria-hidden="true" />
-      <span className="punktlandung-beta-badge-label">Öffentliche Beta</span>
+      <span className="punktlandung-beta-badge-label">Web-Version</span>
     </Link>
   );
 }

@@ -1,0 +1,9 @@
+[Unit]
+Description=Verify Punktlandung release integrity
+
+[Service]
+Type=oneshot
+WorkingDirectory=/var/www/punktlandung/current
+ExecStart=/usr/bin/node scripts/verify-integrity-manifest.mjs
+StandardOutput=append:/var/log/punktlandung/security-integrity.log
+StandardError=append:/var/log/punktlandung/security-integrity.log

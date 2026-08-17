@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /accounts/{accountId} {
+      allow read, write: if false;
+    }
+
+    match /authBindings/{bindingId} {
+      allow read, write: if false;
+    }
+
+    match /loginIdentities/{identityId} {
+      allow read, write: if false;
+    }
+
+    match /profiles/{accountId} {
+      // Public and own projections are returned by the provider-neutral API so
+      // document IDs cannot expose internal account IDs.
+      allow read, write: if false;
+    }
+
+    match /handleClaims/{normalizedHandle} {
+      allow read, write: if false;
+    }
+
+    // Admin SDK / trusted backend bypasses these rules. Browsers cannot create,
+    // score, complete, claim or invalidate authoritative games directly.
+    match /rankedGames/{gameId} {
+      allow read, write: if false;
+    }
+
+    match /leaderboards/{scope}/entries/{accountId} {
+      allow read, write: if false;
+    }
+
+    match /moderationEvents/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /accountDeletionJobs/{deletionRequestId} {
+      allow read, write: if false;
+    }
+  }
+}

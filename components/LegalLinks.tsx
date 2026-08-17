@@ -10,13 +10,14 @@ type LegalLinksProps = {
   includeInfos?: boolean;
   align?: "start" | "center" | "end";
   preserveSession?: boolean;
+  layout?: "default" | "grouped";
 };
 
 const links = [
+  { href: "/faq", label: "Hilfe" },
+  { href: "/infos", label: "Infos" },
   { href: "/feedback", label: "Feedback" },
-  { href: "/impressum", label: "Impressum" },
-  { href: "/datenschutz", label: "Datenschutz" },
-  { href: "/lizenzen", label: "Lizenzen" }
+  { href: "/datenschutz", label: "Datenschutz" }
 ];
 
 const alignmentClasses = {
@@ -25,29 +26,63 @@ const alignmentClasses = {
   end: "justify-end text-right"
 };
 
-export function LegalLinks({ className = "", includeInfos = true, align = "start", preserveSession = false }: LegalLinksProps) {
+export function LegalLinks({ className = "", includeInfos = true, align = "start", preserveSession = false, layout = "default" }: LegalLinksProps) {
   const pathname = usePathname();
   const rememberReturn = (event: MouseEvent<HTMLAnchorElement>) => {
     if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     if (preserveSession && pathname) rememberLegalReturn(pathname);
   };
 
+  const visibleLinks = links.filter((link) => includeInfos || link.href !== "/infos");
+
+  if (layout === "grouped") {
+    return (
+      <nav
+        aria-label="Hilfe und rechtliche Informationen"
+        data-layout="grouped"
+        className={`min-w-0 text-[11px] font-bold text-slate-500 ${className}`}
+      >
+        <div data-link-group="support">
+          <span data-group-label>Hilfe &amp; Infos</span>
+          <div>
+            {visibleLinks.filter((link) => link.href !== "/datenschutz").map((link) => (
+              <a key={link.href} href={link.href} onClick={rememberReturn}>{link.label}</a>
+            ))}
+          </div>
+        </div>
+        <div data-link-group="legal">
+          <span data-group-label>Rechtliches</span>
+          <div>
+            <a href="/datenschutz" onClick={rememberReturn}>Datenschutz</a>
+            <CookieSettingsButton className="font-bold text-inherit" />
+            <a href="/impressum" onClick={rememberReturn}>Impressum</a>
+            <a href="/lizenzen" onClick={rememberReturn}>Lizenzen</a>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <nav
-      aria-label="Rechtliche Informationen"
-      className={`flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold text-slate-500 ${alignmentClasses[align]} ${className}`}
+      aria-label="Hilfe und rechtliche Informationen"
+      className={`punktlandung-legal-links flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold text-slate-500 ${alignmentClasses[align]} ${className}`}
     >
-      {includeInfos && (
-        <a href="/infos" onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">
-          Infos
+      {visibleLinks[0] ? (
+        <a href={visibleLinks[0].href} onClick={rememberReturn} className="punktlandung-legal-links-help transition hover:text-emerald-300 focus-visible:text-emerald-300">
+          {visibleLinks[0].label}
         </a>
-      )}
-      {links.map((link) => (
-        <a key={link.href} href={link.href} onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">
-          {link.label}
-        </a>
-      ))}
-      <CookieSettingsButton className="p-0 font-bold text-inherit transition hover:text-emerald-300 focus-visible:text-emerald-300" />
+      ) : null}
+      <span className="punktlandung-legal-links-rest">
+        {visibleLinks.slice(1).map((link) => (
+          <a key={link.href} href={link.href} onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">
+            {link.label}
+          </a>
+        ))}
+        <CookieSettingsButton className="p-0 font-bold text-inherit transition hover:text-emerald-300 focus-visible:text-emerald-300" />
+        <a href="/impressum" onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">Impressum</a>
+        <a href="/lizenzen" onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">Lizenzen</a>
+      </span>
     </nav>
   );
 }

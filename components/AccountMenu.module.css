@@ -1,0 +1,37 @@
+.menu { position: relative; }
+.menu::after { position: absolute; top: 100%; right: 0; width: 100%; height: .65rem; content: ""; }
+.icon { align-items: center; background: var(--pl-button-surface, #162236); border: 1px solid transparent; border-radius: 999px; color: #f7fafc; display: inline-flex; height: 2.5rem; justify-content: center; text-decoration: none; width: 2.5rem; cursor: pointer; }
+.icon:hover, .icon:focus-visible { border-color: var(--pl-mint, #5ee7bd); background: color-mix(in srgb, var(--pl-button-surface, #162236) 88%, var(--pl-mint, #5ee7bd) 12%); outline: none; }
+.icon svg { height: 1.15rem; width: 1.15rem; }
+.dropdown { background: #0a101c; border: 1px solid #26354a; border-radius: .9rem; box-shadow: 0 .9rem 2.4rem rgb(0 0 0 / .4); display: grid; gap: .2rem; min-width: 12rem; opacity: 0; padding: .55rem; pointer-events: none; position: absolute; right: 0; top: calc(100% + .6rem); transform: translateY(-.25rem); transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease; visibility: hidden; z-index: 80; }
+.menu:hover .dropdown, .menu:focus-within .dropdown { opacity: 1; pointer-events: auto; transform: translateY(0); visibility: visible; }
+.dropdown a { border-radius: .55rem; color: #dbe5f2; font-size: .82rem; font-weight: 700; padding: .6rem .7rem; text-decoration: none; }
+.dropdown a:hover, .dropdown a:focus-visible { background: #162236; color: #fff; outline: none; }
+.label { color: #5ee7bd; font-size: .67rem; font-weight: 900; letter-spacing: .16em; margin: .25rem .7rem .35rem; text-transform: uppercase; }
+.play { border-top: 1px solid #26354a; margin-top: .25rem; padding-top: .7rem !important; }
+.logout { background: transparent; border: 0; border-top: 1px solid #26354a; color: #fda4af; cursor: pointer; font: inherit; font-size: .82rem; font-weight: 700; margin-top: .25rem; padding: .7rem; text-align: left; width: 100%; }
+.logout:hover, .logout:focus-visible { color: #fecdd3; outline: none; }
+
+@media (min-width: 150rem) {
+  .icon {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .icon svg {
+    width: 1.65rem;
+    height: 1.65rem;
+  }
+}
+
+@media (max-width: 30rem) {
+  .icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .icon svg {
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+}

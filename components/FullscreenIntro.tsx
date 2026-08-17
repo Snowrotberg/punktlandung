@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { playerColorAt } from "@/lib/playerPalette";
 import styles from "./FullscreenIntro.module.css";
 
 export const INTRO_SESSION_KEY = "punktlandung-fullscreen-intro-v3";
@@ -229,7 +230,7 @@ export function FullscreenIntro() {
           {showTarget && (
             <span
               className={`punktlandung-map-pin punktlandung-map-pin-player ${styles.mapPin}`}
-              style={{ "--pin-color": "#f43f5e" } as CSSProperties}
+              style={{ "--pin-color": playerColorAt(0) } as CSSProperties}
             ><span /></span>
           )}
         </span>

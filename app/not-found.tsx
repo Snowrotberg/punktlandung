@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RedesignButtonLink, RedesignRoot } from "@/components/redesign/RedesignPrimitives";
 
 function BrandPin({ className, color }: { className?: string; color: string }) {
   return (
@@ -18,17 +18,18 @@ function BrandPin({ className, color }: { className?: string; color: string }) {
 
 export default function NotFound() {
   return (
+    <RedesignRoot>
     <main className="relative min-h-screen overflow-x-hidden bg-slate-950 px-3 py-4 text-slate-50 sm:px-6 sm:py-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_18%,rgba(244,63,94,0.14),transparent_28rem),radial-gradient(circle_at_82%_32%,rgba(99,102,241,0.18),transparent_30rem)]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(148,163,184,0.055)_1px,transparent_1px),linear-gradient(0deg,rgba(148,163,184,0.055)_1px,transparent_1px)] bg-[size:56px_56px]" />
 
       <section className="relative mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-7xl items-center justify-center sm:min-h-[calc(100vh-3rem)]">
-        <div className="arcade-panel relative w-full max-w-[76rem] overflow-hidden rounded-md p-5 sm:p-8 lg:p-10">
+        <div className="arcade-panel relative w-full max-w-[76rem] overflow-hidden rounded-3xl p-5 sm:p-8 lg:p-10">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_12%,rgba(244,63,94,0.14),transparent_22rem),radial-gradient(circle_at_88%_18%,rgba(99,102,241,0.18),transparent_24rem)]" />
 
           <div className="relative">
-            <div className="grid items-center justify-items-center gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.18fr)_auto_minmax(0,0.82fr)] lg:gap-8 xl:gap-10">
-              <div className="flex min-w-0 max-w-full flex-col items-center gap-2 text-center sm:flex-row sm:gap-3 lg:justify-self-end lg:text-left">
+            <div className="flex flex-col items-center justify-center gap-5 sm:gap-6 lg:flex-row lg:gap-8 xl:gap-10">
+              <div className="flex min-w-0 max-w-full flex-col items-center gap-2 text-center sm:flex-row sm:gap-3 lg:text-left">
                 <h1 className="max-w-full text-[clamp(2.4rem,11vw,4.6rem)] font-black leading-none text-white lg:text-[clamp(3.4rem,4.8vw,5.4rem)]">
                   Bruchlandung
                 </h1>
@@ -38,9 +39,7 @@ export default function NotFound() {
                 />
               </div>
 
-              <div className="h-px w-full max-w-xs bg-rose-200/45 shadow-[0_0_16px_rgba(251,113,133,0.35)] lg:h-24 lg:w-px lg:max-w-none" />
-
-              <div className="flex min-w-0 flex-col items-center text-center lg:items-start lg:justify-self-start lg:text-left">
+              <div className="flex min-w-0 flex-col items-center text-center lg:items-start lg:text-left">
                 <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-4 lg:gap-5">
                   <p className="text-[clamp(4rem,16vw,6rem)] font-black leading-none text-white lg:text-[clamp(4.4rem,6vw,6.3rem)]">
                     404
@@ -53,17 +52,18 @@ export default function NotFound() {
             </div>
 
             <div className="mt-6 flex justify-center sm:mt-8">
-              <Link
+              <RedesignButtonLink
                 href="/"
-                className="punktlandung-interactive-surface group relative inline-flex min-h-12 w-full max-w-xs items-center justify-center overflow-hidden rounded-md border-2 border-emerald-400/80 bg-slate-950/65 px-5 py-3 text-base font-black text-white shadow-[0_0_24px_rgba(52,211,153,0.18)] transition hover:border-emerald-300 hover:bg-emerald-400/12 sm:w-auto"
+                tone="primary"
+                className="min-h-12 w-full max-w-xs px-5 text-base sm:w-auto"
               >
-                <span className="absolute left-0 top-1/2 h-8 w-1.5 -translate-y-1/2 rounded-r-full bg-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.85)] transition group-hover:h-10" />
-                <span className="relative">Zur Startseite</span>
-              </Link>
+                Zur Startseite
+              </RedesignButtonLink>
             </div>
           </div>
         </div>
       </section>
     </main>
+    </RedesignRoot>
   );
 }

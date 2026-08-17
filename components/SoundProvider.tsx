@@ -38,8 +38,15 @@ function initialEnabled(): boolean {
 }
 
 export function SoundProvider({ children }: { children: ReactNode }) {
-  const [enabled, setEnabledState] = useState(initialEnabled);
+  // Keep the server and first client render identical. The persisted setting
+  // is applied after hydration so localStorage cannot replace the tree during
+  // hydration and trigger a full client-side remount.
+  const [enabled, setEnabledState] = useState(true);
   const audioRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    setEnabledState(initialEnabled());
+  }, []);
 
   const getAudio = useCallback(() => {
     if (typeof window === "undefined" || !enabled) return null;

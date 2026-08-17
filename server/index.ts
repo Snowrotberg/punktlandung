@@ -2,9 +2,11 @@ import { createServer } from "node:http";
 import { randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { WebSocket, WebSocketServer } from "ws";
 import { recordUsageEvent, type UsageEventName, type UsageEvent } from "../lib/usageMetrics.server";
-import { builtInLocations } from "../data/locations";
-import { averageGuess, badgeFor, countryCodeFromGuess, haversineDistanceKm, isGuessInCountry, scoreDistance } from "../lib/geo";
-import { evaluateTerritoryGuess } from "../lib/locationBoundaries";
+import { builtInLocations, prioritizeCatalogImages } from "../data/locations";
+import { averageGuess, countryCodeFromGuess, haversineDistanceKm, scoreDistance } from "../lib/geo";
+import { filterLocationsByDifficulty } from "../lib/locationDifficulty";
+import { PLAYER_PALETTE } from "../lib/playerPalette";
+import { evaluatePlayerGuess } from "../lib/roundEvaluation";
 import type {
   ClientMessage,
   Cosmetic,
@@ -40,6 +42,17 @@ type InternalRoom = RoomState & {
   createdAt: number;
   lastActivityAt: number;
   resumeTokens: Map<string, string>;
+  nextRoundPromptToken: string | null;
+  nextRoundPromptLocationId: string | null;
+  activePromptToken: string | null;
+};
+
+type PromptAsset = {
+  roomCode: string;
+  locationId: string;
+  sourceUrl: string;
+  expiresAt: number;
+  responsePromise?: Promise<{ bytes: ArrayBuffer; contentType: string } | null>;
 };
 
 function boundedEnvInteger(name: string, fallback: number, min: number, max: number): number {
@@ -64,8 +77,12 @@ const NEXT_ROUND_COUNTDOWN_MS = 30_000;
 const RECENT_ROOM_LOCATION_LIMIT = 300;
 const RECENT_GLOBAL_LOCATION_LIMIT = 200;
 const FAILED_LOCATION_LIMIT = 80;
+const PROMPT_ASSET_TTL_MS = 10 * 60 * 1000;
+const PROMPT_FETCH_TIMEOUT_MS = 8_000;
+const PROMPT_MAX_BYTES = 18 * 1024 * 1024;
 const clients = new Map<string, Client>();
 const rooms = new Map<string, InternalRoom>();
+const promptAssets = new Map<string, PromptAsset>();
 let lastGlobalLocationId: string | null = null;
 let recentGlobalLocationIds: string[] = [];
 let connectionCapacityWarningActive = false;
@@ -97,10 +114,11 @@ const defaultSettings: GameSettings = {
   noPan: false,
   noZoom: false,
   mapPackId: "world-party",
-  category: "mixed"
+  category: "mixed",
+  difficulty: "easy"
 };
 
-const playerColors = ["#2563eb", "#f43f5e", "#f59e0b", "#06b6d4", "#7c3aed", "#f97316", "#ec4899", "#eab308", "#0ea5e9", "#dc2626"];
+const playerColors = PLAYER_PALETTE;
 
 function id(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
@@ -154,6 +172,9 @@ function makePlayer(clientId: string, name: string, isHost: boolean, index: numb
 }
 
 function publicRoom(room: InternalRoom): RoomState {
+  const activeLocation = room.location && room.activePromptToken
+    ? { ...room.location, deliveryUrl: `/api/online-prompt/${room.activePromptToken}` }
+    : room.location;
   return {
     code: room.code,
     kind: room.kind,
@@ -164,7 +185,7 @@ function publicRoom(room: InternalRoom): RoomState {
     settings: room.settings,
     players: room.players,
     currentRound: room.currentRound,
-    location: room.status === "lobby" || room.status === "finished" ? null : room.location,
+    location: room.status === "lobby" || room.status === "finished" ? null : activeLocation,
     guesses: room.status === "results" ? room.guesses : room.guesses.map((guess) => ({ ...guess, lat: 0, lng: 0 })),
     timedOutPlayerIds: room.timedOutPlayerIds,
     roundEndsAt: room.roundEndsAt,
@@ -173,7 +194,10 @@ function publicRoom(room: InternalRoom): RoomState {
     emojiEvents: room.emojiEvents.slice(-30),
     adGateUntil: room.adGateUntil,
     nextRoundReadyPlayerIds: room.nextRoundReadyPlayerIds,
-    nextRoundStartsAt: room.nextRoundStartsAt
+    nextRoundStartsAt: room.nextRoundStartsAt,
+    nextRoundPreviewUrl: room.status === "results" && room.nextRoundPromptToken
+      ? `/api/online-prompt/${room.nextRoundPromptToken}`
+      : null
   };
 }
 
@@ -245,16 +269,22 @@ function requireHost(client: Client, room: InternalRoom): boolean {
   return true;
 }
 
-function shuffledLocationIds(category: GameSettings["category"], blockedIds: string[] = [], avoidIds: string[] = []): string[] {
+function shuffledLocationIds(
+  category: GameSettings["category"],
+  difficulty: GameSettings["difficulty"],
+  blockedIds: string[] = [],
+  avoidIds: string[] = []
+): string[] {
   const pool = category === "mixed" ? builtInLocations : builtInLocations.filter((location) => location.category === category);
-  const sourceBase = pool.length > 0 ? pool : builtInLocations;
+  const categoryPool = pool.length > 0 ? pool : builtInLocations;
+  const sourceBase = filterLocationsByDifficulty(categoryPool, difficulty);
   const blocked = new Set(blockedIds);
   const avoided = new Set(avoidIds);
   const available = sourceBase.filter((location) => !blocked.has(location.id));
   const notRecentlyUsed = available.filter((location) => !avoided.has(location.id));
   const source = notRecentlyUsed.length > 0 ? notRecentlyUsed : available.length > 0 ? available : sourceBase;
   const globallyFresh = source.filter((location) => !recentGlobalLocationIds.includes(location.id));
-  const ids = (globallyFresh.length > 0 ? globallyFresh : source).map((location) => location.id);
+  const ids = prioritizeCatalogImages(globallyFresh.length > 0 ? globallyFresh : source).map((location) => location.id);
   for (let index = ids.length - 1; index > 0; index -= 1) {
     const swapIndex = randomInt(index + 1);
     [ids[index], ids[swapIndex]] = [ids[swapIndex], ids[index]];
@@ -266,10 +296,14 @@ function shuffledLocationIds(category: GameSettings["category"], blockedIds: str
   return ids;
 }
 
-function nextLocation(room: InternalRoom) {
+function ensureLocationQueue(room: InternalRoom): void {
   if (room.locationQueue.length === 0) {
-    room.locationQueue = shuffledLocationIds(room.settings.category, room.failedLocationIds, room.recentLocationIds);
+    room.locationQueue = shuffledLocationIds(room.settings.category, room.settings.difficulty, room.failedLocationIds, room.recentLocationIds);
   }
+}
+
+function nextLocation(room: InternalRoom) {
+  ensureLocationQueue(room);
   if (room.location && room.locationQueue.length > 1 && room.locationQueue[0] === room.location.id) {
     const swapIndex = 1 + randomInt(room.locationQueue.length - 1);
     [room.locationQueue[0], room.locationQueue[swapIndex]] = [room.locationQueue[swapIndex], room.locationQueue[0]];
@@ -279,6 +313,22 @@ function nextLocation(room: InternalRoom) {
   recentGlobalLocationIds = [nextId, ...recentGlobalLocationIds.filter((id) => id !== nextId)].slice(0, RECENT_GLOBAL_LOCATION_LIMIT);
   room.recentLocationIds = [nextId, ...room.recentLocationIds.filter((id) => id !== nextId)].slice(0, RECENT_ROOM_LOCATION_LIMIT);
   return builtInLocations.find((location) => location.id === nextId) ?? builtInLocations[0];
+}
+
+function prepareNextRoundPrompt(room: InternalRoom): void {
+  if (room.kind !== "online" || room.status !== "results" || room.currentRound >= room.settings.rounds) return;
+  ensureLocationQueue(room);
+  const location = builtInLocations.find((candidate) => candidate.id === room.locationQueue[0]);
+  if (!location) return;
+  const token = randomBytes(24).toString("base64url");
+  promptAssets.set(token, {
+    roomCode: room.code,
+    locationId: location.id,
+    sourceUrl: location.panoramaUrl,
+    expiresAt: Date.now() + PROMPT_ASSET_TTL_MS
+  });
+  room.nextRoundPromptToken = token;
+  room.nextRoundPromptLocationId = location.id;
 }
 
 function activePlayers(room: InternalRoom): Player[] {
@@ -359,7 +409,10 @@ function createRoom(client: Client, playerName: string | undefined, kind: RoomKi
     duelHp: { aurora: 20000, pulse: 20000 },
     createdAt: Date.now(),
     lastActivityAt: Date.now(),
-    resumeTokens: new Map([[client.id, client.resumeToken]])
+    resumeTokens: new Map([[client.id, client.resumeToken]]),
+    nextRoundPromptToken: null,
+    nextRoundPromptLocationId: null,
+    activePromptToken: null
   };
   syncLocalPlayers(room);
   rooms.set(code, room);
@@ -518,14 +571,18 @@ function startRound(client: Client, room: InternalRoom): void {
 
 function startRoundNow(room: InternalRoom): void {
   room.currentRound += 1;
-  const roundStartedAt = Date.now();
   room.status = "guessing";
   room.location = nextLocation(room);
+  room.activePromptToken = room.nextRoundPromptLocationId === room.location.id ? room.nextRoundPromptToken : null;
+  room.nextRoundPromptToken = null;
+  room.nextRoundPromptLocationId = null;
   room.guesses = [];
   room.timedOutPlayerIds = [];
   room.emojiEvents = [];
-  room.roundEndsAt = room.settings.timeLimitSec > 0 ? roundStartedAt + room.settings.timeLimitSec * 1000 : null;
-  room.roundStartedAt = roundStartedAt;
+  // The host starts the clock with image_ready only after the prompt has
+  // actually loaded. Slow Wikimedia responses must not consume guessing time.
+  room.roundEndsAt = null;
+  room.roundStartedAt = null;
   room.adGateUntil = null;
   resetNextRoundGate(room);
   broadcast(room);
@@ -544,8 +601,7 @@ function readyNextRound(client: Client, room: InternalRoom): void {
 }
 
 function skipLocation(client: Client, room: InternalRoom, locationId?: string): void {
-  const player = room.players.find((candidate) => candidate.id === client.id);
-  if (!player || room.status !== "guessing") return;
+  if (!requireHost(client, room) || room.status !== "guessing") return;
   if (locationId && room.location?.id !== locationId) return;
   if (room.location) {
     const failedId = room.location.id;
@@ -553,12 +609,29 @@ function skipLocation(client: Client, room: InternalRoom, locationId?: string): 
     room.locationQueue = room.locationQueue.filter((id) => id !== failedId);
   }
   room.location = nextLocation(room);
-  const roundStartedAt = Date.now();
+  room.activePromptToken = null;
   room.guesses = [];
   room.timedOutPlayerIds = [];
   room.emojiEvents = [];
-  room.roundEndsAt = room.settings.timeLimitSec > 0 ? roundStartedAt + room.settings.timeLimitSec * 1000 : null;
+  room.roundEndsAt = null;
+  room.roundStartedAt = null;
+  broadcast(room);
+}
+
+function markLocationReady(client: Client, room: InternalRoom, locationId: string, ready: boolean): void {
+  if (!requireHost(client, room) || room.status !== "guessing" || room.location?.id !== locationId) return;
+  if (!ready) {
+    if (room.roundStartedAt || room.roundEndsAt) {
+      room.roundStartedAt = null;
+      room.roundEndsAt = null;
+      broadcast(room);
+    }
+    return;
+  }
+  if (room.roundStartedAt) return;
+  const roundStartedAt = Date.now();
   room.roundStartedAt = roundStartedAt;
+  room.roundEndsAt = room.settings.timeLimitSec > 0 ? roundStartedAt + room.settings.timeLimitSec * 1000 : null;
   broadcast(room);
 }
 
@@ -567,27 +640,9 @@ function evaluateRound(room: InternalRoom): void {
   const location = room.location;
   const guessesByPlayer = new Map(room.guesses.map((guess) => [guess.playerId, guess]));
   const contenders = room.players.filter((player) => player.status === "active");
-  const evaluated = contenders.map((player): RoundResult => {
-    const guess = guessesByPlayer.get(player.id) ?? null;
-    if (!guess) {
-      return { playerId: player.id, distanceKm: 20038, points: 0, badge: "Verschollen", eliminated: false, guess, countryCorrect: false };
-    }
-    const distanceKm = haversineDistanceKm(guess, location);
-    const guessedCountry = guess.countryCode ?? countryCodeFromGuess(guess);
-    const countryCorrect =
-      location.category === "flags" && (guessedCountry === location.countryCode || isGuessInCountry(guess, location.countryCode));
-    const territoryMatch = evaluateTerritoryGuess(location, guess);
-    const sameContinent = countryCorrect || guessedCountry === location.countryCode || guessedCountry === location.continent;
-    return {
-      playerId: player.id,
-      distanceKm: territoryMatch?.distanceKm ?? distanceKm,
-      points: countryCorrect ? 5000 : territoryMatch?.points ?? scoreDistance(distanceKm),
-      badge: countryCorrect ? "Richtiges Land" : territoryMatch?.badge ?? badgeFor(distanceKm, sameContinent),
-      eliminated: false,
-      guess,
-      countryCorrect: countryCorrect || (territoryMatch?.isTerritoryHit ?? false)
-    };
-  });
+  const evaluated = contenders.map((player): RoundResult =>
+    evaluatePlayerGuess(player.id, location, guessesByPlayer.get(player.id) ?? null)
+  );
 
   if (room.settings.mode === "elimination" && evaluated.length > 1) {
     const wrongCountry = evaluated.filter((result) => {
@@ -647,13 +702,14 @@ function evaluateRound(room: InternalRoom): void {
   room.timedOutPlayerIds = [];
   room.adGateUntil = room.status === "results" && AD_GATE_MS > 0 ? Date.now() + AD_GATE_MS : null;
   resetNextRoundGate(room);
+  if (room.status === "results") prepareNextRoundPrompt(room);
   broadcast(room);
 }
 
 function submitGuess(client: Client, room: InternalRoom, input: { lat: number; lng: number }, countryCode?: string, playerId?: string): void {
   const targetPlayerId = room.kind === "solo" && playerId && requireHost(client, room) ? playerId : client.id;
   const player = room.players.find((candidate) => candidate.id === targetPlayerId);
-  if (!player || player.status !== "active" || room.status !== "guessing") return;
+  if (!player || player.status !== "active" || room.status !== "guessing" || !room.roundStartedAt) return;
   const guessedAt = Date.now();
   const guess: Guess = {
     playerId: targetPlayerId,
@@ -675,6 +731,7 @@ function submitGuess(client: Client, room: InternalRoom, input: { lat: number; l
 function updateSettings(client: Client, room: InternalRoom, patch: Partial<GameSettings>): void {
   if (!requireHost(client, room) || room.status !== "lobby") return;
   const previousCategory = room.settings.category;
+  const previousDifficulty = room.settings.difficulty;
   room.settings = {
     ...room.settings,
     ...patch,
@@ -688,7 +745,7 @@ function updateSettings(client: Client, room: InternalRoom, patch: Partial<GameS
     if (room.settings.localMode === "solo") room.settings.localPlayerCount = 1;
     syncLocalPlayers(room);
   }
-  if (patch.category && patch.category !== previousCategory) {
+  if ((patch.category && patch.category !== previousCategory) || (patch.difficulty && patch.difficulty !== previousDifficulty)) {
     room.locationQueue = [];
     room.failedLocationIds = [];
     room.recentLocationIds = [];
@@ -707,6 +764,7 @@ const locationCategories = new Set<LocationCategory>([
   "capitals",
   "streetview"
 ]);
+const gameDifficulties = new Set<GameSettings["difficulty"]>(["mixed", "easy", "medium", "hard"]);
 const hostParticipations = new Set<HostParticipation>(["host_player", "host_only"]);
 const teams = new Set<TeamId>(["aurora", "pulse"]);
 const unlockableCosmetics = new Set<Cosmetic>(["crown", "visor", "halo", "neon-frame"]);
@@ -753,6 +811,10 @@ function validatedSettingsPatch(value: unknown): Partial<GameSettings> | null {
   if (value.category !== undefined) {
     if (typeof value.category !== "string" || !locationCategories.has(value.category as LocationCategory)) return null;
     patch.category = value.category as LocationCategory;
+  }
+  if (value.difficulty !== undefined) {
+    if (typeof value.difficulty !== "string" || !gameDifficulties.has(value.difficulty as GameSettings["difficulty"])) return null;
+    patch.difficulty = value.difficulty as GameSettings["difficulty"];
   }
   return patch;
 }
@@ -816,6 +878,10 @@ function validatedClientMessage(value: unknown): ClientMessage | null {
     case "skip_location":
       return value.locationId === undefined || isShortString(value.locationId, 128)
         ? { type: value.type, locationId: value.locationId as string | undefined }
+        : null;
+    case "image_ready":
+      return isShortString(value.locationId, 128) && typeof value.ready === "boolean"
+        ? { type: value.type, locationId: value.locationId, ready: value.ready }
         : null;
     case "start_round":
     case "ready_next_round":
@@ -929,6 +995,9 @@ function handleMessage(client: Client, raw: string): void {
     case "skip_location":
       skipLocation(client, room, message.locationId);
       break;
+    case "image_ready":
+      markLocationReady(client, room, message.locationId, message.ready);
+      break;
     case "restart":
       if (!requireHost(client, room)) return;
       room.status = "lobby";
@@ -954,9 +1023,91 @@ function handleMessage(client: Client, raw: string): void {
   }
 }
 
-const server = createServer((_req, res) => {
-  res.writeHead(200, { "content-type": "application/json" });
-  res.end(JSON.stringify({ ok: true, service: "Punktlandung WebSocket", capacity: capacitySnapshot() }));
+function promptImageUrl(sourceUrl: string): string {
+  try {
+    const source = new URL(sourceUrl);
+    if (source.hostname !== "commons.wikimedia.org" && source.hostname !== "upload.wikimedia.org") return sourceUrl;
+    const prefixes = ["/wiki/Special:FilePath/", "/wiki/Special:Redirect/file/"];
+    const prefix = prefixes.find((candidate) => source.pathname.startsWith(candidate));
+    const rawFile = prefix
+      ? source.pathname.slice(prefix.length)
+      : source.pathname.split("/").filter(Boolean).at(-1);
+    if (!rawFile) return sourceUrl;
+    const fileName = decodeURIComponent(rawFile);
+    const target = new URL(`https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(fileName)}`);
+    target.searchParams.set("width", "1400");
+    return target.toString();
+  } catch {
+    return sourceUrl;
+  }
+}
+
+async function readPromptAsset(asset: PromptAsset): Promise<{ bytes: ArrayBuffer; contentType: string } | null> {
+  if (asset.responsePromise) return asset.responsePromise;
+  asset.responsePromise = (async () => {
+    try {
+      const response = await fetch(promptImageUrl(asset.sourceUrl), {
+        redirect: "follow",
+        signal: AbortSignal.timeout(PROMPT_FETCH_TIMEOUT_MS),
+        headers: {
+          accept: "image/avif,image/webp,image/*,*/*",
+          "user-agent": "Punktlandung/1.0 (https://punktlandung.app; aintartstudio@gmail.com)"
+        }
+      });
+      if (!response.ok) return null;
+      const contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+      if (!contentType.startsWith("image/") || contentType === "image/svg+xml") return null;
+      const declaredLength = Number(response.headers.get("content-length"));
+      if (Number.isFinite(declaredLength) && declaredLength > PROMPT_MAX_BYTES) return null;
+      const bytes = await response.arrayBuffer();
+      if (bytes.byteLength === 0 || bytes.byteLength > PROMPT_MAX_BYTES) return null;
+      return { bytes, contentType };
+    } catch {
+      return null;
+    }
+  })();
+  return asset.responsePromise;
+}
+
+const server = createServer(async (req, res) => {
+  const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+  const promptMatch = requestUrl.pathname.match(/^\/prompt\/([A-Za-z0-9_-]{32})$/);
+  if (promptMatch && (req.method === "GET" || req.method === "HEAD")) {
+    const asset = promptAssets.get(promptMatch[1]);
+    if (!asset || asset.expiresAt <= Date.now()) {
+      res.writeHead(404, { "cache-control": "no-store" });
+      res.end();
+      return;
+    }
+    const image = await readPromptAsset(asset);
+    if (!image) {
+      res.writeHead(502, { "cache-control": "no-store" });
+      res.end();
+      return;
+    }
+    res.writeHead(200, {
+      "content-type": image.contentType,
+      "content-length": String(image.bytes.byteLength),
+      "cache-control": "private, max-age=600",
+      "x-content-type-options": "nosniff"
+    });
+    res.end(req.method === "HEAD" ? undefined : Buffer.from(image.bytes));
+    return;
+  }
+  const memory = process.memoryUsage();
+  res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+  res.end(JSON.stringify({
+    ok: true,
+    service: "Punktlandung WebSocket",
+    checkedAt: new Date().toISOString(),
+    uptimeSeconds: Math.round(process.uptime()),
+    memory: {
+      rssBytes: memory.rss,
+      heapUsedBytes: memory.heapUsed,
+      heapTotalBytes: memory.heapTotal
+    },
+    capacity: capacitySnapshot()
+  }));
 });
 
 const wss = new WebSocketServer({
@@ -1047,6 +1198,9 @@ setInterval(() => {
       startRoundNow(room);
     }
     if (now - room.lastActivityAt > ROOM_TTL_MS) rooms.delete(room.code);
+  }
+  for (const [token, asset] of promptAssets) {
+    if (asset.expiresAt <= now) promptAssets.delete(token);
   }
   reportCapacityWarnings();
 }, 500);

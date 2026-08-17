@@ -1,0 +1,4 @@
+interface:
+  display_name: "Punktlandung Responsive QA"
+  short_description: "Responsive Ansichten prüfen und gezielt beheben"
+  default_prompt: "Use $punktlandung-responsive-qa to check Punktlandung responsively and fix confirmed layout issues."

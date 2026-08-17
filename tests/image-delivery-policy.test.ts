@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { directImageFallbackDelayMs, gameplayImageWidth, normalizeEffectiveConnectionType } from "../lib/imageDelivery";
+
+test("gameplay images match the viewport while remaining bounded", () => {
+  assert.equal(gameplayImageWidth(390, 2, { effectiveType: "4g" }), 1000);
+  assert.equal(gameplayImageWidth(1280, 2, { effectiveType: "4g" }), 1400);
+  assert.equal(gameplayImageWidth(360, 1, { effectiveType: "4g" }), 800);
+});
+
+test("slow or data-saving connections avoid oversized prefetches", () => {
+  assert.equal(gameplayImageWidth(1280, 2, { effectiveType: "3g" }), 1000);
+  assert.equal(gameplayImageWidth(1280, 2, { effectiveType: "2g" }), 800);
+  assert.equal(gameplayImageWidth(1280, 2, { effectiveType: "4g", saveData: true }), 800);
+});
+
+test("direct fallback waits longer when a slow connection is still making progress", () => {
+  assert.equal(directImageFallbackDelayMs("4g"), 3200);
+  assert.equal(directImageFallbackDelayMs("3g"), 5000);
+  assert.equal(directImageFallbackDelayMs("2g"), 6500);
+  assert.equal(normalizeEffectiveConnectionType("unexpected"), "unknown");
+});

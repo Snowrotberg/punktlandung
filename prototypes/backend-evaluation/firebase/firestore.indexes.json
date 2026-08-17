@@ -1,0 +1,25 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "rankedGames",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "accountId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "completedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "rankedGames",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "integrityStatus", "order": "ASCENDING" },
+        { "fieldPath": "category", "order": "ASCENDING" },
+        { "fieldPath": "rulesetKey", "order": "ASCENDING" },
+        { "fieldPath": "completedAt", "order": "ASCENDING" },
+        { "fieldPath": "score", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

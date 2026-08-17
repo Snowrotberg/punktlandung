@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { InfoPageShell } from "@/components/InfoPageShell";
+import { absoluteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Datenschutz",
+  alternates: { canonical: absoluteUrl("/datenschutz") }
 };
 
 const externalLinkClass = "font-bold text-emerald-300 underline-offset-4 hover:text-emerald-200 hover:underline";
@@ -10,6 +12,7 @@ const externalLinkClass = "font-bold text-emerald-300 underline-offset-4 hover:t
 export default function DatenschutzPage() {
   return (
     <InfoPageShell
+      contentClassName="punktlandung-legal-panel"
       eyebrow="Rechtliches"
       title="Datenschutzerklärung"
       intro="Informationen zur Verarbeitung personenbezogener Daten und zu den Rechten betroffener Personen."
@@ -124,30 +127,32 @@ export default function DatenschutzPage() {
           </section>
 
           <section>
-            <h2 className="text-[22px] font-black leading-tight text-white">6. Karten von OpenStreetMap Deutschland</h2>
+            <h2 className="text-[22px] font-black leading-tight text-white">6. Karten von OpenFreeMap</h2>
             <p className="mt-2">
-              Für die Kartenansichten werden Kartenkacheln von tile.openstreetmap.de abgerufen. Der Dienst wird im
-              Umfeld des FOSSGIS e. V. bereitgestellt. Beim Abruf erhält der Anbieter technisch insbesondere die
-              IP-Adresse, Zeitpunkt, angeforderte Kachel und Browserinformationen. Die Einbindung ist für die vom
-              Nutzer aufgerufene Karten- und Spielfunktion erforderlich und erfolgt auf Grundlage von Art. 6 Abs. 1
-              Buchst. b DSGVO. Karteninhalte basieren auf Daten der OpenStreetMap-Mitwirkenden.
+              Für die Kartenansichten werden Vektorkacheln, Schrift- und Grafikressourcen von OpenFreeMap
+              (Hyperknot Software Kft., Ungarn) abgerufen. Beim Abruf werden technisch notwendige Verbindungsdaten an
+              OpenFreeMap und gegebenenfalls dessen CDN-Dienstleister übermittelt. OpenFreeMap gibt an, reguläre
+              Serverprotokolle ohne IP-Adressen zu führen; bei Sicherheitsvorfällen können IP-Adressen vorübergehend
+              für höchstens 30 Tage protokolliert werden. Die Einbindung ist für die vom Nutzer aufgerufene Karten-
+              und Spielfunktion erforderlich und erfolgt auf Grundlage von Art. 6 Abs. 1 Buchst. b DSGVO.
+              Karteninhalte basieren auf Daten der OpenStreetMap-Mitwirkenden und dem OpenMapTiles-Schema.
             </p>
             <a
-              href="https://www.fossgis.de/datenschutzerkl%C3%A4rung/"
+              href="https://openfreemap.org/privacy/"
               target="_blank"
               rel="noreferrer"
               className={externalLinkClass}
             >
-              Datenschutzerklärung des FOSSGIS e. V.
+              Datenschutzerklärung von OpenFreeMap
             </a>
             <span className="mx-2 text-slate-600">·</span>
             <a
-              href="https://fossgis.de/arbeitsgruppen/osm-server/nutzungsbedingungen/"
+              href="https://openfreemap.org/tos/"
               target="_blank"
               rel="noreferrer"
               className={externalLinkClass}
             >
-              Nutzungsbedingungen des Kartendienstes
+              Nutzungsbedingungen von OpenFreeMap
             </a>
           </section>
 
@@ -226,7 +231,7 @@ export default function DatenschutzPage() {
               cookielose Messsignale ohne Speicherung einer Analytics-Kennung auf dem Endgerät übermittelt werden.
               Rechtsgrundlage für einwilligungsabhängige Speicherung und weitergehende Auswertung sind Art. 6 Abs. 1
               Buchst. a DSGVO und § 25 Abs. 1 TDDDG. Die technisch reduzierte Reichweitenmessung dient dem
-              berechtigten Interesse, Betrieb, Nutzung und Fehler des Beta-Angebots beurteilen zu können (Art. 6
+              berechtigten Interesse, Betrieb, Nutzung und Fehler des Web-Angebots beurteilen zu können (Art. 6
               Abs. 1 Buchst. f DSGVO). Die Auswahl kann jederzeit über „Cookies“ geändert werden.
             </p>
             <p className="mt-2">
@@ -244,8 +249,9 @@ export default function DatenschutzPage() {
             </a>
             <p className="mt-2">
               Zusätzlich speichert Punktlandung auf dem eigenen Server ausschließlich anonyme Betriebszähler,
-              etwa die Anzahl gestarteter und beendeter Partien, Räume und Verbindungen sowie Spitzenwerte der
-              gleichzeitigen Auslastung. Diese Zähler enthalten keine Nutzerkennungen, Namen, IP-Adressen,
+              etwa Seitenaufrufe und Besuche sowie die Anzahl gestarteter und beendeter Partien, Räume und
+              Verbindungen und Spitzenwerte der gleichzeitigen Auslastung. Diese Zähler enthalten keine
+              Nutzerkennungen, Namen, IP-Adressen,
               Raumcodes oder Spielkoordinaten und werden nur für interne Wochenberichte verwendet.
             </p>
           </section>
@@ -260,7 +266,7 @@ export default function DatenschutzPage() {
               jedoch nach 180 Tagen.
             </p>
             <p className="mt-2">
-              Während der öffentlichen Beta kann freiwillig über ein Feedbackformular eine Nachricht übermittelt
+              Über das Feedbackformular kann freiwillig eine Nachricht übermittelt
               werden. Eine E-Mail-Adresse kann optional angegeben werden und wird ausschließlich verwendet, um bei
               Rückfragen auf das Feedback zu antworten. Nach einer beendeten Partie können zusätzlich Spielmodus,
               gewählte Kategorie und Anzahl der gespielten Runden übermittelt werden. Spielernamen, Raumcodes,

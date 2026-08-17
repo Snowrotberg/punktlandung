@@ -15,6 +15,7 @@ export type LatLng = {
 
 export type LocationSource = "wikimedia" | "mapillary-ready" | "kartaview-ready" | "ugc";
 export type LocationDifficulty = "easy" | "medium" | "hard";
+export type GameDifficulty = LocationDifficulty | "mixed";
 
 export type GeoLocation = LatLng & {
   id: string;
@@ -29,9 +30,20 @@ export type GeoLocation = LatLng & {
   sourceUrl?: string;
   category: LocationCategory;
   wikidataId?: string;
+  shortDescription?: string;
+  descriptionSourceUrl?: string;
   imageFile?: string;
   difficulty?: LocationDifficulty;
   popularity?: number;
+  catalogVariant?: "nearby-image" | "curated-image";
+  imageQualityScore?: number;
+  imageReviewStatus?: "approved" | "quarantined";
+  imageWidth?: number;
+  imageHeight?: number;
+  imageCapturedAt?: string;
+  imageUploadedAt?: string;
+  commonsQualityAssessment?: "featured" | "quality" | "valued";
+  deliveryUrl?: string;
 };
 
 export type GameSettings = {
@@ -45,6 +57,7 @@ export type GameSettings = {
   noZoom: boolean;
   mapPackId: string;
   category: LocationCategory;
+  difficulty: GameDifficulty;
 };
 
 export type Player = {
@@ -118,6 +131,7 @@ export type RoomState = {
   adGateUntil: number | null;
   nextRoundReadyPlayerIds: string[];
   nextRoundStartsAt: number | null;
+  nextRoundPreviewUrl?: string | null;
 };
 
 export type EmojiEventPayload = {
@@ -143,6 +157,7 @@ export type ClientMessage =
   | { type: "set_team"; team: TeamId }
   | { type: "cancel_round" }
   | { type: "skip_location"; locationId?: string }
+  | { type: "image_ready"; locationId: string; ready: boolean }
   | { type: "leave_room" }
   | { type: "restart" };
 

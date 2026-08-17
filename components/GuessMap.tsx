@@ -19,6 +19,10 @@ type GuessMapProps = {
   noPan?: boolean;
   noZoom?: boolean;
   showLabels?: boolean;
+  resultPaddingScale?: number;
+  resultZoomScale?: number;
+  resultLabelLayout?: "auto" | "home-preview";
+  resultLabelInset?: boolean;
   currentPlayerColor?: string;
   resizeSignal?: number | string | boolean;
   resetSignal?: number | string | boolean;

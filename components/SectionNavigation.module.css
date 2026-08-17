@@ -1,0 +1,180 @@
+.bar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 1rem;
+  padding: .65rem var(--pl-content-inset, 1.5rem);
+  border-bottom: 1px solid var(--pl-line);
+  background: rgb(10 16 28 / .5);
+}
+
+.label {
+  flex: 0 0 auto;
+  color: var(--pl-mint);
+  font-size: .66rem;
+  font-weight: 850;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.links {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  justify-content: end;
+  gap: .35rem;
+}
+
+.links a,
+.cookieButton {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  padding: .35rem .65rem;
+  border: 1px solid transparent;
+  border-radius: .55rem;
+  color: var(--pl-muted);
+  background: transparent;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.itemSlot {
+  display: contents;
+}
+
+.links a:hover,
+.links a:focus-visible,
+.cookieButton:hover,
+.cookieButton:focus-visible {
+  border-color: var(--pl-mint);
+  color: var(--pl-text);
+  background: #0e1527;
+  outline: none;
+}
+
+.links a:focus-visible,
+.cookieButton:focus-visible {
+  outline: 2px solid var(--pl-mint);
+  outline-offset: 2px;
+}
+
+.links a[aria-current="page"] {
+  border-color: color-mix(in srgb, var(--pl-mint) 65%, transparent);
+  color: var(--pl-text);
+  background: color-mix(in srgb, var(--pl-mint) 9%, var(--pl-surface-strong));
+}
+
+@media (max-width: 52rem) and (orientation: portrait) {
+  .bar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: .25rem;
+    padding: .6rem 0 .45rem;
+  }
+
+  .label {
+    padding-inline: 1rem;
+    text-align: left;
+  }
+
+  .links {
+    display: flex;
+    width: 100%;
+    justify-content: flex-start;
+    gap: .15rem;
+    overflow-x: auto;
+    padding: 0 .75rem;
+    scroll-padding-inline: .75rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    mask-image: linear-gradient(to right, transparent, #000 .7rem, #000 calc(100% - .7rem), transparent);
+  }
+
+  .links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .links a,
+  .cookieButton {
+    width: auto;
+    min-width: max-content;
+    min-height: 2.75rem !important;
+    padding: .45rem .75rem .35rem;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    font-size: .72rem;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .itemSlot {
+    display: block;
+    flex: 0 0 auto;
+  }
+
+  .links a:hover,
+  .links a:focus-visible,
+  .cookieButton:hover,
+  .cookieButton:focus-visible {
+    border-color: var(--pl-mint);
+    color: var(--pl-text);
+    background: transparent;
+  }
+
+  .links a[aria-current="page"] {
+    border-color: var(--pl-mint);
+    color: var(--pl-text);
+    background: transparent;
+  }
+}
+
+@media (max-width: 23rem) and (orientation: portrait) {
+  .bar { padding-inline: .75rem; }
+  .links a,
+  .cookieButton { font-size: .64rem; }
+}
+
+@media (orientation: landscape) and (min-width: 40rem) and (max-height: 40rem) {
+  .bar {
+    align-items: center;
+    flex-direction: row;
+    gap: 1rem;
+    padding-block: .3rem;
+  }
+
+  .label { font-size: .55rem; }
+  .links {
+    width: auto;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    grid-template-columns: none;
+    justify-content: end;
+    gap: .3rem;
+  }
+
+  .links a,
+  .cookieButton {
+    min-width: 0;
+    min-height: 2.5rem;
+    padding: .3rem .55rem;
+    font-size: .62rem;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 150rem) {
+  .bar { padding-block: 1rem; }
+  .label { font-size: 1rem; }
+  .links { gap: .6rem; }
+  .links a, .cookieButton { min-height: 3rem; padding-inline: 1rem; font-size: 1rem; }
+}

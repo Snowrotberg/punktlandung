@@ -1,0 +1,908 @@
+.redesign {
+  --pl-result-bg: #070e1b;
+  --pl-result-surface: rgb(14 25 42 / 0.9);
+  --pl-result-surface-soft: rgb(18 31 51 / 0.76);
+  --pl-result-line: rgb(48 66 91 / 0.72);
+  --pl-result-mint: #5ee7bd;
+  --pl-result-violet: #938cff;
+  --pl-result-muted: #a8b4c5;
+  background:
+    linear-gradient(rgb(76 104 137 / 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(76 104 137 / 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 16% 12%, rgb(41 190 148 / 0.15), transparent 33%),
+    radial-gradient(circle at 86% 18%, rgb(105 92 255 / 0.16), transparent 35%),
+    var(--pl-result-bg);
+  background-size: 4rem 4rem, 4rem 4rem, auto, auto, auto;
+  font-family: var(--font-inter);
+}
+
+.redesign :global(.punktlandung-results-hero),
+.redesign :global(.punktlandung-results-panel),
+.redesign :global(.punktlandung-final-left > div),
+.redesign :global(.punktlandung-final-table) {
+  border: 1px solid var(--pl-result-line) !important;
+  border-radius: 1rem !important;
+  background: var(--pl-result-surface) !important;
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.22) !important;
+}
+
+.redesign :global(.punktlandung-results-hero) {
+  background:
+    linear-gradient(118deg, rgb(94 231 189 / 0.075), transparent 45%),
+    var(--pl-result-surface) !important;
+}
+
+.redesign :global(.punktlandung-results-hero-header) {
+  align-items: center !important;
+}
+
+.redesign :global(.punktlandung-results-hero-header > div:first-child > p:first-child) {
+  color: var(--pl-result-mint) !important;
+}
+
+.redesign :global(.punktlandung-results-map) {
+  border: 1px solid var(--pl-result-line) !important;
+  border-radius: 1rem !important;
+  background: #29455f !important;
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.24) !important;
+}
+
+.redesign :global(.punktlandung-results-map .leaflet-container) {
+  background: #29455f !important;
+}
+
+.redesign :global(.punktlandung-results-map .leaflet-control-zoom) {
+  display: none !important;
+}
+
+.redesign :global(.punktlandung-results-map .punktlandung-map-pin-actual),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-pin-actual) {
+  animation: resultTargetPinLift 2.25s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+@keyframes resultTargetPinLift {
+  0%,
+  100% {
+    transform: translateY(0) scale(1.12);
+  }
+
+  48% {
+    transform: translateY(-5px) scale(1.12);
+  }
+
+  68% {
+    transform: translateY(0) scale(1.12);
+  }
+}
+
+.redesign :global(.punktlandung-results-hero p:first-child),
+.redesign :global(.punktlandung-results-panel h2),
+.redesign :global(.punktlandung-map-panel-title) {
+  color: var(--pl-result-mint) !important;
+}
+
+.redesign :global(.punktlandung-results-hero h1),
+.redesign :global(.punktlandung-results-panel h2) {
+  font-weight: 650 !important;
+  letter-spacing: -0.025em;
+}
+
+.redesign :global(.punktlandung-command-button),
+.redesign :global(.punktlandung-results-action-back),
+.redesign :global(.punktlandung-action-back-button),
+.redesign :global(.punktlandung-back-button) {
+  min-height: 3rem !important;
+  padding: 0.75rem 1rem !important;
+  border-width: 1px !important;
+  border-radius: 0.7rem !important;
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  line-height: 1 !important;
+}
+
+.redesign :global(.punktlandung-inline-action-content),
+.redesign :global(.punktlandung-back-control-content) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.45rem !important;
+  line-height: 1 !important;
+}
+
+.redesign :global(.punktlandung-command-button::before),
+.redesign :global(.punktlandung-map-primary-button::before) {
+  display: none !important;
+}
+
+.redesign :global(.punktlandung-primary-action) {
+  border-color: var(--pl-result-mint) !important;
+  color: #06231c !important;
+  background: var(--pl-result-mint) !important;
+  box-shadow: none !important;
+}
+
+.redesign :global(.punktlandung-primary-action:hover:not(:disabled)),
+.redesign :global(.punktlandung-primary-action:focus-visible:not(:disabled)) {
+  border-color: color-mix(in srgb, var(--pl-result-mint) 88%, white) !important;
+  background: color-mix(in srgb, var(--pl-result-mint) 88%, white) !important;
+}
+
+.redesign :global(.punktlandung-results-row) {
+  min-height: 3.25rem;
+  padding-block: 0.65rem;
+}
+
+.redesign :global(.punktlandung-results-flat-list) {
+  gap: 0.4rem;
+}
+
+.redesign :global(.punktlandung-player-bordered-row) {
+  border: 1px solid var(--pl-result-line) !important;
+  border-radius: 0.7rem !important;
+  padding-inline: 1rem 0.9rem !important;
+  background: rgb(8 16 29 / 0.58);
+  box-shadow: none !important;
+}
+
+.redesign :global(.punktlandung-player-bordered-row:hover) {
+  border-color: rgb(94 231 189 / 0.35) !important;
+  background: rgb(14 26 43 / 0.78);
+}
+
+.redesign :global(.punktlandung-player-bordered-row .punktlandung-results-points) {
+  min-width: 4.25rem;
+  padding-right: 0.15rem;
+}
+
+.redesign :global(.punktlandung-results-scorebar) {
+  height: 0.42rem !important;
+  border-radius: 999px !important;
+}
+
+.redesign :global(.punktlandung-image-replay) {
+  background: var(--pl-result-bg) !important;
+  font-family: var(--font-inter);
+}
+
+.redesign :global(.punktlandung-replay-info),
+.redesign :global(.punktlandung-guess-map-panel) {
+  border: 1px solid var(--pl-result-line) !important;
+  border-radius: 1rem !important;
+  background: rgb(10 16 28 / 0.88) !important;
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.3) !important;
+}
+
+.redesign :global(.punktlandung-replay-info) {
+  width: fit-content;
+  max-width: min(36rem, calc(100vw - 14rem)) !important;
+}
+
+.redesign :global(.punktlandung-replay-top-actions) {
+  margin-right: 3.25rem;
+}
+
+@media (max-width: 52rem) and (orientation: portrait) {
+  .redesign :global(.punktlandung-replay-top-actions) {
+    margin-right: 0;
+  }
+}
+
+.redesign :global(.punktlandung-replay-info p:first-child) {
+  color: var(--pl-result-mint) !important;
+}
+
+.redesign :global(.punktlandung-focus-tab) {
+  left: 0 !important;
+  border: 1px solid var(--pl-result-line) !important;
+  border-left: 0 !important;
+  border-radius: 0 0.7rem 0.7rem 0 !important;
+  background: rgb(10 16 28 / 0.88) !important;
+  font-weight: 650 !important;
+  transform: translateY(-50%) !important;
+}
+
+.redesign :global(.punktlandung-focus-tab-text) {
+  display: block;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: none !important;
+}
+
+.redesign :global(.punktlandung-focus-tab-content) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  transform: rotate(180deg);
+  writing-mode: horizontal-tb;
+}
+
+.redesign :global(.punktlandung-focus-tab-icon) {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.redesign :global(.punktlandung-results-map .punktlandung-map-label),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-label) {
+  border: 1px solid var(--pl-result-line) !important;
+  border-radius: 0.7rem !important;
+  background: rgb(10 16 28 / 0.94) !important;
+  box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.28) !important;
+  font-weight: 650 !important;
+  padding: 0.62rem 0.82rem 0.62rem 0.95rem !important;
+}
+
+.redesign :global(.punktlandung-results-map .punktlandung-map-label-actual),
+.redesign :global(.punktlandung-results-map .punktlandung-map-label-player),
+.redesign :global(.punktlandung-results-map .punktlandung-map-label-guess),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-label-actual),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-label-player),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-label-guess) {
+  box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.28) !important;
+}
+
+.redesign :global(.punktlandung-results-map .punktlandung-map-label-actual),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-label-actual) {
+  border-color: var(--pl-result-mint) !important;
+  color: #06231c !important;
+  background: var(--pl-result-mint) !important;
+}
+
+.redesign :global(.punktlandung-results-map .punktlandung-map-label-player),
+.redesign :global(.punktlandung-results-map .punktlandung-map-label-guess),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-label-player),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-label-guess) {
+  border-color: var(--player-color, #ff4775) !important;
+}
+
+.redesign :global(.punktlandung-results-map .punktlandung-map-label::before),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-label::before) {
+  display: none !important;
+}
+
+.redesign :global(.punktlandung-map-label-distance) {
+  color: var(--pl-result-muted);
+  font-weight: 500 !important;
+}
+
+.redesign :global(.punktlandung-hit-chip) {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--player-color, var(--pl-result-mint)) !important;
+  border-radius: 0.7rem !important;
+  background: rgb(10 16 28 / 0.94) !important;
+  box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.28) !important;
+  font-weight: 650 !important;
+}
+
+.redesign :global(.punktlandung-hit-chip::before) {
+  display: none !important;
+}
+
+.redesign :global(.punktlandung-final-player-row),
+.redesign :global(.punktlandung-final-winner-card) {
+  border: 1px solid var(--pl-result-line) !important;
+  box-shadow: none !important;
+}
+
+.redesign :global(.punktlandung-final-player-accent) {
+  display: block !important;
+}
+
+.redesign :global(.punktlandung-final-hero) {
+  background:
+    radial-gradient(circle at 12% 20%, rgb(94 231 189 / 0.16), transparent 42%),
+    linear-gradient(125deg, rgb(94 231 189 / 0.06), transparent 55%),
+    var(--pl-result-surface) !important;
+}
+
+.redesign :global(.punktlandung-final-hero h1),
+.redesign :global(.punktlandung-final-highlights-panel h2),
+.redesign :global(.punktlandung-final-table-heading h2) {
+  font-weight: 650 !important;
+  letter-spacing: -0.03em;
+}
+
+.redesign :global(.punktlandung-final-winner-card) {
+  background: rgb(7 16 28 / 0.64) !important;
+  box-shadow: none !important;
+}
+
+.redesign :global(.punktlandung-final-winner-name) {
+  overflow-wrap: normal;
+  word-break: normal;
+  text-wrap: balance;
+}
+
+@media (min-width: 64rem) and (max-width: 80rem) {
+  .redesign :global(.punktlandung-final-winner-name) {
+    font-size: clamp(1.65rem, 2.45vw, 2rem) !important;
+    hyphens: none;
+  }
+}
+
+.redesign :global(.punktlandung-final-highlights .punktlandung-final-player-row) {
+  background: rgb(8 16 29 / 0.58) !important;
+  box-shadow: none !important;
+}
+
+.redesign :global(.punktlandung-final-table-list > .punktlandung-final-player-row) {
+  position: relative;
+  padding: 0.8rem 0.9rem 0.75rem 1rem !important;
+  border-radius: 0.7rem !important;
+  background: rgb(8 16 29 / 0.58) !important;
+  box-shadow: none !important;
+}
+
+.redesign :global(.punktlandung-final-actions) {
+  border: 0;
+}
+
+.redesign :global(.punktlandung-final-topbar .punktlandung-command-button),
+.redesign :global(.punktlandung-final-topbar .punktlandung-back-button) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 2.75rem !important;
+  padding: 0.62rem 0.72rem !important;
+  font-size: 0.72rem !important;
+}
+
+.redesign :global(.punktlandung-final-actions svg),
+.redesign :global(.punktlandung-final-actions .punktlandung-inline-action-icon),
+.redesign :global(.punktlandung-final-actions .punktlandung-back-control-icon) {
+  display: block;
+  transform: none !important;
+}
+
+.redesign :global(.punktlandung-final-actions .punktlandung-back-button) {
+  position: relative;
+}
+
+.redesign :global(.punktlandung-final-actions .punktlandung-back-control-content) {
+  display: inline-grid !important;
+  grid-template-columns: 1rem max-content 1rem !important;
+  width: max-content !important;
+}
+
+.redesign :global(.punktlandung-final-actions .punktlandung-back-control-content)::after {
+  display: block;
+  width: 1rem;
+  content: "";
+}
+
+.redesign :global(.punktlandung-final-topbar) {
+  min-width: 0;
+}
+
+.redesign :global(.punktlandung-final-save-status) {
+  border-radius: 0.75rem !important;
+}
+
+.redesign :global(.punktlandung-final-topbar.is-expanded-save-offer) {
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.redesign :global(.punktlandung-final-topbar.is-expanded-save-offer .punktlandung-final-save-status) {
+  flex-basis: 100%;
+}
+
+.redesign :global(.punktlandung-final-topbar.is-expanded-save-offer .punktlandung-final-actions) {
+  margin-left: auto;
+}
+
+.redesign :global(.punktlandung-final-save-status:not(:has(div)) > p:last-child) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense) {
+  gap: 0.25rem !important;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense > .punktlandung-final-player-row) {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1.3fr) minmax(13rem, 1fr) minmax(8rem, 0.72fr);
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.65rem;
+  padding: 0.24rem 0.7rem 0.22rem 0.85rem !important;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-column: 2;
+  grid-row: 1;
+  gap: 0.35rem;
+  margin-top: 0 !important;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-title) {
+  display: inline;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--pl-result-mint) !important;
+  font-size: 0.58rem !important;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-identity) {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-name-line) {
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-name) {
+  flex: 0 0 auto;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-score) {
+  grid-column: 3;
+  grid-row: 1;
+  grid-template-columns: 5.5rem max-content !important;
+  justify-content: end;
+  margin-top: 0 !important;
+  gap: 0.45rem !important;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-score > div) {
+  width: 5.5rem;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics > p) {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.22rem;
+  padding: 0;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics > p > svg) {
+  width: 0.72rem;
+  height: 0.72rem;
+  flex: 0 0 auto;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics > p > span) {
+  display: none;
+}
+
+.redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics > p > strong) {
+  min-width: 0;
+  overflow: hidden;
+  color: #dbe7f5;
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 79.999rem) {
+  .redesign :global(.punktlandung-final-topbar) {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .redesign :global(.punktlandung-final-save-status) {
+    flex-basis: 100%;
+  }
+
+  .redesign :global(.punktlandung-final-actions) {
+    margin-left: auto;
+  }
+}
+
+.redesign :global(.punktlandung-final-player-metrics) {
+  color: var(--pl-result-muted) !important;
+}
+
+.redesign :global(.punktlandung-final-player-metrics > p) {
+  display: grid;
+  grid-template-columns: 0.9rem minmax(0, 1fr);
+  column-gap: 0.4rem;
+  row-gap: 0.15rem;
+  align-items: center;
+  padding: 0.35rem 0;
+}
+
+.redesign :global(.punktlandung-final-player-metrics > p > svg) {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: var(--pl-result-violet);
+  grid-row: 1 / span 2;
+}
+
+.redesign :global(.punktlandung-final-player-metrics > p > strong) {
+  grid-column: 2;
+  color: #f7fafc;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.redesign :global(.punktlandung-final-player-metrics span) {
+  color: #c7d2e1 !important;
+  font-weight: 600 !important;
+}
+
+@media (max-width: 24rem) {
+  .redesign :global(.punktlandung-final-summary-metrics) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+.redesign :global(.punktlandung-feedback-dialog) {
+  border: 1px solid var(--pl-result-line) !important;
+  border-radius: 1rem !important;
+  background: rgb(14 25 42 / 0.98) !important;
+  box-shadow: 0 2rem 6rem rgb(0 0 0 / 0.55) !important;
+}
+
+.redesign :global(.punktlandung-feedback-dialog .punktlandung-feedback-field) {
+  border: 1px solid var(--pl-result-line) !important;
+  border-radius: 0.7rem !important;
+  color: #f7fafc !important;
+  background: rgb(7 14 27 / 0.82) !important;
+}
+
+.redesign :global(.punktlandung-feedback-dialog .punktlandung-feedback-field:focus) {
+  border-color: var(--pl-result-mint) !important;
+  box-shadow: 0 0 0 3px rgb(94 231 189 / 0.12) !important;
+}
+
+.redesign :global(.punktlandung-feedback-dialog button[type="submit"]) {
+  border: 1px solid var(--pl-result-mint) !important;
+  border-radius: 0.7rem !important;
+  color: #06231c !important;
+  background: var(--pl-result-mint) !important;
+  box-shadow: none !important;
+}
+
+.redesign :global(.punktlandung-feedback-dialog button[type="submit"]::before) {
+  display: none !important;
+}
+
+.redesign :global(.punktlandung-feedback-dialog > button:last-child) {
+  min-height: 3rem;
+  border: 1px solid var(--pl-result-line) !important;
+  border-radius: 0.7rem !important;
+  background: var(--pl-result-surface-soft) !important;
+}
+
+.redesign :global(.punktlandung-hit-chip-detail) {
+  color: var(--pl-result-muted);
+  font-weight: 500 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .redesign :global(.punktlandung-results-map .punktlandung-map-pin-actual),
+  .redesign :global(.punktlandung-image-replay .punktlandung-map-pin-actual) {
+    animation: none;
+  }
+}
+
+.redesign :global(.punktlandung-game-ad) {
+  inset: auto auto 1rem 1rem !important;
+  width: min(22vw, 15rem) !important;
+  height: 11rem !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  background: rgb(10 16 28 / 0.88) !important;
+}
+
+.redesign :global(.punktlandung-game-ad > ins) {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.redesign :global(.punktlandung-game-ad iframe) {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+.redesign :global(.punktlandung-results-panel .border-t),
+.redesign :global(.punktlandung-final-table .border-t) {
+  border-top: 0 !important;
+}
+
+.redesign :global(.punktlandung-results-footer-mobile) {
+  display: none;
+}
+
+.redesign :global(.punktlandung-results-footer),
+.redesign :global(.punktlandung-results-footer-mobile) {
+  display: none !important;
+}
+
+@media (min-width: 64rem) {
+  .redesign {
+    height: 100vh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 1rem !important;
+  }
+
+  .redesign :global(.punktlandung-results-grid) {
+    height: 100% !important;
+    min-height: 0 !important;
+    grid-template-columns: minmax(21rem, 0.9fr) minmax(0, 2fr) !important;
+    gap: 1rem !important;
+  }
+
+  .redesign :global(.punktlandung-results-grid > section) {
+    order: 2;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .redesign :global(.punktlandung-results-sidebar) {
+    order: 1;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    align-content: start;
+    grid-template-rows: auto auto auto !important;
+    gap: 0 !important;
+    padding: 0.85rem !important;
+    border: 1px solid var(--pl-result-line);
+    border-radius: 1rem;
+    background:
+      radial-gradient(circle at 15% 5%, rgb(94 231 189 / 0.08), transparent 38%),
+      var(--pl-result-surface);
+    box-shadow: 0 1.25rem 3.25rem rgb(0 0 0 / 0.22);
+  }
+
+  .redesign :global(.punktlandung-results-sidebar .punktlandung-results-panel) {
+    max-height: calc((100vh - 4rem) / 2);
+    padding: 0.3rem !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+  }
+
+  .redesign :global(.punktlandung-results-sidebar .punktlandung-results-overall-panel) {
+    margin-top: 0.8rem;
+    padding-top: 1rem !important;
+    border-top: 1px solid var(--pl-result-line) !important;
+  }
+
+  .redesign :global(.punktlandung-results-sidebar .punktlandung-results-list) {
+    max-height: calc((100vh - 14rem) / 2);
+    overflow-y: auto;
+    padding-right: 0.2rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(94 231 189 / 0.5) transparent;
+  }
+
+  .redesign :global(.punktlandung-final-standings-grid) {
+    grid-template-columns: minmax(31rem, 0.86fr) minmax(39rem, 1.14fr) !important;
+    gap: 1rem !important;
+  }
+
+  .redesign :global(.punktlandung-final-table) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .redesign :global(.punktlandung-final-table-list) {
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.2rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(94 231 189 / 0.5) transparent;
+  }
+
+  .redesign :global(.punktlandung-guess-map-panel--closed) {
+    width: min(31vw, 25rem) !important;
+    height: min(31vh, 14.25rem) !important;
+  }
+
+  .redesign :global(.punktlandung-guess-map-panel--open) {
+    width: min(54vw, 43rem) !important;
+    height: min(58vh, 32rem) !important;
+  }
+}
+
+@media (min-width: 64rem) and (max-width: 89.999rem) {
+  .redesign :global(.punktlandung-final-table-list.is-dense > .punktlandung-final-player-row) {
+    grid-template-columns: minmax(15rem, 1.35fr) minmax(8rem, 0.72fr) minmax(7rem, 0.68fr);
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics > p:nth-child(2)),
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics > p:nth-child(4)) {
+    display: none;
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense > .punktlandung-final-player-row.has-long-name .punktlandung-final-player-metrics > p:nth-child(2)) {
+    display: none;
+  }
+
+  .redesign :global(.punktlandung-results-sidebar .punktlandung-results-round-grid),
+  .redesign :global(.punktlandung-results-sidebar .punktlandung-results-total-row) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    row-gap: 0.35rem !important;
+  }
+
+  .redesign :global(.punktlandung-results-sidebar .punktlandung-results-scoreline) {
+    padding-left: 1.55rem;
+  }
+
+  .redesign :global(.punktlandung-results-sidebar .punktlandung-results-secondary-metrics) {
+    display: none;
+  }
+}
+
+@media (min-width: 150rem) {
+  .redesign {
+    padding: 2rem !important;
+  }
+
+  .redesign :global(.punktlandung-results-grid) {
+    grid-template-columns: minmax(30rem, 0.72fr) minmax(0, 2fr) !important;
+    gap: 1.5rem !important;
+  }
+
+  .redesign :global(.punktlandung-results-hero h1),
+  .redesign :global(.punktlandung-results-panel h2) {
+    font-size: 1.8rem !important;
+  }
+
+  .redesign :global(.punktlandung-game-ad) {
+    inset: auto auto 2rem 2rem !important;
+    width: min(22vw, 30rem) !important;
+    height: min(30vh, 20rem) !important;
+  }
+}
+
+@media (max-width: 63.999rem) {
+  .redesign :global(.punktlandung-results-grid),
+  .redesign :global(.punktlandung-final-standings-grid) {
+    min-height: 100%;
+  }
+
+  .redesign :global(.punktlandung-results-footer) {
+    display: none;
+  }
+
+  .redesign :global(.punktlandung-results-footer-mobile) {
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+@media (min-width: 52.001rem) and (max-width: 63.999rem) {
+  .redesign :global(.punktlandung-final-table-list.is-dense > .punktlandung-final-player-row) {
+    grid-template-columns: minmax(15rem, 1.4fr) minmax(8rem, 0.72fr) minmax(7rem, 0.68fr);
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics > p:nth-child(4)) {
+    display: none;
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense > .punktlandung-final-player-row.has-long-name .punktlandung-final-player-metrics) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense > .punktlandung-final-player-row.has-long-name .punktlandung-final-player-metrics > p:nth-child(1)),
+  .redesign :global(.punktlandung-final-table-list.is-dense > .punktlandung-final-player-row.has-long-name .punktlandung-final-player-metrics > p:nth-child(2)) {
+    display: none;
+  }
+}
+
+@media (max-width: 52rem) {
+  .redesign {
+    padding: 0.55rem !important;
+  }
+
+  .redesign :global(.punktlandung-results-hero),
+  .redesign :global(.punktlandung-results-panel),
+  .redesign :global(.punktlandung-results-map) {
+    border-radius: 0.85rem !important;
+  }
+
+  .redesign :global(.punktlandung-replay-info) {
+    max-width: calc(100vw - 1.1rem) !important;
+  }
+
+  .redesign :global(.punktlandung-results-mobile-actions) {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.35fr) !important;
+  }
+
+  .redesign :global(.punktlandung-results-mobile-actions > :last-child) {
+    grid-column: 1 / -1;
+  }
+
+  .redesign :global(.punktlandung-results-mobile-actions button) {
+    white-space: normal;
+  }
+
+  .redesign :global(.punktlandung-final-actions) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .redesign :global(.punktlandung-final-actions > *) {
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .redesign :global(.punktlandung-final-actions :is(.punktlandung-inline-action-content, .punktlandung-back-control-content)) {
+    white-space: normal;
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense > .punktlandung-final-player-row) {
+    display: block;
+    min-width: 0;
+    min-height: 0;
+    padding: 0.8rem 0.9rem 0.75rem 1rem !important;
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-identity),
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-score),
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-score) {
+    grid-template-columns: minmax(0, 1fr) max-content !important;
+    margin-top: 0.45rem !important;
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-score > div) {
+    width: 100%;
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.3rem 0.65rem;
+    margin-top: 0.45rem !important;
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics > p > span) {
+    display: block;
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics > p:nth-child(1)),
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-metrics > p:nth-child(4)) {
+    display: none;
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-title) {
+    font-size: 0.68rem !important;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-name-line) {
+    flex-wrap: wrap;
+  }
+}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { GameApp } from "@/components/GameApp";
 import { SoundProvider } from "@/components/SoundProvider";
+import { accountNavigationState } from "@/lib/accountNavigation.server";
 
 export const metadata: Metadata = {
   robots: {
@@ -10,11 +11,12 @@ export const metadata: Metadata = {
   }
 };
 
-export default function SpielenPage() {
+export default async function SpielenPage() {
+  const account = await accountNavigationState();
   return (
     <AppErrorBoundary>
       <SoundProvider>
-        <GameApp requiredStatus="guessing" />
+        <GameApp requiredStatus="guessing" accountsEnabled={account.enabled} accountAuthenticated={account.authenticated} accountDisplayName={account.displayName} />
       </SoundProvider>
     </AppErrorBoundary>
   );

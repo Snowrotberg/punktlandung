@@ -1,12 +1,30 @@
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
-import { GameApp } from "@/components/GameApp";
+import { HomeApp } from "@/components/HomeApp";
 import { SoundProvider } from "@/components/SoundProvider";
+import { accountNavigationState } from "@/lib/accountNavigation.server";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+type HomeProps = {
+  searchParams: Promise<{ code?: string; error?: string; error_code?: string; error_description?: string }>;
+};
+
+export default async function Home({ searchParams }: HomeProps) {
+  const authParams = await searchParams;
+  // Older deployments and a rejected Supabase redirect allow-list entry can
+  // send the PKCE code to the site root. Keep those sign-ins recoverable.
+  if (authParams.code || authParams.error) {
+    const callbackParams = new URLSearchParams({ returnTo: "/konto" });
+    for (const key of ["code", "error", "error_code", "error_description"] as const) {
+      const value = authParams[key];
+      if (value) callbackParams.set(key, value);
+    }
+    redirect(`/auth/callback?${callbackParams.toString()}`);
+  }
+  const account = await accountNavigationState();
   return (
     <AppErrorBoundary>
       <SoundProvider>
-        <GameApp />
+        <HomeApp accountsEnabled={account.enabled} accountAuthenticated={account.authenticated} accountDisplayName={account.displayName} />
       </SoundProvider>
     </AppErrorBoundary>
   );

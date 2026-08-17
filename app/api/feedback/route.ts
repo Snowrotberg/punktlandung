@@ -134,12 +134,12 @@ export async function POST(request: NextRequest) {
     service: "gmail",
     auth: { user: gmailUser, pass: gmailAppPassword }
   });
-  const subject = source === "post-game" ? `[Punktlandung Beta] Feedback nach ${mode}-Partie` : "[Punktlandung Beta] Allgemeines Feedback";
+  const subject = source === "post-game" ? `[Punktlandung Web] Feedback nach ${mode}-Partie` : "[Punktlandung Web] Allgemeines Feedback";
   const contextLines = [`Quelle: ${source}`, `Spielmodus: ${mode}`, `Kategorie: ${category}`, `Runden: ${rounds ?? "-"}`, `Rückfrage-E-Mail: ${email || "nicht angegeben"}`];
 
   try {
     await transport.sendMail({
-      from: `Punktlandung Beta <${gmailUser}>`,
+      from: `Punktlandung Web <${gmailUser}>`,
       to: recipient,
       replyTo: email || undefined,
       subject,

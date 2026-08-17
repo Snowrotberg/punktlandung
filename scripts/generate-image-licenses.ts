@@ -59,12 +59,20 @@ function fileKey(fileName: string): string {
   return fileName.replace(/^File:/i, "").replaceAll("_", " ").normalize("NFC").trim().toLocaleLowerCase();
 }
 
-const licenseOverrides = new Map<string, { license: string; licenseUrl: string }>([
+const licenseOverrides = new Map<string, { artist?: string; license: string; licenseUrl: string }>([
   [
     fileKey("Tianjin, China ESA15420167.jpeg"),
     {
       license: "CC BY-SA 3.0 IGO",
       licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/igo/"
+    }
+  ],
+  [
+    fileKey("Hegra, Al-Ula, Saudi Arabia.png"),
+    {
+      artist: "Ali Lajami",
+      license: "CC0 1.0",
+      licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/"
     }
   ]
 ]);
@@ -124,9 +132,9 @@ async function run() {
     const metadata = info?.extmetadata;
     const canonicalFileName = (info?.canonicaltitle ?? page?.title ?? `File:${requestedFileName}`).replace(/^File:/, "");
     const locations = locationsByFile.get(requestedFileName) ?? [];
-    const artist = metadataValue(metadata, "Artist") || metadataValue(metadata, "Credit") || "Nicht angegeben";
-    const originalSourceUrl = info?.descriptionurl ?? sourceUrlFor(canonicalFileName);
     const override = licenseOverrides.get(fileKey(canonicalFileName));
+    const artist = override?.artist ?? (metadataValue(metadata, "Artist") || metadataValue(metadata, "Credit") || "Nicht angegeben");
+    const originalSourceUrl = info?.descriptionurl ?? sourceUrlFor(canonicalFileName);
     let license = override?.license ?? (metadataValue(metadata, "LicenseShortName") || metadataValue(metadata, "UsageTerms") || "Nicht angegeben");
     let licenseUrl = override?.licenseUrl ?? (metadata?.LicenseUrl?.value?.trim() || null);
 

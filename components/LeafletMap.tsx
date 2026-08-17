@@ -1,13 +1,17 @@
 "use client";
 
-import { Marker, Polyline, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+import { Marker, Polyline, Popup, Tooltip, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import type { MapContainerProps } from "react-leaflet";
 import { LeafletProvider, createLeafletContext } from "@react-leaflet/core";
 import { Map as LeafletMapClass, divIcon, latLngBounds } from "leaflet";
-import type { LatLngExpression, Map as LeafletMapInstance, Polyline as LeafletPolyline } from "leaflet";
+import type { LatLngExpression, Map as LeafletMapInstance, Marker as LeafletMarkerInstance } from "leaflet";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { GeoLocation, Guess, LatLng, Player, RoundResult, RoundSummary } from "@/types/game";
 import { formatDistance, rankResults } from "@/lib/geo";
+import { PLAYER_PALETTE, playerColorAt, playerColorForId } from "@/lib/playerPalette";
+import { MapLibreBaseLayer } from "@/components/MapLibreBaseLayer";
+import { MapAttributionBadge } from "@/components/MapAttributionBadge";
 
 type LeafletMapProps = {
   mode: "guess" | "results";
@@ -20,11 +24,26 @@ type LeafletMapProps = {
   noPan?: boolean;
   noZoom?: boolean;
   showLabels?: boolean;
+  /** Scales the result-map padding; values below 1 zoom the fitted view in. */
+  resultPaddingScale?: number;
+  /** Applies an exact zoom scale after the normal fitted result view. */
+  resultZoomScale?: number;
+  /** Uses stable pin-relative label anchors for the decorative home preview. */
+  resultLabelLayout?: "auto" | "home-preview";
+  /** Pulls home-preview badges one third of their width toward the map center. */
+  resultLabelInset?: boolean;
+  /** Defers the decorative result-connector animation until its poster is ready to fade. */
+  animateResultConnector?: boolean;
   currentPlayerColor?: string;
   resizeSignal?: number | string | boolean;
   resetSignal?: number | string | boolean;
   onGuess?: (point: LatLng) => void;
+  onBaseMapReady?: () => void;
 };
+
+const playerPaletteStyle = Object.fromEntries(
+  PLAYER_PALETTE.map((color, index) => [`--player-color-${index}`, color])
+) as CSSProperties;
 
 type LabelPlacement = {
   offset: [number, number];
@@ -61,8 +80,8 @@ type PixelSegment = {
   b: PixelPoint;
 };
 
-const PLAYER_ELLIPSE_SIZE = { width: 28, height: 8 };
-const ACTUAL_ELLIPSE_SIZE = { width: 50, height: 14 };
+const PLAYER_ELLIPSE_SIZE = { width: 46, height: 14 };
+const ACTUAL_ELLIPSE_SIZE = { width: 58, height: 18 };
 const RESULT_MAX_ZOOM = 17;
 const GUESS_WORLD_BOUNDS = latLngBounds([
   [-85, -180],
@@ -147,22 +166,27 @@ function displayPointsForShortestWorld(points: LatLng[]): LatLng[] {
   return points.map((point) => ({ ...point, lng: lngNearestTo(point.lng, arcStart) }));
 }
 
-function pinIcon(color = "#f43f5e", actual = false) {
+function pinIcon(color = playerColorAt(0), actual = false) {
   return divIcon({
     className: "punktlandung-pin-icon",
-    html: `<div class="punktlandung-map-pin${actual ? " punktlandung-map-pin-actual" : " punktlandung-map-pin-player"}" style="--pin-color:${color}"><span></span></div>`,
+    html: `<div class="punktlandung-map-pin punktlandung-map-pin-vector${actual ? " punktlandung-map-pin-actual" : " punktlandung-map-pin-player"}" style="--pin-color:${color}"><svg viewBox="0 0 32 42" aria-hidden="true"><path class="punktlandung-map-pin-outline" fill-rule="evenodd" d="M16 42C16 42 3 24 3 15C3 6.7 8.8 1 16 1C23.2 1 29 6.7 29 15C29 24 16 42 16 42ZM16 9.75A5.25 5.25 0 1 0 16 20.25A5.25 5.25 0 1 0 16 9.75Z"/><path class="punktlandung-map-pin-fill" fill-rule="evenodd" d="M16 38C16 38 5 23 5 15C5 8.4 9.9 4 16 4C22.1 4 27 8.4 27 15C27 23 16 38 16 38ZM16 8A7 7 0 1 0 16 22A7 7 0 1 0 16 8Z"/><circle class="punktlandung-map-pin-core" cx="16" cy="15" r="7.15"/></svg></div>`,
     iconSize: [30, 42],
-    iconAnchor: [15, 38],
+    // The player pin path is centered on x=16.  Its old x=15 anchor made
+    // the pin sit one pixel to the right of its ellipse.  Keep the target's
+    // established anchor unchanged.
+    // Keep a small, deliberate air gap between the pin tip and its landing
+    // rings, matching the elevated reference marker without looking detached.
+    iconAnchor: [actual ? 15 : 16, actual ? 43 : 42],
     popupAnchor: [0, -38]
   });
 }
 
-function ellipseIcon(color = "#2563eb", actual = false) {
+function ellipseIcon(color = playerColorAt(0), actual = false) {
   const { width, height } = actual ? ACTUAL_ELLIPSE_SIZE : PLAYER_ELLIPSE_SIZE;
-  const verticalAnchor = height / 2 - (actual ? 3 : 2.5);
+  const verticalAnchor = height / 2 - (actual ? 3 : 5);
   return divIcon({
     className: "punktlandung-pin-ellipse-icon",
-    html: `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" aria-hidden="true" style="--ellipse-color:${color}"><ellipse cx="${width / 2}" cy="${height / 2}" rx="${width / 2 - 1.25}" ry="${height / 2 - 1.25}"></ellipse></svg>`,
+    html: `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" aria-hidden="true" style="--ellipse-color:${color}"><ellipse class="punktlandung-pin-ellipse-outer" cx="${width / 2}" cy="${height / 2}" rx="${width / 2 - 1.25}" ry="${height / 2 - 1.25}"></ellipse><ellipse class="punktlandung-pin-ellipse-middle" cx="${width / 2}" cy="${height / 2}" rx="${(width / 2 - 1.25) * 0.68}" ry="${(height / 2 - 1.25) * 0.68}"></ellipse><ellipse class="punktlandung-pin-ellipse-inner" cx="${width / 2}" cy="${height / 2}" rx="${(width / 2 - 1.25) * 0.38}" ry="${Math.max((height / 2 - 1.25) * 0.38, 0.9)}"></ellipse></svg>`,
     iconSize: [width, height],
     iconAnchor: [width / 2, verticalAnchor]
   });
@@ -177,18 +201,48 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function labelIcon(label: string, className: string, placement: LabelPlacement, labelHtml?: string) {
+function labelIcon(
+  label: string,
+  className: string,
+  placement: LabelPlacement,
+  labelHtml?: string,
+  edgeAnchor?: "left" | "right",
+  insetEdgeAnchor = false,
+  interactive = false
+) {
   const [dx, dy] = placement.offset;
   const { width, height } = placement.size;
+  const homeAnchorClass = className.includes("punktlandung-map-label-actual")
+    ? " punktlandung-map-label-marker-actual"
+    : className.includes("punktlandung-map-label-player")
+      ? " punktlandung-map-label-marker-player"
+      : "";
+  // Leaflet's icon box is deliberately wider than the rendered badge. For
+  // the home preview, an auto margin pins the requested *visible* badge edge
+  // to the geographic marker point, independent of text length and viewport.
+  const edgeAnchorStyles = [
+    edgeAnchor === "right" ? "margin-left:auto" : edgeAnchor === "left" ? "margin-right:auto" : "",
+    insetEdgeAnchor && edgeAnchor === "right"
+      ? "transform:translateX(33.333%)"
+      : insetEdgeAnchor && edgeAnchor === "left"
+        ? "transform:translateX(-33.333%)"
+        : ""
+  ].filter(Boolean);
+  const edgeAnchorStyle = edgeAnchorStyles.length ? ` style="${edgeAnchorStyles.join(";")}"` : "";
   return divIcon({
-    className: "punktlandung-map-label-marker",
-    html: `<span class="${className}">${labelHtml ?? escapeHtml(label)}</span>`,
+    className: `punktlandung-map-label-marker${homeAnchorClass}${interactive ? " is-interactive" : ""}`,
+    html: `<span class="${className}"${edgeAnchorStyle}>${labelHtml ?? escapeHtml(label)}</span>`,
     iconSize: [width, height],
-    iconAnchor: [width / 2 - dx, height / 2 - dy]
+    iconAnchor: [width / 2 - dx, height / 2 - dy],
+    // Interactive target labels own their information popover. Anchor the
+    // popup to the rendered label center rather than to the geographic pin.
+    // This keeps the speech-bubble pointer aligned even when the collision
+    // solver moves the label away from the pin.
+    popupAnchor: interactive ? [dx, dy] : [0, 0]
   });
 }
 
-const actualPinIcon = pinIcon("#34d399", true);
+const actualPinIcon = pinIcon("#5ee7bd", true);
 
 function ClickHandler({ disabled, onGuess }: { disabled?: boolean; onGuess?: (point: LatLng) => void }) {
   useMapEvents({
@@ -217,7 +271,7 @@ function MapInteractionState({ noPan, noZoom }: { noPan?: boolean; noZoom?: bool
     setHandler(map.keyboard, noZoom);
   }, [map, noPan, noZoom]);
 
-  return noZoom ? null : <ZoomControl position="topleft" />;
+  return noZoom ? null : <ZoomControl position="topright" />;
 }
 
 function GuessViewportReset({
@@ -244,10 +298,10 @@ function GuessViewportReset({
 }
 
 function playerColor(players: Player[] | undefined, playerId: string): string {
-  return players?.find((player) => player.id === playerId)?.color ?? "#ef4444";
+  return playerColorForId(players, playerId);
 }
 
-function guessColor(players: Player[] | undefined, guess?: LatLng | null, fallback = "#f43f5e"): string {
+function guessColor(players: Player[] | undefined, guess?: LatLng | null, fallback = playerColorAt(0)): string {
   if (!guess || !("playerId" in guess) || typeof guess.playerId !== "string") return fallback;
   return playerColor(players, guess.playerId);
 }
@@ -261,8 +315,8 @@ function playerColorIndex(players: Player[] | undefined, playerId: string): numb
   return index >= 0 ? index % 10 : 0;
 }
 
-function playerColorIndexByColor(players: Player[] | undefined, color?: string): number {
-  const index = players?.findIndex((player) => player.color === color) ?? -1;
+function playerColorIndexByColor(color?: string): number {
+  const index = PLAYER_PALETTE.findIndex((playerColor) => playerColor === color);
   return index >= 0 ? index % 10 : 0;
 }
 
@@ -271,7 +325,10 @@ function MapResizer({ resizeSignal }: { resizeSignal?: number | string | boolean
 
   useEffect(() => {
     const container = map.getContainer();
-    const timers: number[] = [];
+    let frame: number | null = null;
+    let settleTimer: number | null = null;
+    let lastWidth = 0;
+    let lastHeight = 0;
     const invalidate = () => {
       try {
         map.invalidateSize(false);
@@ -279,82 +336,321 @@ function MapResizer({ resizeSignal }: { resizeSignal?: number | string | boolean
         // Leaflet can briefly outlive its DOM node during mobile orientation changes.
       }
     };
-    const resize = () => {
-      timers.push(window.setTimeout(invalidate, 0));
-      timers.push(window.setTimeout(invalidate, 40));
-      timers.push(window.setTimeout(invalidate, 140));
-      timers.push(window.setTimeout(invalidate, 260));
-      timers.push(window.setTimeout(invalidate, 520));
+    const schedule = () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      if (settleTimer !== null) window.clearTimeout(settleTimer);
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        invalidate();
+      });
+      settleTimer = window.setTimeout(() => {
+        settleTimer = null;
+        invalidate();
+      }, 140);
     };
-    resize();
-    const observer = new ResizeObserver(resize);
+    schedule();
+    const observer = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect;
+      if (!box) return;
+      if (Math.abs(box.width - lastWidth) < 0.5 && Math.abs(box.height - lastHeight) < 0.5) return;
+      lastWidth = box.width;
+      lastHeight = box.height;
+      schedule();
+    });
     observer.observe(container);
     return () => {
       observer.disconnect();
-      timers.forEach((timer) => window.clearTimeout(timer));
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      if (settleTimer !== null) window.clearTimeout(settleTimer);
     };
   }, [map]);
 
   useEffect(() => {
-    const timers = [
-      window.setTimeout(() => {
-        try {
-          map.invalidateSize(false);
-        } catch {}
-      }, 0),
-      window.setTimeout(() => {
-        try {
-          map.invalidateSize(false);
-        } catch {}
-      }, 40),
-      window.setTimeout(() => {
-        try {
-          map.invalidateSize(false);
-        } catch {}
-      }, 140),
-      window.setTimeout(() => {
-        try {
-          map.invalidateSize(false);
-        } catch {}
-      }, 320),
-      window.setTimeout(() => {
-        try {
-          map.invalidateSize(false);
-        } catch {}
-      }, 620)
-    ];
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        map.invalidateSize(false);
+      } catch {}
+    });
+    const settleTimer = window.setTimeout(() => {
+      try {
+        map.invalidateSize(false);
+      } catch {}
+    }, 180);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(settleTimer);
+    };
   }, [map, resizeSignal]);
 
   return null;
 }
 
-function resultBoundsPadding(map: LeafletMapInstance, showLabels: boolean): [number, number] {
+function resultBoundsPadding(map: LeafletMapInstance, showLabels: boolean, paddingScale = 1): [number, number] {
   const container = map.getContainer();
   const width = container.clientWidth || 360;
   const height = container.clientHeight || 220;
 
   if (!showLabels) {
-    return [Math.max(74, Math.min(132, width * 0.22)), Math.max(70, Math.min(124, height * 0.28))];
+    return [
+      Math.max(24, Math.max(74, Math.min(132, width * 0.22)) * paddingScale),
+      Math.max(24, Math.max(70, Math.min(124, height * 0.28)) * paddingScale)
+    ];
   }
 
   if (width <= 420) {
-    return [Math.max(64, Math.min(92, width * 0.22)), Math.max(82, Math.min(132, height * 0.22))];
+    return [
+      Math.max(24, Math.max(88, Math.min(108, width * 0.27)) * paddingScale),
+      Math.max(24, Math.max(98, Math.min(142, height * 0.27)) * paddingScale)
+    ];
   }
 
-  return [Math.max(140, Math.min(244, width * 0.28)), Math.max(102, Math.min(168, height * 0.28))];
+  return [
+    Math.max(24, Math.max(140, Math.min(244, width * 0.28)) * paddingScale),
+    Math.max(24, Math.max(102, Math.min(168, height * 0.28)) * paddingScale)
+  ];
+}
+
+function homePreviewPlacements(mapSize: { x: number; y: number }, locationTitle: string, playerLabel: string) {
+  const compact = mapSize.x <= 520 && mapSize.y >= mapSize.x;
+  const tv = mapSize.x >= 1000;
+  const actualBadgeGap = tv ? 34 : 20;
+  const playerBadgeGap = tv ? 72 : 48;
+  const scaleForViewport = (size: { width: number; height: number }) => tv
+    ? { width: Math.round(size.width * 1.5), height: Math.round(size.height * 1.45) }
+    : size;
+  const actualDimensions = scaleForViewport(labelSize(locationTitle, true, compact));
+  const playerDimensions = scaleForViewport(labelSize(playerLabel, false, compact));
+  return {
+    actual: {
+      // The target label sits below and to the left of the pin. Its visible
+      // right edge ends exactly beneath the geographic pin tip.
+      offset: [
+        -actualDimensions.width / 2,
+        actualDimensions.height / 2 + actualBadgeGap
+      ] as [number, number],
+      size: actualDimensions
+    },
+    player: {
+      // The player label sits above and to the right of the pin. Its visible
+      // left edge starts exactly above the pin tip; the remaining vertical
+      // gap mirrors the target label's gap beneath the target ellipse.
+      offset: [playerDimensions.width / 2, -playerDimensions.height / 2 - playerBadgeGap] as [number, number],
+      size: playerDimensions
+    }
+  };
+}
+
+function centerHomePreviewVisuals(map: LeafletMapInstance, summary: RoundSummary, players?: Player[]) {
+  const result = rankResults(summary.results).find((item) => item.guess);
+  if (!result?.guess) return;
+
+  const displayPoints = displayPointsForShortestWorld([summary.location, result.guess]);
+  const displayLocation = displayPoints[0] ?? summary.location;
+  const displayGuess = displayPoints[1] ?? result.guess;
+  const mapSize = map.getSize();
+  const hideDistance = isTerritoryHit(summary.location, result);
+  const resultLabel = hideDistance ? territoryHitLabel(summary.location) : formatDistance(result.distanceKm);
+  const playerLabel = `#1 ${playerName(players, result.playerId)} · ${resultLabel}`;
+  const placements = homePreviewPlacements(mapSize, summary.location.title, playerLabel);
+  const locationPoint = map.latLngToContainerPoint([displayLocation.lat, displayLocation.lng]);
+  const guessPoint = map.latLngToContainerPoint([displayGuess.lat, displayGuess.lng]);
+  const rects = mapSize.x <= 520
+    ? [pinBlockRect(map, displayLocation), pinBlockRect(map, displayGuess)]
+    : [
+        labelRectFor(
+          locationPoint,
+          placements.actual.size.width,
+          placements.actual.size.height,
+          placements.actual.offset[0],
+          placements.actual.offset[1]
+        ),
+        labelRectFor(
+          guessPoint,
+          placements.player.size.width,
+          placements.player.size.height,
+          placements.player.offset[0],
+          placements.player.offset[1]
+        ),
+        pinBlockRect(map, displayLocation),
+        pinBlockRect(map, displayGuess)
+      ];
+  const visualRect = rects.reduce((combined, rect) => ({
+    left: Math.min(combined.left, rect.left),
+    top: Math.min(combined.top, rect.top),
+    right: Math.max(combined.right, rect.right),
+    bottom: Math.max(combined.bottom, rect.bottom)
+  }));
+  const margin = mapSize.x <= 520 ? 14 : 22;
+  const desiredX = mapSize.x / 2 - (visualRect.left + visualRect.right) / 2;
+  const desiredY = mapSize.y / 2 - (visualRect.top + visualRect.bottom) / 2;
+  const minX = margin - visualRect.left;
+  const maxX = mapSize.x - margin - visualRect.right;
+  const minY = margin - visualRect.top;
+  const maxY = mapSize.y - margin - visualRect.bottom;
+  const deltaX = minX <= maxX ? Math.max(minX, Math.min(maxX, desiredX)) : desiredX;
+  const deltaY = minY <= maxY ? Math.max(minY, Math.min(maxY, desiredY)) : desiredY;
+
+  map.panBy([-deltaX, -deltaY], { animate: false });
+}
+
+function HomePreviewSafeArea({ enabled, onSettled }: { enabled: boolean; onSettled?: () => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const container = map.getContainer();
+    let timer: number | null = null;
+    let activationTimer: number | null = null;
+    let fontFallbackTimer: number | null = null;
+    let cancelled = false;
+    let active = false;
+    let correctionAttempts = 0;
+    let fitDelayElapsed = false;
+    let fontsReady = document.fonts?.status === "loaded" || !document.fonts;
+
+    const schedule = (delay = 0) => {
+      // Do not let a stream of Android viewport resize notifications postpone
+      // the pending correction forever.
+      if (timer !== null) return;
+      timer = window.setTimeout(enforce, delay);
+    };
+
+    const enforce = () => {
+      timer = null;
+      if (cancelled || !active) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const visualElements = [
+        ...container.querySelectorAll<HTMLElement>(".punktlandung-map-label"),
+        ...container.querySelectorAll<HTMLElement>(".punktlandung-map-pin"),
+        ...container.querySelectorAll<HTMLElement>(".punktlandung-pin-ellipse-icon svg")
+      ].filter((element) => {
+        const style = window.getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+      });
+
+      if (visualElements.length < 6 || containerRect.width <= 0 || containerRect.height <= 0) {
+        schedule(100);
+        return;
+      }
+      const visualRect = visualElements
+        .map((element) => element.getBoundingClientRect())
+        .reduce<LabelRect>((combined, rect) => ({
+          left: Math.min(combined.left, rect.left),
+          top: Math.min(combined.top, rect.top),
+          right: Math.max(combined.right, rect.right),
+          bottom: Math.max(combined.bottom, rect.bottom)
+        }), { left: Number.POSITIVE_INFINITY, top: Number.POSITIVE_INFINITY, right: Number.NEGATIVE_INFINITY, bottom: Number.NEGATIVE_INFINITY });
+      const desiredInsetX = Math.max(16, Math.min(28, containerRect.width * 0.045));
+      // Desktop preview cards are deliberately shallow. A proportional
+      // vertical inset would leave less room than the fixed-height labels and
+      // could therefore never converge, even at minimum zoom.
+      const desiredInsetY = Math.max(12, Math.min(20, containerRect.height * 0.05));
+      const visualWidth = visualRect.right - visualRect.left;
+      const visualHeight = visualRect.bottom - visualRect.top;
+      const atMinimumZoom = map.getZoom() <= map.getMinZoom() + 0.05;
+      const insetX = atMinimumZoom
+        ? Math.max(4, Math.min(desiredInsetX, (containerRect.width - visualWidth) / 2))
+        : desiredInsetX;
+      const insetY = atMinimumZoom
+        ? Math.max(4, Math.min(desiredInsetY, (containerRect.height - visualHeight) / 2))
+        : desiredInsetY;
+      const safeWidth = containerRect.width - insetX * 2;
+      const safeHeight = containerRect.height - insetY * 2;
+
+      // Labels have device-dependent text metrics. Zoom based on their real
+      // rendered bounds instead of assuming a fixed phone width or font size.
+      if ((visualWidth > safeWidth + 0.5 || visualHeight > safeHeight + 0.5) && map.getZoom() > map.getMinZoom() + 0.05) {
+        correctionAttempts += 1;
+        const requiredScale = Math.min(safeWidth / visualWidth, safeHeight / visualHeight);
+        const zoomStep = correctionAttempts >= 12
+          ? map.getMinZoom() - map.getZoom()
+          : Math.max(-0.45, Math.min(-0.08, Math.log2(Math.max(0.72, requiredScale))));
+        map.setZoom(Math.max(map.getMinZoom(), map.getZoom() + zoomStep), { animate: false });
+        schedule(100);
+        return;
+      }
+
+      const safeLeft = containerRect.left + insetX;
+      const safeRight = containerRect.right - insetX;
+      const safeTop = containerRect.top + insetY;
+      const safeBottom = containerRect.bottom - insetY;
+      let translateX = 0;
+      let translateY = 0;
+
+      if (visualRect.left < safeLeft) translateX = safeLeft - visualRect.left;
+      if (visualRect.right + translateX > safeRight) translateX += safeRight - (visualRect.right + translateX);
+      if (visualRect.top < safeTop) translateY = safeTop - visualRect.top;
+      if (visualRect.bottom + translateY > safeBottom) translateY += safeBottom - (visualRect.bottom + translateY);
+
+      if (Math.abs(translateX) > 0.5 || Math.abs(translateY) > 0.5) {
+        correctionAttempts += 1;
+        map.panBy([-translateX, -translateY], { animate: false });
+        schedule(100);
+        return;
+      }
+
+      // No further camera operation is queued, so this measured frame is the
+      // final one. The separate QA stability window verifies it stays fixed.
+      active = false;
+      onSettled?.();
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (!active) return;
+      schedule(100);
+    });
+    resizeObserver.observe(container);
+    const activateWhenReady = () => {
+      if (cancelled || active || !fitDelayElapsed || !fontsReady) return;
+      active = true;
+      schedule(0);
+    };
+    document.fonts?.ready.then(() => {
+      fontsReady = true;
+      activateWhenReady();
+    }).catch(() => {});
+    // ResultBounds performs its final compatibility fit at 980 ms. Start the
+    // measured correction only after that sequence, never concurrently.
+    activationTimer = window.setTimeout(() => {
+      fitDelayElapsed = true;
+      activateWhenReady();
+    }, 1120);
+    fontFallbackTimer = window.setTimeout(() => {
+      fontsReady = true;
+      activateWhenReady();
+    }, 2000);
+
+    return () => {
+      cancelled = true;
+      if (timer !== null) window.clearTimeout(timer);
+      if (activationTimer !== null) window.clearTimeout(activationTimer);
+      if (fontFallbackTimer !== null) window.clearTimeout(fontFallbackTimer);
+      resizeObserver.disconnect();
+    };
+  }, [enabled, map, onSettled]);
+
+  return null;
 }
 
 function ResultBounds({
   summary,
   players,
   showLabels,
-  resizeSignal
+  resultPaddingScale,
+  resultZoomScale,
+  resizeSignal,
+  resultLabelLayout
 }: {
   summary?: RoundSummary | null;
   players?: Player[];
   showLabels: boolean;
+  resultPaddingScale?: number;
+  resultZoomScale?: number;
   resizeSignal?: number | string | boolean;
+  resultLabelLayout?: "auto" | "home-preview";
 }) {
   const map = useMap();
 
@@ -368,22 +664,58 @@ function ResultBounds({
       return;
     }
     const bounds = latLngBounds(points);
+    const container = map.getContainer();
+    let frame: number | null = null;
+    let lastWidth = container.clientWidth;
+    let lastHeight = container.clientHeight;
     const fit = () => {
       try {
+        // Do not let the delayed compatibility fits undo Leaflet's auto-pan
+        // after a user has opened the location information popover.
+        if (map.getContainer().querySelector(".punktlandung-location-info-popup")) return;
         map.invalidateSize(false);
+        const previousZoomSnap = map.options.zoomSnap;
+        map.options.zoomSnap = 1;
         map.fitBounds(bounds, {
           animate: false,
-          padding: resultBoundsPadding(map, showLabels),
+          padding: resultBoundsPadding(map, showLabels, resultPaddingScale),
           maxZoom: RESULT_MAX_ZOOM
         });
+        if (resultZoomScale && resultZoomScale !== 1) {
+          const fittedZoom = map.getZoom();
+          map.options.zoomSnap = 0.01;
+          map.setZoom(fittedZoom + Math.log2(resultZoomScale), { animate: false });
+        }
+        map.options.zoomSnap = previousZoomSnap;
+        if (resultLabelLayout === "home-preview") {
+          centerHomePreviewVisuals(map, summary, players);
+        }
       } catch {
         // Map can be mid-unmount while switching round/result layouts.
       }
     };
-    fit();
-    const timers = [window.setTimeout(fit, 90), window.setTimeout(fit, 320), window.setTimeout(fit, 700), window.setTimeout(fit, 980)];
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [map, summary, players?.length, showLabels, resizeSignal]);
+    const scheduleFit = () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        fit();
+      });
+    };
+    const observer = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect;
+      if (!box) return;
+      if (Math.abs(box.width - lastWidth) < 0.5 && Math.abs(box.height - lastHeight) < 0.5) return;
+      lastWidth = box.width;
+      lastHeight = box.height;
+      scheduleFit();
+    });
+    observer.observe(container);
+    scheduleFit();
+    return () => {
+      observer.disconnect();
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [map, summary, players, showLabels, resultPaddingScale, resultZoomScale, resizeSignal, resultLabelLayout]);
 
   return null;
 }
@@ -628,7 +960,7 @@ function resultTooltipPlacement(
   const compact = size.x <= 520 && size.y >= size.x;
   const dimensions = labelSize(label, actual, compact);
   const candidates = placementCandidates(dimensions.width, dimensions.height, actual, preferredVector, compact);
-  const viewportMargin = compact ? 12 : 30;
+  const viewportMargin = compact ? 18 : 30;
   const pinRect: LabelRect = {
     left: pixel.x - 18,
     top: pixel.y - 44,
@@ -733,6 +1065,9 @@ function ResultMarker({
   labelHtml,
   className,
   placement,
+  edgeAnchor,
+  insetEdgeAnchor,
+  description,
   zIndexOffset = 0
 }: {
   point: LatLng;
@@ -740,10 +1075,123 @@ function ResultMarker({
   labelHtml?: string;
   className: string;
   placement: LabelPlacement;
+  edgeAnchor?: "left" | "right";
+  insetEdgeAnchor?: boolean;
+  description?: string;
   zIndexOffset?: number;
 }) {
+  const map = useMap();
+  const markerRef = useRef<LeafletMarkerInstance | null>(null);
+  const pinnedRef = useRef(false);
+  const closeTimerRef = useRef<number | null>(null);
+  const mapSize = map.getSize();
+  const compactPortraitPopup = mapSize.x <= 480 && mapSize.x <= mapSize.y;
+  const compactLandscapePopup = mapSize.x <= 960 && mapSize.x > mapSize.y;
+  const popupWidth = compactPortraitPopup
+    ? Math.max(210, Math.min(252, mapSize.x - 72))
+    : compactLandscapePopup
+      ? 224
+      : 260;
+  const markerPixel = map.latLngToContainerPoint([point.lat, point.lng]);
+  const labelCenterY = markerPixel.y + placement.offset[1];
+  const estimatedPopupHeight = compactPortraitPopup ? 172 : 132;
+  const openBelowLabel = labelCenterY - placement.size.height / 2 < estimatedPopupHeight + 28;
+  const popupVerticalOffset = openBelowLabel
+    ? placement.size.height / 2 + 14 + estimatedPopupHeight
+    : -placement.size.height / 2 - 14;
+
+  const cancelScheduledClose = () => {
+    if (closeTimerRef.current === null) return;
+    window.clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  };
+
+  const scheduleClose = () => {
+    cancelScheduledClose();
+    closeTimerRef.current = window.setTimeout(() => {
+      closeTimerRef.current = null;
+      if (!pinnedRef.current) markerRef.current?.closePopup();
+    }, 180);
+  };
+
+  useEffect(() => {
+    if (!description) return;
+    const markerElement = markerRef.current?.getElement();
+    const openOnFocus = () => {
+      cancelScheduledClose();
+      markerRef.current?.openPopup();
+    };
+    const closeOnBlur = scheduleClose;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      pinnedRef.current = false;
+      cancelScheduledClose();
+      markerRef.current?.closePopup();
+    };
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!pinnedRef.current || !(event.target instanceof Element)) return;
+      if (markerElement?.contains(event.target) || event.target.closest(".punktlandung-location-info-popup")) return;
+      pinnedRef.current = false;
+      cancelScheduledClose();
+      markerRef.current?.closePopup();
+    };
+    markerElement?.addEventListener("focus", openOnFocus);
+    markerElement?.addEventListener("blur", closeOnBlur);
+    document.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => {
+      markerElement?.removeEventListener("focus", openOnFocus);
+      markerElement?.removeEventListener("blur", closeOnBlur);
+      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      cancelScheduledClose();
+    };
+  }, [description]);
+
   return (
-    <Marker position={[point.lat, point.lng]} icon={labelIcon(label, className, placement, labelHtml)} interactive={false} zIndexOffset={zIndexOffset} />
+    <Marker
+      ref={markerRef}
+      position={[point.lat, point.lng]}
+      icon={labelIcon(label, className, placement, labelHtml, edgeAnchor, insetEdgeAnchor, Boolean(description))}
+      interactive={Boolean(description)}
+      keyboard={Boolean(description)}
+      title={description ? `${label}: Zusatzinformationen anzeigen` : undefined}
+      alt={description ? `${label}: Zusatzinformationen anzeigen` : label}
+      eventHandlers={description ? {
+        mouseover: () => {
+          cancelScheduledClose();
+          markerRef.current?.openPopup();
+        },
+        mouseout: scheduleClose,
+        click: () => {
+          cancelScheduledClose();
+          pinnedRef.current = !pinnedRef.current;
+          if (pinnedRef.current) markerRef.current?.openPopup();
+          else markerRef.current?.closePopup();
+        }
+      } : undefined}
+      zIndexOffset={zIndexOffset}
+    >
+      {description && (
+        <Popup
+          className={`punktlandung-location-info-popup${openBelowLabel ? " is-below-label" : ""}`}
+          offset={[0, popupVerticalOffset]}
+          minWidth={popupWidth}
+          maxWidth={compactPortraitPopup || compactLandscapePopup ? popupWidth : 320}
+          autoPan
+          autoPanPadding={[32, 32]}
+          keepInView
+          closeButton
+          eventHandlers={{
+            mouseover: cancelScheduledClose,
+            mouseout: scheduleClose
+          }}
+        >
+          <strong>{label}</strong>
+          <span>{description}</span>
+        </Popup>
+      )}
+    </Marker>
   );
 }
 
@@ -752,12 +1200,18 @@ function ResultsMarkers({
   players,
   guesses,
   showLabels,
+  resultLabelLayout,
+  resultLabelInset,
+  animateResultConnector = true,
   resizeSignal
 }: {
   summary?: RoundSummary | null;
   players?: Player[];
   guesses: Guess[];
   showLabels: boolean;
+  resultLabelLayout?: "auto" | "home-preview";
+  resultLabelInset?: boolean;
+  animateResultConnector?: boolean;
   resizeSignal?: number | string | boolean;
 }) {
   const map = useMap();
@@ -815,7 +1269,30 @@ function ResultsMarkers({
       if (displayGuess) occupied.push(pinBlockRect(map, displayGuess));
     }
 
-    const actualPlacement = resultTooltipPlacement(
+    const homePlacements = homePreviewPlacements(
+      mapSize,
+      location.title,
+      rankedResults[0]
+        ? `#1 ${playerName(players, rankedResults[0].playerId)} · ${
+            isTerritoryHit(location, rankedResults[0])
+              ? territoryHitLabel(location)
+              : formatDistance(rankedResults[0].distanceKm)
+          }`
+        : ""
+    );
+    const actualDimensions = homePlacements.actual.size;
+    const actualPlacement = resultLabelLayout === "home-preview"
+      ? {
+          placement: homePlacements.actual,
+          rect: labelRectFor(
+            locationPoint,
+            actualDimensions.width,
+            actualDimensions.height,
+            homePlacements.actual.offset[0],
+            homePlacements.actual.offset[1]
+          )
+        }
+      : resultTooltipPlacement(
       map,
       displayLocation,
       location.title,
@@ -833,10 +1310,22 @@ function ResultsMarkers({
       const guessPoint = map.latLngToContainerPoint([displayGuess.lat, displayGuess.lng]);
       const hideDistance = isTerritoryHit(location, result);
       const resultLabel = hideDistance ? territoryHitLabel(location) : formatDistance(result.distanceKm);
-      const label = `#${index + 1} ${playerName(players, result.playerId)} - ${resultLabel}`;
+      const label = `#${index + 1} ${playerName(players, result.playerId)} · ${resultLabel}`;
       const outwardVector = vectorAwayFrom(guessPoint, mapCenter);
       const targetVector = vectorAwayFrom(guessPoint, locationPoint);
-      const placement = resultTooltipPlacement(
+      const playerDimensions = labelSize(label, false, mapSize.x <= 520 && mapSize.y >= mapSize.x);
+      const placement = resultLabelLayout === "home-preview"
+        ? {
+            placement: homePlacements.player,
+            rect: labelRectFor(
+              guessPoint,
+              playerDimensions.width,
+              playerDimensions.height,
+              homePlacements.player.offset[0],
+              homePlacements.player.offset[1]
+            )
+          }
+        : resultTooltipPlacement(
         map,
         displayGuess,
         label,
@@ -853,7 +1342,7 @@ function ResultsMarkers({
     }
 
     return { actual: actualPlacement.placement, players: playerPlacements };
-  }, [showLabels, location, rankedResults, map, players, viewportVersion, resizeSignal, displayGeometry]);
+  }, [showLabels, location, rankedResults, map, players, viewportVersion, resizeSignal, displayGeometry, resultLabelLayout, resultLabelInset]);
 
   return (
     <>
@@ -866,8 +1355,8 @@ function ResultsMarkers({
           const hideDistance = isTerritoryHit(location, result);
           const resultLabel = hideDistance ? territoryHitLabel(location) : formatDistance(result.distanceKm);
           const playerLabelPrefix = `#${index + 1} ${playerName(players, result.playerId)}`;
-          const playerLabel = `${playerLabelPrefix} - ${resultLabel}`;
-          const playerLabelHtml = `${escapeHtml(playerLabelPrefix)}<span class="punktlandung-map-label-distance"> - ${escapeHtml(resultLabel)}</span>`;
+          const playerLabel = `${playerLabelPrefix} · ${resultLabel}`;
+          const playerLabelHtml = `${escapeHtml(playerLabelPrefix)}<span class="punktlandung-map-label-distance"> · ${escapeHtml(resultLabel)}</span>`;
           const placement = placements.players.get(result.playerId);
 
           return (
@@ -875,6 +1364,7 @@ function ResultsMarkers({
               {!hideDistance && (
                 <FlowingResultConnector
                   color={color}
+                  animate={animateResultConnector}
                   positions={[
                     [point.lat, point.lng],
                     [displayGeometry?.location.lat ?? location.lat, displayGeometry?.location.lng ?? location.lng]
@@ -890,6 +1380,8 @@ function ResultsMarkers({
                     labelHtml={playerLabelHtml}
                     className={`punktlandung-map-label punktlandung-map-label-player punktlandung-player-color-${colorIndex}`}
                     placement={placement}
+                    edgeAnchor={resultLabelLayout === "home-preview" ? "left" : undefined}
+                    insetEdgeAnchor={resultLabelInset}
                   />
                 </>
               ) : (
@@ -917,7 +1409,7 @@ function ResultsMarkers({
           <>
             <Marker
               position={[displayGeometry?.location.lat ?? location.lat, displayGeometry?.location.lng ?? location.lng]}
-              icon={ellipseIcon("#34d399", true)}
+              icon={ellipseIcon("#5ee7bd", true)}
               interactive={false}
               zIndexOffset={-900}
             />
@@ -927,6 +1419,9 @@ function ResultsMarkers({
               label={location.title}
               className="punktlandung-map-label punktlandung-map-label-actual"
               placement={placements.actual}
+              edgeAnchor={resultLabelLayout === "home-preview" ? "right" : undefined}
+              insetEdgeAnchor={resultLabelInset}
+              description={resultLabelLayout === "home-preview" ? undefined : location.shortDescription}
               zIndexOffset={1000}
             />
           </>
@@ -934,7 +1429,7 @@ function ResultsMarkers({
           <>
             <Marker
               position={[displayGeometry?.location.lat ?? location.lat, displayGeometry?.location.lng ?? location.lng]}
-              icon={ellipseIcon("#34d399", true)}
+              icon={ellipseIcon("#5ee7bd", true)}
               interactive={false}
               zIndexOffset={-900}
             />
@@ -947,29 +1442,41 @@ function ResultsMarkers({
 
 type FlowingResultConnectorProps = {
   color: string;
+  animate?: boolean;
   positions: [LatLngExpression, LatLngExpression];
 };
 
-function FlowingResultConnector({ color, positions }: FlowingResultConnectorProps) {
+function FlowingResultConnector({ color, animate = true, positions }: FlowingResultConnectorProps) {
   const map = useMap();
-  const lineRef = useRef<LeafletPolyline | null>(null);
   const [playerPosition, targetPosition] = positions;
-  const playerPoint = map.latLngToContainerPoint(playerPosition);
+  const playerAnchor = map.latLngToContainerPoint(playerPosition);
   const targetAnchor = map.latLngToContainerPoint(targetPosition);
-  const ellipseCenter = {
+  const playerEllipseCenter = {
+    x: playerAnchor.x,
+    y: playerAnchor.y + 5
+  };
+  const targetEllipseCenter = {
     x: targetAnchor.x,
     y: targetAnchor.y + 3
   };
   const direction = {
-    x: playerPoint.x - ellipseCenter.x,
-    y: playerPoint.y - ellipseCenter.y
+    x: targetEllipseCenter.x - playerEllipseCenter.x,
+    y: targetEllipseCenter.y - playerEllipseCenter.y
   };
   const directionLength = Math.hypot(direction.x, direction.y);
   const unitDirection =
     directionLength > 0
       ? { x: direction.x / directionLength, y: direction.y / directionLength }
       : { x: 0, y: 0 };
-  const ellipseRadius =
+  const playerEllipseRadius =
+    directionLength > 0
+      ? 1 /
+        Math.sqrt(
+          (unitDirection.x * unitDirection.x) / Math.pow(PLAYER_ELLIPSE_SIZE.width / 2, 2) +
+            (unitDirection.y * unitDirection.y) / Math.pow(PLAYER_ELLIPSE_SIZE.height / 2, 2)
+        )
+      : 0;
+  const targetEllipseRadius =
     directionLength > 0
       ? 1 /
         Math.sqrt(
@@ -977,42 +1484,31 @@ function FlowingResultConnector({ color, positions }: FlowingResultConnectorProp
             (unitDirection.y * unitDirection.y) / Math.pow(ACTUAL_ELLIPSE_SIZE.height / 2, 2)
         )
       : 0;
-  const connectorGap = 3;
-  const visibleTarget = map.containerPointToLatLng([
-    ellipseCenter.x + unitDirection.x * (ellipseRadius + connectorGap),
-    ellipseCenter.y + unitDirection.y * (ellipseRadius + connectorGap)
+  // Keep the animated connector visibly clear of both pin ellipses.  The
+  // previous 3px gap made the dash endpoints look cramped on result and
+  // replay maps, especially at laptop/TV scales.
+  const connectorGap = 10;
+  const visiblePlayer = map.containerPointToLatLng([
+    playerEllipseCenter.x + unitDirection.x * (playerEllipseRadius + connectorGap),
+    playerEllipseCenter.y + unitDirection.y * (playerEllipseRadius + connectorGap)
   ]);
-  const visiblePositions: LatLngExpression[] = directionLength > ellipseRadius + connectorGap ? [playerPosition, visibleTarget] : [];
-
-  useEffect(() => {
-    const path = lineRef.current?.getElement();
-    if (!path || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    let frame = 0;
-    const startedAt = performance.now();
-    const animate = (now: number) => {
-      const progress = ((now - startedAt) % 720) / 720;
-      path.setAttribute("stroke-dashoffset", String(-18 * progress));
-      frame = window.requestAnimationFrame(animate);
-    };
-    frame = window.requestAnimationFrame(animate);
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-      path.removeAttribute("stroke-dashoffset");
-    };
-  }, []);
+  const visibleTarget = map.containerPointToLatLng([
+    targetEllipseCenter.x - unitDirection.x * (targetEllipseRadius + connectorGap),
+    targetEllipseCenter.y - unitDirection.y * (targetEllipseRadius + connectorGap)
+  ]);
+  const requiredLength = playerEllipseRadius + targetEllipseRadius + connectorGap * 2;
+  const visiblePositions: LatLngExpression[] = directionLength > requiredLength ? [visiblePlayer, visibleTarget] : [];
 
   return (
     <Polyline
-      ref={lineRef}
+      className={`punktlandung-result-connector${animate ? " is-flowing" : ""}`}
       positions={visiblePositions}
       interactive={false}
       pathOptions={{
         color,
         opacity: 0.82,
-        weight: 4,
-        dashArray: "8 10",
+        weight: 1.25,
+        dashArray: "6 9",
         lineCap: "round"
       }}
     />
@@ -1030,27 +1526,35 @@ export function LeafletMap({
   noPan,
   noZoom,
   showLabels = true,
+  resultPaddingScale,
+  resultZoomScale,
+  resultLabelLayout,
+  resultLabelInset,
+  animateResultConnector = true,
   currentPlayerColor,
   resizeSignal,
   resetSignal,
-  onGuess
+  onGuess,
+  onBaseMapReady
 }: LeafletMapProps) {
   const mapCenter: LatLngExpression = [center.lat, center.lng];
   const initialResultPoints = mode === "results" ? resultPoints(summary) : [];
   const initialBounds = initialResultPoints.length > 1 ? latLngBounds(initialResultPoints) : null;
-  const maxZoom = mode === "results" ? RESULT_MAX_ZOOM : 13;
+  const maxZoom = mode === "results" ? RESULT_MAX_ZOOM : 14;
   const guessOverviewZoom = 2;
-  const guessColorIndex = playerColorIndexByColor(players, currentPlayerColor);
+  const guessColorIndex = playerColorIndexByColor(currentPlayerColor);
   const restrictToSingleWorld = mode === "guess";
 
   return (
-    <StrictSafeMapContainer
+    <div className="punktlandung-map-shell" style={playerPaletteStyle}>
+      <StrictSafeMapContainer
       {...(initialBounds
         ? { bounds: initialBounds, boundsOptions: { padding: [56, 56], maxZoom } }
         : { center: mapCenter, zoom: mode === "results" ? 10 : guessOverviewZoom })}
       minZoom={1}
       maxZoom={maxZoom}
       zoomControl={false}
+      attributionControl={false}
       scrollWheelZoom={false}
       doubleClickZoom={false}
       touchZoom={false}
@@ -1058,16 +1562,22 @@ export function LeafletMap({
       maxBounds={restrictToSingleWorld ? GUESS_WORLD_BOUNDS : undefined}
       maxBoundsViscosity={restrictToSingleWorld ? 1 : 0}
       worldCopyJump={!restrictToSingleWorld}
-    >
+      >
       <MapInteractionState noPan={noPan} noZoom={noZoom} />
       <MapResizer resizeSignal={resizeSignal} />
       {mode === "guess" && <GuessViewportReset center={center} zoom={guessOverviewZoom} resetSignal={resetSignal} />}
-      {mode === "results" && <ResultBounds summary={summary} players={players} showLabels={showLabels} resizeSignal={resizeSignal} />}
-      <TileLayer
-        attribution='Daten &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap-Mitwirkende</a> (<a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>), Grafik <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA</a>, <a href="https://www.openstreetmap.org/fixthemap">Fehler melden</a>'
-        noWrap={restrictToSingleWorld}
-        url="https://tile.openstreetmap.de/{z}/{x}/{y}.png"
-      />
+      {mode === "results" && (
+        <ResultBounds
+          summary={summary}
+          players={players}
+          showLabels={showLabels}
+          resultPaddingScale={resultPaddingScale}
+          resultZoomScale={resultZoomScale}
+          resizeSignal={resizeSignal}
+          resultLabelLayout={resultLabelLayout}
+        />
+      )}
+      <MapLibreBaseLayer renderWorldCopies={!restrictToSingleWorld} onReady={onBaseMapReady} />
       {mode === "guess" && <ClickHandler disabled={disabled} onGuess={onGuess} />}
       {guess && (
         <Marker position={[guess.lat, guess.lng]} icon={pinIcon(guessColor(players, guess, currentPlayerColor))}>
@@ -1084,8 +1594,19 @@ export function LeafletMap({
         </Marker>
       )}
       {mode === "results" && (
-        <ResultsMarkers summary={summary} players={players} guesses={guesses} showLabels={showLabels} resizeSignal={resizeSignal} />
+        <ResultsMarkers
+          summary={summary}
+          players={players}
+          guesses={guesses}
+          showLabels={showLabels}
+          resultLabelLayout={resultLabelLayout}
+          resultLabelInset={resultLabelInset}
+          animateResultConnector={animateResultConnector}
+          resizeSignal={resizeSignal}
+        />
       )}
-    </StrictSafeMapContainer>
+      </StrictSafeMapContainer>
+      <MapAttributionBadge locationInfoSourceUrl={mode === "results" ? summary?.location.descriptionSourceUrl : undefined} />
+    </div>
   );
 }

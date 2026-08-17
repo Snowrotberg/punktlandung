@@ -60,6 +60,10 @@ const chromePath = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const onlineRoomStorageKey = "punktlandung-online-room-v1";
 const qaPanoramaPath = path.join(root, "public", "og-punktlandung.jpg");
 const defaultConcurrency = 2;
+const viewportProfiles = {
+  quick: ["phone-small", "phone-landscape", "laptop"],
+  full: null
+};
 const blockedThirdPartyHosts = [
   "pagead2.googlesyndication.com",
   "googleads.g.doubleclick.net",
@@ -69,17 +73,17 @@ const blockedThirdPartyHosts = [
 ];
 
 const viewports = [
-  { name: "phone-small", width: 360, height: 800 },
-  { name: "phone-large", width: 430, height: 932 },
-  { name: "phone-landscape", width: 932, height: 430 },
-  { name: "laptop", width: 1366, height: 768 },
-  { name: "monitor", width: 1920, height: 1080 },
-  { name: "tv-4k", width: 3840, height: 2160 }
+  { name: "phone-small", width: 360, height: 800, category: "mobile" },
+  { name: "phone-large", width: 430, height: 932, category: "mobile" },
+  { name: "phone-landscape", width: 932, height: 430, category: "mobile" },
+  { name: "laptop", width: 1366, height: 768, category: "desktop" },
+  { name: "monitor", width: 1920, height: 1080, category: "desktop" },
+  { name: "tv-4k", width: 3840, height: 2160, category: "desktop" }
 ];
 
 const hostPlayer = {
   id: "local_host",
-  name: "QA Host",
+  name: "Maximilian Müller",
   color: "#34d399",
   score: 4894,
   connected: true,
@@ -92,7 +96,7 @@ const hostPlayer = {
 
 const guestPlayer = {
   id: "local_2",
-  name: "QA Gast",
+  name: "Alexandra Wagner",
   color: "#818cf8",
   score: 4211,
   connected: true,
@@ -102,6 +106,19 @@ const guestPlayer = {
   cosmetic: "none",
   localOnly: true
 };
+
+const finalTablePlayers = [hostPlayer, guestPlayer, ...Array.from({ length: 8 }, (_, index) => ({
+  id: `local_${index + 3}`,
+  name: `QA Spieler ${index + 3}`,
+  color: ["#fb7185", "#fbbf24", "#38bdf8", "#c084fc", "#fb923c", "#2dd4bf", "#a3e635", "#f472b6"][index],
+  score: 3900 - index * 310,
+  connected: true,
+  isHost: false,
+  team: index % 2 === 0 ? "aurora" : "pulse",
+  status: "active",
+  cosmetic: "none",
+  localOnly: true
+}))];
 
 const sampleLocation = {
   id: "berlin-brandenburg-gate",
@@ -118,7 +135,8 @@ const sampleLocation = {
   ],
   attribution: "Wikimedia Commons",
   source: "wikimedia",
-  category: "capitals"
+  category: "capitals",
+  shortDescription: "Das Brandenburger Tor ist ein frühklassizistisches Triumphtor in Berlin. Es wurde zwischen 1788 und 1791 errichtet."
 };
 
 const settings = {
@@ -167,6 +185,25 @@ const summary = {
   roundStartedAt: Date.now() - 45000
 };
 
+const finalTableSummary = {
+  ...summary,
+  results: finalTablePlayers.map((player, index) => ({
+    playerId: player.id,
+    distanceKm: 12.5 + index * 38,
+    points: player.score,
+    badge: "Nahe dran",
+    eliminated: false,
+    guess: {
+      playerId: player.id,
+      lat: 52.52 + index * 0.01,
+      lng: 13.4 + index * 0.01,
+      createdAt: Date.now() - 5000 + index * 50,
+      responseTimeMs: 12000 + index * 900
+    },
+    countryCorrect: false
+  }))
+};
+
 function roomState(status) {
   const finished = status === "finished";
   return {
@@ -176,18 +213,15 @@ function roomState(status) {
     hostParticipation: "host_player",
     hostPlayerName: "QA Host",
     status,
-    settings: { ...settings, rounds: finished ? 1 : settings.rounds },
-    players: [
-      hostPlayer,
-      guestPlayer
-    ],
+    settings: { ...settings, rounds: finished ? 1 : settings.rounds, localPlayerCount: finished ? 10 : settings.localPlayerCount },
+    players: finished ? finalTablePlayers : [hostPlayer, guestPlayer],
     currentRound: 1,
     location: status === "guessing" ? sampleLocation : null,
-    guesses: status === "guessing" ? [] : summary.results.map((item) => item.guess).filter(Boolean),
+    guesses: status === "guessing" ? [] : (finished ? finalTableSummary : summary).results.map((item) => item.guess).filter(Boolean),
     timedOutPlayerIds: [],
     roundEndsAt: status === "guessing" ? Date.now() + 60000 : null,
     roundStartedAt: status === "guessing" ? Date.now() - 10000 : null,
-    summaries: status === "guessing" ? [] : [summary],
+    summaries: status === "guessing" ? [] : [finished ? finalTableSummary : summary],
     emojiEvents: [],
     adGateUntil: null
   };
@@ -255,28 +289,77 @@ const targets = [
     name: "warteraum",
     access: "online-room-state",
     path: "/warteraum",
-    expectedText: "QR-Code scannen und beitreten",
+    expectedText: "Alle bereit?",
     expectedOnlineRoom: { kind: "online", code: "ABC123" },
     note: "echter URL-Pfad mit QA-Online-Raum"
   },
   { name: "spielen", access: "state", path: "/spielen", status: "guessing", readySelector: ".punktlandung-game-shell", readyImageSelector: ".punktlandung-panorama-viewport img", note: "echter URL-Pfad mit QA-Session" },
   { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", readySelector: ".punktlandung-results-grid", note: "echter URL-Pfad mit QA-Session" },
   { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", readySelector: ".punktlandung-image-replay", readyImageSelector: ".punktlandung-panorama-viewport img", note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
-  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Später", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session plus Klick auf Endstand ansehen" },
+  { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
+  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Nicht speichern", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session plus Klick auf Endstand ansehen" },
   { name: "infos", access: "route", path: "/infos", note: "echter URL-Pfad" },
+  { name: "hilfe", access: "route", path: "/faq", expectedText: "Häufige Fragen zu Punktlandung", note: "öffentliche Hilfe-Übersicht" },
+  { name: "hilfe-spielablauf", access: "route", path: "/faq/spielablauf", expectedText: "So läuft eine Partie ab", note: "öffentliche Hilfe-Unterseite" },
+  { name: "hilfe-punkte", access: "route", path: "/faq/punkte", expectedText: "So werden Punkte berechnet", note: "öffentliche Hilfe-Unterseite" },
+  { name: "hilfe-konten", access: "route", path: "/faq/konten", expectedText: "Spielen mit oder ohne Konto", note: "öffentliche Hilfe-Unterseite" },
+  { name: "hilfe-rankings", access: "route", path: "/faq/rankings", expectedText: "Persönlicher Verlauf und Rankings", note: "öffentliche Hilfe-Unterseite" },
+  { name: "feedback", access: "route", path: "/feedback", expectedText: "Feedback", note: "öffentliches Feedback-Formular" },
   { name: "so-funktioniert", access: "route", path: "/so-funktioniert-punktlandung", expectedText: "Wie funktioniert Punktlandung?", note: "zitierbare Methodikseite" },
+  { name: "partyspiel-geografie", access: "route", path: "/partyspiel-geografie", expectedText: "Punktlandung als Geografie-Partyspiel", note: "öffentliche Partyspiel-Unterseite" },
   { name: "ortskatalog", access: "route", path: "/ortskatalog", expectedText: "Welche Orte und Aufgaben gibt es bei Punktlandung?", note: "datenbasierte Katalogseite" },
+  { name: "community", access: "route", path: "/community", expectedText: "Ideen für Punktlandung", note: "öffentlicher Community- und Roadmap-Bereich" },
+  { name: "community-eigene", access: "route", path: "/community/meine-vorschlaege", expectedText: "Meine Vorschläge", note: "persönliche Community-Vorschlagsliste" },
+  { name: "rankings", access: "route", path: "/rankings", expectedText: "Rankings", note: "öffentliche Ranking-Übersicht" },
+  { name: "anmelden", access: "route", path: "/anmelden", expectedText: "Spielstände mitnehmen", note: "öffentliche Anmeldung" },
+  { name: "konto-gast", access: "route", path: "/konto", expectedText: "Spielstände mitnehmen", note: "geschützter Kontobereich leitet Gäste zur Anmeldung" },
+  { name: "konto-verlauf-gast", access: "route", path: "/konto/verlauf", expectedText: "Spielstände mitnehmen", note: "geschützter Spielverlauf leitet Gäste zur Anmeldung" },
+  { name: "konto-einstellungen-gast", access: "route", path: "/konto/einstellungen", expectedText: "Spielstände mitnehmen", note: "geschützte Kontoeinstellungen leiten Gäste zur Anmeldung" },
+  { name: "admin-gast", access: "route", path: "/admin", expectedText: "Spielstände mitnehmen", note: "geschützter Adminbereich leitet Gäste zur Anmeldung" },
   { name: "impressum", access: "route", path: "/impressum", note: "echter URL-Pfad" },
   { name: "datenschutz", access: "route", path: "/datenschutz", note: "echter URL-Pfad" },
   { name: "lizenzen", access: "route", path: "/lizenzen", note: "echter URL-Pfad" }
 ];
 
+const documentTargetNames = new Set([
+  "infos",
+  "hilfe",
+  "hilfe-spielablauf",
+  "hilfe-punkte",
+  "hilfe-konten",
+  "hilfe-rankings",
+  "feedback",
+  "so-funktioniert",
+  "partyspiel-geografie",
+  "ortskatalog",
+  "community",
+  "community-eigene",
+  "rankings",
+  "anmelden",
+  "konto-gast",
+  "konto-verlauf-gast",
+  "konto-einstellungen-gast",
+  "admin-gast",
+  "impressum",
+  "datenschutz",
+  "lizenzen"
+]);
+
+for (const target of targets) {
+  target.layoutPolicy = documentTargetNames.has(target.name) ? "document-scroll" : "mobile-scroll-only";
+}
+
+function requiresViewportFit(target, viewport) {
+  return target.layoutPolicy === "mobile-scroll-only" && viewport.category !== "mobile";
+}
+
 function parseArgs(argv) {
-  const args = { page: null, viewport: null, concurrency: defaultConcurrency, help: false };
+  const args = { page: null, viewport: null, profile: "full", concurrency: defaultConcurrency, help: false };
   for (const arg of argv) {
     if (arg === "--help" || arg === "-h") args.help = true;
     if (arg.startsWith("--page=")) args.page = arg.slice("--page=".length).trim();
     if (arg.startsWith("--viewport=")) args.viewport = arg.slice("--viewport=".length).trim();
+    if (arg.startsWith("--profile=")) args.profile = arg.slice("--profile=".length).trim();
     if (arg.startsWith("--concurrency=")) {
       const value = Number(arg.slice("--concurrency=".length).trim());
       if (Number.isInteger(value) && value > 0 && value <= viewports.length) args.concurrency = value;
@@ -395,7 +478,7 @@ async function ensureOnlineWaitingRoom(page) {
         }
 
         return (
-          text.includes("QR-Code scannen und beitreten") &&
+          text.includes("Alle bereit?") &&
           storedRoom?.kind === "online" &&
           storedRoom?.code === "ABC123" &&
           storedRoom?.status === "lobby"
@@ -484,8 +567,8 @@ async function openTarget(page, target) {
   throw new Error(`Unsupported target access: ${target.access}`);
 }
 
-async function collectLayoutMetrics(page) {
-  return page.evaluate(() => {
+async function collectLayoutMetrics(page, readySelector = null) {
+  return page.evaluate((selector) => {
     const doc = document.documentElement;
     const body = document.body;
     const viewportWidth = window.innerWidth;
@@ -545,31 +628,122 @@ async function collectLayoutMetrics(page) {
       .filter((item) => item.left < -2 || item.right > viewportWidth + 2)
       .slice(0, 10);
 
+    const textClippingCandidates = [...document.querySelectorAll("h1, h2, h3, h4, p, label, legend, th, td, button, a")]
+      .filter(visible)
+      .map((el) => {
+        const style = window.getComputedStyle(el);
+        const clippedX = el.scrollWidth > el.clientWidth + 2 && ["hidden", "clip"].includes(style.overflowX);
+        const clippedY = el.scrollHeight > el.clientHeight + 2 && ["hidden", "clip"].includes(style.overflowY);
+        return {
+          tag: el.tagName.toLowerCase(),
+          label: el.textContent?.replace(/\s+/g, " ").trim().slice(0, 100) || el.getAttribute("aria-label") || "",
+          clippedX,
+          clippedY,
+          clientWidth: el.clientWidth,
+          scrollWidth: el.scrollWidth,
+          clientHeight: el.clientHeight,
+          scrollHeight: el.scrollHeight
+        };
+      })
+      .filter((item) => item.label && (item.clippedX || item.clippedY))
+      .slice(0, 10);
+
+    const smallTouchTargets = [...document.querySelectorAll("button, [role='button'][aria-label], input, select, textarea")]
+      .filter(visible)
+      .map((el) => {
+        const rect = el.getBoundingClientRect();
+        return {
+          tag: el.tagName.toLowerCase(),
+          label: el.getAttribute("aria-label") || el.textContent?.replace(/\s+/g, " ").trim().slice(0, 80) || "",
+          width: Math.round(rect.width),
+          height: Math.round(rect.height)
+        };
+      })
+      .filter((item) => item.width < 40 || item.height < 40)
+      .slice(0, 10);
+
+    const readyElement = selector ? document.querySelector(selector) : null;
+    const readyRect = readyElement?.getBoundingClientRect() ?? null;
+    const homeMapPreview = document.querySelector(".punktlandung-home-map-preview");
+    const homeMapBase = homeMapPreview
+      ? [...homeMapPreview.querySelectorAll(".punktlandung-home-map-base")].find((element) => getComputedStyle(element).display !== "none") ?? null
+      : null;
+    const homeMapRect = homeMapPreview?.getBoundingClientRect() ?? null;
+    const homeMapLabels = homeMapPreview
+      ? [...homeMapPreview.querySelectorAll(".punktlandung-map-label")]
+          .filter(visible)
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+              label: element.textContent?.replace(/\s+/g, " ").trim() ?? "",
+              left: Math.round(rect.left),
+              right: Math.round(rect.right),
+              top: Math.round(rect.top),
+              bottom: Math.round(rect.bottom)
+            };
+          })
+      : [];
+    const homeMapVisuals = homeMapPreview
+      ? [...homeMapPreview.querySelectorAll(".punktlandung-map-label, .punktlandung-map-pin, .punktlandung-pin-ellipse-icon svg, .punktlandung-home-map-static-pin, .punktlandung-home-map-static-ellipse")]
+          .filter(visible)
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+          })
+      : [];
+
     return {
       title: document.title,
       pathname: window.location.pathname,
       viewportWidth,
       viewportHeight,
       documentWidth: doc.scrollWidth,
+      documentHeight: doc.scrollHeight,
       bodyWidth: body?.scrollWidth ?? 0,
+      bodyHeight: body?.scrollHeight ?? 0,
       horizontalOverflow: Math.max(doc.scrollWidth, body?.scrollWidth ?? 0) > viewportWidth + 2,
+      verticalOverflow: Math.max(doc.scrollHeight, body?.scrollHeight ?? 0) > viewportHeight + 2,
       bodyTextLength: (body?.innerText ?? "").trim().length,
       bodyText: (body?.innerText ?? "").replace(/\s+/g, " ").trim(),
       roomState,
       onlineRoomState,
       visibleElementCount: visibleElements.length,
       overflowingElements,
+      textClippingCandidates,
+      smallTouchTargets,
+      homeMapPreview: homeMapPreview ? {
+        renderMode: homeMapPreview.getAttribute("data-render-mode"),
+        liveCanvasMounted: Boolean(homeMapPreview.querySelector(".maplibregl-canvas")),
+        baseVisible: homeMapBase ? getComputedStyle(homeMapBase).visibility !== "hidden" && Number(getComputedStyle(homeMapBase).opacity) > 0.01 : false,
+        labels: homeMapLabels,
+        labelsInside: Boolean(homeMapRect) && homeMapLabels.length >= 2 && homeMapLabels.every((label) =>
+          label.left >= homeMapRect.left + 8 &&
+          label.right <= homeMapRect.right - 8 &&
+          label.top >= homeMapRect.top + 8 &&
+          label.bottom <= homeMapRect.bottom - 8
+        ),
+        visualsInside: Boolean(homeMapRect) && homeMapVisuals.length >= 6 && homeMapVisuals.every((visual) =>
+          visual.left >= homeMapRect.left + 12 &&
+          visual.right <= homeMapRect.right - 12 &&
+          visual.top >= homeMapRect.top + 12 &&
+          visual.bottom <= homeMapRect.bottom - 12
+        )
+      } : null,
+      fontStatus: document.fonts?.status ?? "unsupported",
+      readyElementFullyVisible: readyRect
+        ? readyRect.top >= -2 && readyRect.left >= -2 && readyRect.right <= viewportWidth + 2 && readyRect.bottom <= viewportHeight + 2
+        : null,
       applicationError: (body?.innerText ?? "").includes("Application error")
     };
-  });
+  }, readySelector);
 }
 
-async function collectLayoutMetricsStable(page, attempts = 3) {
+async function collectLayoutMetricsStable(page, readySelector = null, attempts = 3) {
   let lastError = null;
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
-      return await collectLayoutMetrics(page);
+      return await collectLayoutMetrics(page, readySelector);
     } catch (error) {
       lastError = error;
       const message = error instanceof Error ? error.message : String(error);
@@ -593,8 +767,11 @@ function normalizeConsoleMessages(messages) {
     if (
       /A tree hydrated but some attributes of the server rendered HTML/i.test(compact) ||
       /ERR_BLOCKED_BY_CLIENT/i.test(compact) ||
-      /WebSocket connection to ['"]ws:\/\/localhost:3001\/['"] failed/i.test(compact) ||
+      /WebSocket connection to ['"]ws:\/\/(?:localhost|127\.0\.0\.1):3001\/['"] failed/i.test(compact) ||
       /googletagmanager\.com\/gtag\/js.*preloaded.*not used/i.test(compact) ||
+      /\[Punktlandung map\].*Failed to fetch/i.test(compact) ||
+      /Unable to load glyph range.*openfreemap\.org/i.test(compact) ||
+      /Image "circle-11" could not be loaded.*map\.addImage/i.test(compact) ||
       /^error:\s*Event$/i.test(compact)
     ) {
       ignored.push(compact.slice(0, 500));
@@ -654,7 +831,10 @@ async function runTargetViewport(browser, target, viewport) {
 
   let screenshot = path.join(outDir, `${target.name}-${viewport.name}.png`);
   const problems = [];
+  const warnings = [];
   let responseStatus = null;
+  let homeMapStability = null;
+  let mapScrollStability = null;
 
   try {
     const response = await openTarget(page, target);
@@ -688,6 +868,14 @@ async function runTargetViewport(browser, target, viewport) {
       await page.waitForTimeout(150);
     }
 
+    if (target.expectedText) {
+      await page
+        .getByText(target.expectedText, { exact: false })
+        .first()
+        .waitFor({ state: "visible", timeout: 20000 })
+        .catch(() => {});
+    }
+
     if (target.expectedRoom) {
       await page
         .waitForFunction(
@@ -718,7 +906,98 @@ async function runTargetViewport(browser, target, viewport) {
       { timeout: 10000 }
     );
 
-    const metrics = await collectLayoutMetricsStable(page);
+    if (target.name === "aufloesung") {
+      // Leaflet can briefly retain the previous marker node while its pane is
+      // reconciling. The latest node is the visible, current label.
+      const targetLabel = page.locator(".punktlandung-map-label-marker.is-interactive").last();
+      await targetLabel.waitFor({ state: "visible", timeout: 10000 });
+      if (viewport.category === "mobile") await targetLabel.dispatchEvent("click");
+      else await targetLabel.dispatchEvent("mouseover");
+      const infoPopup = page.locator(".punktlandung-location-info-popup").first();
+      await infoPopup.waitFor({ state: "visible", timeout: 5000 });
+      const popupPlacement = await infoPopup.evaluate((popup) => {
+        const visiblePopup = popup.querySelector(".leaflet-popup-content-wrapper") ?? popup;
+        const popupRect = visiblePopup.getBoundingClientRect();
+        const mapRect = popup.closest(".leaflet-container")?.getBoundingClientRect();
+        return mapRect ? {
+          left: popupRect.left - mapRect.left,
+          top: popupRect.top - mapRect.top,
+          right: mapRect.right - popupRect.right,
+          bottom: mapRect.bottom - popupRect.bottom
+        } : null;
+      });
+      if (!popupPlacement || Object.values(popupPlacement).some((distance) => distance < -1)) {
+        problems.push(`Zielinfo-Popover liegt außerhalb der Karte${popupPlacement ? ` (${JSON.stringify(popupPlacement)})` : ""}.`);
+      }
+    }
+
+    if (target.name === "home") {
+      await page.locator(".punktlandung-home-map-preview").waitFor({ state: "visible", timeout: 15000 });
+      await page.locator(".punktlandung-home-map-preview.is-map-ready").waitFor({ state: "visible", timeout: 20000 });
+      const readStableVisuals = () => page.evaluate(() =>
+        [...document.querySelectorAll(".punktlandung-home-map-preview .punktlandung-map-label, .punktlandung-home-map-preview .punktlandung-home-map-static-pin:not(.is-actual), .punktlandung-home-map-preview .punktlandung-home-map-static-ellipse")]
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+          })
+      );
+      const firstVisuals = await readStableVisuals();
+      await page.waitForTimeout(700);
+      const secondVisuals = await readStableVisuals();
+      const deltas = firstVisuals.flatMap((first, index) => {
+        const second = secondVisuals[index];
+        return second ? [
+          Math.abs(first.left - second.left),
+          Math.abs(first.right - second.right),
+          Math.abs(first.top - second.top),
+          Math.abs(first.bottom - second.bottom)
+        ] : [Number.POSITIVE_INFINITY];
+      });
+      homeMapStability = {
+        visualCount: secondVisuals.length,
+        maxMovementPx: deltas.length ? Math.max(...deltas) : Number.POSITIVE_INFINITY
+      };
+      const intendedMotion = await page.evaluate(() => {
+        const connector = [...document.querySelectorAll(".punktlandung-home-map-static-connector line")]
+          .find((element) => getComputedStyle(element).display !== "none");
+        const targetPin = document.querySelector(".punktlandung-home-map-static-pin.is-actual");
+        return {
+          connectorAnimation: connector ? getComputedStyle(connector).animationName : "none",
+          targetPinAnimation: targetPin ? getComputedStyle(targetPin).animationName : "none"
+        };
+      });
+      homeMapStability.intendedMotion = intendedMotion;
+    }
+
+    if (target.name === "spielen" || target.name === "nochmal-ansehen") {
+      const mapPanel = page.locator(".punktlandung-guess-map-panel").first();
+      await mapPanel.waitFor({ state: "visible", timeout: 10000 });
+      await page.waitForTimeout(400);
+      const beforeScroll = await mapPanel.boundingBox();
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+      await page.waitForTimeout(250);
+      const afterScroll = await mapPanel.boundingBox();
+      const scrollPosition = await page.evaluate(() => window.scrollY);
+      const maxMovement = beforeScroll && afterScroll
+        ? Math.max(
+            Math.abs(beforeScroll.x - afterScroll.x),
+            Math.abs(beforeScroll.y - afterScroll.y),
+            Math.abs(beforeScroll.width - afterScroll.width),
+            Math.abs(beforeScroll.height - afterScroll.height)
+          )
+        : Number.POSITIVE_INFINITY;
+      mapScrollStability = { scrollPosition, maxMovementPx: maxMovement };
+      if (maxMovement > 1) {
+        problems.push(`Die Spielkarte bewegt sich beim Dokument-Scroll (scrollY ${scrollPosition}px, maximale Verschiebung ${maxMovement.toFixed(1)}px).`);
+      }
+    }
+
+    await page.evaluate(async () => {
+      if (document.fonts) await document.fonts.ready;
+    }).catch(() => {});
+    const metrics = await collectLayoutMetricsStable(page, target.readySelector ?? null);
+    if (homeMapStability) metrics.homeMapStability = homeMapStability;
+    if (mapScrollStability) metrics.mapScrollStability = mapScrollStability;
     if (metrics.applicationError) problems.push("Die Ansicht zeigt einen Application error.");
     if (metrics.bodyTextLength === 0 || metrics.visibleElementCount === 0) problems.push("Der Body hat keinen sichtbaren Inhalt.");
     if (target.expectedText && !metrics.bodyText.includes(target.expectedText)) {
@@ -749,10 +1028,47 @@ async function runTargetViewport(browser, target, viewport) {
     if (metrics.horizontalOverflow) {
       problems.push(`Horizontaler Overflow: Dokument ${metrics.documentWidth}px bei Viewport ${metrics.viewportWidth}px.`);
     }
+    if (target.name === "home" && (!metrics.homeMapPreview || metrics.homeMapPreview.renderMode !== "static-overlay" || !metrics.homeMapPreview.baseVisible || metrics.homeMapPreview.liveCanvasMounted)) {
+      problems.push("Die Startseiten-Vorschau verwendet nicht ausschließlich die stabile Kartenbasis mit Vektor-Overlay.");
+    }
+    if (target.name === "home" && metrics.homeMapPreview && !metrics.homeMapPreview.labelsInside) {
+      problems.push("Die Kartenlabels liegen nicht vollständig mit Randabstand innerhalb der Vorschau.");
+    }
+    if (target.name === "home" && metrics.homeMapPreview && !metrics.homeMapPreview.visualsInside) {
+      problems.push("Pins, Ellipsen oder Labels verletzen die Safe Area der Startseitenkarte.");
+    }
+    if (target.name === "home" && (!metrics.homeMapStability || metrics.homeMapStability.visualCount < 5 || metrics.homeMapStability.maxMovementPx > 1)) {
+      problems.push("Die statischen Karten-Overlays bewegen sich außerhalb der vorgesehenen Linien- und Zielpin-Animation.");
+    }
+    if (target.name === "home" && metrics.homeMapStability && (
+      metrics.homeMapStability.intendedMotion?.connectorAnimation === "none"
+      || metrics.homeMapStability.intendedMotion?.targetPinAnimation === "none"
+    )) {
+      problems.push("Die vorgesehene Linien- oder Zielpin-Animation ist nicht aktiv.");
+    }
+    if (requiresViewportFit(target, viewport) && metrics.verticalOverflow) {
+      problems.push(`Unerlaubtes Desktop-Scrollen: Dokument ${metrics.documentHeight}px bei Viewport ${metrics.viewportHeight}px.`);
+    }
+    if (requiresViewportFit(target, viewport) && metrics.readyElementFullyVisible === false) {
+      problems.push(`Die zentrale Ansicht ${target.readySelector} liegt nicht vollstaendig im Viewport.`);
+    }
+    if (metrics.fontStatus !== "loaded" && metrics.fontStatus !== "unsupported") {
+      warnings.push(`Webfonts sind noch nicht vollstaendig geladen: ${metrics.fontStatus}.`);
+    }
+    for (const item of metrics.textClippingCandidates.slice(0, 3)) {
+      warnings.push(`Moegliche Textkuerzung in <${item.tag}>: "${item.label}".`);
+    }
+    if (viewport.category === "mobile") {
+      for (const item of metrics.smallTouchTargets.slice(0, 3)) {
+        warnings.push(`Kleine Touch-Flaeche ${item.width}x${item.height}px: "${item.label || item.tag}".`);
+      }
+    }
 
     screenshot = await saveViewportScreenshot(page, screenshot);
 
     const normalizedConsole = normalizeConsoleMessages(consoleErrors);
+    for (const responseError of [...new Set(httpErrors)]) problems.push(`HTTP-Fehler: ${responseError}`);
+    for (const consoleError of normalizedConsole.relevant) problems.push(`Browserfehler: ${consoleError}`);
     return {
       target: target.name,
       viewport: viewport.name,
@@ -762,6 +1078,7 @@ async function runTargetViewport(browser, target, viewport) {
       screenshot,
       metrics,
       problems,
+      warnings,
       httpErrors: [...new Set(httpErrors)],
       consoleErrors: normalizedConsole.relevant,
       ignoredConsoleErrors: normalizedConsole.ignored
@@ -782,6 +1099,7 @@ async function runTargetViewport(browser, target, viewport) {
       screenshot,
       metrics: null,
       problems: [error instanceof Error ? error.message : String(error)],
+      warnings,
       httpErrors: [...new Set(httpErrors)],
       consoleErrors: normalizedConsole.relevant,
       ignoredConsoleErrors: normalizedConsole.ignored
@@ -798,6 +1116,7 @@ function renderReport({ selectedTargets, skippedTargets, results }) {
   const ignoredConsoleCount = results.reduce((sum, result) => sum + (result.ignoredConsoleErrors?.length ?? 0), 0);
   const relevantConsoleCount = results.reduce((sum, result) => sum + (result.consoleErrors?.length ?? 0), 0);
   const httpErrorCount = results.reduce((sum, result) => sum + (result.httpErrors?.length ?? 0), 0);
+  const warningCount = results.reduce((sum, result) => sum + (result.warnings?.length ?? 0), 0);
   const totalDurationMs = results.reduce((sum, result) => sum + (result.durationMs ?? 0), 0);
   lines.push("# Responsive QA Report");
   lines.push("");
@@ -807,6 +1126,7 @@ function renderReport({ selectedTargets, skippedTargets, results }) {
   lines.push("");
   lines.push(`- Checks: ${results.length - failed.length}/${results.length} bestanden`);
   lines.push(`- Fehler: ${failed.length}`);
+  lines.push(`- Hinweise zur manuellen Pruefung: ${warningCount}`);
   lines.push(`- Addierte Check-Laufzeit: ${(totalDurationMs / 1000).toFixed(1)} s`);
   lines.push(`- Relevante Konsolenmeldungen: ${relevantConsoleCount}`);
   lines.push(`- HTTP-Antworten ab Status 400: ${httpErrorCount}`);
@@ -815,7 +1135,7 @@ function renderReport({ selectedTargets, skippedTargets, results }) {
   lines.push("## Targets");
   lines.push("");
   for (const target of selectedTargets) {
-    lines.push(`- ${target.name}: ${target.access} (${target.note})`);
+    lines.push(`- ${target.name}: ${target.access}, ${target.layoutPolicy} (${target.note})`);
   }
   for (const target of skippedTargets) {
     lines.push(`- ${target.name}: TODO/SKIPPED (${target.note})`);
@@ -827,7 +1147,7 @@ function renderReport({ selectedTargets, skippedTargets, results }) {
   lines.push("| --- | --- | --- | ---: | --- | --- |");
   for (const result of results) {
     const fileName = path.basename(result.screenshot);
-    const notes = [...result.problems, ...(result.httpErrors ?? []).slice(0, 2), ...result.consoleErrors.slice(0, 3)]
+    const notes = [...result.problems, ...(result.warnings ?? []).slice(0, 3)]
       .map((note) => note.slice(0, 240))
       .join("<br>")
       .replace(/\|/g, "\\|") || "ok";
@@ -901,8 +1221,10 @@ const availableNames = targets.map((target) => target.name);
 console.log(`Responsive QA Base URL: ${baseUrl}`);
 console.log(`Verfuegbare Seitennamen: ${availableNames.join(", ")}`);
 console.log(`Verfuegbare Viewports: ${viewports.map((viewport) => viewport.name).join(", ")}`);
+console.log(`Verfuegbare Profile: ${Object.keys(viewportProfiles).join(", ")}`);
 console.log("Einzelseite: npm run check:responsive -- --page=home");
 console.log("Einzelviewport: npm run check:responsive -- --viewport=laptop");
+console.log("Schnellprofil: npm run check:responsive -- --profile=quick");
 
 if (args.help) {
   process.exit(0);
@@ -921,12 +1243,23 @@ if (args.viewport && !availableViewportNames.includes(args.viewport)) {
   process.exit(1);
 }
 
+if (!Object.hasOwn(viewportProfiles, args.profile)) {
+  console.error(`Unbekanntes Profil: ${args.profile}`);
+  console.error(`Verfuegbar: ${Object.keys(viewportProfiles).join(", ")}`);
+  process.exit(1);
+}
+
 await fs.mkdir(outDir, { recursive: true });
 
 const selected = args.page ? targets.filter((target) => target.name === args.page) : targets;
 const selectedTargets = selected.filter((target) => target.access !== "todo");
 const skippedTargets = selected.filter((target) => target.access === "todo");
-const selectedViewports = args.viewport ? viewports.filter((viewport) => viewport.name === args.viewport) : viewports;
+const profileViewportNames = viewportProfiles[args.profile];
+const selectedViewports = args.viewport
+  ? viewports.filter((viewport) => viewport.name === args.viewport)
+  : profileViewportNames
+    ? viewports.filter((viewport) => profileViewportNames.includes(viewport.name))
+    : viewports;
 await cleanPreviousArtifacts(selected, selectedViewports);
 
 for (const target of skippedTargets) {

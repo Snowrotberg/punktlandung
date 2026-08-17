@@ -151,7 +151,7 @@
 }
 
 .connection {
-  background: linear-gradient(90deg, rgba(167, 243, 208, 0.22), #34d399 46%, rgba(244, 63, 94, 0.9));
+  background: linear-gradient(90deg, rgba(167, 243, 208, 0.22), #34d399 46%, rgba(255, 71, 117, 0.9));
   box-shadow: 0 0 10px rgba(52, 211, 153, 0.62);
   height: 2px;
   opacity: 0;
@@ -393,7 +393,7 @@
   0% { opacity: 0; transform: translate3d(-50%, calc(-100% - 18vh), 0) scale(1.04); }
   72% { opacity: 1; transform: translate3d(-50%, -95%, 0) scale(1.04, 0.96); }
   88% { transform: translate3d(-50%, -103%, 0) scale(1, 1.04); }
-  100% { filter: drop-shadow(0 0 0.6rem rgba(244, 63, 94, 0.5)); opacity: 1; transform: translate3d(-50%, -100%, 0) scale(1.03); }
+  100% { filter: drop-shadow(0 0 0.6rem rgba(255, 71, 117, 0.5)); opacity: 1; transform: translate3d(-50%, -100%, 0) scale(1.03); }
 }
 
 @keyframes playerDrop {

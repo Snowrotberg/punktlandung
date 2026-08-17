@@ -1,0 +1,216 @@
+.redesign {
+  --pl-game-surface: rgb(10 16 28 / 0.88);
+  --pl-game-line: rgb(38 53 74 / 0.92);
+  --pl-game-muted: #a9b5c7;
+  --pl-game-mint: #5ee7bd;
+  --pl-game-violet: #938cff;
+  --pl-game-panel-background: rgb(12 22 38 / 0.84);
+  --pl-game-map-panel-background:
+    linear-gradient(135deg, rgb(94 231 189 / 0.08), transparent 48%, rgb(147 140 255 / 0.08)),
+    rgb(12 22 38 / 0.9);
+  font-family: var(--font-inter);
+}
+
+.redesign :global(.punktlandung-game-stat),
+.redesign :global(.punktlandung-task-card),
+.redesign :global(.punktlandung-game-back-button) {
+  border: 1px solid var(--pl-game-line) !important;
+  border-radius: 0.7rem !important;
+  background: var(--pl-game-panel-background) !important;
+  box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.28) !important;
+  backdrop-filter: blur(14px);
+}
+
+.redesign :global(.punktlandung-game-back-button) {
+  min-height: 2.75rem !important;
+  opacity: 1 !important;
+}
+
+.redesign :global(.punktlandung-game-stat p:first-child),
+.redesign :global(.punktlandung-task-card-label),
+.redesign :global(.punktlandung-map-panel-title) {
+  color: var(--pl-game-mint) !important;
+  font-weight: 650 !important;
+}
+
+.redesign :global(.punktlandung-game-stat-value),
+.redesign :global(.punktlandung-task-card-title) {
+  font-weight: 650 !important;
+  letter-spacing: -0.02em;
+}
+
+.redesign :global(.punktlandung-focus-tab) {
+  left: 0 !important;
+  border-width: 1px !important;
+  border-left: 0 !important;
+  border-radius: 0 0.7rem 0.7rem 0 !important;
+  background: var(--pl-game-panel-background) !important;
+  font-weight: 650 !important;
+  transform: translateY(-50%) !important;
+}
+
+.redesign :global(.punktlandung-focus-tab-text) {
+  display: block;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: none !important;
+}
+
+.redesign :global(.punktlandung-focus-tab-content) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  transform: rotate(180deg);
+  writing-mode: horizontal-tb;
+}
+
+.redesign :global(.punktlandung-focus-tab-icon) {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.redesign :global(.punktlandung-map-label) {
+  border: 1px solid var(--pl-game-line) !important;
+  border-radius: 0.7rem !important;
+  background: rgb(10 16 28 / 0.94) !important;
+  box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.28) !important;
+  font-weight: 650 !important;
+}
+
+.redesign :global(.punktlandung-map-label-actual) {
+  border-color: var(--pl-game-mint) !important;
+  color: #06231c !important;
+  background: var(--pl-game-mint) !important;
+}
+
+.redesign :global(.punktlandung-map-label-player),
+.redesign :global(.punktlandung-map-label-guess) {
+  border-color: var(--player-color, #ff4775) !important;
+  background: rgb(10 16 28 / 0.94) !important;
+}
+
+.redesign :global(.punktlandung-map-player-badge) {
+  border: 1px solid color-mix(in srgb, var(--player-color, #ff4775) 72%, var(--pl-game-line)) !important;
+  border-radius: 0.7rem !important;
+  background: rgb(10 16 28 / 0.9) !important;
+  box-shadow: none !important;
+}
+
+.redesign :global(.punktlandung-map-player-badge[data-active]) {
+  border-color: var(--player-color, #ff4775) !important;
+  box-shadow: 0 0.75rem 2rem color-mix(in srgb, var(--player-color, #ff4775) 14%, transparent) !important;
+}
+
+.redesign :global(.punktlandung-map-label::before) {
+  display: none !important;
+}
+
+.redesign :global(.punktlandung-guess-map-panel) {
+  border: 1px solid var(--pl-game-line) !important;
+  border-radius: 1rem !important;
+  background: var(--pl-game-map-panel-background) !important;
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.32) !important;
+}
+
+.redesign :global(.punktlandung-map-panel-header) {
+  min-height: 2.25rem;
+}
+
+.redesign :global(.punktlandung-map-panel-actions button) {
+  border-width: 1px !important;
+  border-radius: 0.7rem !important;
+  font-weight: 650 !important;
+}
+
+.redesign :global(.punktlandung-map-panel-actions button::before) {
+  display: none !important;
+}
+
+/* AdSense may inject inline sizing while an ad is still loading. Keep the
+   reserved game placement aligned with the collapsed map instead of allowing
+   the empty iframe to stretch into a full-height white rail. */
+.redesign :global(.punktlandung-game-ad) {
+  inset: auto auto 1rem 1rem !important;
+  width: min(22vw, 15rem) !important;
+  height: 11rem !important;
+  min-height: 0 !important;
+  border-radius: 1rem !important;
+  background: rgb(10 16 28 / 0.88) !important;
+}
+
+.redesign :global(.punktlandung-game-ad > ins),
+.redesign :global(.punktlandung-game-ad iframe) {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+.redesign :global(.punktlandung-game-ad > ins) {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.redesign :global(.punktlandung-game-ad iframe) {
+  inset: 0 !important;
+  position: absolute !important;
+}
+
+@media (min-width: 80rem) {
+  .redesign :global(.punktlandung-guess-map-panel--closed) {
+    width: min(31vw, 25rem) !important;
+    height: min(31vh, 14.25rem) !important;
+  }
+
+  .redesign :global(.punktlandung-guess-map-panel--open) {
+    width: min(54vw, 43rem) !important;
+    height: min(58vh, 32rem) !important;
+  }
+}
+
+@media (min-width: 150rem) {
+  .redesign :global(.punktlandung-game-hud) {
+    inset-inline: 2rem !important;
+    top: 2rem !important;
+  }
+
+  .redesign :global(.punktlandung-game-stat),
+  .redesign :global(.punktlandung-task-card),
+  .redesign :global(.punktlandung-game-back-button) {
+    min-height: 4.5rem !important;
+    padding-inline: 1.5rem !important;
+  }
+
+  .redesign :global(.punktlandung-game-stat-value),
+  .redesign :global(.punktlandung-task-card-title) {
+    font-size: 1.8rem !important;
+  }
+
+  .redesign :global(.punktlandung-guess-map-panel--closed) {
+    width: min(30vw, 44rem) !important;
+    height: min(30vh, 25rem) !important;
+  }
+
+  .redesign :global(.punktlandung-map-panel-title),
+  .redesign :global(.punktlandung-map-panel-actions button) {
+    font-size: 1.1rem !important;
+  }
+
+  .redesign :global(.punktlandung-game-ad) {
+    inset: auto auto 2rem 2rem !important;
+    width: min(22vw, 30rem) !important;
+    height: min(30vh, 20rem) !important;
+  }
+}
+
+@media (max-width: 52rem) {
+  .redesign :global(.punktlandung-game-hud) {
+    inset-inline: 0.65rem !important;
+    top: 0.65rem !important;
+  }
+
+  .redesign :global(.punktlandung-guess-map-panel) {
+    border-radius: 0.85rem !important;
+  }
+}

@@ -10,8 +10,27 @@ export function GoogleAnalytics() {
   const previousPathRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!analyticsEnabled || !pathname || previousPathRef.current === pathname) return;
+    if (!pathname || previousPathRef.current === pathname) return;
     previousPathRef.current = pathname;
+    const recordOperationalEvent = (event: "page_view" | "visit_start") => {
+      void fetch("/api/usage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ event }),
+        keepalive: true
+      }).catch(() => undefined);
+    };
+    try {
+      const visitKey = "punktlandung-operational-visit-v1";
+      if (!window.sessionStorage.getItem(visitKey)) {
+        window.sessionStorage.setItem(visitKey, "1");
+        recordOperationalEvent("visit_start");
+      }
+    } catch {
+      // A page view remains useful even when session storage is unavailable.
+    }
+    recordOperationalEvent("page_view");
+    if (!analyticsEnabled) return;
     const entryReferral = referralAttribution(document.referrer, window.location.origin);
     trackAnalyticsEvent("page_view", {
       page_path: pathname,

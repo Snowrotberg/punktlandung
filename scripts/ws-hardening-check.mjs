@@ -122,6 +122,12 @@ async function expectRejectedOrigin() {
 
 try {
   const health = await waitForServer();
+  assert.equal(health.ok, true);
+  assert.match(health.checkedAt, /^\d{4}-\d{2}-\d{2}T/);
+  assert.equal(typeof health.uptimeSeconds, "number");
+  assert.equal(typeof health.memory.rssBytes, "number");
+  assert.equal(typeof health.memory.heapUsedBytes, "number");
+  assert.equal(typeof health.memory.heapTotalBytes, "number");
   assert.equal(health.capacity.playersPerRoomLimit, 10);
   assert.equal(health.capacity.connections.limit, 30);
   assert.equal(health.capacity.rooms.limit, 2);
@@ -193,6 +199,28 @@ try {
   );
   assert.match(fullRoom.message, /voll/);
 
+  const startedRound = await sendAndWait(
+    resumedHost.socket,
+    { type: "start_round" },
+    (message) => message.type === "room_state" && message.state.status === "guessing"
+  );
+  await sendAndWait(
+    resumedHost.socket,
+    { type: "image_ready", locationId: startedRound.state.location.id, ready: true },
+    (message) => message.type === "room_state" && Boolean(message.state.roundStartedAt)
+  );
+  const resultStatePromise = waitForMessage(
+    resumedHost.socket,
+    (message) => message.type === "room_state" && message.state.status === "results"
+  );
+  for (const peer of [resumedHost, ...players]) {
+    peer.socket.send(JSON.stringify({ type: "submit_guess", guess: { lat: 0, lng: 0 } }));
+  }
+  const resultState = await resultStatePromise;
+  assert.match(resultState.state.nextRoundPreviewUrl, /^\/api\/online-prompt\/[A-Za-z0-9_-]{32}$/);
+  assert.equal(JSON.stringify(resultState.state).includes("commons.wikimedia.org"), true);
+  assert.equal(resultState.state.nextRoundPreviewUrl.includes("commons"), false);
+
   const secondRoomHost = await connect();
   await sendAndWait(
     secondRoomHost.socket,
@@ -217,7 +245,7 @@ try {
   oversized.socket.send(JSON.stringify({ type: "unknown", junk: "x".repeat(2_000) }));
   assert.equal((await payloadClose).code, 1009);
 
-  console.log("WebSocket hardening checks passed: origin, schema, resume token, 10-player room, room limit, rate limit, payload limit.");
+  console.log("WebSocket hardening checks passed: origin, schema, opaque next-image prompt, 10-player room, room limit, rate limit, payload limit.");
 } finally {
   for (const socket of sockets) {
     if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.terminate();

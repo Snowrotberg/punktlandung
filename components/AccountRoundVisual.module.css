@@ -1,0 +1,30 @@
+.visualHeader { align-items: center; display: flex; justify-content: space-between; min-height: 2.7rem; padding: .55rem .7rem .55rem .85rem; }
+.visualHeader span { color: #cbd5e1; font-size: .78rem; font-weight: 800; }
+.visualHeader button, .modalHeader button { background: #162236; border: 1px solid #334155; border-radius: .5rem; color: #e2e8f0; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 800; min-height: 2rem; padding: 0 .65rem; }
+.visualHeader button:hover, .visualHeader button:focus-visible, .modalHeader button:hover, .modalHeader button:focus-visible { border-color: var(--pl-mint); outline: none; }
+.imageButton { background: rgba(2,6,23,.35); border: 1px solid #26354a; border-radius: .65rem; color: #cbd5e1; cursor: zoom-in; display: grid; font: inherit; min-height: 12rem; overflow: hidden; padding: 0; position: relative; text-align: left; width: 100%; }
+.imageButton img { height: 100%; min-height: 12rem; object-fit: cover; width: 100%; }
+.imageButton span { background: rgba(2,6,23,.86); border-radius: .45rem; bottom: .55rem; font-size: .72rem; font-weight: 800; left: .55rem; padding: .4rem .55rem; position: absolute; }
+.imageButton:hover, .imageButton:focus-visible { border-color: var(--pl-mint); outline: none; }
+.modal { align-items: center; backdrop-filter: blur(8px); background: rgba(2,6,23,.82); display: flex; inset: 0; justify-content: center; padding: clamp(.75rem, 2vw, 2rem); position: fixed; z-index: 9999; }
+.modalPanel { background: #080f1f; border: 1px solid #334155; border-radius: .9rem; box-shadow: 0 2rem 6rem rgba(0,0,0,.65); display: flex; flex-direction: column; height: min(90dvh, 58rem); overflow: hidden; width: min(94vw, 92rem); }
+.modalHeader { align-items: center; display: flex; justify-content: space-between; min-height: 3.5rem; padding: .65rem .9rem; }
+.modalHeader button { font-size: 1.25rem; width: 2.25rem; }
+.modalMap { flex: 1; min-height: 0; }
+.modalMap :global(.punktlandung-map-shell), .modalMap :global(.leaflet-container) { height: 100% !important; }
+.resultMapTheme :global(.punktlandung-map-label) { box-shadow: none !important; }
+.resultMapTheme :global(.punktlandung-map-label-player),
+.resultMapTheme :global(.punktlandung-map-label-guess) { background: rgb(10 16 28 / .94) !important; color: #f8fafc !important; }
+.resultMapTheme :global(.punktlandung-map-label-actual) { background: var(--pl-mint) !important; border-color: var(--pl-mint) !important; color: var(--pl-mint-ink) !important; font-weight: 750 !important; }
+.resultMapTheme :global(.punktlandung-map-label::before) { display: none !important; }
+.imagePanel { background: transparent; border: 0; border-radius: 0; box-shadow: none; display: block; height: auto; max-height: 92dvh; max-width: 94vw; overflow: visible; position: relative; width: auto; }
+.imagePanel .modalHeader { inset: .75rem .75rem auto .75rem; min-height: 0; padding: 0; pointer-events: none; position: absolute; z-index: 2; }
+.imagePanel .modalHeader strong { backdrop-filter: blur(10px); background: rgba(2,6,23,.82); border: 1px solid rgba(148,163,184,.3); border-radius: .55rem; box-shadow: 0 .6rem 1.6rem rgba(0,0,0,.28); color: #f8fafc; font-size: .82rem; line-height: 1.2; max-width: calc(100% - 3.75rem); overflow: hidden; padding: .55rem .7rem; text-overflow: ellipsis; white-space: nowrap; }
+.imagePanel .modalHeader button { align-items: center; backdrop-filter: blur(10px); background: rgba(2,6,23,.88); border-color: rgba(148,163,184,.45); border-radius: 999px; box-shadow: 0 .6rem 1.6rem rgba(0,0,0,.32); display: inline-flex; font-size: 1.35rem; height: 2.6rem; justify-content: center; min-height: 2.6rem; padding: 0; pointer-events: auto; width: 2.6rem; }
+.imagePanel > img { border: 1px solid rgba(148,163,184,.32); border-radius: .85rem; box-shadow: 0 2rem 6rem rgba(0,0,0,.62); display: block; height: auto; max-height: 90dvh; max-width: 94vw; object-fit: contain; width: auto; }
+
+@media (max-width: 640px) {
+  .imagePanel .modalHeader { inset: .5rem .5rem auto .5rem; }
+  .imagePanel .modalHeader strong { font-size: .72rem; max-width: calc(100% - 3.25rem); }
+  .imagePanel .modalHeader button { height: 2.35rem; min-height: 2.35rem; width: 2.35rem; }
+}

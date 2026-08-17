@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { ButtonLink } from "@/components/Button";
+import { RedesignButtonLink } from "@/components/redesign";
 import { InfoPageShell } from "@/components/InfoPageShell";
 import { JsonLd } from "@/components/StructuredData";
 import { builtInLocations } from "@/data/locations";
+import { buildCatalogStatistics, catalogCategoryLabels, catalogCategoryOrder } from "@/lib/catalogStatistics";
+import { MINIMUM_DIFFICULTY_SAMPLES, STABLE_DIFFICULTY_SAMPLES } from "@/lib/locationDifficulty";
 import { absoluteUrl } from "@/lib/seo";
-import type { LocationCategory } from "@/types/game";
 
 export const metadata: Metadata = {
   title: "Welche Orte und Aufgaben gibt es bei Punktlandung?",
@@ -15,30 +16,7 @@ export const metadata: Metadata = {
   }
 };
 
-type CatalogCategory = Exclude<LocationCategory, "mixed" | "streetview">;
-
-const categoryLabels: Record<CatalogCategory, string> = {
-  cities: "Städte",
-  capitals: "Hauptstädte",
-  landmarks: "Wahrzeichen",
-  landscapes: "Landschaften",
-  flags: "Flaggen"
-};
-
-const categoryOrder: CatalogCategory[] = [
-  "cities",
-  "capitals",
-  "landmarks",
-  "landscapes",
-  "flags"
-];
-
-const categoryCounts = builtInLocations.reduce<Record<string, number>>((counts, location) => {
-  counts[location.category] = (counts[location.category] ?? 0) + 1;
-  return counts;
-}, {});
-
-const countryCount = new Set(builtInLocations.map((location) => location.countryCode).filter(Boolean)).size;
+const catalogStatistics = buildCatalogStatistics(builtInLocations);
 
 const catalogStructuredData = {
   "@context": "https://schema.org",
@@ -48,23 +26,23 @@ const catalogStructuredData = {
   url: absoluteUrl("/ortskatalog"),
   description: `Übersicht über ${builtInLocations.length.toLocaleString("de-DE")} spielbare Orts- und Flaggenaufgaben in fünf Kategorien.`,
   inLanguage: "de-DE",
-  dateModified: "2026-07-28",
+  dateModified: "2026-08-09",
   isPartOf: {
     "@id": `${absoluteUrl("/")}#website`
   },
-  about: categoryOrder.map((category) => ({
+  about: catalogCategoryOrder.map((category) => ({
     "@type": "Thing",
-    name: categoryLabels[category]
+    name: catalogCategoryLabels[category]
   })),
   mainEntity: {
     "@type": "ItemList",
     name: "Spielbare Kategorien bei Punktlandung",
-    numberOfItems: categoryOrder.length,
-    itemListElement: categoryOrder.map((category, index) => ({
+    numberOfItems: catalogCategoryOrder.length,
+    itemListElement: catalogStatistics.categories.map((row, index) => ({
       "@type": "ListItem",
       position: index + 1,
-      name: categoryLabels[category],
-      description: `${(categoryCounts[category] ?? 0).toLocaleString("de-DE")} spielbare Aufgaben`
+      name: catalogCategoryLabels[row.category],
+      description: `${row.total.toLocaleString("de-DE")} spielbare Aufgaben`
     }))
   }
 };
@@ -74,24 +52,25 @@ export default function OrtskatalogPage() {
     <>
       <JsonLd data={catalogStructuredData} />
       <InfoPageShell
+        plainContent
         eyebrow="Spielinhalte und Quellen"
         title="Welche Orte und Aufgaben gibt es bei Punktlandung?"
         intro={`Diese Seite zeigt, welche Inhalte im Spiel vorkommen: aktuell ${builtInLocations.length.toLocaleString("de-DE")} spielbare Aufgaben mit Städten, Hauptstädten, Wahrzeichen, Landschaften und Flaggen. Außerdem erklären wir, wie die Motive ausgewählt und geprüft werden.`}
       >
-      <p className="text-sm text-slate-400">Datenstand der Katalogversion: Juli 2026</p>
+      <p className="text-sm text-slate-400">Datenstand der Katalogversion: August 2026</p>
 
       <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="rounded-md bg-slate-950/72 p-5 ring-1 ring-slate-700">
+        <div className="punktlandung-info-static-card rounded-md p-5">
           <p className="text-4xl font-black text-emerald-300">{builtInLocations.length.toLocaleString("de-DE")}</p>
           <h2 className="mt-2 text-lg font-black text-white">spielbare Aufgaben</h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">Nach Duplikat-, Lizenz- und Motivfiltern.</p>
         </div>
-        <div className="rounded-md bg-slate-950/72 p-5 ring-1 ring-slate-700">
-          <p className="text-4xl font-black text-indigo-300">{countryCount.toLocaleString("de-DE")}</p>
+        <div className="punktlandung-info-static-card rounded-md p-5">
+          <p className="text-4xl font-black text-indigo-300">{catalogStatistics.countriesAndTerritories.toLocaleString("de-DE")}</p>
           <h2 className="mt-2 text-lg font-black text-white">Länder und Gebiete</h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">Über eindeutige Ländercodes im aktiven Katalog vertreten.</p>
         </div>
-        <div className="rounded-md bg-slate-950/72 p-5 ring-1 ring-slate-700 sm:col-span-2 xl:col-span-1">
+        <div className="punktlandung-info-static-card rounded-md p-5 sm:col-span-2 xl:col-span-1">
           <p className="text-4xl font-black text-amber-300">5</p>
           <h2 className="mt-2 text-lg font-black text-white">Kategorien</h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">Zusätzlich können alle Inhalte gemischt gespielt werden.</p>
@@ -100,23 +79,28 @@ export default function OrtskatalogPage() {
 
       <section className="mt-8">
         <h2 className="text-[22px] font-black leading-tight text-white">Verteilung auf die Kategorien</h2>
-        <div className="mt-4 overflow-x-auto rounded-md ring-1 ring-slate-700">
+        <div className="punktlandung-info-table mt-4 overflow-x-auto">
           <table className="w-full border-collapse text-left text-sm">
             <thead className="bg-slate-900 text-slate-200">
               <tr>
                 <th className="px-4 py-3 font-black">Kategorie</th>
                 <th className="px-4 py-3 text-right font-black">Spielbare Aufgaben</th>
+                <th className="px-4 py-3 text-right font-black">Leicht</th>
+                <th className="px-4 py-3 text-right font-black">Mittel</th>
+                <th className="px-4 py-3 text-right font-black">Schwer</th>
                 <th className="px-4 py-3 text-right font-black">Anteil</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 bg-slate-950/72 text-slate-300">
-              {categoryOrder.map((category) => {
-                const count = categoryCounts[category] ?? 0;
-                const share = (count / builtInLocations.length) * 100;
+            <tbody className="divide-y divide-slate-800 text-slate-300">
+              {catalogStatistics.categories.map((row) => {
+                const share = (row.total / builtInLocations.length) * 100;
                 return (
-                  <tr key={category}>
-                    <td className="px-4 py-3 font-bold text-white">{categoryLabels[category]}</td>
-                    <td className="px-4 py-3 text-right">{count.toLocaleString("de-DE")}</td>
+                  <tr key={row.category}>
+                    <td className="px-4 py-3 font-bold text-white">{catalogCategoryLabels[row.category]}</td>
+                    <td className="px-4 py-3 text-right">{row.total.toLocaleString("de-DE")}</td>
+                    <td className="px-4 py-3 text-right">{row.easy.toLocaleString("de-DE")}</td>
+                    <td className="px-4 py-3 text-right">{row.medium.toLocaleString("de-DE")}</td>
+                    <td className="px-4 py-3 text-right">{row.hard.toLocaleString("de-DE")}</td>
                     <td className="px-4 py-3 text-right">{share.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %</td>
                   </tr>
                 );
@@ -124,6 +108,16 @@ export default function OrtskatalogPage() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="punktlandung-info-static-card mt-8 p-5">
+        <h2 className="text-[22px] font-black leading-tight text-white">Wie verändert sich die Schwierigkeit?</h2>
+        <p className="mt-2 leading-7 text-slate-300">
+          Die Tabelle zeigt die Startverteilung des aktiven Katalogs. Sobald ein Motiv mindestens {MINIMUM_DIFFICULTY_SAMPLES} vergleichbare,
+          serververifizierte Runden gesammelt hat, kann seine Einstufung anhand von Punktzahl, Ländertreffern und
+          relativer Antwortzeit automatisch angepasst werden. Ab {STABLE_DIFFICULTY_SAMPLES} Runden gilt die Einstufung als stabil. Die
+          Auswertung wird einmal täglich aktualisiert, sofern der Datenbank-Zeitplan aktiv ist.
+        </p>
       </section>
 
       <section className="mt-8">
@@ -135,7 +129,7 @@ export default function OrtskatalogPage() {
             ["3. Motivfilter", "Karten, Diagramme, Montagen, Satellitenbilder und ungeeignete niedrig priorisierte Motive werden aus dem Standardkatalog gefiltert."],
             ["4. Technische Prüfung", "Doppelte Kategorie-ID-Kombinationen und Bilder mit bekannten Lizenzproblemen werden vor dem Spielbetrieb ausgeschlossen."]
           ].map(([title, body]) => (
-            <article key={title} className="rounded-md bg-slate-950/72 p-5 ring-1 ring-slate-700">
+            <article key={title} className="punktlandung-info-static-card rounded-md p-5">
               <h3 className="text-lg font-black text-white">{title}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
             </article>
@@ -143,7 +137,7 @@ export default function OrtskatalogPage() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-md border border-slate-700 bg-slate-950/60 p-5">
+      <section className="punktlandung-info-static-card mt-8 p-5">
         <h2 className="text-[22px] font-black leading-tight text-white">Woher stammen die Inhalte?</h2>
         <p className="mt-2 leading-7 text-slate-300">
           Die Bilder stammen aus Wikimedia Commons. Die Lizenzseite nennt die verwendeten Daten- und Bildquellen und
@@ -151,12 +145,12 @@ export default function OrtskatalogPage() {
           werden direkt aus dem aktiven Spieldatenbestand berechnet.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <ButtonLink href="/lizenzen" tone="ghost" className="inline-flex w-fit items-center justify-center normal-case">
+          <RedesignButtonLink href="/lizenzen" tone="secondary" className="inline-flex w-fit items-center justify-center">
             Quellen und Lizenzen ansehen
-          </ButtonLink>
-          <ButtonLink href="/" tone="primary" className="inline-flex w-fit items-center justify-center normal-case">
+          </RedesignButtonLink>
+          <RedesignButtonLink href="/" tone="primary" className="inline-flex w-fit items-center justify-center">
             Punktlandung kostenlos starten
-          </ButtonLink>
+          </RedesignButtonLink>
         </div>
       </section>
       </InfoPageShell>

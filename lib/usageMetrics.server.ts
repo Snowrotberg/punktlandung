@@ -4,11 +4,14 @@ import path from "node:path";
 export type UsageEventName =
   | "game_start"
   | "game_complete"
+  | "image_delivery"
   | "ws_connection_accepted"
   | "ws_connection_rejected"
   | "room_created"
   | "room_joined"
-  | "capacity_sample";
+  | "capacity_sample"
+  | "page_view"
+  | "visit_start";
 
 export type UsageEvent = {
   version: 1;
@@ -21,6 +24,12 @@ export type UsageEvent = {
   playerCount?: number;
   connections?: number;
   rooms?: number;
+  durationMs?: number;
+  outcome?: "loaded" | "fallback" | "failed";
+  delivery?: "direct" | "proxy" | "ranked";
+  cacheHit?: boolean;
+  connectionType?: "slow-2g" | "2g" | "3g" | "4g" | "unknown";
+  locationId?: string;
 };
 
 export function usageMetricsPath(): string {
@@ -35,7 +44,7 @@ export async function recordUsageEvent(event: UsageEventName, details: Omit<Usag
   await appendFile(filePath, `${JSON.stringify(entry)}\n`, "utf8");
 }
 
-export async function readUsageEvents(since: Date): Promise<UsageEvent[]> {
+export async function readUsageEvents(since?: Date): Promise<UsageEvent[]> {
   let contents: string;
   try {
     contents = await readFile(usageMetricsPath(), "utf8");
@@ -44,7 +53,7 @@ export async function readUsageEvents(since: Date): Promise<UsageEvent[]> {
     throw error;
   }
 
-  const sinceTime = since.getTime();
+  const sinceTime = since?.getTime() ?? Number.NEGATIVE_INFINITY;
   return contents
     .split(/\r?\n/)
     .filter(Boolean)

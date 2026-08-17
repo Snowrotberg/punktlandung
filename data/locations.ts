@@ -1,6 +1,11 @@
 import type { CommunityMapPack, GeoLocation } from "../types/game";
+import { applyInitialCatalogDifficultyBands } from "../lib/locationDifficulty";
+import { locationShortDescription } from "../lib/locationDescription";
+export { locationVisualKey, prioritizeCatalogImages } from "../lib/locationSelection";
 import generatedLocations from "./generated/locations.generated.json";
 import excludedLicenseImageFiles from "./generated/image-license-exclusions.generated.json";
+import imageHealthExclusions from "./generated/image-health-exclusions.generated.json";
+import imageContentExclusions from "./image-content-exclusions.json";
 
 const wikimediaFile = (fileName: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(fileName)}`;
 
@@ -616,9 +621,24 @@ const excludedImagePatterns = [
   /\btopo\b/i
 ];
 
+const curatedImageExclusionPatterns = [
+  /\binteriors?\b/i,
+  /\bmuseums?\b/i,
+  /\btombs?\b/i,
+  /\bporch\b/i,
+  /\bhotels?\b/i,
+  /\breporters?\b/i,
+  /\bengravings?\b/i,
+  /\blithographs?\b/i,
+  /\bhistorical[ _-](?:prints?|views?)\b/i,
+  /\bzicht op\b/i
+];
+
 const normalizedLicenseExclusions = new Set(
   excludedLicenseImageFiles.map((fileName) => fileName.replaceAll("_", " ").normalize("NFC").trim().toLocaleLowerCase())
 );
+const normalizedImageHealthExclusions = new Set(imageHealthExclusions as string[]);
+const normalizedImageContentExclusions = new Set(imageContentExclusions as string[]);
 
 function imageFileName(location: GeoLocation) {
   if (location.imageFile) return location.imageFile;
@@ -631,18 +651,28 @@ function imageFileName(location: GeoLocation) {
 }
 
 function isDefaultPlayableLocation(location: GeoLocation) {
+  // Legacy radius-only variants are geographically nearby, but were never
+  // checked for category fit. Keep them in the source catalog for traceability
+  // while excluding them from every live game.
+  if (location.catalogVariant === "nearby-image" || location.imageReviewStatus === "quarantined") return false;
+  if (normalizedImageHealthExclusions.has(location.id)) return false;
+  if (normalizedImageContentExclusions.has(location.id)) return false;
   if (location.difficulty === "hard" && (location.popularity ?? 0) < 20) return false;
   const imageFile = imageFileName(location);
   const normalizedImageFile = imageFile.replaceAll("_", " ").normalize("NFC").trim().toLocaleLowerCase();
   if (normalizedLicenseExclusions.has(normalizedImageFile)) return false;
   if (location.category === "flags") return true;
+  if (location.catalogVariant === "curated-image" && curatedImageExclusionPatterns.some((pattern) => pattern.test(imageFile))) return false;
   return !excludedImagePatterns.some((pattern) => pattern.test(imageFile));
 }
 
-export const builtInLocations: GeoLocation[] = dedupeLocations([...rawBuiltInLocations, ...generatedBuiltInLocations])
-  .filter(isDefaultPlayableLocation)
+export const builtInLocations: GeoLocation[] = applyInitialCatalogDifficultyBands(
+  dedupeLocations([...rawBuiltInLocations, ...generatedBuiltInLocations])
+    .filter(isDefaultPlayableLocation)
+)
   .map((location) => ({
   ...location,
+  shortDescription: locationShortDescription(location),
   panoramaUrls: location.panoramaUrls?.length ? location.panoramaUrls : [location.panoramaUrl]
 }));
 

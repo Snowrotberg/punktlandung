@@ -7,11 +7,7 @@ import { CookieSettingsButton } from "@/components/CookieSettingsButton";
 const seoLinks = [
   { href: "/so-funktioniert-punktlandung", label: "So funktioniert's" },
   { href: "/ortskatalog", label: "Orte und Aufgaben" },
-  { href: "/geoguessr-alternative-deutsch", label: "GeoGuessr Alternative" },
-  { href: "/geografie-spiel", label: "Geografie-Spiel" },
-  { href: "/orte-erraten-spiel", label: "Orte erraten" },
-  { href: "/partyspiel-geografie", label: "Partyspiel" },
-  { href: "/kostenloses-geoguessing-spiel", label: "Kostenlos spielen" }
+  { href: "/partyspiel-geografie", label: "Mit Freunden spielen" }
 ];
 
 const legalLinks = [
@@ -50,8 +46,9 @@ export function ImportantPages({ className = "" }: ImportantPagesProps) {
 
   return (
     <aside className={`arcade-panel punktlandung-info-navigation flex flex-col rounded-md border-slate-700/80 bg-slate-900/80 p-4 ${className}`}>
-      <h2 className="text-[22px] font-black leading-tight text-white">Wichtige Seiten</h2>
-      <nav aria-label="Wichtige Informationsseiten" className="mt-3 flex min-h-0 flex-1 flex-col">
+      <h2 className="text-[22px] font-black leading-tight text-white">Mehr entdecken</h2>
+      <nav aria-label="Wichtige Informationsseiten" className="mt-4 flex min-h-0 flex-1 flex-col">
+        <p className="punktlandung-info-navigation-label">Service &amp; Rechtliches</p>
         <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-1">
           {legalLinks.map((link) => (
             <NavigationLink key={link.href} {...link} pathname={pathname} />
@@ -60,7 +57,7 @@ export function ImportantPages({ className = "" }: ImportantPagesProps) {
           <NavigationLink href="/faq" label="FAQ" pathname={pathname} />
         </div>
 
-        <div aria-hidden="true" className="h-6 shrink-0" />
+        <p className="punktlandung-info-navigation-label mt-5">Rund um Punktlandung</p>
 
         <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-1">
           {seoLinks.map((link) => (

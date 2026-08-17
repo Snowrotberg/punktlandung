@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { GameApp } from "@/components/GameApp";
 import { SoundProvider } from "@/components/SoundProvider";
+import { accountNavigationState } from "@/lib/accountNavigation.server";
 
 export const metadata: Metadata = {
   robots: {
@@ -10,11 +11,21 @@ export const metadata: Metadata = {
   }
 };
 
-export default function SoloModusPage() {
+export default async function SoloModusPage({ searchParams }: { searchParams: Promise<{ direct?: string; resume?: string }> }) {
+  const account = await accountNavigationState();
+  const params = await searchParams;
   return (
     <AppErrorBoundary>
       <SoundProvider>
-        <GameApp initialMode="solo" />
+        <GameApp
+          key="solo-setup"
+          initialMode="solo"
+          directStart={params.direct === "1"}
+          resumeRankedGame={Boolean(params.resume)}
+          accountsEnabled={account.enabled}
+          accountAuthenticated={account.authenticated}
+          accountDisplayName={account.displayName}
+        />
       </SoundProvider>
     </AppErrorBoundary>
   );

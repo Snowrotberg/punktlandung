@@ -5,6 +5,10 @@ import type {
   HTMLAttributes,
   ReactNode
 } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { MessagesSquare, UserRound, Volume2, VolumeX } from "lucide-react";
+import { AccountMenu } from "@/components/AccountMenu";
 import { playerColorAt } from "@/lib/playerPalette";
 import styles from "./RedesignPrimitives.module.css";
 
@@ -36,6 +40,73 @@ export function RedesignHeader({ className, children, ...props }: HTMLAttributes
     <header className={classNames(styles.header, className)} {...props}>
       {children}
     </header>
+  );
+}
+
+export function RedesignBrand({ className }: { className?: string }) {
+  return (
+    <div className={classNames(styles.brandGroup, className)}>
+      <a href="/" className={styles.brand} aria-label="Punktlandung Startseite">
+        <Image className={styles.brandIcon} src="/icon.png" width={64} height={64} alt="" aria-hidden="true" priority unoptimized />
+        <span>Punktlandung</span>
+      </a>
+      <a className={styles.brandBadge} href="/infos" aria-label="Punktlandung Web-Version">
+        <span className={styles.brandBadgeMark}>WEB</span>
+      </a>
+    </div>
+  );
+}
+
+type StatusControlsProps = {
+  connectionStatus: "connecting" | "open" | "closed";
+  soundEnabled: boolean;
+  playerName?: string;
+  accountHref?: string;
+  accountAuthenticated?: boolean;
+  communityHref?: string;
+  onSoundToggle: () => void;
+};
+
+export function RedesignStatusControls({ soundEnabled, playerName, accountHref, accountAuthenticated = false, communityHref = "/community", onSoundToggle }: StatusControlsProps) {
+  const accountLabel = playerName ? `Account von ${playerName}` : "Account";
+
+  return (
+    <div className={styles.statusControls}>
+      <button
+        type="button"
+        className={styles.roundControl}
+        onClick={onSoundToggle}
+        aria-label={soundEnabled ? "Sound ausschalten" : "Sound einschalten"}
+        data-tooltip={soundEnabled ? "Ton ausschalten" : "Ton einschalten"}
+        aria-pressed={soundEnabled}
+      >
+        {soundEnabled ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
+      </button>
+      <Link
+        href={communityHref}
+        className={styles.roundControl}
+        aria-label="Community"
+        data-tooltip="Community"
+      >
+        <MessagesSquare aria-hidden="true" />
+      </Link>
+      {accountHref && accountAuthenticated ? (
+        <AccountMenu authenticated showPlayLink={false} />
+      ) : accountHref ? (
+        <a
+          href={accountHref}
+          className={styles.roundControl}
+          aria-label={accountAuthenticated ? "Spielerkonto" : "Anmelden"}
+          data-tooltip={accountAuthenticated ? "Spielerkonto" : "Anmelden"}
+        >
+          <UserRound aria-hidden="true" />
+        </a>
+      ) : (
+        <button type="button" className={styles.roundControl} aria-label={accountLabel} data-tooltip="Bald verfügbar" disabled>
+          <UserRound aria-hidden="true" />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -90,8 +161,12 @@ type RedesignButtonLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   tone?: RedesignButtonTone;
 };
 
-export function RedesignButtonLink({ tone = "secondary", className, ...props }: RedesignButtonLinkProps) {
-  return <a className={classNames(styles.button, buttonToneClass[tone], className)} {...props} />;
+export function RedesignButtonLink({ tone = "secondary", className, href, ...props }: RedesignButtonLinkProps) {
+  const buttonClassName = classNames(styles.button, buttonToneClass[tone], className);
+  if (typeof href === "string" && href.startsWith("/")) {
+    return <Link href={href} className={buttonClassName} {...props} />;
+  }
+  return <a href={href} className={buttonClassName} {...props} />;
 }
 
 export type SegmentOption<T extends string> = {

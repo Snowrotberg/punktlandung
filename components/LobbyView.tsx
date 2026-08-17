@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { categoryOptions } from "@/lib/categories";
+import { playerColorForId } from "@/lib/playerPalette";
 import type { GameMode, GameSettings, HostParticipation, Player, RoomKind, TeamId } from "@/types/game";
-import { AdContainer } from "./AdContainer";
 import { BackLink } from "./BackButton";
 import { Button, ButtonLink } from "./Button";
 import { LegalLinks } from "./LegalLinks";
@@ -39,14 +39,18 @@ const onlineModes: Array<{ id: GameMode; title: string; short: string }> = [
 ];
 
 const timeOptions = [
-  { value: 10, label: "10 s" },
+  { value: 15, label: "15 s" },
   { value: 30, label: "30 s" },
   { value: 60, label: "60 s" },
-  { value: 120, label: "2 min" },
   { value: 0, label: "frei" }
 ];
 
 const roundPresets = [10, 15, 20];
+const difficultyOptions = [
+  { value: "easy", label: "Leicht" },
+  { value: "medium", label: "Mittel" },
+  { value: "hard", label: "Schwer" }
+] as const;
 
 function SvgPin({ className, color }: { className?: string; color: string }) {
   return (
@@ -151,9 +155,6 @@ export function LobbyView({
   const isOnlineRoom = roomKind === "online";
   const isCouchMode = isSolo && settings.localMode === "couch";
   const isSoloMode = isSolo && !isCouchMode;
-  const usesModeSidebarAd = isSoloMode || isCouchMode || isOnlineRoom;
-  const leftRailPlacement = isSoloMode ? "solo-left-rail" : isCouchMode ? "party-left-rail" : isOnlineRoom ? "online-left-rail" : "lobby-left-rail";
-  const rightRailPlacement = isSoloMode ? "solo-right-rail" : isCouchMode ? "party-right-rail" : isOnlineRoom ? "online-right-rail" : "lobby-right-rail";
   const invite = useMemo(() => {
     if (typeof window === "undefined") return { link: "", isMobileReachable: false };
     const configuredOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -165,7 +166,7 @@ export function LobbyView({
   const inviteLink = invite.link;
   const me = players.find((player) => player.id === meId);
   const rankedPlayers = [...players].sort((a, b) => b.score - a.score);
-  const headerKicker = isSolo ? (isCouchMode ? "Partymodus" : "Solo-Modus") : "Online-Modus";
+  const headerKicker = isSolo ? (isCouchMode ? "Party" : "Solo") : "Online-Raum";
   const headerTitle = isSolo
     ? isCouchMode
       ? "Mehrere Personen an einem Bildschirm"
@@ -173,14 +174,14 @@ export function LobbyView({
     : "Gemeinsam im virtuellen Raum";
   const headerHint = isSolo
     ? isCouchMode
-      ? "Reihum tippen, Punkte jagen."
-      : "Eine Person setzt pro Runde einen Pin."
-    : "Code teilen und live gegeneinander spielen.";
+      ? "Gemeinsam oder gegeneinander an einem Gerät."
+      : "Spiele für dich und in deinem Tempo."
+    : "Erstelle einen Raum oder tritt per Code bei.";
   const categoryQuestion = isSolo && !isCouchMode ? "Was willst du erraten?" : "Was wollt ihr erraten?";
   const categoryHint = isSolo && !isCouchMode ? "Wähle die Kategorie für deine Runde." : "Wählt die Kategorie für diese Runde.";
   const currentLocalMode = isCouchMode
-    ? { title: "Party-Modus", short: "Reihum am selben Bildschirm." }
-    : { title: "Solo-Modus", short: "Eine Person, ein Tipp." };
+    ? { title: "Party", short: "Reihum an einem Gerät." }
+    : { title: "Solo", short: "Für dich, in deinem Tempo." };
   const localPlayerSlots = Array.from({ length: 10 }, (_, index) => players[index] ?? null);
   const isOnlineSetup = isOnlineRoom && !isRoomOnline;
   const primaryActionLabel = isOnlineSetup ? (connectionStatus === "open" ? "Online-Raum öffnen" : "Raumserver fehlt") : "Starten";
@@ -253,15 +254,7 @@ export function LobbyView({
   if (isOnlineRoom && isRoomOnline) {
     return (
       <main className="punktlandung-lobby punktlandung-online-waiting-room h-dvh overflow-hidden bg-slate-950 p-2 text-slate-50 md:p-4">
-        <div className="punktlandung-lobby-shell mx-auto grid h-full min-h-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-2 md:gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px]">
-          <AdContainer
-            placement="online-left-rail"
-            variant="rail"
-            adFormat="auto"
-            label="Anzeige"
-            className="hidden h-full min-h-0 xl:block"
-            fullWidthResponsive
-          />
+        <div className="punktlandung-lobby-shell mx-auto grid h-full min-h-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-2 md:gap-4">
           <div className="punktlandung-online-waiting-content flex min-h-0 min-w-0 flex-col gap-2 md:gap-4">
             <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-md bg-slate-900/70 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-5">
               <div className="min-w-0">
@@ -356,7 +349,7 @@ export function LobbyView({
                   ) : (
                     rankedPlayers.map((player, index) => (
                       <div key={player.id} className="relative overflow-hidden rounded-md bg-slate-950/55 p-3 pl-4 ring-1 ring-slate-700/60">
-                        <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: player.color }} />
+                        <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: playerColorForId(players, player.id) }} />
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <p className="truncate font-black">
@@ -365,7 +358,7 @@ export function LobbyView({
                             <p className="mt-0.5 text-xs font-bold text-slate-400">{player.connected ? "bereit" : "offline"}</p>
                           </div>
                           <div className="flex shrink-0 items-center gap-2">
-                            <span className="h-3.5 w-3.5 rounded-full ring-2 ring-white/80" style={{ background: player.color }} />
+                            <span className="h-3.5 w-3.5 rounded-full ring-2 ring-white/80" style={{ background: playerColorForId(players, player.id) }} />
                             {!isOnlineRoom && settings.mode === "duel" && (
                               <span className="rounded-sm bg-slate-900/90 px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-emerald-200 ring-1 ring-emerald-300/35">
                                 {player.team === "aurora" ? "Team A" : "Team B"}
@@ -403,14 +396,6 @@ export function LobbyView({
               </aside>
             </section>
           </div>
-          <AdContainer
-            placement="online-right-rail"
-            variant="rail"
-            adFormat="auto"
-            label="Anzeige"
-            className="hidden h-full min-h-0 xl:block"
-            fullWidthResponsive
-          />
         </div>
         <div className="punktlandung-touch-only-grid punktlandung-lobby-touch-actions punktlandung-online-waiting-touch-actions fixed inset-x-2 bottom-2 z-50 grid grid-cols-2 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md">
           <ButtonLink sound="click" tone="ghost" className="punktlandung-lobby-touch-back punktlandung-mode-action punktlandung-mode-action--secondary normal-case" href={leaveHref} onNavigate={onLeave} aria-label="Zurück" title="Zurück">
@@ -438,15 +423,7 @@ export function LobbyView({
 
   return (
     <main className="punktlandung-lobby h-dvh overflow-hidden bg-slate-950 p-2 text-slate-50 md:p-4">
-      <div className="punktlandung-lobby-shell mx-auto grid h-full min-h-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-2 md:gap-4 xl:grid-cols-[140px_minmax(0,1fr)_140px] 2xl:grid-cols-[180px_minmax(0,1fr)_180px] min-[1900px]:grid-cols-[220px_minmax(0,1fr)_220px] min-[2300px]:grid-cols-[260px_minmax(0,1fr)_260px]">
-        <AdContainer
-          placement={leftRailPlacement}
-          variant="rail"
-          adFormat={usesModeSidebarAd ? "auto" : undefined}
-          label="Anzeige"
-          className="hidden h-full min-h-0 xl:block"
-          fullWidthResponsive={usesModeSidebarAd}
-        />
+      <div className="punktlandung-lobby-shell mx-auto grid h-full min-h-0 w-full max-w-[132rem] min-[2200px]:max-w-[calc(100vw-1rem)] grid-cols-1 gap-2 md:gap-4">
         <div className="flex min-h-0 min-w-0 flex-col gap-2 md:gap-4">
           <header className="punktlandung-lobby-header flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-md bg-slate-900/70 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.24)] ring-1 ring-slate-700/60 md:p-5 min-[2200px]:p-6">
           <div className="flex min-w-0 items-center gap-3">
@@ -640,7 +617,7 @@ export function LobbyView({
                 <fieldset disabled={!isHost} className="space-y-2 disabled:opacity-55">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Zeit</p>
-                    <div className="mt-1.5 grid grid-cols-5 gap-2">
+                    <div className="mt-1.5 grid grid-cols-4 gap-2">
                       {timeOptions.map((option) => (
                         <button
                           key={option.value}
@@ -736,11 +713,9 @@ export function LobbyView({
                     <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
                       Einschränkungen <span className="tracking-[0.08em] text-slate-500">(optional)</span>
                     </p>
-                    <div className="punktlandung-restriction-grid mt-1.5 grid grid-cols-3 gap-2">
+                    <div className="punktlandung-restriction-grid mt-1.5 grid grid-cols-1 gap-2">
                       {[
-                        ["noMove", "Nicht bewegen"],
-                        ["noPan", "Nicht schwenken"],
-                        ["noZoom", "Nicht zoomen"]
+                        ["noZoom", "Kein Bildzoom"]
                       ].map(([key, label]) => (
                         <label
                           key={key}
@@ -783,17 +758,30 @@ export function LobbyView({
                       ))}
                     </div>
                   </div>
+
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Schwierigkeit</p>
+                    <div className="mt-1.5 grid grid-cols-3 gap-2">
+                      {difficultyOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => onSettings({ difficulty: option.value })}
+                          className={`punktlandung-setting-choice h-9 rounded-md px-2 text-[12px] font-black transition min-[2200px]:h-20 min-[2200px]:text-2xl ${
+                            settings.difficulty === option.value
+                              ? "punktlandung-setting-choice--selected bg-slate-950/70 text-emerald-100"
+                              : "punktlandung-setting-choice--available bg-slate-950/50 text-slate-200"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </fieldset>
               </div>
               <LegalLinks preserveSession className="punktlandung-settings-legal mt-3 hidden border-t border-slate-800/85 pt-3 lg:flex" />
             </div>
-            <AdContainer
-              placement={isOnlineRoom ? "online-settings-banner" : isCouchMode ? "party-settings-banner" : "solo-settings-banner"}
-              variant="banner"
-              label="Anzeige"
-              className="punktlandung-settings-ad"
-              fullWidthResponsive
-            />
             </div>
 
             <div className="arcade-panel punktlandung-lobby-categories order-2 min-w-0 rounded-md border-slate-700/70 p-3 md:p-4 lg:order-none lg:h-full min-[2200px]:p-6">
@@ -931,7 +919,7 @@ export function LobbyView({
                   <div key={player.id} className="rounded-md bg-slate-950/50 p-3 ring-1 ring-slate-700/50">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2">
-                        <span className="h-4 w-4 rounded-full" style={{ background: player.color }} />
+                        <span className="h-4 w-4 rounded-full" style={{ background: playerColorForId(players, player.id) }} />
                         <span className="truncate font-black">
                           #{index + 1} {player.name}
                         </span>
@@ -994,7 +982,7 @@ export function LobbyView({
                   >
                     <span
                       className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-white/80 text-xs font-black text-white shadow-[0_0_16px_rgba(0,0,0,0.32)]"
-                      style={{ background: player.color }}
+                      style={{ background: playerColorForId(players, player.id) }}
                     >
                       {index + 1}
                     </span>
@@ -1032,14 +1020,6 @@ export function LobbyView({
           </Button>
         </div>
         </div>
-        <AdContainer
-          placement={rightRailPlacement}
-          variant="rail"
-          adFormat={usesModeSidebarAd ? "auto" : undefined}
-          label="Anzeige"
-          className="hidden h-full min-h-0 xl:block"
-          fullWidthResponsive={usesModeSidebarAd}
-        />
       </div>
     </main>
   );

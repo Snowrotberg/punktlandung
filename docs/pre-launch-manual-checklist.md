@@ -18,12 +18,12 @@ Diese Punkte lassen sich nicht allein durch den Quellcode bestätigen und müsse
 - [x] Sensible Standardkategorien sowie Alkohol und Glücksspiel in AdSense blockiert.
 - [x] CMP-Mitteilung für `punktlandung.app` veröffentlicht und der Website zugeordnet.
 - [ ] Einwilligen, Ablehnen, Optionen verwalten und erneutes Öffnen über „Cookies“ in Produktion getestet.
-- [ ] AdSense-Websiteprüfung nach Entfernung der Passwortsperre abgeschlossen.
+- [ ] AdSense-Websiteprüfung für die öffentlich erreichbare Domain abgeschlossen.
 - [ ] Eigene Anzeigen niemals anklicken.
 
 ## Abschluss
 
-- [ ] Pflichtlinks und Lizenzkatalog in der geschützten Produktionsversion geprüft.
+- [ ] Pflichtlinks und Lizenzkatalog in Produktion geprüft.
 - [ ] Vollständige Partie in Solo-, Party- und Online-Modus erfolgreich getestet.
 - [ ] Feedback-Versand in Produktion erfolgreich getestet.
-- [ ] Öffentliche Freischaltung ausdrücklich bestätigt.
+- [ ] Neue Releaseversion nach dem Produktions-Smoke-Test ausdrücklich freigegeben.

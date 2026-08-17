@@ -1,0 +1,76 @@
+.panel {
+  min-width: 0;
+  margin-top: 1rem;
+}
+
+.card {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .85rem;
+  padding: .9rem 1rem;
+  border: 1px solid rgba(148, 163, 184, .22);
+  border-radius: .85rem;
+  background: color-mix(in srgb, #0e1527 92%, var(--pl-mint) 8%);
+}
+
+.icon {
+  display: grid;
+  width: 2.65rem;
+  height: 2.65rem;
+  place-items: center;
+  border-radius: .7rem;
+  color: var(--pl-mint);
+  background: rgba(94, 231, 189, .1);
+}
+
+.icon svg { width: 1.2rem; height: 1.2rem; }
+.copy { min-width: 0; }
+.eyebrow { color: var(--pl-mint); font-size: .62rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.card h2 { margin: .18rem 0 .2rem; color: #f8fafc; font-size: .95rem; letter-spacing: -.015em; }
+.card p { margin: 0; color: #94a3b8; font-size: .72rem; line-height: 1.5; }
+
+.card > a {
+  display: inline-flex;
+  min-height: 2.55rem;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: 0 .9rem;
+  border: 1px solid var(--pl-mint);
+  border-radius: .65rem;
+  color: var(--pl-mint-ink);
+  background: var(--pl-mint);
+  font-size: .74rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 .55rem 1.25rem rgb(0 0 0 / .16);
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.card > a:hover,
+.card > a:focus-visible { background: color-mix(in srgb, var(--pl-mint) 88%, white); box-shadow: 0 .8rem 1.6rem rgb(0 0 0 / .22); outline: none; transform: translateY(-2px); }
+.card > a:focus-visible { box-shadow: 0 0 0 3px rgba(94, 231, 189, .2); }
+.card > a span { font-size: 1rem; }
+
+.both {
+  padding: 1rem;
+  border: 1px solid rgba(148, 163, 184, .2);
+  border-radius: 1rem;
+  background: rgb(14 21 39 / .42);
+}
+
+.heading { margin-bottom: .8rem; }
+.heading > span { color: var(--pl-mint); font-size: .64rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.heading h2 { margin: .25rem 0 .25rem; color: #f8fafc; font-size: 1.05rem; }
+.heading p { margin: 0; color: #94a3b8; font-size: .76rem; line-height: 1.5; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; }
+.both .card { height: 100%; }
+
+@media (max-width: 42rem) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .card { align-items: start; grid-template-columns: auto minmax(0, 1fr); }
+  .card > a { grid-column: 1 / -1; width: 100%; }
+}

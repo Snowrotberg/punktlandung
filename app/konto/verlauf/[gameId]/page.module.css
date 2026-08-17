@@ -1,0 +1,59 @@
+.page { min-height: 100dvh; padding: clamp(.75rem, 1vw, 2rem); overflow-x: hidden; background: #070b14; color: var(--pl-text); }
+.frame { display: grid; width: 100%; min-height: calc(100dvh - clamp(1.5rem, 2vw, 4rem)); margin: 0 auto; grid-template-columns: minmax(0, 1fr); gap: clamp(.75rem, 1vw, 2rem); }
+.frameNoAds { grid-template-columns: minmax(0, 1fr) !important; }
+.rail { display: none; }
+.app { --pl-content-inset: clamp(1.5rem, 3vw, 4rem); display: flex; min-width: 0; min-height: 0; flex-direction: column; font-family: var(--font-inter); }
+.topbar { flex: 0 0 auto; padding-inline: var(--pl-content-inset) !important; }
+.brand { text-decoration: none; }
+.toplinks { align-items: center; display: flex; gap: 1rem; }
+.toplink { min-height: 2.5rem; }
+.shell { width: 100%; max-width: 80rem; min-height: 0; margin: 0 auto; padding: clamp(1rem, 2vw, 1.8rem) var(--pl-content-inset); flex: 1; overflow: auto; scrollbar-color: color-mix(in srgb, var(--pl-mint) 45%, var(--pl-line)) transparent; scrollbar-width: thin; }
+.headerRow { align-items: end; display: flex; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.25rem; }
+.backLink { color: #cbd5e1; display: inline-block; font-size: .82rem; font-weight: 800; margin-bottom: .7rem; text-decoration: none; }
+.backLink:hover { color: var(--pl-mint); }
+.backLink:focus-visible { outline: 2px solid var(--pl-mint); outline-offset: 3px; }
+.headerRow h1 { font-size: clamp(2.2rem, 5vw, 3.8rem); letter-spacing: -.055em; line-height: .95; margin: 0; }
+.headerRow p { color: #94a3b8; margin: .55rem 0 0; }
+.scoreCard { background: rgb(14 21 39 / .58); border: 1px solid var(--pl-mint); border-radius: .9rem; min-width: 9.5rem; padding: .65rem .85rem; text-align: right; }
+.scoreCard > span, .metaGrid > div > span { color: #94a3b8; display: block; font-size: .72rem; }
+.scoreCard strong { display: block; font-size: 1.75rem; line-height: 1.05; margin-top: .18rem; }
+.metaGrid { align-items: stretch; display: grid; gap: .65rem; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: .8rem; }
+.metaGrid > div { background: rgb(14 21 39 / .58); border: 1px solid rgba(51,65,85,.7); border-radius: .75rem; min-height: 4.85rem; padding: .65rem .8rem; position: relative; }
+.metaGrid > div > strong { display: block; font-size: .95rem; margin-top: .25rem; }
+.metaGrid > div:first-child { padding-right: 2.7rem; }
+.metaGrid > div > .statusInfo { bottom: .65rem; margin: 0; position: absolute; right: .65rem; top: auto; }
+.roundsPanel { background: rgb(14 21 39 / .58); border: 1px solid rgba(148,163,184,.2); border-radius: 1rem; padding: clamp(1rem, 2.5vw, 1.5rem); }
+.panelHeading { align-items: end; display: flex; justify-content: space-between; gap: 1rem; }
+.panelHeading h2 { font-size: 1.35rem; margin: 0; }
+.panelHeading p { color: #94a3b8; font-size: .85rem; margin: .35rem 0 0; }
+.panelHeading > span { color: var(--pl-mint); font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.roundList { display: grid; gap: .65rem; list-style: none; margin: 1rem 0 0; padding: 0; }
+.roundCard { align-items: center; background: rgba(2,6,23,.45); border: 1px solid #26354a; border-radius: .75rem; display: grid; gap: 1rem; grid-template-columns: 4.5rem minmax(0, 1fr) minmax(11rem, .35fr); padding: 1rem; }
+.roundVisuals { display: grid; gap: .65rem; grid-column: 2 / -1; grid-template-columns: minmax(12rem, .55fr) minmax(18rem, 1.45fr); }
+.roundMap { min-width: 0; overflow: hidden; border-radius: .65rem; }
+.roundMap :global(.account-round-map) { background: rgba(2,6,23,.35); border: 1px solid #26354a; border-radius: .65rem; overflow: hidden; }
+.roundMap :global(.punktlandung-map-shell) { height: 15rem; }
+.roundMap :global(.leaflet-container) { height: 100%; }
+.roundMap :global(.punktlandung-map-label-actual) { background: var(--pl-mint) !important; border-color: var(--pl-mint) !important; color: var(--pl-mint-ink) !important; }
+.roundMap :global(.punktlandung-map-label-player) { word-spacing: .14em !important; }
+.roundNumber { color: var(--pl-mint); font-size: .75rem; font-weight: 900; text-transform: uppercase; }
+.roundMain h3 { font-size: 1rem; margin: 0; }
+.roundMain p { color: #94a3b8; font-size: .78rem; margin: .2rem 0 0; }
+.roundFacts { display: flex; flex-wrap: wrap; gap: .35rem .9rem; margin-top: .65rem; }
+.roundFacts span { color: #94a3b8; font-size: .75rem; }
+.roundFacts b { color: #f8fafc; }
+.missingResult { color: #94a3b8; font-size: .78rem; margin: .65rem 0 0; }
+.roundResult { border-left: 1px solid #26354a; display: grid; gap: .2rem; padding-left: 1rem; }
+.roundResult strong { color: var(--pl-mint); font-size: .85rem; }
+.roundResult span, .roundResult small { color: #94a3b8; font-size: .72rem; }
+.learningPanel { background: rgb(14 21 39 / .58); border: 1px solid rgba(148,163,184,.2); border-radius: 1rem; margin-bottom: 1rem; padding: clamp(1rem, 2.5vw, 1.5rem); }
+.learningGrid { display: grid; gap: .65rem; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 1rem; }
+.learningGrid > div { background: rgba(2,6,23,.45); border: 1px solid #26354a; border-radius: .7rem; padding: .8rem; }
+.learningGrid strong { display: block; font-size: 1.35rem; }
+.learningGrid span { color: #94a3b8; display: block; font-size: .72rem; line-height: 1.35; margin-top: .35rem; }
+.empty { color: #94a3b8; margin: 1rem 0 0; }
+.footer { flex: 0 0 auto; min-height: 3.5rem; padding-block: .75rem; }
+@media (min-width: 80rem) { .page { height: 100dvh; overflow: hidden; } .frame { height: calc(100dvh - clamp(1.5rem, 2vw, 4rem)); min-height: 0; grid-template-columns: clamp(9rem, 12vw, 30rem) minmax(0, 1fr) clamp(9rem, 12vw, 30rem); } .rail { display: block; min-height: 0; width: auto; } .app { height: 100%; overflow: hidden; } }
+@media (max-width: 60rem) { .roundCard { grid-template-columns: 4rem minmax(0, 1fr); } .roundResult { border-left: 0; border-top: 1px solid #26354a; grid-column: 2; padding: .75rem 0 0; } .roundVisuals { grid-column: 2; grid-template-columns: 1fr; } .learningGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 48rem) { .headerRow { align-items: start; flex-direction: column; } .scoreCard { min-width: 0; text-align: left; width: 100%; } .metaGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 30rem) { .page { padding: 0; } .topbar { padding-inline: 1rem !important; } .shell { padding-inline: 1rem; } .metaGrid { gap: .5rem; } .roundCard { gap: .65rem; grid-template-columns: 1fr; } .roundResult, .roundVisuals { grid-column: auto; } .panelHeading { align-items: start; flex-direction: column; } .learningGrid { grid-template-columns: 1fr 1fr; } }

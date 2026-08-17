@@ -85,18 +85,43 @@ function writeStoredOnlineResumeToken(token: string | null): void {
 export function useOnlineRoomSocket() {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [room, setRoom] = useState<RoomState | null>(null);
+  const [restoring, setRestoring] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const socketRef = useRef<WebSocket | null>(null);
+  const disconnectedTimerRef = useRef<number | null>(null);
   const connectionResumeTokenRef = useRef<string | null>(null);
   const connectionPlayerIdRef = useRef<string | null>(null);
+
+  const setConnectionStatus = useCallback((next: ConnectionStatus) => {
+    if (next === "open") {
+      if (disconnectedTimerRef.current !== null) window.clearTimeout(disconnectedTimerRef.current);
+      disconnectedTimerRef.current = null;
+      setStatus("open");
+      return;
+    }
+    if (next === "connecting") {
+      setStatus((current) => current === "open" ? current : "connecting");
+      return;
+    }
+    if (disconnectedTimerRef.current !== null) window.clearTimeout(disconnectedTimerRef.current);
+    disconnectedTimerRef.current = window.setTimeout(() => {
+      disconnectedTimerRef.current = null;
+      setStatus("closed");
+    }, 5000);
+  }, []);
 
   useEffect(() => {
     let reconnectTimer: number | null = null;
     let stopped = false;
     const restoredRoom = readStoredOnlineRoom();
     const restoredRoomSnapshot = readStoredOnlineRoomSnapshot();
-    if (restoredRoom) setRoom(restoredRoom);
+    // Keep every persisted online phase visible while the socket resumes the
+    // authoritative room. Restricting this to the lobby made reloads from an
+    // active round, its resolution or the final table briefly look lost.
+    if (restoredRoomSnapshot) setRoom(restoredRoomSnapshot);
+    else if (restoredRoom) setRoom(restoredRoom);
+    setRestoring(false);
 
     const params = new URLSearchParams(window.location.search);
     const sharedWsUrl = params.get("ws");
@@ -131,17 +156,17 @@ export function useOnlineRoomSocket() {
 
     const connect = () => {
       if (stopped) return;
-      setStatus("connecting");
+      setConnectionStatus("connecting");
       const socket = new WebSocket(wsUrl);
       socketRef.current = socket;
 
-      socket.addEventListener("open", () => setStatus("open"));
+      socket.addEventListener("open", () => setConnectionStatus("open"));
       socket.addEventListener("error", () => {
-        setStatus("closed");
+        setConnectionStatus("closed");
       });
       socket.addEventListener("close", () => {
         if (socketRef.current === socket) socketRef.current = null;
-        setStatus("closed");
+        setConnectionStatus("closed");
         scheduleReconnect();
       });
       socket.addEventListener("message", (event) => {
@@ -183,7 +208,7 @@ export function useOnlineRoomSocket() {
       if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
       socketRef.current?.close();
     };
-  }, []);
+  }, [setConnectionStatus]);
 
   const send = useCallback((message: ClientMessage) => {
     const socket = socketRef.current;
@@ -200,6 +225,7 @@ export function useOnlineRoomSocket() {
   return {
     playerId,
     room,
+    restoring,
     error,
     status,
     isHost,
@@ -215,6 +241,7 @@ export function useOnlineRoomSocket() {
       send({ type: "submit_guess", guess, countryCode: guess.countryCode, playerId: targetPlayerId }),
     cancelRound: () => send({ type: "cancel_round" }),
     skipLocation: (locationId?: string) => send({ type: "skip_location", locationId }),
+    markLocationReady: (locationId: string, ready: boolean) => send({ type: "image_ready", locationId, ready }),
     restart: () => send({ type: "restart" }),
     leaveRoom: () => {
       writeStoredOnlineRoom(null);

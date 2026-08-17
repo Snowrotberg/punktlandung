@@ -1,9 +1,17 @@
+import type { Metadata } from "next";
 import { InfoPageShell } from "@/components/InfoPageShell";
 import { ImageLicenseCatalog } from "@/components/ImageLicenseCatalog";
+import { absoluteUrl } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Lizenzen und Quellen",
+  alternates: { canonical: absoluteUrl("/lizenzen") }
+};
 
 export default function LizenzenPage() {
   return (
     <InfoPageShell
+      contentClassName="punktlandung-legal-panel"
       eyebrow="Rechtliches"
       title="Lizenzen und Quellen"
       intro="Freie Karten-, Daten- und Bildquellen sowie die vollständigen Lizenzinformationen."
@@ -18,16 +26,16 @@ export default function LizenzenPage() {
             <h2 className="text-[22px] font-black leading-tight text-white">Karten</h2>
             <p className="mt-2">
               Die Kartendaten stammen von den OpenStreetMap-Mitwirkenden und stehen unter der Open Data Commons
-              Open Database License (ODbL). Die derzeit verwendeten Kartenkacheln von tile.openstreetmap.de werden
-              im Umfeld des FOSSGIS e. V. bereitgestellt; die Kachelgrafiken stehen unter CC BY-SA 2.0. Die
+              Open Database License (ODbL). Die Vektorkacheln werden von OpenFreeMap auf Grundlage des freien
+              OpenMapTiles-Schemas bereitgestellt und mit einem eigenen Punktlandung-Style dargestellt. Die
               Quellenhinweise erscheinen zusätzlich direkt in jeder Kartenansicht.
             </p>
             <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold text-emerald-300 hover:text-emerald-200">
               OpenStreetMap Copyright und Lizenz
             </a>
             <span className="mx-2 text-slate-600">·</span>
-            <a href="https://fossgis.de/arbeitsgruppen/osm-server/nutzungsbedingungen/" target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold text-emerald-300 hover:text-emerald-200">
-              Bedingungen des Kartendienstes
+            <a href="https://openfreemap.org/" target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold text-emerald-300 hover:text-emerald-200">
+              OpenFreeMap
             </a>
           </section>
 
@@ -46,11 +54,15 @@ export default function LizenzenPage() {
           <section>
             <h2 className="text-[22px] font-black leading-tight text-white">Kartensoftware</h2>
             <p className="mt-2">
-              Die interaktiven Karten werden mit Leaflet dargestellt. Leaflet ist freie Software unter der
-              BSD-2-Clause-Lizenz.
+              MapLibre GL JS rendert den eigenen Vektorkartenstil. Leaflet bleibt für Spiellogik, Pins,
+              Beschriftungen und Ergebnislinien im Einsatz. Beide Projekte sind freie Software.
             </p>
             <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold text-emerald-300 hover:text-emerald-200">
               Leaflet-Lizenz
+            </a>
+            <span className="mx-2 text-slate-600">·</span>
+            <a href="https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt" target="_blank" rel="noreferrer" className="mt-2 inline-block font-bold text-emerald-300 hover:text-emerald-200">
+              MapLibre-GL-JS-Lizenz
             </a>
           </section>
 

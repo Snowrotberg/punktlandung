@@ -3,10 +3,13 @@ import { recordUsageEvent } from "@/lib/usageMetrics.server";
 
 export const runtime = "nodejs";
 
-const allowedEvents = new Set(["game_start", "game_complete"]);
+const allowedEvents = new Set(["game_start", "game_complete", "image_delivery", "page_view", "visit_start"]);
 const allowedGameTypes = new Set(["solo", "party", "online"]);
 const allowedGameModes = new Set(["classic", "crew", "elimination", "duel"]);
 const allowedCategories = new Set(["mixed", "landmarks", "cities", "landscapes", "flags", "capitals", "streetview"]);
+const allowedImageOutcomes = new Set(["loaded", "fallback", "failed"]);
+const allowedImageDeliveries = new Set(["direct", "proxy", "ranked"]);
+const allowedConnectionTypes = new Set(["slow-2g", "2g", "3g", "4g", "unknown"]);
 
 function sameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get("origin");
@@ -32,15 +35,56 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Ungültige Daten." }, { status: 400 });
   }
 
+  if (typeof input.event !== "string" || !allowedEvents.has(input.event)) {
+    return NextResponse.json({ error: "Ungültige Daten." }, { status: 400 });
+  }
+
+  if (input.event === "page_view" || input.event === "visit_start") {
+    await recordUsageEvent(input.event);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (typeof input.category !== "string" || !allowedCategories.has(input.category)) {
+    return NextResponse.json({ error: "Ungültige Daten." }, { status: 400 });
+  }
+
+  if (input.event === "image_delivery") {
+    if (
+      typeof input.durationMs !== "number" ||
+      !Number.isInteger(input.durationMs) ||
+      input.durationMs < 0 ||
+      input.durationMs > 120_000 ||
+      typeof input.outcome !== "string" ||
+      !allowedImageOutcomes.has(input.outcome) ||
+      typeof input.delivery !== "string" ||
+      !allowedImageDeliveries.has(input.delivery) ||
+      typeof input.cacheHit !== "boolean" ||
+      typeof input.connectionType !== "string" ||
+      !allowedConnectionTypes.has(input.connectionType) ||
+      typeof input.locationId !== "string" ||
+      input.locationId.length < 1 ||
+      input.locationId.length > 180 ||
+      !/^[A-Za-z0-9._:-]+$/.test(input.locationId)
+    ) {
+      return NextResponse.json({ error: "Ungültige Daten." }, { status: 400 });
+    }
+    await recordUsageEvent("image_delivery", {
+      category: input.category,
+      durationMs: input.durationMs,
+      outcome: input.outcome as "loaded" | "fallback" | "failed",
+      delivery: input.delivery as "direct" | "proxy" | "ranked",
+      cacheHit: input.cacheHit,
+      connectionType: input.connectionType as "slow-2g" | "2g" | "3g" | "4g" | "unknown",
+      locationId: input.locationId
+    });
+    return NextResponse.json({ ok: true });
+  }
+
   if (
-    typeof input.event !== "string" ||
-    !allowedEvents.has(input.event) ||
     typeof input.gameType !== "string" ||
     !allowedGameTypes.has(input.gameType) ||
     typeof input.gameMode !== "string" ||
     !allowedGameModes.has(input.gameMode) ||
-    typeof input.category !== "string" ||
-    !allowedCategories.has(input.category) ||
     typeof input.plannedRounds !== "number" ||
     !Number.isInteger(input.plannedRounds) ||
     input.plannedRounds < 1 ||
