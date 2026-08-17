@@ -766,7 +766,9 @@ function placementCandidates(
 ): Array<{ dx: number; dy: number }> {
   const horizontal = width / 2 + (actual ? 6 : 9);
   const vertical = height / 2 + (actual ? 8 : 10);
-  const rings = compact ? (actual ? [0, 8, 18, 30] : [0, 8, 18, 30, 44]) : actual ? [0, 5, 10] : [0, 6, 12, 20];
+  const rings = compact
+    ? (actual ? [0, 8, 18, 30, 48, 68] : [0, 8, 18, 30, 44, 60, 80, 110])
+    : actual ? [0, 5, 10, 20, 34] : [0, 6, 12, 20, 34, 52];
   const laneShifts = compact ? (actual ? [0, -8, 8, -16, 16] : [0, -8, 8, -18, 18]) : actual ? [0, -5, 5] : [0, -6, 6, -12, 12];
   const quadrants = [
     { x: 1, y: -1 },

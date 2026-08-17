@@ -327,3 +327,9 @@
     max-width: none;
   }
 }
+
+/* Keep intro, headings and cards on one 16px mobile content line. */
+@media (max-width: 52rem) and (orientation: portrait) {
+  .app { --pl-content-inset: 1rem; }
+  .header, .intro, .workspace { padding-inline: var(--pl-content-inset); }
+}

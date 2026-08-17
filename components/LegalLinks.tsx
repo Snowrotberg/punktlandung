@@ -68,17 +68,15 @@ export function LegalLinks({ className = "", includeInfos = true, align = "start
       aria-label="Hilfe und rechtliche Informationen"
       className={`punktlandung-legal-links flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold text-slate-500 ${alignmentClasses[align]} ${className}`}
     >
-      {visibleLinks[0] ? (
-        <a href={visibleLinks[0].href} onClick={rememberReturn} className="punktlandung-legal-links-help transition hover:text-emerald-300 focus-visible:text-emerald-300">
-          {visibleLinks[0].label}
-        </a>
-      ) : null}
-      <span className="punktlandung-legal-links-rest">
-        {visibleLinks.slice(1).map((link) => (
+      <span className="punktlandung-legal-links-support">
+        {visibleLinks.filter((link) => link.href !== "/datenschutz").map((link) => (
           <a key={link.href} href={link.href} onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">
             {link.label}
           </a>
         ))}
+      </span>
+      <span className="punktlandung-legal-links-rest">
+        <a href="/datenschutz" onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">Datenschutz</a>
         <CookieSettingsButton className="p-0 font-bold text-inherit transition hover:text-emerald-300 focus-visible:text-emerald-300" />
         <a href="/impressum" onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">Impressum</a>
         <a href="/lizenzen" onClick={rememberReturn} className="transition hover:text-emerald-300 focus-visible:text-emerald-300">Lizenzen</a>

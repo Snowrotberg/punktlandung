@@ -149,5 +149,8 @@
   .matrix tbody td:first-child { grid-column: 1 / -1; padding-bottom: .65rem; border-bottom: 1px solid rgba(148,163,184,.13); color: #f8fafc; font-weight: 850; }
   .matrix tbody td::before { content: attr(data-label); color: #718198; font-size: .62rem; font-weight: 700; text-transform: uppercase; }
   .matrix tfoot { display: none; }
+  .metricTooltip { position: fixed; z-index: 200; top: 50%; right: 1rem; bottom: auto; left: 1rem; width: auto; max-height: calc(100dvh - 2rem); overflow: auto; transform: translateY(calc(-50% + .25rem)); }
+  .metricTooltip::after { display: none; }
+  .metricValue:hover .metricTooltip, .metricValue:focus .metricTooltip, .metricValue:focus-within .metricTooltip { transform: translateY(-50%); }
 }
 @media (max-width: 30rem) { .heading { align-items: start; flex-direction: column; } }

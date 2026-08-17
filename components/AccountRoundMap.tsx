@@ -50,12 +50,12 @@ export function AccountRoundMap({ location, result, resolvedAt, playerName }: Ac
     <>
       <section className={`account-round-map ${styles.resultMapTheme}`}>
         <div className={styles.visualHeader}><span>Karte dieser Runde</span><button type="button" onClick={() => setMaximized(true)}>Maximieren</button></div>
-        <GuessMap mode="results" summary={summary} guesses={guess ? [guess as Guess] : []} players={players} showLabels resultPaddingScale={0.72} resultZoomScale={1.12} noPan={false} noZoom={false} />
+        <GuessMap mode="results" summary={summary} guesses={guess ? [guess as Guess] : []} players={players} showLabels resultPaddingScale={1} resultZoomScale={1} resultLabelInset noPan={false} noZoom={false} />
       </section>
       {maximized && <div className={styles.modal} role="dialog" aria-modal="true" aria-label={`Karte zu ${location.title}`} onMouseDown={(event) => event.target === event.currentTarget && setMaximized(false)}>
         <div className={styles.modalPanel}>
           <div className={styles.modalHeader}><strong>{location.title} · Karte</strong><button type="button" onClick={() => setMaximized(false)} aria-label="Karte schließen">×</button></div>
-          <div className={`${styles.modalMap} ${styles.resultMapTheme}`}><GuessMap mode="results" summary={summary} guesses={guess ? [guess as Guess] : []} players={players} showLabels resultPaddingScale={0.78} resultZoomScale={1.08} noPan={false} noZoom={false} /></div>
+          <div className={`${styles.modalMap} ${styles.resultMapTheme}`}><GuessMap mode="results" summary={summary} guesses={guess ? [guess as Guess] : []} players={players} showLabels resultPaddingScale={1} resultZoomScale={1} resultLabelInset noPan={false} noZoom={false} /></div>
         </div>
       </div>}
     </>

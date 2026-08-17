@@ -856,6 +856,43 @@
     white-space: normal;
   }
 
+  .redesign :global(.punktlandung-final-table) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .redesign :global(.punktlandung-final-table-heading) { order: 1; }
+  .redesign :global(.punktlandung-final-table-list) { order: 2; }
+  .redesign :global(.punktlandung-final-topbar) {
+    order: 3;
+    margin-top: 1rem;
+    margin-bottom: 0 !important;
+    padding-top: 1rem;
+    padding-bottom: 0 !important;
+    border-top: 1px solid var(--pl-result-line);
+    border-bottom: 0 !important;
+  }
+  .redesign :global(.punktlandung-final-footer) { order: 4; }
+
+  .redesign :global(.punktlandung-image-replay .punktlandung-map-panel-actions) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: .45rem !important;
+  }
+
+  .redesign :global(.punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-map-primary-button) {
+    grid-column: 1 / -1;
+  }
+
+  .redesign :global(.punktlandung-image-replay .punktlandung-map-panel-actions :is(.punktlandung-map-size-button, .punktlandung-map-secondary-button, .punktlandung-map-primary-button)) {
+    min-width: 0 !important;
+    width: 100% !important;
+    padding-inline: .55rem !important;
+    font-size: .76rem !important;
+    font-weight: 650 !important;
+    white-space: normal;
+  }
+
   .redesign :global(.punktlandung-final-table-list.is-dense > .punktlandung-final-player-row) {
     display: block;
     min-width: 0;

@@ -8420,6 +8420,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 
 /* Keep the desktop footer as one ordinary flex row. The wrapper only becomes
    visible in portrait phone layouts, where it prevents orphaned link words. */
+.punktlandung-legal-links-support,
 .punktlandung-legal-links-rest {
   display: contents;
 }
@@ -8432,27 +8433,26 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 }
 
-@media (max-width: 23.75rem) and (orientation: portrait) {
+@media (max-width: 30rem) and (orientation: portrait) {
   .punktlandung-legal-links {
     flex-flow: column nowrap;
-    gap: 0.3rem;
+    gap: 0.25rem;
   }
 
-  .punktlandung-legal-links-help {
-    align-self: center;
-  }
-
+  .punktlandung-legal-links-support,
   .punktlandung-legal-links-rest {
     display: flex;
+    width: 100%;
     flex-wrap: nowrap;
     align-items: center;
-    justify-content: center;
-    gap: clamp(0.3rem, 1.7vw, 0.5rem);
+    justify-content: space-evenly;
+    gap: .5rem;
     white-space: nowrap;
   }
 }
 
 @media (max-width: 23.75rem) and (orientation: portrait) {
+  .punktlandung-legal-links-support,
   .punktlandung-legal-links-rest {
     font-size: 10px;
   }
@@ -9214,14 +9214,14 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 
 @media (max-width: 879px) and (orientation: portrait) {
   .punktlandung-game-shell {
-    --mobile-game-pad: clamp(0.5rem, 2.35vw, 0.75rem);
+    --mobile-game-pad: 1rem;
     --mobile-game-hud-h: clamp(7.9rem, 16.75dvh, 8.8rem);
     --mobile-game-back-w: clamp(5rem, 18vw, 5.7rem);
     --mobile-game-meta-size: clamp(2.65rem, 10vw, 3rem);
   }
 
   .punktlandung-image-replay {
-    --mobile-game-pad: clamp(0.5rem, 2.35vw, 0.75rem);
+    --mobile-game-pad: 1rem;
   }
 
   .punktlandung-game-shell .punktlandung-game-hud {
@@ -10478,24 +10478,26 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 
 .punktlandung-loader-ellipse-highlight {
   filter:
-    drop-shadow(0 0 7px rgba(167, 243, 208, 0.66))
-    drop-shadow(0 0 18px rgba(52, 211, 153, 0.42));
+    drop-shadow(0 0 5px rgba(167, 243, 208, 0.62))
+    drop-shadow(0 0 11px rgba(52, 211, 153, 0.34));
   opacity: 0.94;
-  stroke-dashoffset: 5.5;
+  stroke-dashoffset: 0;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .punktlandung-loader-ellipse-highlight-outer {
   stroke: rgba(167, 243, 208, 0.94);
   stroke-width: 1.55;
-  stroke-dasharray: 11 89;
-  animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
+  stroke-dasharray: 8 92;
+  animation: punktlandung-loader-ellipse-orbit 3.2s linear infinite;
 }
 
 .punktlandung-loader-ellipse-highlight-inner {
   stroke: rgba(110, 231, 183, 0.88);
   stroke-width: 1.35;
-  stroke-dasharray: 11 89;
-  animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
+  stroke-dasharray: 8 92;
+  animation: punktlandung-loader-ellipse-orbit 3.2s linear infinite;
 }
 
 .punktlandung-loader-core-beam {
@@ -10590,10 +10592,8 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 }
 
-@keyframes punktlandung-loader-ellipse-dash {
-  to {
-    stroke-dashoffset: 105.5;
-  }
+@keyframes punktlandung-loader-ellipse-orbit {
+  to { transform: rotate(-360deg); }
 }
 
 @keyframes punktlandung-loader-sheen {
@@ -18211,7 +18211,7 @@ body .punktlandung-game-shell .punktlandung-game-back-button-inner > * {
 @media (max-width: 879px) and (orientation: portrait),
        (max-width: 1023px) and (orientation: landscape) {
   body {
-    --punktlandung-mobile-page-gutter: 0.5rem;
+    --punktlandung-mobile-page-gutter: 1rem;
   }
 
   body main:has(> .punktlandung-home-shell),

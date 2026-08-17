@@ -385,7 +385,7 @@
   color: var(--pl-text);
   background: var(--pl-button-surface);
   font: inherit;
-  font-weight: 700;
+  font-weight: 650;
   line-height: 1;
   text-decoration: none;
   cursor: pointer;
@@ -579,7 +579,7 @@
 }
 
 @media (max-width: 30rem) {
-  .brandGroup { gap: .35rem; }
+  .brandGroup { gap: .35rem; transform: translateX(-.95rem); }
   .brand {
     gap: 0.45rem;
     font-size: 0.88rem;
