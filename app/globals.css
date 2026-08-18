@@ -6511,7 +6511,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   height: 100%;
   object-fit: cover;
   object-position: center;
-  background-image: url("/home-map-preview-phone-large.webp");
+  background-image: url("/home-map-preview-phone-large-2x.webp");
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -6534,11 +6534,11 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 @media (max-width: 400px) {
-  .punktlandung-home-map-poster { background-image: url("/home-map-preview-phone-small.webp"); }
+  .punktlandung-home-map-poster { background-image: url("/home-map-preview-phone-small-2x.webp"); }
 }
 
 @media (orientation: landscape) and (min-width: 640px) and (max-width: 1279px) and (max-height: 640px) {
-  .punktlandung-home-map-poster { background-image: url("/home-map-preview-phone-landscape.webp"); }
+  .punktlandung-home-map-poster { background-image: url("/home-map-preview-phone-landscape-2x.webp"); }
 }
 
 @media (min-width: 1200px) {
@@ -6593,10 +6593,15 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   position: absolute;
   z-index: 0;
   inset: 0;
-  background-image: url("/home-map-base-phone-large.webp");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
+  display: block;
+  overflow: hidden;
+}
+
+.punktlandung-home-map-base > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
 }
 
 .punktlandung-home-map-static-connector {
@@ -6723,7 +6728,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 .punktlandung-home-map-preview[data-render-mode="static-overlay"] > .punktlandung-map-attribution {
-  z-index: 5;
+  z-index: 2000 !important;
 }
 
 @media (max-width: 400px) {
@@ -6734,10 +6739,6 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     --home-map-player-y: 51.25%;
   }
 
-  .punktlandung-home-map-base {
-    background-image: url("/home-map-base-phone-small.webp");
-  }
-
 }
 
 @media (orientation: landscape) and (min-width: 640px) and (max-width: 1279px) and (max-height: 640px) {
@@ -6746,10 +6747,6 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     --home-map-actual-y: 63.783%;
     --home-map-player-x: 65.061%;
     --home-map-player-y: 47.881%;
-  }
-
-  .punktlandung-home-map-base {
-    background-image: url("/home-map-base-phone-landscape.webp");
   }
 
 }
@@ -6778,7 +6775,6 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     --home-map-player-y: 45.363%;
   }
 
-  .punktlandung-home-map-base { background-image: url("/home-map-base-laptop.webp"); }
 }
 
 @media (min-width: 1800px) {
@@ -6789,7 +6785,6 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     --home-map-player-y: 40.034%;
   }
 
-  .punktlandung-home-map-base { background-image: url("/home-map-base-monitor.webp"); }
 }
 
 @media (min-width: 1800px) and (max-width: 2999px) and (min-aspect-ratio: 19/10) {
@@ -6798,7 +6793,6 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     --home-map-player-y: 38.835%;
   }
 
-  .punktlandung-home-map-base { background-image: url("/home-map-base-monitor-short.webp"); }
 }
 
 @media (min-width: 3000px) {
@@ -6808,8 +6802,6 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     --home-map-player-x: 70.647%;
     --home-map-player-y: 38.281%;
   }
-
-  .punktlandung-home-map-base { background-image: url("/home-map-base-tv-4k.webp"); }
 
   .punktlandung-home-map-static-pin.is-actual {
     --home-map-pin-scale: 1.82;
@@ -8702,6 +8694,11 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   .punktlandung-home-map-preview .leaflet-marker-pane .punktlandung-map-label-marker-player,
   .punktlandung-home-map-preview .leaflet-marker-pane .punktlandung-map-label-marker-actual {
     display: none !important;
+  }
+
+  .punktlandung-home-map-preview[data-render-mode="live-map"] .leaflet-marker-pane .punktlandung-map-label-marker-player,
+  .punktlandung-home-map-preview[data-render-mode="live-map"] .leaflet-marker-pane .punktlandung-map-label-marker-actual {
+    display: flex !important;
   }
 }
 
@@ -20371,5 +20368,90 @@ body :is(.punktlandung-back-button, .punktlandung-back-link):not(:disabled):not(
     )
     .punktlandung-home-category-art > img {
     scale: 1.15 !important;
+  }
+}
+
+/* Final phone-portrait rail and rhythm for the active round.
+ * The task card, HUD row, image/source stack and map all share one 16 px
+ * measure. Keeping the source in its own equally padded strip avoids the
+ * uneven gaps that were visible when it was positioned near the image edge. */
+.punktlandung-game-shell {
+  --pl-game-inset: 1rem;
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  body .punktlandung-game-shell {
+    --pl-game-rhythm: var(--pl-game-inset);
+    --pl-game-safe-top: max(var(--pl-game-inset), env(safe-area-inset-top));
+    --pl-game-task-h: clamp(3.8rem, 8.2dvh, 4.1rem);
+    --pl-game-source-chip-h: 1.55rem;
+    --mobile-game-hud-h: calc(var(--pl-game-task-h) + var(--pl-game-rhythm) + var(--mobile-game-meta-size));
+    --mobile-game-image-gap: var(--pl-game-rhythm);
+    --mobile-game-source-h: calc(var(--pl-game-source-chip-h) + (2 * var(--pl-game-rhythm)));
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-viewer--map-closed,
+  body .punktlandung-game-shell .punktlandung-game-viewer--map-open,
+  body .punktlandung-game-shell .punktlandung-game-viewer--map-full,
+  body .punktlandung-game-shell .punktlandung-game-hud {
+    left: var(--pl-game-inset) !important;
+    right: var(--pl-game-inset) !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-hud {
+    height: var(--mobile-game-hud-h) !important;
+    padding: 0 !important;
+    top: var(--pl-game-safe-top) !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-hud-grid {
+    gap: var(--pl-game-rhythm) !important;
+    grid-template-rows: var(--pl-game-task-h) var(--mobile-game-meta-size) !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card {
+    height: var(--pl-game-task-h) !important;
+    min-height: var(--pl-game-task-h) !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-viewer--map-closed,
+  body .punktlandung-game-shell .punktlandung-game-viewer--map-full {
+    bottom: calc(var(--mobile-game-map-closed-h) + var(--pl-game-inset)) !important;
+    top: calc(var(--pl-game-safe-top) + var(--mobile-game-hud-h) + var(--pl-game-rhythm)) !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-viewer .punktlandung-panorama-viewport img {
+    bottom: var(--mobile-game-source-h) !important;
+    height: calc(100% - var(--mobile-game-source-h)) !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-viewer .punktlandung-source-chip--compact {
+    bottom: var(--pl-game-rhythm) !important;
+    height: var(--pl-game-source-chip-h) !important;
+    min-height: var(--pl-game-source-chip-h) !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--closed,
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--open {
+    left: var(--pl-game-inset) !important;
+    right: var(--pl-game-inset) !important;
+  }
+
+  /* Resolution: map -> action row -> primary action -> ranking uses the same
+   * spacing, and every action has the same control height. */
+  body main:has(.punktlandung-results-grid) {
+    --pl-results-rhythm: var(--punktlandung-mobile-page-gutter, 1rem);
+  }
+
+  body .punktlandung-results-grid,
+  body .punktlandung-results-grid > section,
+  body .punktlandung-results-sidebar,
+  body .punktlandung-results-mobile-actions {
+    gap: var(--pl-results-rhythm) !important;
+  }
+
+  body .punktlandung-results-mobile-actions button {
+    height: 3rem !important;
+    min-height: 3rem !important;
   }
 }

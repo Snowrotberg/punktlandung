@@ -36,7 +36,10 @@ export function MapLibreBaseLayer({ renderWorldCopies, onReady }: MapLibreBaseLa
     };
     let readyFrame: number | undefined;
     let composedFrame: number | undefined;
+    let readyReported = false;
     const reportMapReady = () => {
+      if (readyReported) return;
+      readyReported = true;
       // `idle` means the style and tiles are loaded. Waiting for two browser
       // frames also guarantees that the finished WebGL canvas has reached
       // the compositor before the poster above it starts fading away.
@@ -44,8 +47,13 @@ export function MapLibreBaseLayer({ renderWorldCopies, onReady }: MapLibreBaseLa
         composedFrame = window.requestAnimationFrame(() => onReadyRef.current?.());
       });
     };
+    const reportLoadedMap = () => {
+      if (maplibreMap.loaded()) reportMapReady();
+    };
     maplibreMap.on("error", reportMapError);
-    maplibreMap.once("idle", reportMapReady);
+    maplibreMap.on("idle", reportMapReady);
+    maplibreMap.on("load", reportLoadedMap);
+    reportLoadedMap();
     let disposed = false;
     let resizeFrame: number | undefined;
     const resizeMap = () => {
@@ -73,6 +81,7 @@ export function MapLibreBaseLayer({ renderWorldCopies, onReady }: MapLibreBaseLa
       disposed = true;
       maplibreMap.off("error", reportMapError);
       maplibreMap.off("idle", reportMapReady);
+      maplibreMap.off("load", reportLoadedMap);
       resizeObserver.disconnect();
       document.removeEventListener("visibilitychange", restoreVisibleMap);
       window.removeEventListener("pageshow", restoreVisibleMap);

@@ -589,6 +589,7 @@
     width: 2rem;
     height: 2rem;
     margin-left: 0;
+    margin-right: -0.5rem;
     border-radius: 0.6rem;
     transform: translateX(-0.75rem) scale(1.25);
   }
@@ -627,14 +628,18 @@
   gap: 0.3rem;
 }
 
-/* Phone Large: text +10%, then the complete brand +10%. */
+/* Phone Large: keep the mobile wordmark slightly more prominent. */
 @media (min-width: 24.001rem) and (max-width: 30rem) and (orientation: portrait) {
   .header :global(a[href="/solo-modus"]) {
     display: none;
   }
 
+  .brandBadge {
+    display: none;
+  }
+
   .brand {
-    font-size: 1.24rem;
+    font-size: 1.46rem;
   }
 
   .brandIcon {
@@ -649,7 +654,7 @@
   }
 }
 
-/* Phone Small: text +5%, then the complete brand +5%. */
+/* Phone Small: strengthen the wordmark without crowding the controls. */
 @media (max-width: 24rem) and (orientation: portrait) {
   .header :global(a[href="/solo-modus"]) {
     display: none;
@@ -660,7 +665,7 @@
   }
 
   .brand {
-    font-size: 1.16rem;
+    font-size: 1.37rem;
   }
 
   .brandIcon {
@@ -677,8 +682,12 @@
 
 /* Phone Landscape: wordmark and WEB +10%; pin remains unchanged. */
 @media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
+  .brandBadge {
+    display: none;
+  }
+
   .brand {
-    font-size: 1.43rem;
+    font-size: 1.6rem;
   }
 
   .brandBadgeMark {
@@ -689,6 +698,7 @@
     width: 2.25rem;
     height: 2.25rem;
     margin-left: 0;
+    margin-right: -0.5rem;
     transform: translateX(-0.75rem) scale(1.25);
   }
 }
@@ -696,6 +706,7 @@
 /* Laptop: wordmark and WEB +10%; pin remains unchanged. */
 @media (min-width: 80rem) and (max-width: 99.999rem) {
   .brand {
+    gap: 0.45rem;
     font-size: 1.43rem;
   }
 

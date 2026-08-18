@@ -209,17 +209,7 @@ function statusLabel(status: RequiredGameStatus) {
 }
 
 function GameStateLoading() {
-  return (
-    <main className="grid min-h-dvh place-items-center bg-slate-950 p-4 text-slate-50">
-      <section className="arcade-panel w-fit max-w-[calc(100vw-2rem)] rounded-xl border-slate-700/80 p-5 text-center">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Punktlandung</p>
-        <h1 className="mt-2 text-3xl font-black leading-tight">
-          <span className="sm:hidden">Spielrunde<br />wird geladen</span>
-          <span className="hidden sm:inline">Spielrunde wird geladen</span>
-        </h1>
-      </section>
-    </main>
-  );
+  return <main className="min-h-dvh bg-slate-950" aria-busy="true" aria-label="Spielrunde wird vorbereitet" />;
 }
 
 function GameStateGuard({ requiredStatus, currentStatus }: { requiredStatus: RequiredGameStatus; currentStatus?: RoundStatus }) {
@@ -315,7 +305,10 @@ export function GameApp({
   const rankedSoloContext = rankedSoloEnabled
     && routeAllowsRankedSolo
     && !localRequiredSessionHasPriority
-    && (initialMode === "solo" || Boolean(requiredStatus) || Boolean(rankedSoloGame.room));
+    // A normal Solo click must open the local setup immediately. Ranked
+    // recovery is opt-in for an explicit resume link; once a ranked room has
+    // actually been recovered, it may take over the active view.
+    && (resumeRankedGame || Boolean(requiredStatus) || Boolean(rankedSoloGame.room));
   const rankedRestoring = rankedSoloContext && rankedSoloGame.restoring;
   const onlineGame = useOnlineRoomSocket();
   const { enabled: soundEnabled, toggle: toggleSound, playSelect } = useSound();
@@ -438,7 +431,7 @@ export function GameApp({
     const routeMode = initialMode === "home" ? pathMode : initialMode;
     const mode = queryMode ?? routeMode;
     if (mode !== "solo" && mode !== "couch" && mode !== "online") return;
-    const modeGame = mode === "solo" && rankedSoloEnabled ? rankedSoloGame : localGame;
+    const modeGame = mode === "solo" && rankedSoloContext ? rankedSoloGame : localGame;
     let directStartRequested = (directStart || params.get("direct") === "1") && mode === "solo";
     try {
       if (mode === "solo" && window.sessionStorage.getItem("punktlandung-direct-start") === "1") {
@@ -489,17 +482,17 @@ export function GameApp({
       hostParticipation: "host_player",
       playerName
     });
-  }, [accountDisplayName, directStart, initialMode, localGame, name, rankedRestoring, rankedSoloEnabled, rankedSoloGame]);
+  }, [accountDisplayName, directStart, initialMode, localGame, name, rankedRestoring, rankedSoloContext, rankedSoloGame]);
 
   useEffect(() => {
     if (!pendingDirectStartRef.current) return;
-    const startGame = rankedSoloEnabled ? rankedSoloGame : localGame;
+    const startGame = rankedSoloContext ? rankedSoloGame : localGame;
     if (!startGame.room || startGame.room.status !== "lobby" || startGame.room.settings.localMode !== "solo") return;
     pendingDirectStartRef.current = false;
     directStartConsumedRef.current = true;
     setStartingRound(true);
     void Promise.resolve(startGame.startRound()).finally(() => setStartingRound(false));
-  }, [localGame.room, rankedSoloEnabled, rankedSoloGame.room]);
+  }, [localGame.room, rankedSoloContext, rankedSoloGame.room]);
 
   useEffect(() => {
     if (!pendingOnlineSettings || !onlineGame.room || !onlineGame.isHost || onlineGame.room.status !== "lobby") return;
@@ -614,14 +607,21 @@ export function GameApp({
     }
   };
 
-  const restorationPending = localGame.restoring || onlineGame.restoring || rankedRestoring;
+  const restorationPending = isOnlineFlow
+    ? onlineGame.restoring
+    : rankedSoloContext
+      ? rankedRestoring
+      : localGame.restoring;
 
   if (
     restorationPending
     || (initialMode !== "home" && !room)
-    || (directStart && startingRound)
     || (startingRound && room?.status === "results")
   ) {
+    return <GameStateLoading />;
+  }
+
+  if (directStart && startingRound) {
     return <GameStateLoading />;
   }
 

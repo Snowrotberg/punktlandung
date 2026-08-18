@@ -13,6 +13,10 @@ const profiles = [
 ];
 const requestedProfile = process.env.HOME_POSTER_PROFILE;
 const baseOnly = process.env.HOME_POSTER_BASE_ONLY === "1";
+const requestedScale = Number(process.env.HOME_POSTER_SCALE ?? "2");
+const captureScale = Number.isFinite(requestedScale) && requestedScale >= 1 && requestedScale <= 3
+  ? requestedScale
+  : 2;
 const layoutMode = baseOnly ? "wide" : process.env.HOME_POSTER_LAYOUT === "ads" ? "ads" : "wide";
 const selectedProfiles = requestedProfile
   ? profiles.filter((profile) => profile.name === requestedProfile)
@@ -35,7 +39,9 @@ try {
   for (const profile of selectedProfiles) {
     const context = await browser.newContext({
       viewport: { width: profile.width, height: profile.height },
-      deviceScaleFactor: 1,
+      // Capture at the target device density so the base is only ever
+      // downscaled by the browser, never enlarged on a high-DPI display.
+      deviceScaleFactor: captureScale,
       locale: "de-DE",
       colorScheme: "dark"
     });
@@ -52,14 +58,16 @@ try {
         `
       });
     }
-    await page.locator(".punktlandung-home-map-preview").waitFor({ state: "visible", timeout: 20_000 });
-    await page.locator(".punktlandung-home-map-poster-wide.is-ready").waitFor({ state: "attached", timeout: 20_000 });
+    await page.locator(".punktlandung-home-map-preview").waitFor({ state: "visible", timeout: 60_000 });
+    await page.locator(".punktlandung-home-map-poster-wide.is-ready").waitFor({ state: "attached", timeout: 60_000 });
     await page.waitForFunction(() => {
       const poster = document.querySelector(".punktlandung-home-map-poster-wide.is-ready");
       const canvas = document.querySelector(".punktlandung-home-map-preview .maplibregl-canvas");
       return poster && canvas && getComputedStyle(poster).opacity === "0";
-    }, null, { timeout: 20_000 });
-    const expectedPosterPath = `/home-map-preview-${profile.name}.webp`;
+    }, null, { timeout: 60_000 });
+    const pixelSuffix = `-${captureScale}x`;
+    const sourcePosterSuffix = profile.width <= 932 ? "-2x" : "";
+    const expectedPosterPath = `/home-map-preview-${profile.name}${sourcePosterSuffix}.webp`;
     const selectedPosterPath = await page.locator(".punktlandung-home-map-poster-wide").evaluate((poster) => {
       const match = getComputedStyle(poster).backgroundImage.match(/url\(["']?(.*?)["']?\)/);
       return match ? new URL(match[1], window.location.href).pathname : "";
@@ -98,7 +106,8 @@ try {
           .punktlandung-home-map-preview .leaflet-overlay-pane,
           .punktlandung-home-map-preview .leaflet-marker-pane,
           .punktlandung-home-map-preview .leaflet-tooltip-pane,
-          .punktlandung-home-map-preview .punktlandung-home-map-mobile-labels {
+          .punktlandung-home-map-preview .punktlandung-home-map-mobile-labels,
+          .punktlandung-home-map-preview .punktlandung-map-attribution {
             display: none !important;
           }
         ` : ""}
@@ -113,9 +122,9 @@ try {
     const preview = page.locator(".punktlandung-home-map-preview");
     const box = await preview.boundingBox();
     if (!box) throw new Error(`Home map preview missing for ${profile.name}`);
-    const png = await preview.screenshot({ type: "png", animations: "disabled" });
-    const output = `public/home-map-${baseOnly ? "base" : "preview"}-${profile.name}${layoutMode === "ads" ? "-with-ads" : ""}.webp`;
-    await sharp(png).webp({ quality: 92, effort: 6 }).toFile(output);
+    const png = await preview.screenshot({ type: "png", animations: "disabled", scale: "device" });
+    const output = `public/home-map-${baseOnly ? "base" : "preview"}-${profile.name}${pixelSuffix}${layoutMode === "ads" ? "-with-ads" : ""}.webp`;
+    await sharp(png).webp({ quality: baseOnly ? 94 : 92, smartSubsample: true, effort: 6 }).toFile(output);
     const alignment = await page.evaluate(() => {
       const map = document.querySelector(".punktlandung-home-map-preview")?.getBoundingClientRect();
       const action = document.querySelector("a[href^='/solo-modus/direct']")?.getBoundingClientRect();

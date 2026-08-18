@@ -220,7 +220,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
   // The replay normally reuses the image that was visible during the round.
   // Keep its loading artwork hidden for the short browser-cache handover so
   // "Bild nochmal ansehen" does not look like a fresh image search.
-  const [showLoadOverlay, setShowLoadOverlay] = useState(sourceVariant !== "detail");
+  const [showLoadOverlay, setShowLoadOverlay] = useState(sourceVariant !== "detail" && !initiallyPreparedUrl);
   const [showSlowLoadHint, setShowSlowLoadHint] = useState(false);
   const [showManualSkip, setShowManualSkip] = useState(false);
   const [previewLoaded, setPreviewLoaded] = useState(false);
@@ -344,7 +344,10 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
     setLoadedImageUrl(cachedImageUrl);
     loadedImageUrlRef.current = cachedImageUrl;
     setPreferredImageUrl(cachedImageUrl);
-    setShowLoadOverlay(sourceVariant !== "detail");
+    // The catalog selection and image preparation happen before the round is
+    // opened. Keep the fallback artwork out of the normal hand-off so a
+    // prepared image can appear immediately without a loader flash.
+    setShowLoadOverlay(sourceVariant !== "detail" && !cachedImageUrl);
     setShowSlowLoadHint(false);
     setShowManualSkip(false);
     setPreviewLoaded(false);
@@ -384,7 +387,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
     setPreferredImageUrl(cachedImageUrl);
     setLoadedImageUrl(cachedImageUrl);
     loadedImageUrlRef.current = cachedImageUrl;
-    setShowLoadOverlay(sourceVariant !== "detail");
+    setShowLoadOverlay(sourceVariant !== "detail" && !cachedImageUrl);
     setShowSlowLoadHint(false);
     setShowManualSkip(false);
     setPreviewLoaded(false);
@@ -466,13 +469,13 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
     setSkipPending(true);
     try {
       await onSkipLocation(location.id);
-      // Keep the button pending until the changed location prop confirms that
-      // the local state or room server has really accepted the replacement.
-      skipResetTimerRef.current = window.setTimeout(() => {
-        skipResetTimerRef.current = null;
-        setSkipPending(false);
-      }, 8000);
     } catch {
+      // The caller owns the user-facing error state. Re-enable the action
+      // immediately when the replacement request itself fails.
+    } finally {
+      // onSkipLocation now resolves only after the next image has been
+      // prepared (or rejects), so a fixed timeout cannot unlock this button
+      // while a replacement is still in flight.
       setSkipPending(false);
     }
   };
@@ -790,11 +793,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
       {!imageLoaded && (showLoadOverlay || imageFailed) && (
         <div className={`pointer-events-none absolute inset-0 z-20 grid place-items-center p-6 text-center backdrop-blur-[2px] ${previewLoaded ? "bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.10),rgba(2,6,23,0.48)_62%,rgba(2,6,23,0.76)_100%)]" : "bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.16),rgba(2,6,23,0.72)_58%,rgba(2,6,23,0.9)_100%)]"}`}>
           <div
-            className={`punktlandung-image-loader pointer-events-auto transition-all duration-500 ${
-              showSlowLoadHint
-                ? "punktlandung-image-loader-framed w-full max-w-md rounded-2xl bg-slate-950/82 px-6 py-6 shadow-[0_24px_70px_rgba(0,0,0,0.42)] ring-1 ring-emerald-300/70"
-                : "h-56 w-56 bg-transparent p-0 shadow-none ring-0"
-            }`}
+            className="punktlandung-image-loader pointer-events-auto h-56 w-56 bg-transparent p-0 shadow-none ring-0"
           >
             <div className="punktlandung-loader-mark mx-auto">
               <svg className="punktlandung-loader-ellipses" viewBox="0 0 128 96" aria-hidden="true">
@@ -812,12 +811,10 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
             {showSlowLoadHint && (
               <>
                 <p className="mt-5 text-xs font-black uppercase tracking-[0.26em] text-emerald-200">
-                  {imageFailed ? "Bild nicht verfügbar" : "Ort wird vorbereitet"}
+                  "Das Bild braucht gerade ungewöhnlich lange"
                 </p>
                 <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-300">
-                  {imageFailed
-                    ? "Das Bild konnte nicht geladen werden. Bitte nimm einen anderen Ort."
-                    : "Das Laden dauert gerade etwas länger. Du kannst einen anderen Ort nehmen."}
+                  "Das kann an der Verbindung liegen. Du kannst einen anderen Ort nehmen."
                 </p>
               </>
             )}

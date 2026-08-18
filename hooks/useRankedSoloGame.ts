@@ -470,7 +470,17 @@ export function useRankedSoloGame(enabled: boolean) {
 
   const markLocationReady = useCallback(async (locationId: string, ready: boolean) => {
     const roundId = roundIdFromPromptLocationId(locationId);
-    if (!enabled || !ready || !game?.activeRound || game.activeRound.roundId !== roundId || readyRoundRef.current === roundId) return;
+    if (!enabled || !game?.activeRound || game.activeRound.roundId !== roundId) return;
+    if (!ready) {
+      // A failed first image must not consume the round timer. The server
+      // timer only starts after the ready mutation, so this is safe until the
+      // round has actually been acknowledged as ready.
+      if (readyRoundRef.current !== roundId) {
+        setRoom((value) => value ? { ...value, roundStartedAt: null, roundEndsAt: null } : value);
+      }
+      return;
+    }
+    if (readyRoundRef.current === roundId) return;
     readyRoundRef.current = roundId;
     try {
       const next = await request(`/api/v1/ranked-games/${encodeURIComponent(game.gameId)}/rounds/${encodeURIComponent(roundId)}/ready`, { method: "POST" });
@@ -655,9 +665,10 @@ export function useRankedSoloGame(enabled: boolean) {
     setError(null);
     try {
       const next = await request(`/api/v1/ranked-games/${encodeURIComponent(game.gameId)}/rounds/${encodeURIComponent(roundId)}/reroll`, { method: "POST" });
-      setGame(next);
-      const location = promptLocation(next);
-      setRoom((value) => value ? { ...value, location, roundStartedAt: null, roundEndsAt: null } : value);
+      const prepared = await prepareRankedPrompt(next);
+      if (!prepared) throw new Error("Das nächste Bild ist gerade nicht erreichbar. Bitte versuche es erneut.");
+      setGame(prepared.game);
+      setRoom((value) => value ? { ...value, location: prepared.location, roundStartedAt: null, roundEndsAt: null } : value);
     } catch (cause) {
       const retryable = !(cause instanceof RankedRequestError)
         || cause.status >= 500
@@ -671,7 +682,7 @@ export function useRankedSoloGame(enabled: boolean) {
     } finally {
       rerollInFlightRef.current.delete(roundId);
     }
-  }, [game, request]);
+  }, [game, prepareRankedPrompt, request]);
 
   return useMemo(() => ({
     playerId, room, error, status: "open" as const, isHost: Boolean(room), me: room?.players[0] ?? null,

@@ -115,11 +115,9 @@
 }
 @media(max-width:36rem){.nameGrid{grid-template-columns:1fr}.nameEditor{max-height:calc(100dvh - 2rem);overflow:auto}}
 
-/* Portrait phones: keep the two local modes compact and give the longer
-   online label its own full-width row. */
+/* Portrait phones keep all three game modes in one compact row. */
 @media (orientation: portrait) and (max-width: 52rem) {
-  .modeTabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .modeTabs > :nth-child(3) { grid-column: 1 / -1; }
+  .modeTabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media(min-width:150rem){.header,.intro,.workspace{padding-inline:5rem}.columnHeading{font-size:1.2rem}.resetButton{font-size:1.1rem}}
@@ -474,5 +472,98 @@
     min-height: 3rem;
     padding: .5rem 1rem;
     font-size: 12px;
+  }
+}
+
+/* Portrait setup controls share one thumb-friendly geometry. This deliberately
+   comes after the legacy <= 30rem compaction so time and round steppers can
+   never collapse to different sizes on narrow phones. Categories retain their
+   established dimensions. */
+@media (orientation: portrait) and (max-width: 52rem) {
+  .settingsPanel {
+    gap: .85rem;
+  }
+
+  .modeTabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: .5rem;
+  }
+
+  .threeOptions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .modeTabs a,
+  .controlGroup button,
+  .customTime,
+  .customRounds {
+    min-height: 3rem;
+    border-radius: .7rem;
+    font-size: .82rem;
+  }
+
+  .modeTabs a {
+    min-width: 0;
+    gap: .25rem;
+    padding-inline: .3rem;
+    white-space: nowrap;
+  }
+
+  .modeTabs svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .controlGroup {
+    gap: .45rem;
+  }
+
+  .controlGroup label {
+    font-size: .78rem;
+  }
+
+  .timeOptions,
+  .roundOptions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(7.5rem, 1.45fr);
+    gap: .5rem;
+  }
+
+  .customTime,
+  .customRounds {
+    grid-template-columns: minmax(2.5rem, 1fr) 2.5rem 2.5rem;
+    overflow: hidden;
+  }
+
+  .customTime button,
+  .customRounds button {
+    width: 2.5rem;
+    min-width: 2.5rem;
+    min-height: 3rem;
+    padding: 0;
+    border-radius: 0;
+    font-size: 1rem;
+  }
+
+  .customValue {
+    height: 100%;
+    padding-inline: 0;
+    font-size: .78rem;
+  }
+
+  .customValue input {
+    height: 100%;
+    min-height: 3rem;
+    padding: 0;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 25rem) {
+  .modeTabs a {
+    font-size: .7rem;
+  }
+
+  .modeTabs svg {
+    width: .9rem;
+    height: .9rem;
   }
 }

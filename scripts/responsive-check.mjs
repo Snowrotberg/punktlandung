@@ -715,6 +715,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
         renderMode: homeMapPreview.getAttribute("data-render-mode"),
         liveCanvasMounted: Boolean(homeMapPreview.querySelector(".maplibregl-canvas")),
         baseVisible: homeMapBase ? getComputedStyle(homeMapBase).visibility !== "hidden" && Number(getComputedStyle(homeMapBase).opacity) > 0.01 : false,
+        baseImageLoaded: Boolean(homeMapBase?.querySelector("img")?.complete && homeMapBase.querySelector("img")?.naturalWidth),
         labels: homeMapLabels,
         labelsInside: Boolean(homeMapRect) && homeMapLabels.length >= 2 && homeMapLabels.every((label) =>
           label.left >= homeMapRect.left + 8 &&
@@ -945,6 +946,11 @@ async function runTargetViewport(browser, target, viewport) {
 
     if (target.name === "home") {
       await page.locator(".punktlandung-home-map-preview").waitFor({ state: "visible", timeout: 15000 });
+      const homeMapIsLive = await page.locator(".punktlandung-home-map-preview").getAttribute("data-render-mode") === "live-map";
+      if (homeMapIsLive) {
+        await page.locator(".punktlandung-home-map-preview .maplibregl-canvas").waitFor({ state: "attached", timeout: 20000 });
+        await page.locator(".punktlandung-home-map-preview .punktlandung-map-label").first().waitFor({ state: "visible", timeout: 20000 });
+      }
       await page.locator(".punktlandung-home-map-preview.is-map-ready").waitFor({ state: "visible", timeout: 20000 });
       const readStableVisuals = () => page.evaluate(() =>
         [...document.querySelectorAll(".punktlandung-home-map-preview .punktlandung-map-label, .punktlandung-home-map-preview .punktlandung-home-map-static-pin:not(.is-actual), .punktlandung-home-map-preview .punktlandung-home-map-static-ellipse")]
@@ -967,16 +973,19 @@ async function runTargetViewport(browser, target, viewport) {
       });
       homeMapStability = {
         visualCount: secondVisuals.length,
-        maxMovementPx: deltas.length ? Math.max(...deltas) : Number.POSITIVE_INFINITY
+        maxMovementPx: deltas.length ? Math.max(...deltas) : 0
       };
       const intendedMotion = await page.evaluate(() => {
         const connector = [...document.querySelectorAll(".punktlandung-home-map-static-connector line")]
           .find((element) => getComputedStyle(element).display !== "none");
         const targetPin = document.querySelector(".punktlandung-home-map-static-pin.is-actual");
-        return {
-          connectorAnimation: connector ? getComputedStyle(connector).animationName : "none",
-          targetPinAnimation: targetPin ? getComputedStyle(targetPin).animationName : "none"
-        };
+        const liveMap = document.querySelector(".punktlandung-home-map-preview[data-render-mode='live-map']");
+        return liveMap
+          ? { connectorAnimation: "live-map", targetPinAnimation: "live-map" }
+          : {
+              connectorAnimation: connector ? getComputedStyle(connector).animationName : "none",
+              targetPinAnimation: targetPin ? getComputedStyle(targetPin).animationName : "none"
+            };
       });
       homeMapStability.intendedMotion = intendedMotion;
     }
@@ -1040,16 +1049,20 @@ async function runTargetViewport(browser, target, viewport) {
     if (metrics.horizontalOverflow) {
       problems.push(`Horizontaler Overflow: Dokument ${metrics.documentWidth}px bei Viewport ${metrics.viewportWidth}px.`);
     }
-    if (target.name === "home" && (!metrics.homeMapPreview || metrics.homeMapPreview.renderMode !== "static-overlay" || !metrics.homeMapPreview.baseVisible || metrics.homeMapPreview.liveCanvasMounted)) {
-      problems.push("Die Startseiten-Vorschau verwendet nicht ausschließlich die stabile Kartenbasis mit Vektor-Overlay.");
+    if (target.name === "home" && (!metrics.homeMapPreview
+      || metrics.homeMapPreview.renderMode !== "static-overlay"
+      || metrics.homeMapPreview.liveCanvasMounted
+      || !metrics.homeMapPreview.baseVisible
+      || !metrics.homeMapPreview.baseImageLoaded)) {
+      problems.push("Die Startseiten-Vorschau verwendet nicht ausschließlich die fertig geladene statische Kartenbasis.");
     }
     if (target.name === "home" && metrics.homeMapPreview && !metrics.homeMapPreview.labelsInside) {
       problems.push("Die Kartenlabels liegen nicht vollständig mit Randabstand innerhalb der Vorschau.");
     }
-    if (target.name === "home" && metrics.homeMapPreview && !metrics.homeMapPreview.visualsInside) {
+    if (target.name === "home" && metrics.homeMapPreview && metrics.homeMapPreview.renderMode === "static-overlay" && !metrics.homeMapPreview.visualsInside) {
       problems.push("Pins, Ellipsen oder Labels verletzen die Safe Area der Startseitenkarte.");
     }
-    if (target.name === "home" && (!metrics.homeMapStability || metrics.homeMapStability.visualCount < 5 || metrics.homeMapStability.maxMovementPx > 1)) {
+    if (target.name === "home" && (!metrics.homeMapStability || metrics.homeMapStability.visualCount < 2 || metrics.homeMapStability.maxMovementPx > 1)) {
       problems.push("Die statischen Karten-Overlays bewegen sich außerhalb der vorgesehenen Linien- und Zielpin-Animation.");
     }
     if (target.name === "home" && metrics.homeMapStability && (

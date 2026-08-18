@@ -5,7 +5,7 @@ import type { Guess, LatLng, Player, RoundSummary } from "@/types/game";
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap").then((module) => module.LeafletMap), {
   ssr: false,
-  loading: () => <div className="grid h-full place-items-center bg-slate-900 text-sm text-slate-300">Karte lädt...</div>
+  loading: () => <div className="h-full bg-slate-900" aria-hidden="true" />
 });
 
 type GuessMapProps = {
@@ -24,10 +24,12 @@ type GuessMapProps = {
   resultLabelLayout?: "auto" | "home-preview" | "account-history";
   resultLabelInset?: boolean;
   resultControlInset?: boolean;
+  animateResultConnector?: boolean;
   currentPlayerColor?: string;
   resizeSignal?: number | string | boolean;
   resetSignal?: number | string | boolean;
   onGuess?: (point: LatLng) => void;
+  onBaseMapReady?: () => void;
 };
 
 export function GuessMap(props: GuessMapProps) {

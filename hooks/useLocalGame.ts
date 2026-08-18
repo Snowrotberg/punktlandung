@@ -515,7 +515,10 @@ function createInitialRoom(playerId: string, playerName: string, mode: InitialLo
 export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSession = false) {
   const [playerId] = useState("local_host");
   const [room, setRoom] = useState<RoomState | null>(() => (initialMode ? createInitialRoom("local_host", "Geo-Gast", initialMode) : null));
-  const [restoring, setRestoring] = useState(Boolean(initialMode || restoreStoredSession));
+  // A route-owned setup already exists synchronously. Hydrate a resumable
+  // session in the effect below without blocking the normal page transition
+  // behind the full-screen game loading state.
+  const [restoring, setRestoring] = useState(Boolean(restoreStoredSession));
   const [error, setError] = useState<string | null>(null);
   const [recentLocationIds, setRecentLocationIds] = useState<string[]>([]);
   const locationsRef = useRef<GeoLocation[]>([]);
@@ -938,32 +941,47 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
     });
   }, []);
 
-  const skipLocation = useCallback(() => {
-    setRoom((current) => {
-      if (!current || current.status !== "guessing") return current;
-      const nextRecent = current.location
-        ? [current.location.id, ...recentLocationIds.filter((item) => item !== current.location?.id)].slice(0, recentLocationLimit)
-        : recentLocationIds;
-      locationQueueRef.current = locationQueueRef.current.filter((id) => id !== current.location?.id);
-      let location = drawLocation(current.settings, nextRecent);
-      if (!location) {
-        void ensureLocationCatalog();
-        return current;
+  const skipLocation = useCallback(async () => {
+    const current = roomRef.current;
+    if (!current || current.status !== "guessing") return;
+
+    const nextRecent = current.location
+      ? [current.location.id, ...recentLocationIds.filter((item) => item !== current.location?.id)].slice(0, recentLocationLimit)
+      : recentLocationIds;
+    locationQueueRef.current = locationQueueRef.current.filter((id) => id !== current.location?.id);
+
+    let preparedLocation: GeoLocation | null = null;
+    const attemptedIds: string[] = [];
+    for (let attempt = 0; attempt < 4 && !preparedLocation; attempt += 1) {
+      let candidate = drawLocation(current.settings, uniqueIds([...nextRecent, ...attemptedIds]));
+      if (!candidate) {
+        await ensureLocationCatalog();
+        candidate = drawLocation(current.settings, uniqueIds([...nextRecent, ...attemptedIds]));
       }
-      if (location.id === current.location?.id) {
-        location = drawLocation(current.settings, uniqueIds([...nextRecent, location.id]));
-        if (!location) return current;
-      }
-      setRecentLocationIds((ids) => rememberLocationId(location.id, uniqueIds([...nextRecent, ...ids])));
-      return {
-        ...current,
-        location,
+      if (!candidate) break;
+      attemptedIds.push(candidate.id);
+      preparedLocation = await prepareLocationImage(candidate);
+    }
+
+    if (!preparedLocation) {
+      setError("Der andere Ort konnte gerade nicht vorbereitet werden. Bitte versuche es erneut.");
+      return;
+    }
+
+    setRecentLocationIds((ids) => rememberLocationId(preparedLocation!.id, uniqueIds([...nextRecent, ...ids])));
+    setRoom((latest) => {
+      if (!latest || latest.status !== "guessing" || latest.location?.id !== current.location?.id) return latest;
+      const nextRoom = {
+        ...latest,
+        location: preparedLocation,
         guesses: [],
         timedOutPlayerIds: [],
         emojiEvents: [],
         roundEndsAt: null,
         roundStartedAt: null
       };
+      roomRef.current = nextRoom;
+      return nextRoom;
     });
   }, [drawLocation, ensureLocationCatalog, recentLocationIds]);
 

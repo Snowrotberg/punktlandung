@@ -1,9 +1,43 @@
 "use client";
 
-import { useLayoutEffect, useRef, type CSSProperties } from "react";
+import type { Guess, RoundSummary } from "@/types/game";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { playerColorAt } from "@/lib/playerPalette";
+import { GuessMap } from "./GuessMap";
+import { MapAttributionBadge } from "./MapAttributionBadge";
+import { HomeMapPoster } from "./HomeMapPoster";
 
 const previewDistanceKm = 2;
+const previewGuess: Guess = { lat: 52.5163, lng: 13.4105, playerId: "home-preview-player", createdAt: 0 };
+const previewSummary: RoundSummary = {
+  roundNumber: 1,
+  location: {
+    id: "home-preview-brandenburger-tor",
+    title: "Brandenburger Tor",
+    lat: 52.5163,
+    lng: 13.3777,
+    countryCode: "DE",
+    countryName: "Deutschland",
+    continent: "Europe",
+    panoramaUrl: "",
+    attribution: "OpenStreetMap",
+    source: "wikimedia",
+    category: "landmarks"
+  },
+  results: [{
+    playerId: "home-preview-player",
+    distanceKm: previewDistanceKm,
+    points: 0,
+    badge: "",
+    eliminated: false,
+    guess: previewGuess,
+    countryCorrect: false
+  }],
+  crewGuess: null,
+  crewDistanceKm: null,
+  duel: [],
+  completedAt: 0
+};
 
 function PreviewPin({ actual = false }: { actual?: boolean }) {
   const color = actual ? "#5ee7bd" : playerColorAt(0);
@@ -38,9 +72,62 @@ function PreviewEllipse({ actual = false }: { actual?: boolean }) {
   );
 }
 
+function PreviewMapBase() {
+  return (
+    <picture className="punktlandung-home-map-base" aria-hidden="true">
+      <source media="(min-width: 3000px)" srcSet="/home-map-base-tv-4k-2x.webp?v=20260818" />
+      <source media="(min-width: 1800px) and (max-width: 2999px) and (min-aspect-ratio: 19/10)" srcSet="/home-map-base-monitor-short-2x.webp?v=20260818" />
+      <source media="(min-width: 1800px)" srcSet="/home-map-base-monitor-2x.webp?v=20260818" />
+      <source media="(min-width: 1200px)" srcSet="/home-map-base-laptop-2x.webp?v=20260818" />
+      <source media="(orientation: landscape) and (min-width: 640px) and (max-width: 1279px) and (max-height: 640px)" srcSet="/home-map-base-phone-landscape-3x.webp?v=20260818" />
+      <source media="(max-width: 400px)" srcSet="/home-map-base-phone-small-3x.webp?v=20260818" />
+      <img src="/home-map-base-phone-large-3x.webp?v=20260818" alt="" loading="eager" decoding="sync" fetchPriority="high" />
+    </picture>
+  );
+}
+
+function HomeMapSourcePreview() {
+  const [mapReady, setMapReady] = useState(false);
+  return (
+    <div className={`punktlandung-home-map-preview${mapReady ? " is-map-ready" : ""}`} data-render-mode="live-map">
+      <GuessMap
+        mode="results"
+        summary={previewSummary}
+        guesses={[previewGuess]}
+        players={[{
+          id: "home-preview-player",
+          name: "Dein Tipp",
+          color: "#ff4775",
+          score: 0,
+          connected: true,
+          isHost: true,
+          team: "aurora",
+          status: "active",
+          cosmetic: "none"
+        }]}
+        showLabels
+        resultLabelLayout="home-preview"
+        resultLabelInset
+        resultControlInset
+        resultPaddingScale={0.88}
+        resultZoomScale={1.2}
+        noPan
+        noZoom
+        onBaseMapReady={() => setMapReady(true)}
+      />
+      <HomeMapPoster ready={mapReady} />
+    </div>
+  );
+}
+
 export function HomeMapPreview() {
   const previewRef = useRef<HTMLDivElement>(null);
   const connectorRef = useRef<SVGLineElement>(null);
+  const [renderSource, setRenderSource] = useState(false);
+
+  useEffect(() => {
+    setRenderSource(new URLSearchParams(window.location.search).get("renderHomeMapSource") === "1");
+  }, []);
 
   useLayoutEffect(() => {
     const preview = previewRef.current;
@@ -86,6 +173,8 @@ export function HomeMapPreview() {
     return () => observer.disconnect();
   }, []);
 
+  if (renderSource) return <HomeMapSourcePreview />;
+
   return (
     <div
       ref={previewRef}
@@ -93,7 +182,7 @@ export function HomeMapPreview() {
       data-render-mode="static-overlay"
       aria-label="Kartenvorschau: Dein Tipp liegt zwei Kilometer vom Brandenburger Tor entfernt."
     >
-      <div className="punktlandung-home-map-base" aria-hidden="true" />
+      <PreviewMapBase />
       <svg className="punktlandung-home-map-static-connector" aria-hidden="true">
         <line ref={connectorRef} className="punktlandung-result-connector is-flowing" />
       </svg>
@@ -105,6 +194,7 @@ export function HomeMapPreview() {
         #1 Dein Tipp<span className="punktlandung-map-label-distance"> · {previewDistanceKm} km</span>
       </span>
       <span className="punktlandung-map-label punktlandung-map-label-actual punktlandung-home-map-static-label is-actual">Brandenburger Tor</span>
+      <MapAttributionBadge />
     </div>
   );
 }
