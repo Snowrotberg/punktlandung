@@ -263,7 +263,7 @@ const targets = [
     access: "route",
     path: "/solo-modus",
     resetSession: true,
-    expectedText: "Was willst du erraten?",
+    expectedText: "Passe deine Partie an",
     expectedRoom: { kind: "solo", localMode: "solo" },
     note: "echter URL-Pfad"
   },
@@ -272,7 +272,7 @@ const targets = [
     access: "route",
     path: "/party-modus",
     resetSession: true,
-    expectedText: "Was wollt ihr erraten?",
+    expectedText: "Passt eure Partie an",
     expectedRoom: { kind: "solo", localMode: "couch" },
     note: "echter URL-Pfad"
   },

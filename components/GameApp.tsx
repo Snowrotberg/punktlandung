@@ -295,7 +295,8 @@ export function GameApp({
   // here can silently replace the requested game with an unrelated browser
   // session.
   const rankedSoloEnabled = Boolean(accountAuthenticated) || resumeRankedGame;
-  const rankedSoloGame = useRankedSoloGame(rankedSoloEnabled);
+  const rankedSoloRestoreEnabled = Boolean(requiredStatus) || resumeRankedGame;
+  const rankedSoloGame = useRankedSoloGame(rankedSoloEnabled, rankedSoloRestoreEnabled);
   const routeAllowsRankedSolo = initialMode !== "couch" && initialMode !== "online";
   const localRequiredSessionHasPriority = preferLocalRequiredSession(
     requiredStatus,
@@ -306,9 +307,10 @@ export function GameApp({
     && routeAllowsRankedSolo
     && !localRequiredSessionHasPriority
     // A normal Solo click must open the local setup immediately. Ranked
-    // recovery is opt-in for an explicit resume link; once a ranked room has
-    // actually been recovered, it may take over the active view.
-    && (resumeRankedGame || Boolean(requiredStatus) || Boolean(rankedSoloGame.room));
+    // A signed-in Solo setup still creates a ranked game when the player
+    // starts it, but it must not restore an older ranked game merely because
+    // the browser opened the setup route again.
+    && (resumeRankedGame || Boolean(requiredStatus) || Boolean(accountAuthenticated));
   const rankedRestoring = rankedSoloContext && rankedSoloGame.restoring;
   const onlineGame = useOnlineRoomSocket();
   const { enabled: soundEnabled, toggle: toggleSound, playSelect } = useSound();

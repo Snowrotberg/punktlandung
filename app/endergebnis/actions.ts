@@ -46,6 +46,12 @@ function validTimestamp(value: number): boolean {
   return Number.isSafeInteger(value) && value > 0 && value <= Date.now() + 60_000;
 }
 
+function normalizedCountryCode(value: string | undefined): string | null {
+  if (!value) return null;
+  const code = value.trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(code) ? code : null;
+}
+
 export async function saveCompletedGame(input: SaveCompletedGameInput): Promise<SaveCompletedGameResult> {
   const context = await getSupabaseAccountContext();
   if (!context) return { ok: false, code: "auth_required" };
@@ -78,8 +84,8 @@ export async function saveCompletedGame(input: SaveCompletedGameInput): Promise<
     || !Number.isFinite(round.result.distanceKm)
     || round.result.distanceKm < 0
     || typeof round.result.badge !== "string"
-    || round.result.badge.length > 120
-    || (round.result.guess !== null && (!Number.isFinite(round.result.guess.lat) || !Number.isFinite(round.result.guess.lng) || !Number.isFinite(round.result.guess.responseTimeMs ?? 0) || round.result.guess.lat < -85 || round.result.guess.lat > 85 || round.result.guess.lng < -180 || round.result.guess.lng > 180))
+    || round.result.badge.length > 64
+    || (round.result.guess != null && (!Number.isFinite(round.result.guess.lat) || !Number.isFinite(round.result.guess.lng) || !Number.isFinite(round.result.guess.responseTimeMs ?? 0) || round.result.guess.lat < -85 || round.result.guess.lat > 85 || round.result.guess.lng < -180 || round.result.guess.lng > 180))
   )) return { ok: false, code: "invalid" };
 
   const digest = createHash("sha256")
@@ -93,7 +99,10 @@ export async function saveCompletedGame(input: SaveCompletedGameInput): Promise<
     .select("game_id, account_id")
     .eq("create_request_id", createRequestId)
     .maybeSingle();
-  if (existing.error) return { ok: false, code: "save_failed" };
+  if (existing.error) {
+    console.error("[saveCompletedGame] idempotency lookup failed", { code: existing.error.code });
+    return { ok: false, code: "save_failed" };
+  }
   if (existing.data) {
     return existing.data.account_id === context.identity.account.accountId
       ? { ok: true, alreadySaved: true }
@@ -101,36 +110,7 @@ export async function saveCompletedGame(input: SaveCompletedGameInput): Promise<
   }
 
   const roundDurationMs = Math.max(1000, Math.min(600_000, Math.round(input.roundDurationMs)));
-  const game = await admin.from("ranked_games").insert({
-    game_id: gameId,
-    create_request_id: createRequestId,
-    account_id: context.identity.account.accountId,
-    category: input.category.slice(0, 40),
-    time_limit_sec: input.timeLimitSec,
-    difficulty: input.difficulty,
-    no_zoom: input.noZoom,
-    planned_rounds: input.completedRounds,
-    completed_rounds: input.completedRounds,
-    round_duration_ms: roundDurationMs,
-    ruleset_id: "local-game",
-    ruleset_version: 1,
-    scoring_version: "local-v1",
-    score: Math.max(0, Math.round(input.score)),
-    total_response_time_ms: Math.max(0, Math.round(input.totalResponseTimeMs)),
-    started_at: new Date(input.startedAt).toISOString(),
-    completed_at: new Date(input.completedAt).toISOString(),
-    claimed_at: now,
-    status: "completed",
-    // Local results are client-produced. They appear in personal history but not in verified rankings yet.
-    integrity_status: "flagged",
-    integrity_reasons: ["local_client_result"],
-    created_at: now,
-    updated_at: now
-  });
-  if (game.error) return { ok: false, code: "save_failed" };
-
-  const rounds = await admin.from("ranked_rounds").insert(input.rounds.map((round, index) => ({
-    game_id: gameId,
+  const rounds = input.rounds.map((round, index) => ({
     round_id: `${gameId}_${String(index + 1).padStart(2, "0")}`,
     round_number: round.roundNumber,
     location_id: round.locationId,
@@ -139,23 +119,18 @@ export async function saveCompletedGame(input: SaveCompletedGameInput): Promise<
     started_at: new Date(round.startedAt).toISOString(),
     deadline_at: new Date(round.startedAt + roundDurationMs).toISOString(),
     resolved_at: new Date(round.resolvedAt).toISOString()
-  })));
-  if (rounds.error) {
-    await admin.from("ranked_games").delete().eq("game_id", gameId);
-    return { ok: false, code: "save_failed" };
-  }
-
-  const guesses = await admin.from("ranked_guesses").insert(input.rounds.flatMap((round, index) => {
+  }));
+  const guesses = input.rounds.flatMap((round, index) => {
     if (!round.result.guess) return [];
     const guess = round.result.guess;
-    const roundId = `${gameId}_${String(index + 1).padStart(2, "0")}`;
+    const roundId = rounds[index].round_id;
+    const countryCode = normalizedCountryCode(guess.countryCode);
     return [{
       guess_id: `${roundId}_guess`,
       round_id: roundId,
-      game_id: gameId,
       lat: guess.lat,
       lng: guess.lng,
-      country_code: guess.countryCode ?? null,
+      country_code: countryCode,
       submitted_at: new Date(round.startedAt + Math.max(0, guess.responseTimeMs ?? 0)).toISOString(),
       response_time_ms: Math.max(0, Math.round(guess.responseTimeMs ?? 0)),
       distance_km: round.result.distanceKm,
@@ -168,18 +143,52 @@ export async function saveCompletedGame(input: SaveCompletedGameInput): Promise<
         points: Math.round(round.result.points),
         badge: round.result.badge,
         eliminated: round.result.eliminated,
-        guess: {
-          lat: guess.lat,
-          lng: guess.lng,
-          countryCode: guess.countryCode,
-          responseTimeMs: Math.max(0, Math.round(guess.responseTimeMs ?? 0))
-        },
+        guess: { lat: guess.lat, lng: guess.lng, countryCode, responseTimeMs: Math.max(0, Math.round(guess.responseTimeMs ?? 0)) },
         countryCorrect: round.result.countryCorrect
       } as Json
     }];
-  }));
-  if (guesses.error) {
-    await admin.from("ranked_games").delete().eq("game_id", gameId);
+  });
+
+  // Keep the complete save in one database transaction. This prevents a failed
+  // round/guess insert from deleting an otherwise valid completed game.
+  const persisted = await admin.rpc("persist_ranked_game_state", {
+    p_expected_revision: null,
+    p_game: {
+      game_id: gameId,
+      create_request_id: createRequestId,
+      account_id: context.identity.account.accountId,
+      category: input.category.slice(0, 40),
+      time_limit_sec: input.timeLimitSec,
+      difficulty: input.difficulty,
+      no_zoom: input.noZoom,
+      planned_rounds: input.completedRounds,
+      completed_rounds: input.completedRounds,
+      round_duration_ms: roundDurationMs,
+      ruleset_id: "local-game",
+      ruleset_version: 1,
+      scoring_version: "local-v1",
+      score: Math.max(0, Math.round(input.score)),
+      total_response_time_ms: Math.max(0, Math.round(input.totalResponseTimeMs)),
+      started_at: new Date(input.startedAt).toISOString(),
+      completed_at: new Date(input.completedAt).toISOString(),
+      claimed_at: now,
+      status: "completed",
+      integrity_status: "flagged",
+      integrity_reasons: ["local_client_result"],
+      created_at: now,
+      updated_at: now
+    },
+    p_rounds: rounds,
+    p_guesses: guesses
+  });
+  if (persisted.error) {
+    // A double click or two tabs may race. The unique request key makes the
+    // second attempt safe; report it as saved when the first one won.
+    const retry = await admin.from("ranked_games").select("account_id").eq("create_request_id", createRequestId).maybeSingle();
+    if (!retry.error && retry.data?.account_id === context.identity.account.accountId) {
+      return { ok: true, alreadySaved: true };
+    }
+    console.error("[saveCompletedGame] atomic save failed", { code: persisted.error.code });
     return { ok: false, code: "save_failed" };
   }
 

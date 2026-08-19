@@ -600,7 +600,11 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       const returningFromLegalPage = consumeLegalReturn(window.location.pathname);
       const canRestoreRouteSession = storedSession
         && storedRoomMatchesInitialMode(storedSession.room, initialMode)
-        && (returningFromLegalPage || restoreStoredSession || storedSession.room.status !== "lobby");
+        // A setup route is a deliberate new-game entry point. Only an
+        // explicit recovery route (or a return from the legal page) may
+        // restore a previously active round; otherwise an old PWA/browser
+        // session must not hijack the Solo/Party setup screen.
+        && (returningFromLegalPage || restoreStoredSession);
       if (canRestoreRouteSession) {
         locationQueueRef.current = storedSession.locationQueue;
         queueCategoryRef.current = storedSession.queueCategory;

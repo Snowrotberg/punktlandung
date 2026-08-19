@@ -205,13 +205,13 @@ function roomFromRankedGame(next: PublicRankedGame, name: string, storedSettings
   };
 }
 
-export function useRankedSoloGame(enabled: boolean) {
+export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled) {
   const [room, setRoom] = useState<RoomState | null>(null);
   const [game, setGame] = useState<PublicRankedGame | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingUploadCount, setPendingUploadCount] = useState(0);
   const [uploading, setUploading] = useState(false);
-  const [restoring, setRestoring] = useState(enabled);
+  const [restoring, setRestoring] = useState(enabled && restoreStoredGame);
   const guessRef = useRef<Guess | null>(null);
   const expiryAttemptedRef = useRef(new Set<string>());
   const uploadFlushInFlightRef = useRef(false);
@@ -291,7 +291,7 @@ export function useRankedSoloGame(enabled: boolean) {
   }, [game, room]);
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !restoreStoredGame) {
       recoveryStartedRef.current = false;
       setRestoring(false);
       return;
@@ -376,7 +376,7 @@ export function useRankedSoloGame(enabled: boolean) {
         if (!cancelled) setRestoring(false);
       });
     return () => { cancelled = true; };
-  }, [enabled, prepareRankedPrompt, request]);
+  }, [enabled, prepareRankedPrompt, request, restoreStoredGame]);
 
   const applyResolved = useCallback((next: PublicRankedGame, guess: Guess | null, timedOut = false) => {
     setGame(next);

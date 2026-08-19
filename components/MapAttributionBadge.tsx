@@ -1,16 +1,10 @@
 "use client";
 
 import { Info, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export function MapAttributionBadge({ locationInfoSourceUrl }: { locationInfoSourceUrl?: string }) {
   const [expanded, setExpanded] = useState(false);
-  const [showIntroCredit, setShowIntroCredit] = useState(true);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setShowIntroCredit(false), 5000);
-    return () => window.clearTimeout(timeout);
-  }, []);
 
   return (
     <div
@@ -28,12 +22,15 @@ export function MapAttributionBadge({ locationInfoSourceUrl }: { locationInfoSou
             </button>
           </div>
           <span className="punktlandung-map-attribution-design">Kartendesign: Punktlandung</span>
-          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
-            © OpenStreetMap-Mitwirkende
-          </a>
-          <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">
-            © OpenMapTiles
-          </a>
+          <div className="punktlandung-map-attribution-sources">
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+              © OpenStreetMap-Mitwirkende
+            </a>
+            <span aria-hidden="true">·</span>
+            <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">
+              © OpenMapTiles
+            </a>
+          </div>
           <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">
             OpenFreeMap
           </a>
@@ -51,7 +48,6 @@ export function MapAttributionBadge({ locationInfoSourceUrl }: { locationInfoSou
           aria-label="Kartenquellen anzeigen"
           aria-expanded="false"
         >
-          {showIntroCredit && <span>© OpenStreetMap</span>}
           <Info aria-hidden="true" size={15} strokeWidth={2.5} />
         </button>
       )}

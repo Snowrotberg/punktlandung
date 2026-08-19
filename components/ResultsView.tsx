@@ -452,36 +452,41 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const saveGame = async () => {
     if (!meStats || saveState === "saving" || saveState === "saved") return;
     setSaveState("saving");
-    const result = await saveCompletedGame({
-      saveKey: `${room.code}:${room.summaries[0]?.roundStartedAt ?? room.summaries[0]?.completedAt ?? 0}:${meStats.player.id}`,
-      category: room.settings.category,
-      timeLimitSec: room.settings.timeLimitSec,
-      difficulty: room.settings.difficulty === "easy" || room.settings.difficulty === "hard" ? room.settings.difficulty : "medium",
-      noZoom: room.settings.noZoom,
-      score: meStats.player.score,
-      completedRounds,
-      roundDurationMs: Math.max(1000, room.settings.timeLimitSec * 1000),
-      totalResponseTimeMs: Math.round((meStats.totalGuessSeconds ?? 0) * 1000),
-      startedAt: room.summaries[0]?.roundStartedAt ?? room.summaries[0]?.completedAt ?? Date.now(),
-      completedAt: room.summaries.at(-1)?.completedAt ?? Date.now(),
-      rounds: room.summaries.map((round, index) => ({
-        roundId: `${room.code}_${index + 1}`,
-        roundNumber: index + 1,
-        locationId: round.location.id,
-        locationSnapshot: round.location as unknown as Record<string, unknown>,
-        startedAt: round.roundStartedAt ?? Math.max(1, round.completedAt - Math.max(1000, room.settings.timeLimitSec * 1000)),
-        resolvedAt: round.completedAt,
-        result: round.results.find((entry) => entry.playerId === meStats.player.id) ?? {
-          points: 0,
-          distanceKm: 20_015,
-          badge: "Keine Abgabe",
-          countryCorrect: false,
-          eliminated: false,
-          guess: null
-        }
-      }))
-    });
-    setSaveState(result.ok ? "saved" : result.code === "auth_required" ? "auth" : "error");
+    try {
+      const result = await saveCompletedGame({
+        saveKey: `${room.code}:${room.summaries[0]?.roundStartedAt ?? room.summaries[0]?.completedAt ?? 0}:${meStats.player.id}`,
+        category: room.settings.category,
+        timeLimitSec: room.settings.timeLimitSec,
+        difficulty: room.settings.difficulty === "easy" || room.settings.difficulty === "hard" ? room.settings.difficulty : "medium",
+        noZoom: room.settings.noZoom,
+        score: meStats.player.score,
+        completedRounds,
+        roundDurationMs: Math.max(1000, room.settings.timeLimitSec * 1000),
+        totalResponseTimeMs: Math.round((meStats.totalGuessSeconds ?? 0) * 1000),
+        startedAt: room.summaries[0]?.roundStartedAt ?? room.summaries[0]?.completedAt ?? Date.now(),
+        completedAt: room.summaries.at(-1)?.completedAt ?? Date.now(),
+        rounds: room.summaries.map((round, index) => ({
+          roundId: `${room.code}_${index + 1}`,
+          roundNumber: index + 1,
+          locationId: round.location.id,
+          locationSnapshot: round.location as unknown as Record<string, unknown>,
+          startedAt: round.roundStartedAt ?? Math.max(1, round.completedAt - Math.max(1000, room.settings.timeLimitSec * 1000)),
+          resolvedAt: round.completedAt,
+          result: round.results.find((entry) => entry.playerId === meStats.player.id) ?? {
+            points: 0,
+            distanceKm: 20_015,
+            badge: "Keine Abgabe",
+            countryCorrect: false,
+            eliminated: false,
+            guess: null
+          }
+        }))
+      });
+      setSaveState(result.ok ? "saved" : result.code === "auth_required" ? "auth" : "error");
+    } catch (error) {
+      console.error("[ResultsView] completed game save failed", error);
+      setSaveState("error");
+    }
   };
 
   useEffect(() => {

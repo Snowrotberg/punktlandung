@@ -3,16 +3,17 @@
 @media(min-width:100rem){.brand{font-size:1.08rem}.workspace{grid-template-columns:minmax(22rem,.34fr) minmax(0,.66fr)}.settingsPanel{gap:.8rem;padding:1.1rem}.categories>button{padding:1rem 1.25rem}}
 @media(min-width:150rem){.header{min-height:7rem;padding-inline:4rem}.brand{font-size:2rem}.brand>span,.iconButton{width:4rem;height:4rem}.brand svg,.iconButton svg{width:1.7rem}.beta,.server{min-height:3.5rem;font-size:1.15rem}.intro{padding:2.5rem 5rem 1.5rem}.intro span{font-size:1.25rem}.intro h1{font-size:5rem}.intro p{font-size:1.65rem}.introActions button{min-height:4.5rem;padding-inline:1.8rem;font-size:1.4rem}.introActions>small{font-size:1.1rem}.workspace{grid-template-columns:minmax(42rem,.34fr) minmax(0,.66fr);gap:2.25rem;padding:0 5rem 2.5rem}.settingsPanel{gap:1.35rem;padding:2rem}.modeHeading>span{font-size:1.2rem}.modeHeading button{font-size:1.1rem}.modeTabs a,.controlGroup button,.customRounds{min-height:4rem;font-size:1.35rem}.controlGroup{gap:.6rem}.controlGroup label{font-size:1.25rem}.categories{gap:1.4rem}.categories>button{gap:1.4rem;padding:1.5rem 2rem}.categoryIcon{width:5rem;height:5rem}.categoryIcon svg{width:2.25rem}.categories strong{font-size:2rem}.categories small{font-size:1.4rem}.categories>button>b{font-size:1.25rem}.footer{min-height:5rem;font-size:1.2rem}}
 @media(max-width:79.999rem){.rail{display:none}}
-@media(max-width:52rem){.page{padding:0}.app{border-radius:0}.intro{align-items:flex-start}.workspace{grid-template-columns:1fr}.categories{min-height:34rem}.footer{margin-top:1rem}}
+@media(max-width:52rem){.page{padding:0}.app{--pl-horizontal-grid-position:0 .5rem;border-radius:0}.intro{align-items:flex-start}.workspace{grid-template-columns:1fr}.settingsPanel{border-radius:0}.categories{min-height:34rem}.footer{margin-top:1rem}}
 @media(max-width:30rem){.header{gap:.3rem;padding:.65rem}.brand{font-size:.82rem}.brand>span{width:1.9rem;height:1.9rem}.topActions{gap:.22rem}.beta,.server,.iconButton{min-height:1.9rem;height:1.9rem}.beta{padding-inline:.35rem;font-size:.5rem}.beta svg{display:none}.server{width:1.9rem;min-width:1.9rem;padding:0;border-radius:50%}.server b{display:none}.iconButton{width:1.9rem}.intro{padding:1.2rem 1rem}.introActions{width:100%;justify-content:flex-start}.introActions>small{text-align:left}.workspace{padding:0 1rem}.modeTabs{grid-template-columns:1fr}.playerCount{grid-template-columns:repeat(5,1fr)}.fiveOptions{grid-template-columns:repeat(5,1fr)}.threeOptions{grid-template-columns:1fr}.categories{grid-template-columns:1fr;grid-template-rows:none}.categories>button{min-height:5rem}}
 
 /* Zeit verhält sich wie die freie Rundenzahl: drei Presets plus ein kompakter Frei-Stepper. */
 .timeOptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(6.8rem,1.35fr);gap:.4rem}
 .customTime{display:grid;grid-template-columns:minmax(2.5rem,1fr) 1.9rem 1.9rem;overflow:hidden;min-height:2.1rem;align-items:center;justify-content:center;border:1px solid transparent;border-radius:.65rem;color:var(--pl-text);background:var(--pl-surface-strong);font-size:.78rem}
-.customValue{display:flex;min-width:0;align-items:center;justify-content:center;gap:.18rem;padding-inline:.25rem;font-weight:650}
-.customValue input{width:100%;min-width:0;border:0;outline:0;color:inherit;background:transparent;font:inherit;font-weight:650;text-align:center}
+.customValue{display:flex;min-width:0;align-items:center;justify-content:center;gap:0;padding-inline:.25rem;font-weight:650}
+.customValue input{width:4ch;flex:0 1 4ch;min-width:0;border:0;outline:0;color:inherit;background:transparent;font:inherit;font-weight:650;text-align:center}
+.customValue input:not(:placeholder-shown){width:2.2ch;flex-basis:2.2ch}
 .customValue input::placeholder{color:inherit;opacity:1}
-.customValue span{margin-left:-.2rem;font-size:.88em}
+.customValue span{margin-left:0;font-size:.88em}
 .customTime button{min-height:100%;border:0;border-left:1px solid var(--pl-line);border-radius:0;background:transparent}
 .resetButton{justify-self:end;align-self:end}
 
@@ -547,6 +548,7 @@
   .customValue {
     height: 100%;
     padding-inline: 0;
+    gap: 0;
     font-size: .78rem;
   }
 

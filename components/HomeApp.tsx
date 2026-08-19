@@ -14,7 +14,7 @@ const homeModes = [
   { id: "online" as const, title: "Online-Raum", text: "Erstelle einen Raum oder tritt per Code bei.", href: "/online-modus" }
 ];
 
-function clearInactiveGameSession() {
+function clearSessionForNewGameNavigation() {
   try {
     window.localStorage.removeItem(activeSessionStorageKey);
     window.localStorage.removeItem(rankedSessionStorageKey);
@@ -51,7 +51,7 @@ export function HomeApp({
 
   const prepareNavigation = () => {
     playSelect();
-    clearInactiveGameSession();
+    clearSessionForNewGameNavigation();
   };
 
   return (

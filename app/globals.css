@@ -6882,8 +6882,8 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 
 .punktlandung-map-attribution-panel {
   display: grid;
-  min-width: 205px;
-  max-width: min(255px, calc(100vw - 24px));
+  min-width: 240px;
+  max-width: min(310px, calc(100vw - 24px));
   gap: 5px;
   padding: 10px 11px 11px;
   border: 1px solid rgba(71, 85, 105, 0.68);
@@ -6918,6 +6918,17 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   max-width: 100%;
   color: #94a3b8;
   text-decoration: none;
+}
+
+.punktlandung-map-attribution-sources {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.punktlandung-map-attribution-sources a {
+  flex: 0 0 auto;
 }
 
 .punktlandung-map-attribution-panel a:hover,

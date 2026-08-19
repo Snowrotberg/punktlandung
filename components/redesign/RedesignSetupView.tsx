@@ -231,7 +231,7 @@ export function RedesignSetupView({
           </RedesignHeader>
 
           <div className={styles.intro}>
-            <div><span>Neue Partie</span><h1>{activeMode === "solo" ? "Was willst du erraten?" : "Was wollt ihr erraten?"}</h1><p>{activeMode === "solo" ? "Wähle eine Kategorie und passe die Runde an." : isOnline ? "Gemeinsam im virtuellen Raum: Wählt eine Kategorie und passt die Runde an." : "Wählt eine Kategorie und passt die Runde an."}</p></div>
+            <div><span>Neue Partie</span><h1>{activeMode === "solo" ? "Passe deine Partie an" : "Passt eure Partie an"}</h1><p>{activeMode === "solo" ? "Wähle Rundeneinstellungen und eine Spielkategorie." : isOnline ? "Gemeinsam im virtuellen Raum: Wählt Rundeneinstellungen und eine Spielkategorie." : "Wählt Rundeneinstellungen und eine Spielkategorie."}</p></div>
             <div className={styles.introActions}>
               {error && (
                 <p role="alert" className={styles.startError}>
