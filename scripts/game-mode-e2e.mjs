@@ -92,7 +92,7 @@ async function waitForLatestRoomState(guest, predicate, timeoutMs = 45_000) {
 }
 
 async function selectSetup(page, mode) {
-  const heading = page.getByRole("heading", { name: mode === "solo" ? "Was willst du erraten?" : "Was wollt ihr erraten?" });
+  const heading = page.getByRole("heading", { name: mode === "solo" ? "Passe deine Partie an" : "Passt eure Partie an" });
   await heading.waitFor({ state: "visible", timeout: 30_000 });
   const settings = page.getByRole("region", { name: "Spieleinstellungen" });
   if (mode === "party") {
@@ -138,7 +138,7 @@ async function submitVisibleGuess(page, playerIndex = null, round = null) {
       await playerBadge.waitFor({ state: "visible", timeout: 10_000 });
       await playerBadge.click();
     }
-    const map = page.locator(".punktlandung-guess-map-panel .leaflet-container");
+    const map = page.locator(".punktlandung-guess-map-panel .leaflet-container:visible");
     await map.waitFor({ state: "visible", timeout: 15_000 });
     const box = await map.boundingBox();
     if (!box) throw new Error("Tippkarte besitzt keine sichtbare Größe.");
@@ -207,8 +207,8 @@ async function completeOnlineGame(page) {
       await waitForLatestRoomState(guests[0], (state) => (state.status === "results" || state.status === "finished") && state.currentRound === round);
       await page.getByRole("heading", { name: "Rundenrang" }).waitFor({ state: "visible", timeout: 30_000 });
       if (round < 10) {
-        for (const guest of guests) guest.socket.send(JSON.stringify({ type: "ready_next_round" }));
         await page.getByRole("button", { name: /Nächste Runde|Bereit/ }).click();
+        for (const guest of guests) guest.socket.send(JSON.stringify({ type: "ready_next_round" }));
       } else {
         await page.getByRole("button", { name: "Endstand ansehen" }).click();
       }
@@ -256,7 +256,8 @@ try {
         if (message.type() === "error" && !/favicon|third-party cookie/i.test(message.text())) errors.push(`console: ${message.text()}`);
       });
       try {
-        await page.goto(`${baseUrl}/${mode === "solo" ? "solo-modus" : mode === "party" ? "party-modus" : "online-modus"}`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+        const setupPath = mode === "solo" ? "solo-modus" : mode === "party" ? "party-modus" : "online-modus";
+        await page.goto(`${baseUrl}/${setupPath}`, { waitUntil: "domcontentloaded", timeout: 30_000 });
         await selectSetup(page, mode);
         if (mode === "online") await completeOnlineGame(page);
         else await completeLocalGame(page, mode === "party" ? 10 : 1);

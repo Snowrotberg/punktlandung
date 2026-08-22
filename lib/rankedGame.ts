@@ -262,7 +262,10 @@ function advanceAfterResolution(game: RankedGame, roundIndex: number, resolvedRo
     ...game,
     rounds,
     status: completed ? "completed" : "active",
-    completedAt: completed ? now : null
+    completedAt: completed ? now : null,
+    // A guest must always receive the full claim window after the end screen,
+    // even when the game itself was started much earlier.
+    guestExpiresAt: completed && game.accountId === null ? now + rankedGuestRetentionMs : game.guestExpiresAt
   };
 }
 
