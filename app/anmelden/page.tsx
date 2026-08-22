@@ -29,8 +29,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <section className={styles.card} aria-labelledby="login-title">
         <Link href="/" className={styles.brand}>Punktlandung</Link>
         <h1 id="login-title">Spielstände mitnehmen</h1>
-        <p className={styles.intro}>Du kannst Punktlandung immer ohne Konto spielen. Melde dich nur an, wenn du Ergebnisse speichern und später in Rankings antreten möchtest.</p>
-        <p className={styles.note}><strong>Sicher anmelden:</strong> Prüfe vor der Eingabe, dass in der Adresszeile <strong>punktlandung.app</strong> steht.</p>
+        <p className={styles.intro}>Optional anmelden, um Ergebnisse zu speichern und an Rankings teilzunehmen.</p>
 
         {params.error && <div className={styles.error} role="alert">
           <strong>{params.error}</strong>
@@ -66,7 +65,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
         </form>
 
-        <p className={styles.note}>Mit dem Konto speicherst du künftig Ergebnisse. Deinen persönlichen Namen und öffentlichen Benutzernamen richtest du danach im Profil ein.</p>
+        <p className={styles.note}>Persönliche Angaben legst du später im Profil fest.</p>
         <Link href={skipHref} className={styles.skip}>Ohne Anmeldung weiterspielen</Link>
       </section>
     </main>

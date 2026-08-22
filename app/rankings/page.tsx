@@ -29,9 +29,33 @@ export default async function RankingsPage({ searchParams }: { searchParams: Pro
   const isAdmin = accountContext ? await isAdminAccount(accountContext.identity.account.accountId) : false;
   const now = Date.now();
   const query = { period, periodKey: leaderboardPeriodKey(now, period), category: category as LocationCategory, rulesetId: rankedRulesetId, rulesetVersion: rankedRulesetVersion, scoringVersion: rankedScoringVersion };
-  const admin = createSupabaseAdminClient();
-  const { data: verifiedGames } = await admin.from("verified_ranked_results").select("game_id, account_id, handle, category, ruleset_id, ruleset_version, scoring_version, score, total_response_time_ms, completed_at, planned_rounds, time_limit_sec, difficulty, no_zoom").gte("completed_at", new Date(now - 370 * 24 * 60 * 60 * 1000).toISOString()).limit(5000);
-  const leaderboardGames: LeaderboardGameResult[] = (verifiedGames ?? []).flatMap((game) => {
+  let verifiedGames: Array<{
+    game_id: string | null;
+    account_id: string | null;
+    handle: string | null;
+    category: string | null;
+    ruleset_id: string | null;
+    ruleset_version: number | null;
+    scoring_version: string | null;
+    score: number | null;
+    total_response_time_ms: number | null;
+    completed_at: string | null;
+    planned_rounds: number | null;
+    time_limit_sec: number | null;
+    difficulty: string | null;
+    no_zoom: boolean | null;
+  }> = [];
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.SUPABASE_SECRET_KEY?.trim()) {
+    try {
+      const admin = createSupabaseAdminClient();
+      const result = await admin.from("verified_ranked_results").select("game_id, account_id, handle, category, ruleset_id, ruleset_version, scoring_version, score, total_response_time_ms, completed_at, planned_rounds, time_limit_sec, difficulty, no_zoom").gte("completed_at", new Date(now - 370 * 24 * 60 * 60 * 1000).toISOString()).limit(5000);
+      if (!result.error) verifiedGames = result.data ?? [];
+      else console.error("Rankings could not load verified games", result.error.message);
+    } catch (error) {
+      console.error("Rankings are unavailable", error instanceof Error ? error.message : "unknown error");
+    }
+  }
+  const leaderboardGames: LeaderboardGameResult[] = verifiedGames.flatMap((game) => {
     const completedAt = game.completed_at ? Date.parse(game.completed_at) : Number.NaN;
     if (!game.game_id || !game.account_id || !game.handle || !game.category || !game.ruleset_id || game.ruleset_version == null || !game.scoring_version || game.score == null || game.total_response_time_ms == null || !Number.isFinite(completedAt)) return [];
     return [{ gameId: game.game_id, accountId: game.account_id, publicHandle: game.handle, profileStatus: "active" as const, profileVisibility: "public" as const, category: game.category as LocationCategory, rulesetId: game.ruleset_id, rulesetVersion: game.ruleset_version, scoringVersion: game.scoring_version, integrityStatus: "verified" as const, score: game.score, totalResponseTimeMs: game.total_response_time_ms, roundCount: game.planned_rounds ?? undefined, timeLimitSec: game.time_limit_sec ?? undefined, roundDurationMs: game.time_limit_sec === 0 ? 600_000 : (game.time_limit_sec ?? 60) * 1000, difficulty: game.difficulty === "easy" || game.difficulty === "hard" ? game.difficulty : "medium", noZoom: Boolean(game.no_zoom), completedAt }];

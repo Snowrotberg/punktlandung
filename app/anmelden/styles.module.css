@@ -29,7 +29,7 @@
 .actions button, .googleButton { background: #34d399; border: 0; border-radius: 0.55rem; color: #052e2b; cursor: pointer; font: inherit; font-weight: 650; min-height: 3rem; padding: 0 0.8rem; width: 100%; }
 .actions .secondary { background: rgba(51, 65, 85, 0.8); color: #f8fafc; }
 .actions button:disabled { cursor: not-allowed; opacity: 0.45; }
-.googleButton { align-items: center; background: #131314; border: 1px solid #8e918f; color: #e3e3e3; display: flex; gap: .65rem; justify-content: center; margin-bottom: 0.25rem; }
+.googleButton { align-items: center; background: #131314; border: 1px solid #8e918f; color: #e3e3e3; display: flex; gap: .65rem; justify-content: center; }
 .googleButton:hover { background: #1f1f20; }
 .googleButton:focus-visible { outline: 2px solid #a7f3d0; outline-offset: 3px; }
 .googleIcon { flex: 0 0 auto; height: 1.15rem; width: 1.15rem; }
