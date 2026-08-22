@@ -60,3 +60,32 @@ test("image delivery metrics are bounded, anonymous and persist the catalog key"
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("page analytics accept only coarse anonymous viewport and engagement data", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "punktlandung-pages-"));
+  const metricsPath = path.join(directory, "events.ndjson");
+  const previousPath = process.env.USAGE_METRICS_FILE;
+  process.env.USAGE_METRICS_FILE = metricsPath;
+  const context = {
+    path: "/konto/verlauf/[spiel]",
+    visitId: "4ca762cc-9388-4a12-b1cf-6dd8bce72aad",
+    deviceClass: "phone",
+    viewportBucket: "360–479"
+  };
+  try {
+    assert.equal((await POST(request({ event: "page_view", ...context }))).status, 200);
+    assert.equal((await POST(request({ event: "page_engagement", ...context, durationMs: 12_500 }))).status, 200);
+    assert.equal((await POST(request({ event: "page_view", ...context, path: "/konto?email=privat@example.org" }))).status, 400);
+    assert.equal((await POST(request({ event: "page_view", ...context, deviceClass: "Pixel 9" }))).status, 400);
+
+    const stored = (await readFile(metricsPath, "utf8")).trim().split(/\r?\n/).map((line) => JSON.parse(line));
+    assert.deepEqual(stored.map((event) => event.event), ["page_view", "page_engagement"]);
+    assert.equal(stored[1].durationMs, 12_500);
+    assert.equal("userAgent" in stored[0], false);
+    assert.equal("email" in stored[0], false);
+  } finally {
+    if (previousPath === undefined) delete process.env.USAGE_METRICS_FILE;
+    else process.env.USAGE_METRICS_FILE = previousPath;
+    await rm(directory, { recursive: true, force: true });
+  }
+});

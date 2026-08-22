@@ -43,6 +43,15 @@ In AdSense unter **Datenschutz und Mitteilungen > Europäische Verordnungen > Ei
 
 Der WebSocket-Server und `/api/usage` schreiben ausschließlich anonyme Ereignisse in den unter `USAGE_METRICS_FILE` konfigurierten Pfad. Auf dem VPS sollte dafür ein dauerhaft beschreibbarer Pfad außerhalb des Release-Verzeichnisses verwendet werden, zum Beispiel `/var/lib/punktlandung/usage-events.ndjson`.
 
+Die Admin-Auswertung ergänzt dabei nur datensparsame Produktdaten:
+
+- normalisierte Seitenpfade ohne Query-Parameter oder dynamische Spiel-ID,
+- eine zufällige, ausschließlich im geöffneten Browser-Tab gültige Besuchs-ID,
+- aktive Verweildauer nur bei sichtbarem Tab, je Seitenabschnitt auf 30 Minuten begrenzt,
+- grobe Viewport-Klassen statt User-Agent, Hersteller oder Gerätemodell.
+
+Die Aufschlüsselungen für Seiten, Verweildauer und Viewports beginnen erst mit dem Deployment dieser Erfassung. Ältere anonyme Summen bleiben im Adminbereich sichtbar, lassen sich rückwirkend aber nicht detaillierter zuordnen.
+
 Der Versand kann nach dem Deployment mit einem wöchentlichen Cronjob eingerichtet werden:
 
 ```cron
