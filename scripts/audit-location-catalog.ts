@@ -1,5 +1,6 @@
-import { builtInLocations } from "../data/locations";
+import { builtInLocations, catalogInventoryLocations } from "../data/locations";
 import { locationDifficultyMap } from "../lib/locationDifficulty";
+import { catalogImageIssues } from "../lib/catalogImageQuality";
 
 const prohibitedCuratedFilePatterns = [
   /\b(person|people|portraits?|politicians?|presidents?|ministers?|secretaries|ambassadors?)\b/i,
@@ -22,6 +23,8 @@ for (const location of builtInLocations) {
   stats.set(location.category, row);
 
   if (location.catalogVariant === "nearby-image") errors.push(`${location.id}: ungeprüfte Radiusvariante ist spielbar`);
+  const qualityIssues = catalogImageIssues(location);
+  if (qualityIssues.length > 0) errors.push(`${location.id}: aktives Bild verletzt Qualitätsprofil (${qualityIssues.join(", ")})`);
   if (location.catalogVariant === "curated-image") {
     if (location.imageReviewStatus !== "approved") errors.push(`${location.id}: kuratierte Variante ist nicht freigegeben`);
     if (!location.imageQualityScore || location.imageQualityScore < 7) errors.push(`${location.id}: Qualitätswert fehlt oder ist zu niedrig`);
@@ -32,11 +35,11 @@ for (const location of builtInLocations) {
 }
 
 console.table(Object.fromEntries(stats));
-console.log(`Aktiver Katalog: ${builtInLocations.length} Bilder`);
+console.log(`Katalogbestand: ${catalogInventoryLocations.length} geprüfte Quellen, ${builtInLocations.length} aktive Bilder, ${catalogInventoryLocations.length - builtInLocations.length} Qualitätsausschlüsse`);
 
 if (errors.length > 0) {
   console.error(errors.join("\n"));
   process.exitCode = 1;
 } else {
-  console.log("Katalog-Audit bestanden: keine ungeprüften Radiusvarianten oder gesperrten kuratierten Motive aktiv.");
+  console.log("Katalog-Audit bestanden: Alle aktiven Bilder erfüllen Kategorie-, Aktualitäts-, Format- und TV-Qualitätsprofil.");
 }

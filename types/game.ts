@@ -37,12 +37,15 @@ export type GeoLocation = LatLng & {
   popularity?: number;
   catalogVariant?: "nearby-image" | "curated-image";
   imageQualityScore?: number;
+  imageCategoryFitScore?: number;
+  imageCategoryMatchMethod?: "text" | "depicts" | "wikidata-primary";
   imageReviewStatus?: "approved" | "quarantined";
   imageWidth?: number;
   imageHeight?: number;
   imageCapturedAt?: string;
   imageUploadedAt?: string;
   commonsQualityAssessment?: "featured" | "quality" | "valued";
+  imageQualityProfile?: "strict-2010-tv-v1";
   deliveryUrl?: string;
 };
 

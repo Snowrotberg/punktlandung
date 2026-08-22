@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { RedesignButtonLink } from "@/components/redesign";
 import { InfoPageShell } from "@/components/InfoPageShell";
 import { JsonLd } from "@/components/StructuredData";
-import { builtInLocations } from "@/data/locations";
+import { builtInLocations, catalogInventoryLocations } from "@/data/locations";
 import { buildCatalogStatistics, catalogCategoryLabels, catalogCategoryOrder } from "@/lib/catalogStatistics";
 import { MINIMUM_DIFFICULTY_SAMPLES, STABLE_DIFFICULTY_SAMPLES } from "@/lib/locationDifficulty";
 import { absoluteUrl } from "@/lib/seo";
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   }
 };
 
-const catalogStatistics = buildCatalogStatistics(builtInLocations);
+const catalogStatistics = buildCatalogStatistics(builtInLocations, catalogInventoryLocations);
 
 const catalogStructuredData = {
   "@context": "https://schema.org",
@@ -26,7 +26,7 @@ const catalogStructuredData = {
   url: absoluteUrl("/ortskatalog"),
   description: `Übersicht über ${builtInLocations.length.toLocaleString("de-DE")} spielbare Orts- und Flaggenaufgaben in fünf Kategorien.`,
   inLanguage: "de-DE",
-  dateModified: "2026-08-09",
+  dateModified: "2026-08-22",
   isPartOf: {
     "@id": `${absoluteUrl("/")}#website`
   },
@@ -63,7 +63,9 @@ export default function OrtskatalogPage() {
         <div className="punktlandung-info-static-card rounded-md p-5">
           <p className="text-4xl font-black text-emerald-300">{builtInLocations.length.toLocaleString("de-DE")}</p>
           <h2 className="mt-2 text-lg font-black text-white">spielbare Aufgaben</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-400">Nach Duplikat-, Lizenz- und Motivfiltern.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Aus {catalogStatistics.sourceTasks.toLocaleString("de-DE")} geprüften Quellen nach Qualitäts-, Lizenz- und Motivfiltern.
+          </p>
         </div>
         <div className="punktlandung-info-static-card rounded-md p-5">
           <p className="text-4xl font-black text-indigo-300">{catalogStatistics.countriesAndTerritories.toLocaleString("de-DE")}</p>
@@ -126,8 +128,8 @@ export default function OrtskatalogPage() {
           {[
             ["1. Quelle und Lizenz", "Die aktiven Bildaufgaben verwenden Wikimedia-Commons-Motive. Quellen und Lizenzangaben werden im Projektkatalog mitgeführt."],
             ["2. Eindeutiger Ort", "Jeder Eintrag enthält Koordinaten sowie Angaben zu Land, Kontinent und Kategorie, damit Tipp und Ziel vergleichbar sind."],
-            ["3. Motivfilter", "Karten, Diagramme, Montagen, Satellitenbilder und ungeeignete niedrig priorisierte Motive werden aus dem Standardkatalog gefiltert."],
-            ["4. Technische Prüfung", "Doppelte Kategorie-ID-Kombinationen und Bilder mit bekannten Lizenzproblemen werden vor dem Spielbetrieb ausgeschlossen."]
+            ["3. Motiv und Aktualität", "Aktiv bleiben nur eindeutig passende Fotografien ab Aufnahmejahr 2010. Zeichnungen, Karten, Montagen, Satellitenbilder, Innenräume und irreführende Motive werden ausgeschlossen."],
+            ["4. Technische Prüfung", "Die Quelldatei muss mindestens 2.560 × 1.440 Pixel und ein geeignetes Querformat besitzen. So nutzt das Spiel auf Handy, Laptop und TV dasselbe hochwertige Masterbild mit einer passenden Wikimedia-Ableitung."]
           ].map(([title, body]) => (
             <article key={title} className="punktlandung-info-static-card rounded-md p-5">
               <h3 className="text-lg font-black text-white">{title}</h3>

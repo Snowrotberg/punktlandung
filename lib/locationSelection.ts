@@ -13,23 +13,7 @@ export function locationVisualKey(location: GeoLocation): string {
 export function prioritizeCatalogImages(locations: GeoLocation[]): GeoLocation[] {
   const reviewed = locations.filter((location) =>
     location.imageReviewStatus === "approved" && Number.isFinite(location.imageQualityScore)
-  ).sort((first, second) => {
-    const priority = (location: GeoLocation) => {
-      const assessment = location.commonsQualityAssessment === "featured"
-        ? 3
-        : location.commonsQualityAssessment === "quality"
-          ? 2
-          : location.commonsQualityAssessment === "valued"
-            ? 1
-            : 0;
-      const capturedYear = location.imageCapturedAt ? new Date(location.imageCapturedAt).getUTCFullYear() : 0;
-      const recency = capturedYear >= new Date().getUTCFullYear() - 5 ? 1 : 0;
-      const megapixels = ((location.imageWidth ?? 0) * (location.imageHeight ?? 0)) / 1_000_000;
-      const resolution = megapixels >= 8 ? 1 : 0;
-      return assessment * 10 + recency * 2 + resolution + (location.imageQualityScore ?? 0) / 100;
-    };
-    return priority(second) - priority(first);
-  });
+  );
   if (reviewed.length === 0) return locations;
   const legacy = locations.filter((location) =>
     location.imageReviewStatus !== "approved" || !Number.isFinite(location.imageQualityScore)

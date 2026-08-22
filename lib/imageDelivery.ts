@@ -1,4 +1,4 @@
-const imageWidthSteps = [800, 1000, 1200, 1400, 1600, 1800, 2200] as const;
+const imageWidthSteps = [800, 1000, 1200, 1400, 1600, 1800, 2200, 2600] as const;
 
 export type EffectiveConnectionType = "slow-2g" | "2g" | "3g" | "4g" | "unknown";
 
@@ -21,7 +21,9 @@ export function gameplayImageWidth(
     return Math.min(roundedWidth, 800);
   }
   if (effectiveType === "3g") return Math.min(roundedWidth, 1000);
-  return Math.min(roundedWidth, 1400);
+  if (safeViewportWidth >= 3000) return Math.min(roundedWidth, 2600);
+  if (safeViewportWidth >= 1600) return Math.min(roundedWidth, 2200);
+  return Math.min(roundedWidth, 1600);
 }
 
 export function directImageFallbackDelayMs(effectiveType?: string): number {

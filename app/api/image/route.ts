@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const ALLOWED_HOSTS = new Set(["commons.wikimedia.org", "upload.wikimedia.org"]);
 const DEFAULT_IMAGE_WIDTH = 1400;
 const MIN_IMAGE_WIDTH = 640;
-const MAX_IMAGE_WIDTH = 2200;
+const MAX_IMAGE_WIDTH = 2600;
 const FETCH_TIMEOUT_MS = 6500;
 const FALLBACK_IMAGE_WIDTH = 1000;
 const MAX_IMAGE_BYTES = 18 * 1024 * 1024;

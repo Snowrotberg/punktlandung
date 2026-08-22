@@ -5,7 +5,7 @@ const endpoint = "https://commons.wikimedia.org/w/api.php";
 const catalogPath = path.join(process.cwd(), "data", "generated", "locations.generated.json");
 const userAgent = process.env.WIKIMEDIA_USER_AGENT ?? "Punktlandung/1.0 (semantic catalog generator; aintartstudio@gmail.com)";
 const concurrency = Math.max(1, Math.min(6, Number.parseInt(process.env.CATALOG_AUGMENT_CONCURRENCY ?? "4", 10)));
-const targetPerCategory = Math.max(10, Number.parseInt(process.env.CATALOG_AUGMENT_TARGET_PER_CATEGORY ?? "100", 10));
+const targetPerCategory = Math.max(10, Number.parseInt(process.env.CATALOG_AUGMENT_TARGET_PER_CATEGORY ?? "160", 10));
 const selectedCategories = new Set(
   (process.env.CATALOG_AUGMENT_CATEGORIES ?? "capitals,cities,landmarks,landscapes")
     .split(",")
@@ -22,18 +22,23 @@ const categoryTargets = {
   landmarks: targetPerCategory,
   landscapes: targetPerCategory
 };
+const strictMinimumCaptureYear = 2010;
+const strictMinimumWidth = 2560;
+const strictMinimumHeight = 1440;
+const strictMinimumAspectRatio = 1.25;
+const strictMaximumAspectRatio = 3;
 
 const categoryProfiles = {
   capitals: {
     queries: ["skyline OR cityscape OR panorama", "street OR square OR architecture"],
     positive: [/skyline/i, /cityscape/i, /panoram/i, /street/i, /avenue/i, /square/i, /plaza/i, /architecture/i, /downtown/i, /old town/i, /city view/i, /urban/i],
-    required: [/skyline/i, /cityscape/i, /panoram/i, /street/i, /avenue/i, /square/i, /plaza/i, /architecture/i, /downtown/i, /old town/i, /city view/i, /urban/i, /building/i],
+    required: [/skyline/i, /cityscape/i, /panoram/i, /street/i, /avenue/i, /square/i, /plaza/i, /downtown/i, /old town/i, /city view/i, /urban view/i],
     minScore: 8
   },
   cities: {
     queries: ["skyline OR cityscape OR panorama", "street OR square OR architecture"],
     positive: [/skyline/i, /cityscape/i, /panoram/i, /street/i, /avenue/i, /square/i, /plaza/i, /architecture/i, /downtown/i, /old town/i, /city view/i, /urban/i],
-    required: [/skyline/i, /cityscape/i, /panoram/i, /street/i, /avenue/i, /square/i, /plaza/i, /architecture/i, /downtown/i, /old town/i, /city view/i, /urban/i, /building/i],
+    required: [/skyline/i, /cityscape/i, /panoram/i, /street/i, /avenue/i, /square/i, /plaza/i, /downtown/i, /old town/i, /city view/i, /urban view/i],
     minScore: 8
   },
   landmarks: {
@@ -44,8 +49,8 @@ const categoryProfiles = {
   },
   landscapes: {
     queries: ["landscape OR panorama OR scenic", "mountain OR coast OR lake OR valley OR waterfall"],
-    positive: [/landscape/i, /panoram/i, /scenic/i, /mountain/i, /coast/i, /lake/i, /valley/i, /waterfall/i, /forest/i, /desert/i, /canyon/i, /nature/i, /national park/i],
-    required: [/landscape/i, /panoram/i, /scenic/i, /mountain/i, /coast/i, /lake/i, /valley/i, /waterfall/i, /forest/i, /desert/i, /canyon/i, /nature/i, /national park/i],
+    positive: [/landscape/i, /panoram/i, /scenic/i, /mountain/i, /coast/i, /lake/i, /valley/i, /waterfall/i, /forest/i, /desert/i, /canyon/i, /nature/i, /national park/i, /glacier/i, /island/i, /river/i, /beach/i, /ocean/i, /volcano/i],
+    required: [/landscape/i, /panoram/i, /scenic/i, /mountain/i, /coast/i, /lake/i, /valley/i, /waterfall/i, /forest/i, /desert/i, /canyon/i, /nature/i, /national park/i, /glacier/i, /island/i, /river/i, /beach/i, /ocean/i, /volcano/i],
     minScore: 7
   }
 };
@@ -55,17 +60,19 @@ const rejectedContent = [
   /\b(conference|meeting|protest|demonstration|ceremony|festival|concert|choir|crowd)\b/i,
   /\b(interiors?|inside|rooms?|offices?|gyms?|museums?|museum exhibit|waiting room|tombs?|porch|hotels?)\b/i,
   /\b(bird|animal|dog|cat|camel|deer|horse|livestock|food|drink|car|bus|train|aircraft|ship profile)\b/i,
-  /\b(map|diagram|locator|collage|montage|logo|coat of arms|flag|poster|document)\b/i,
+  /\b(map|diagram|drawing|engraving|illustration|lithograph|locator|collage|montage|logo|coat of arms|flag|painting|poster|postcard|render(?:ing)?|document)\b/i,
   /\b(aerial map|satellite|from space|nasa|landsat|sentinel|topographic)\b/i,
   /\b(selfie|headshot|close[- ]?up|grave|plaque|memorial tablet|signboard|reporters?|delegations?|nara)\b/i,
+  /\b(360(?:°| degree)?|equirectangular|photosphere|photo sphere|hdri|poly haven)\b/i,
+  /\b(old picture|historical photo(?:graph)?|archive photo(?:graph)?|black and white|monochrome|scanned? image)\b/i,
   /\b(armed|army|battle|combat|military|rifles?|soldiers?|troops?|weapons?)\b/i
 ];
 
 const categoryRejectedContent = {
-  capitals: [/\b(museum|gallery|pinakothek|campus|university|garden|park|exhibition|boardroom)\b/i],
-  cities: [/\b(museum|gallery|pinakothek|campus|university|garden|exhibition|boardroom)\b/i],
+  capitals: [/\b(museum|gallery|pinakothek|campus|university|garden|park|parque|jard[ií]n|field|farmland|pasture|meadow|exhibition|boardroom|palace|palacio|pavilion|temple|church|basilica|cathedral)\b/i],
+  cities: [/\b(museum|gallery|pinakothek|campus|university|garden|park|parque|jard[ií]n|field|farmland|pasture|meadow|exhibition|boardroom|palace|palacio|pavilion|temple|church|basilica|cathedral)\b/i],
   landmarks: [/\b(comparison|list of|tallest buildings|scale model)\b/i],
-  landscapes: [/\b(book|journal|painting|illustration|engraving|historic print|postcard)\b/i]
+  landscapes: [/\b(book|journal|painting|illustration|engraving|historic print|postcard|buildings?|church|kirke|cathedral|temple|mosque|fort|fortress|castle|palace|museum|monument)\b/i]
 };
 
 function normalize(input) {
@@ -119,6 +126,19 @@ function technicalQualityScore(info) {
   return resolutionBonus + assessmentBonus + recencyBonus;
 }
 
+function meetsStrictQualityProfile(info) {
+  const width = info?.width ?? 0;
+  const height = info?.height ?? 0;
+  const aspectRatio = width / Math.max(1, height);
+  const capturedAt = normalizedDate(metadataValue(info?.extmetadata, "DateTimeOriginal") || metadataValue(info?.extmetadata, "DateTime"));
+  const captureYear = capturedAt ? new Date(capturedAt).getUTCFullYear() : 0;
+  return width >= strictMinimumWidth
+    && height >= strictMinimumHeight
+    && aspectRatio >= strictMinimumAspectRatio
+    && aspectRatio <= strictMaximumAspectRatio
+    && captureYear >= strictMinimumCaptureYear;
+}
+
 function semanticText(page) {
   const info = page.imageinfo?.[0];
   const metadata = info?.extmetadata;
@@ -151,24 +171,25 @@ function candidateScore(page, location) {
   const fileName = String(page.title ?? "").replace(/^File:/, "");
   if (!profile || !info || !fileName) return -Infinity;
   if (!/^image\/(jpeg|png|webp)$/i.test(info.mime ?? "")) return -Infinity;
-  if ((info.width ?? 0) < 1600 || (info.height ?? 0) < 900) return -Infinity;
+  if (!meetsStrictQualityProfile(info)) return -Infinity;
   const aspectRatio = (info.width ?? 0) / Math.max(1, info.height ?? 1);
-  if (aspectRatio < 1.25 || aspectRatio > 3.4) return -Infinity;
 
   const rawText = semanticText(page);
   const text = normalize(rawText);
   const fileText = normalize(fileName);
+  const structuredMatch = page.punktlandungMatch === "depicts";
   if (rejectedContent.some((pattern) => pattern.test(text))) return -Infinity;
   if ((categoryRejectedContent[location.category] ?? []).some((pattern) => pattern.test(text))) return -Infinity;
-  if (!profile.required.some((pattern) => pattern.test(text))) return -Infinity;
+  const alwaysRequireCategoryMotif = ["capitals", "cities", "landscapes"].includes(location.category);
+  if ((alwaysRequireCategoryMotif || !structuredMatch) && !profile.required.some((pattern) => pattern.test(text))) return -Infinity;
 
   const titleTokens = meaningfulTokens(location.title);
   if (titleTokens.length === 0 || /^q\d+$/i.test(location.title)) return -Infinity;
   const requiredTitleHits = Math.max(1, Math.ceil(titleTokens.length / 2));
   const titleHitsInFile = titleTokens.filter((token) => fileText.includes(token)).length;
-  if (titleHitsInFile < requiredTitleHits) return -Infinity;
+  if (!structuredMatch && titleHitsInFile < requiredTitleHits) return -Infinity;
   const countryHits = meaningfulTokens(countrySearchText(location)).filter((token) => text.includes(token)).length;
-  if (countryHits === 0) return -Infinity;
+  if (!structuredMatch && countryHits === 0) return -Infinity;
 
   const metadata = info.extmetadata;
   const artist = metadataValue(metadata, "Artist") || metadataValue(metadata, "Credit");
@@ -177,10 +198,11 @@ function candidateScore(page, location) {
 
   const positiveHits = profile.positive.filter((pattern) => pattern.test(text)).length;
   const relevanceBonus = Math.max(0, 4 - Number(page.index ?? 4)) * 0.35;
-  return titleHitsInFile * 5 + Math.min(2, countryHits) + positiveHits * 2 + Math.min(2, aspectRatio - 1.25) + relevanceBonus + technicalQualityScore(info);
+  const semanticScore = structuredMatch ? 12 : titleHitsInFile * 5 + Math.min(2, countryHits);
+  return semanticScore + positiveHits * 2 + Math.min(2, aspectRatio - 1.25) + relevanceBonus + technicalQualityScore(info);
 }
 
-async function searchImages(location, queryTerms) {
+async function searchImages(location, queryTerms, structuredMatch = false) {
   const url = new URL(endpoint);
   const params = {
     action: "query",
@@ -189,7 +211,9 @@ async function searchImages(location, queryTerms) {
     generator: "search",
     gsrnamespace: "6",
     gsrlimit: "35",
-    gsrsearch: `\"${location.title}\" ${countrySearchText(location)} ${queryTerms} filetype:bitmap`,
+    gsrsearch: structuredMatch
+      ? `haswbstatement:P180=${location.wikidataId} ${queryTerms} filetype:bitmap`
+      : `\"${location.title}\" ${countrySearchText(location)} ${queryTerms} filetype:bitmap`,
     prop: "imageinfo",
     iiprop: "url|size|mime|timestamp|extmetadata",
     iiextmetadatafilter: "Artist|Credit|LicenseShortName|UsageTerms|ObjectName|ImageDescription|Categories|Assessments|DateTimeOriginal|DateTime"
@@ -207,7 +231,10 @@ async function searchImages(location, queryTerms) {
     });
     if (response.ok) {
       const payload = await response.json();
-      return payload.query?.pages ?? [];
+      return (payload.query?.pages ?? []).map((page) => ({
+        ...page,
+        punktlandungMatch: structuredMatch ? "depicts" : "text"
+      }));
     }
     if (response.status !== 429 || attempt === 2) throw new Error(`Commons returned ${response.status}`);
     const retryAfterSeconds = Number.parseInt(response.headers.get("retry-after") ?? "2", 10);
@@ -237,7 +264,7 @@ async function enrichExistingMetadata(locations) {
       titles: batch.map((fileName) => `File:${fileName}`).join("|"),
       prop: "imageinfo",
       iiprop: "size|mime|timestamp|extmetadata",
-      iiextmetadatafilter: "Categories|Assessments|DateTimeOriginal|DateTime"
+      iiextmetadatafilter: "Artist|Credit|LicenseShortName|UsageTerms|ObjectName|ImageDescription|Categories|Assessments|DateTimeOriginal|DateTime"
     };
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
     const now = Date.now();
@@ -261,6 +288,17 @@ async function enrichExistingMetadata(locations) {
         location.imageCapturedAt = normalizedDate(metadataValue(metadata, "DateTimeOriginal") || metadataValue(metadata, "DateTime"));
         location.imageUploadedAt = normalizedDate(info.timestamp);
         location.commonsQualityAssessment = commonsQualityAssessment(metadata);
+        location.imageQualityScore ??= Number(technicalQualityScore(info).toFixed(2));
+        const scoringPage = {
+          ...page,
+          punktlandungMatch: location.imageCategoryMatchMethod === "depicts" ? "depicts" : "text"
+        };
+        const categoryFitScore = candidateScore(scoringPage, location);
+        if (Number.isFinite(categoryFitScore)) location.imageCategoryFitScore = Number(categoryFitScore.toFixed(2));
+        else delete location.imageCategoryFitScore;
+        location.imageCategoryMatchMethod ??= location.catalogVariant === "curated-image" ? "text" : "wikidata-primary";
+        if (meetsStrictQualityProfile(info)) location.imageQualityProfile = "strict-2010-tv-v1";
+        else delete location.imageQualityProfile;
         updated += 1;
       }
     }
@@ -273,6 +311,9 @@ async function bestImage(location, seenImages) {
   const profile = categoryProfiles[location.category];
   if (!profile) return null;
   const candidates = [];
+  if (/^Q\d+$/.test(location.wikidataId ?? "")) {
+    candidates.push(...await searchImages(location, "", true));
+  }
   for (const query of profile.queries) {
     const pages = await searchImages(location, query);
     candidates.push(...pages);
@@ -285,6 +326,31 @@ async function bestImage(location, seenImages) {
     .sort((a, b) => b.score - a.score)[0] ?? null;
 }
 
+function countryBalancedLocations(locations) {
+  const byCountry = new Map();
+  for (const location of locations) {
+    const countryKey = location.countryCode || "ZZ";
+    byCountry.set(countryKey, [...(byCountry.get(countryKey) ?? []), location]);
+  }
+  for (const countryLocations of byCountry.values()) {
+    countryLocations.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
+  }
+  const countries = [...byCountry.keys()].sort();
+  const balanced = [];
+  let depth = 0;
+  while (true) {
+    let addedAtDepth = 0;
+    for (const country of countries) {
+      const location = byCountry.get(country)?.[depth];
+      if (!location) continue;
+      balanced.push(location);
+      addedAtDepth += 1;
+    }
+    if (addedAtDepth === 0) return balanced;
+    depth += 1;
+  }
+}
+
 async function run() {
   const existing = JSON.parse(await readFile(catalogPath, "utf8"));
   await enrichExistingMetadata(existing);
@@ -292,13 +358,16 @@ async function run() {
   const seenImages = new Set(existing.map((location) => fileKey(location.imageFile ?? location.panoramaUrl)));
   const enabledCategories = Object.keys(categoryTargets).filter((category) => selectedCategories.has(category));
   const candidates = enabledCategories.flatMap((category) =>
-    baseLocations
-      .filter((location) => location.category === category)
-      .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
+    countryBalancedLocations(baseLocations.filter((location) => location.category === category))
   );
   const acceptedCounts = Object.fromEntries(enabledCategories.map((category) => [
     category,
-    existing.filter((location) => location.category === category && location.catalogVariant === "curated-image").length
+    existing.filter((location) =>
+      location.category === category
+      && location.catalogVariant === "curated-image"
+      && location.imageQualityProfile === "strict-2010-tv-v1"
+      && (location.imageCategoryFitScore ?? 0) >= categoryProfiles[category].minScore
+    ).length
   ]));
   const variants = [];
   let cursor = 0;
@@ -324,12 +393,15 @@ async function run() {
           imageFile: fileName,
           catalogVariant: "curated-image",
           imageQualityScore: Number(candidate.score.toFixed(2)),
+          imageCategoryFitScore: Number(candidate.score.toFixed(2)),
+          imageCategoryMatchMethod: candidate.page.punktlandungMatch === "depicts" ? "depicts" : "text",
           imageReviewStatus: "approved",
           imageWidth: info?.width,
           imageHeight: info?.height,
           imageCapturedAt: normalizedDate(metadataValue(metadata, "DateTimeOriginal") || metadataValue(metadata, "DateTime")),
           imageUploadedAt: normalizedDate(info?.timestamp),
-          commonsQualityAssessment: commonsQualityAssessment(metadata)
+          commonsQualityAssessment: commonsQualityAssessment(metadata),
+          imageQualityProfile: "strict-2010-tv-v1"
         });
       } catch (error) {
         console.warn(`Skipped ${location.id}: ${error instanceof Error ? error.message : String(error)}`);

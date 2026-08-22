@@ -1,6 +1,7 @@
 import type { CommunityMapPack, GeoLocation } from "../types/game";
 import { applyInitialCatalogDifficultyBands } from "../lib/locationDifficulty";
 import { locationShortDescription } from "../lib/locationDescription";
+import { isStrictCatalogImage } from "../lib/catalogImageQuality";
 export { locationVisualKey, prioritizeCatalogImages } from "../lib/locationSelection";
 import generatedLocations from "./generated/locations.generated.json";
 import excludedLicenseImageFiles from "./generated/image-license-exclusions.generated.json";
@@ -657,7 +658,11 @@ function isDefaultPlayableLocation(location: GeoLocation) {
   if (location.catalogVariant === "nearby-image" || location.imageReviewStatus === "quarantined") return false;
   if (normalizedImageHealthExclusions.has(location.id)) return false;
   if (normalizedImageContentExclusions.has(location.id)) return false;
-  if (location.difficulty === "hard" && (location.popularity ?? 0) < 20) return false;
+  if (
+    location.difficulty === "hard"
+    && (location.popularity ?? 0) < 20
+    && location.catalogVariant !== "curated-image"
+  ) return false;
   const imageFile = imageFileName(location);
   const normalizedImageFile = imageFile.replaceAll("_", " ").normalize("NFC").trim().toLocaleLowerCase();
   if (normalizedLicenseExclusions.has(normalizedImageFile)) return false;
@@ -666,7 +671,7 @@ function isDefaultPlayableLocation(location: GeoLocation) {
   return !excludedImagePatterns.some((pattern) => pattern.test(imageFile));
 }
 
-export const builtInLocations: GeoLocation[] = applyInitialCatalogDifficultyBands(
+export const catalogInventoryLocations: GeoLocation[] = applyInitialCatalogDifficultyBands(
   dedupeLocations([...rawBuiltInLocations, ...generatedBuiltInLocations])
     .filter(isDefaultPlayableLocation)
 )
@@ -675,6 +680,10 @@ export const builtInLocations: GeoLocation[] = applyInitialCatalogDifficultyBand
   shortDescription: locationShortDescription(location),
   panoramaUrls: location.panoramaUrls?.length ? location.panoramaUrls : [location.panoramaUrl]
 }));
+
+export const builtInLocations: GeoLocation[] = applyInitialCatalogDifficultyBands(
+  catalogInventoryLocations.filter(isStrictCatalogImage)
+);
 
 export const defaultMapPacks: CommunityMapPack[] = [
   {

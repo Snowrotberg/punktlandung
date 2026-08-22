@@ -15,7 +15,7 @@ const selectedCategories = new Set(
     .map((category) => category.trim())
     .filter(Boolean)
 );
-const catalogCountries = [
+const fallbackCatalogCountries = [
   "wd:Q30",
   "wd:Q183",
   "wd:Q142",
@@ -67,16 +67,15 @@ const catalogCountries = [
   "wd:Q801",
   "wd:Q810"
 ];
-const catalogCountryValues = catalogCountries.join(" ");
 
 const categoryConfigs = [
   {
     category: "landmarks",
     target: targetPerCategory,
     batchedByCountry: true,
-    batchLimit: 18,
+    batchLimit: 5,
     query: `
-SELECT ?item ?itemLabel ?countryLabel ?countryCode ?continentLabel ?coord ?image ?sitelinks WHERE {
+SELECT ?item ?itemLabel ?countryLabel ?countryCode ?continentLabel ?coord ?image WHERE {
   VALUES ?country { __COUNTRY__ }
   {
     VALUES ?class {
@@ -93,14 +92,11 @@ SELECT ?item ?itemLabel ?countryLabel ?countryCode ?continentLabel ?coord ?image
   }
   ?item wdt:P18 ?image;
         wdt:P625 ?coord;
-        wdt:P17 ?country;
-        wikibase:sitelinks ?sitelinks.
+        wdt:P17 ?country.
   ?country wdt:P297 ?countryCode.
   OPTIONAL { ?country wdt:P30 ?continent. }
-  FILTER(?sitelinks >= 20)
   SERVICE wikibase:label { bd:serviceParam wikibase:language "de,en". }
 }
-ORDER BY DESC(?sitelinks)
 LIMIT __BATCH_LIMIT__
 `
   },
@@ -108,21 +104,18 @@ LIMIT __BATCH_LIMIT__
     category: "cities",
     target: targetPerCategory,
     batchedByCountry: true,
-    batchLimit: 18,
+    batchLimit: 5,
     query: `
-SELECT ?item ?itemLabel ?countryLabel ?countryCode ?continentLabel ?coord ?image ?sitelinks WHERE {
+SELECT ?item ?itemLabel ?countryLabel ?countryCode ?continentLabel ?coord ?image WHERE {
   VALUES ?country { __COUNTRY__ }
   ?item wdt:P31 wd:Q515;
         wdt:P18 ?image;
         wdt:P625 ?coord;
-        wdt:P17 ?country;
-        wikibase:sitelinks ?sitelinks.
+        wdt:P17 ?country.
   ?country wdt:P297 ?countryCode.
   OPTIONAL { ?country wdt:P30 ?continent. }
-  FILTER(?sitelinks >= 40)
   SERVICE wikibase:label { bd:serviceParam wikibase:language "de,en". }
 }
-ORDER BY DESC(?sitelinks)
 LIMIT __BATCH_LIMIT__
 `
   },
@@ -130,9 +123,9 @@ LIMIT __BATCH_LIMIT__
     category: "landscapes",
     target: targetPerCategory,
     batchedByCountry: true,
-    batchLimit: 18,
+    batchLimit: 5,
     query: `
-SELECT ?item ?itemLabel ?countryLabel ?countryCode ?continentLabel ?coord ?image ?sitelinks WHERE {
+SELECT ?item ?itemLabel ?countryLabel ?countryCode ?continentLabel ?coord ?image WHERE {
   VALUES ?country { __COUNTRY__ }
   VALUES ?class {
     wd:Q46169
@@ -149,14 +142,11 @@ SELECT ?item ?itemLabel ?countryLabel ?countryCode ?continentLabel ?coord ?image
   ?item wdt:P31 ?class;
         wdt:P18 ?image;
         wdt:P625 ?coord;
-        wdt:P17 ?country;
-        wikibase:sitelinks ?sitelinks.
+        wdt:P17 ?country.
   ?country wdt:P297 ?countryCode.
   OPTIONAL { ?country wdt:P30 ?continent. }
-  FILTER(?sitelinks >= 20)
   SERVICE wikibase:label { bd:serviceParam wikibase:language "de,en". }
 }
-ORDER BY DESC(?sitelinks)
 LIMIT __BATCH_LIMIT__
 `
   },
@@ -233,6 +223,10 @@ const excludedGeneratedImagePatterns = [
   /\bcollage\b/i,
   /\bcloudless\b/i,
   /\bdiagram\b/i,
+  /\bdrawing\b/i,
+  /\bengraving\b/i,
+  /\billustration\b/i,
+  /\blithograph\b/i,
   /\bfrom space\b/i,
   /\biss(?:\d|[-_\s])/i,
   /\bkarte\b/i,
@@ -244,6 +238,9 @@ const excludedGeneratedImagePatterns = [
   /\bnasa\b/i,
   /\borbit(?:al)?\b/i,
   /\bphoto[\s-]?montage\b/i,
+  /\bpainting\b/i,
+  /\bpostcard\b/i,
+  /\brender(?:ing)?\b/i,
   /\brelief map\b/i,
   /\bsatellite\b/i,
   /\bsentinel\b/i,
@@ -318,7 +315,7 @@ function makeLocation(binding, category) {
   const countryCode = value(binding, "countryCode").toUpperCase();
   const title = makeTitle(binding, category);
   const itemId = wikidataId(value(binding, "item"));
-  const sitelinks = Number(value(binding, "sitelinks")) || 0;
+  const sitelinks = Number(value(binding, "sitelinks")) || (category === "flags" ? 0 : 40);
 
   if (!coords || !imageFile || !countryCode || !title || !itemId) return null;
   if (category !== "flags" && /\.(svg|gif)$/i.test(imageFile)) return null;
@@ -376,7 +373,54 @@ async function fetchSparql(query) {
   throw lastError;
 }
 
+function selectCountryBalanced(locations, target) {
+  const byCountry = new Map();
+  for (const location of locations) {
+    const countryKey = location.countryCode || "ZZ";
+    const countryLocations = byCountry.get(countryKey) ?? [];
+    countryLocations.push(location);
+    byCountry.set(countryKey, countryLocations);
+  }
+  for (const countryLocations of byCountry.values()) {
+    countryLocations.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
+  }
+
+  const selected = [];
+  const countries = [...byCountry.keys()].sort((a, b) => {
+    const bestA = byCountry.get(a)?.[0]?.popularity ?? 0;
+    const bestB = byCountry.get(b)?.[0]?.popularity ?? 0;
+    return bestB - bestA;
+  });
+  let depth = 0;
+  while (selected.length < target) {
+    let addedAtDepth = 0;
+    for (const country of countries) {
+      const location = byCountry.get(country)?.[depth];
+      if (!location) continue;
+      selected.push(location);
+      addedAtDepth += 1;
+      if (selected.length >= target) break;
+    }
+    if (addedAtDepth === 0) break;
+    depth += 1;
+  }
+  return selected;
+}
+
 async function run() {
+  let existingLocations = [];
+  try {
+    const existing = JSON.parse(await readFile(outputPath, "utf8"));
+    existingLocations = Array.isArray(existing) ? existing : [];
+  } catch {
+    existingLocations = [];
+  }
+  const flagCountryIds = existingLocations
+    .filter((location) => location.category === "flags" && /^Q\d+$/.test(location.wikidataId ?? ""))
+    .sort((a, b) => (a.countryCode ?? "ZZ").localeCompare(b.countryCode ?? "ZZ"))
+    .map((location) => `wd:${location.wikidataId}`)
+    .filter((countryId, index, countries) => countries.indexOf(countryId) === index);
+  const catalogCountries = flagCountryIds.length >= 180 ? flagCountryIds : fallbackCatalogCountries;
   const allLocations = [];
   const seenIds = new Set();
   const seenImages = new Set();
@@ -384,7 +428,9 @@ async function run() {
 
   for (const config of configs) {
     console.log(`Fetching ${config.category}...`);
-    const locations = [];
+    const fetchedLocations = [];
+    const fetchedIds = new Set();
+    const fetchedImages = new Set();
     const countryBatches = Array.from(
       { length: Math.ceil(catalogCountries.length / countryBatchSize) },
       (_, index) => catalogCountries.slice(index * countryBatchSize, (index + 1) * countryBatchSize)
@@ -399,23 +445,28 @@ async function run() {
       : [{ label: config.category, query: config.query }];
 
     for (const queryVariant of queries) {
-      if (locations.length >= config.target) break;
       try {
         const data = await fetchSparql(queryVariant.query);
         for (const binding of data.results.bindings) {
           const location = makeLocation(binding, config.category);
           if (!location) continue;
           const imageKey = location.imageFile.toLowerCase();
-          if (seenIds.has(location.id) || seenImages.has(`${location.category}:${imageKey}`)) continue;
-          seenIds.add(location.id);
-          seenImages.add(`${location.category}:${imageKey}`);
-          locations.push(location);
-          if (locations.length >= config.target) break;
+          if (fetchedIds.has(location.id) || fetchedImages.has(imageKey)) continue;
+          fetchedIds.add(location.id);
+          fetchedImages.add(imageKey);
+          fetchedLocations.push(location);
         }
       } catch (error) {
         console.warn(`  skipped ${queryVariant.label}: ${error instanceof Error ? error.message : String(error)}`);
       }
       await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    const locations = config.batchedByCountry
+      ? selectCountryBalanced(fetchedLocations, config.target)
+      : fetchedLocations.slice(0, config.target);
+    for (const location of locations) {
+      seenIds.add(location.id);
+      seenImages.add(`${location.category}:${location.imageFile.toLowerCase()}`);
     }
     console.log(`  ${locations.length} accepted`);
     allLocations.push(...locations);
@@ -423,16 +474,10 @@ async function run() {
 
   let outputLocations = allLocations;
   if (selectedCategories.size > 0) {
-    try {
-      const existing = JSON.parse(await readFile(outputPath, "utf8"));
-      const existingLocations = Array.isArray(existing) ? existing : [];
-      outputLocations = [
-        ...existingLocations.filter((location) => !selectedCategories.has(location.category)),
-        ...allLocations
-      ];
-    } catch {
-      outputLocations = allLocations;
-    }
+    outputLocations = [
+      ...existingLocations.filter((location) => !selectedCategories.has(location.category) || location.catalogVariant),
+      ...allLocations
+    ];
   }
 
   outputLocations = outputLocations.filter((location) => {
