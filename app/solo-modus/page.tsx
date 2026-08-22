@@ -21,8 +21,9 @@ export default async function SoloModusPage({ searchParams }: { searchParams: Pr
           key="solo-setup"
           initialMode="solo"
           directStart={params.direct === "1"}
-          resumeRankedGame={Boolean(params.resume)}
+          resumeRankedGame={params.resume === "ranked"}
           accountsEnabled={account.enabled}
+          rankedGamesEnabled={account.rankedGamesEnabled}
           accountAuthenticated={account.authenticated}
           accountDisplayName={account.displayName}
         />

@@ -3,7 +3,7 @@
 @media(min-width:100rem){.brand{font-size:1.08rem}.workspace{grid-template-columns:minmax(22rem,.34fr) minmax(0,.66fr)}.settingsPanel{gap:.8rem;padding:1.1rem}.categories>button{padding:1rem 1.25rem}}
 @media(min-width:150rem){.header{min-height:7rem;padding-inline:4rem}.brand{font-size:2rem}.brand>span,.iconButton{width:4rem;height:4rem}.brand svg,.iconButton svg{width:1.7rem}.beta,.server{min-height:3.5rem;font-size:1.15rem}.intro{padding:2.5rem 5rem 1.5rem}.intro span{font-size:1.25rem}.intro h1{font-size:5rem}.intro p{font-size:1.65rem}.introActions button{min-height:4.5rem;padding-inline:1.8rem;font-size:1.4rem}.introActions>small{font-size:1.1rem}.workspace{grid-template-columns:minmax(42rem,.34fr) minmax(0,.66fr);gap:2.25rem;padding:0 5rem 2.5rem}.settingsPanel{gap:1.35rem;padding:2rem}.modeHeading>span{font-size:1.2rem}.modeHeading button{font-size:1.1rem}.modeTabs a,.controlGroup button,.customRounds{min-height:4rem;font-size:1.35rem}.controlGroup{gap:.6rem}.controlGroup label{font-size:1.25rem}.categories{gap:1.4rem}.categories>button{gap:1.4rem;padding:1.5rem 2rem}.categoryIcon{width:5rem;height:5rem}.categoryIcon svg{width:2.25rem}.categories strong{font-size:2rem}.categories small{font-size:1.4rem}.categories>button>b{font-size:1.25rem}.footer{min-height:5rem;font-size:1.2rem}}
 @media(max-width:79.999rem){.rail{display:none}}
-@media(max-width:52rem){.page{padding:0}.app{--pl-horizontal-grid-position:0 .5rem;border-radius:0}.intro{align-items:flex-start}.workspace{grid-template-columns:1fr}.settingsPanel{border-radius:0}.categories{min-height:34rem}.footer{margin-top:1rem}}
+@media(max-width:52rem){.page{padding:0}.app{border-radius:0}.intro{align-items:flex-start}.workspace{grid-template-columns:1fr}.categories{min-height:34rem}.footer{margin-top:1rem}}
 @media(max-width:30rem){.header{gap:.3rem;padding:.65rem}.brand{font-size:.82rem}.brand>span{width:1.9rem;height:1.9rem}.topActions{gap:.22rem}.beta,.server,.iconButton{min-height:1.9rem;height:1.9rem}.beta{padding-inline:.35rem;font-size:.5rem}.beta svg{display:none}.server{width:1.9rem;min-width:1.9rem;padding:0;border-radius:50%}.server b{display:none}.iconButton{width:1.9rem}.intro{padding:1.2rem 1rem}.introActions{width:100%;justify-content:flex-start}.introActions>small{text-align:left}.workspace{padding:0 1rem}.modeTabs{grid-template-columns:1fr}.playerCount{grid-template-columns:repeat(5,1fr)}.fiveOptions{grid-template-columns:repeat(5,1fr)}.threeOptions{grid-template-columns:1fr}.categories{grid-template-columns:1fr;grid-template-rows:none}.categories>button{min-height:5rem}}
 
 /* Zeit verhält sich wie die freie Rundenzahl: drei Presets plus ein kompakter Frei-Stepper. */
@@ -52,12 +52,14 @@
 @media(min-width:80rem){.frame{height:calc(100dvh - clamp(1.5rem,2vw,4rem));grid-template-columns:minmax(0,1fr)}}
 @media(min-width:80rem) and (max-width:99.999rem) and (max-height:52rem){.settingsPanel{gap:.4rem;padding:.65rem;overflow:hidden}.controlGroup{gap:.25rem}.modeTabs a,.controlGroup button,.customRounds{min-height:2rem}.resetButton{min-height:1.8rem;margin-top:.1rem}.intro{padding-block:.85rem .65rem}.footer{min-height:2.5rem;padding-block:.3rem}}
 @media(max-width:52rem){
-  .page{padding:0}
+  /* The action bar is fixed to the viewport. Reserve its full height in the
+     document so the last category cards remain scrollable and clickable. */
+  .page{padding:0 0 calc(7.25rem + env(safe-area-inset-bottom))}
   .frame{min-height:100dvh}
   .intro{padding-right:1rem}
   .introActions{
     position:fixed;
-    z-index:90;
+    z-index:300;
     right:max(.75rem,env(safe-area-inset-right));
     bottom:max(.75rem,env(safe-area-inset-bottom));
     left:max(.75rem,env(safe-area-inset-left));
@@ -87,13 +89,18 @@
     background:linear-gradient(to bottom,transparent 0,rgb(7 11 20/.72) 42%,#070b14 72%);
   }
   .introActions button{
-    width:100%;
+    width:auto;
     min-width:0;
     min-height:3.25rem;
     justify-content:center;
     padding:.7rem .65rem;
     border-radius:.75rem;
     font-size:.78rem;
+  }
+  .introActions:has(> button:nth-of-type(3)){
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:.5rem;
   }
   .introActions button:last-of-type{box-shadow:0 .45rem 1.1rem rgb(94 231 189/.12)}
   .introActions>small{display:none}
@@ -559,6 +566,21 @@
   }
 }
 
+/* The fixed action bar lives inside .intro.  The shell deliberately gives
+   each direct child its own stacking context; raising the bar alone therefore
+   cannot put it above the later workspace.  Raise the complete intro context
+   on mobile so the bar remains above categories while scrolling. */
+@media (max-width: 52rem), (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
+  .intro {
+    position: relative;
+    z-index: 20;
+  }
+
+  .introActions {
+    z-index: 1;
+  }
+}
+
 @media (orientation: portrait) and (max-width: 25rem) {
   .modeTabs a {
     font-size: .7rem;
@@ -567,5 +589,28 @@
   .modeTabs svg {
     width: .9rem;
     height: .9rem;
+  }
+}
+
+/* Phone Landscape: close the unused lower gap in the settings panel and let
+   the category grid use the same vertical extent as the settings column. */
+@media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
+  .settingsPanel {
+    gap: .32rem;
+    padding-bottom: .45rem;
+  }
+
+  .resetButton {
+    min-height: 2rem;
+  }
+
+  .categoriesColumn {
+    align-self: stretch;
+  }
+
+  .categories {
+    height: 100%;
+    align-content: stretch;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
   }
 }

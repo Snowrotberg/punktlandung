@@ -33,7 +33,7 @@ export default async function AufloesungPage({ searchParams }: AufloesungPagePro
   const account = await accountNavigationState();
   return (
     <div className="min-h-dvh">
-      <AppErrorBoundary><SoundProvider><GameApp requiredStatus="results" accountsEnabled={account.enabled} accountAuthenticated={account.authenticated} accountDisplayName={account.displayName} /></SoundProvider></AppErrorBoundary>
+      <AppErrorBoundary><SoundProvider><GameApp requiredStatus="results" accountsEnabled={account.enabled} rankedGamesEnabled={account.rankedGamesEnabled} accountAuthenticated={account.authenticated} accountDisplayName={account.displayName} /></SoundProvider></AppErrorBoundary>
     </div>
   );
 }

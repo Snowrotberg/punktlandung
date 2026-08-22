@@ -36,7 +36,7 @@ export default async function EndergebnisPage({ searchParams }: EndergebnisPageP
   return (
     <AppErrorBoundary>
       <SoundProvider>
-        <GameApp requiredStatus="finished" accountsEnabled={account.enabled} accountAuthenticated={account.authenticated} accountDisplayName={account.displayName} />
+        <GameApp requiredStatus="finished" accountsEnabled={account.enabled} rankedGamesEnabled={account.rankedGamesEnabled} accountAuthenticated={account.authenticated} accountDisplayName={account.displayName} />
       </SoundProvider>
     </AppErrorBoundary>
   );

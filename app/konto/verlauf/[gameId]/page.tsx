@@ -44,8 +44,8 @@ const categoryLabels: Record<string, string> = {
 
 function gameStatusLabel(status: string): string {
   if (status === "verified") return "Abgeschlossen und verifiziert";
-  if (status === "invalid") return "Abgeschlossen · nicht für Rankings gewertet";
-  return "Lokal gespeichert · nicht für Rankings verifiziert";
+  if (status === "invalid") return "Gespeichert · nicht für Rankings gewertet";
+  return "Im Konto gespeichert · noch nicht für Rankings verifiziert";
 }
 
 export default async function AccountGameDetailPage({ params }: { params: Promise<{ gameId: string }> }) {

@@ -6,7 +6,7 @@ import { getSupabaseAccountContext } from "@/lib/supabase/auth.server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin.server";
 import type { Json } from "@/lib/supabase/database.types";
 
-type SaveCompletedGameInput = {
+export type SaveCompletedGameInput = {
   saveKey: string;
   category: string;
   timeLimitSec: number;

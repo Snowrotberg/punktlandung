@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { categoryOptions } from "@/lib/categories";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { preferLocalRequiredSession } from "@/lib/gameSessionSelection";
-import { useLocalGame } from "@/hooks/useLocalGame";
+import { requestSetupResume, useLocalGame } from "@/hooks/useLocalGame";
 import { useRankedSoloGame } from "@/hooks/useRankedSoloGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
 import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
@@ -275,6 +275,7 @@ export function GameApp({
   requireOnlineWaitingRoom = false,
   accountsEnabled = false,
   accountAuthenticated = false,
+  rankedGamesEnabled = false,
   accountDisplayName = null,
   resumeRankedGame = false
 }: {
@@ -284,6 +285,7 @@ export function GameApp({
   requireOnlineWaitingRoom?: boolean;
   accountsEnabled?: boolean;
   accountAuthenticated?: boolean;
+  rankedGamesEnabled?: boolean;
   accountDisplayName?: string | null;
   resumeRankedGame?: boolean;
 }) {
@@ -294,9 +296,12 @@ export function GameApp({
   // game even when no player account is signed in. Falling back to useLocalGame
   // here can silently replace the requested game with an unrelated browser
   // session.
+  // A guest's local game must remain the active session on the setup route.
+  // The availability of the ranked feature alone must not replace it with a
+  // fresh ranked setup before the local resume marker has been consumed.
   const rankedSoloEnabled = Boolean(accountAuthenticated) || resumeRankedGame;
   const rankedSoloRestoreEnabled = Boolean(requiredStatus) || resumeRankedGame;
-  const rankedSoloGame = useRankedSoloGame(rankedSoloEnabled, rankedSoloRestoreEnabled);
+  const rankedSoloGame = useRankedSoloGame(rankedSoloEnabled, rankedSoloRestoreEnabled, accountAuthenticated);
   const routeAllowsRankedSolo = initialMode !== "couch" && initialMode !== "online";
   const localRequiredSessionHasPriority = preferLocalRequiredSession(
     requiredStatus,
@@ -350,6 +355,25 @@ export function GameApp({
     setTeam,
     readyNextRound
   } = activeGame;
+  const resumePending = "resumePending" in activeGame && activeGame.resumePending;
+  const resumeRound = "resumeRound" in activeGame ? activeGame.resumeRound : undefined;
+  const discardResume = "discardResume" in activeGame ? activeGame.discardResume : undefined;
+
+  useEffect(() => {
+    if (!requiredStatus || !room || room.status === "lobby") return;
+    const handleGameHistoryReturn = () => {
+      const setupPath = room.kind === "online" ? "/online-modus" : room.settings.localMode === "couch" ? "/party-modus" : "/solo-modus";
+      if (window.location.pathname !== setupPath) return;
+      requestSetupResume();
+      if (rankedSoloContext && room.kind === "solo") {
+        const url = new URL(window.location.href);
+        url.searchParams.set("resume", "1");
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+      }
+    };
+    window.addEventListener("popstate", handleGameHistoryReturn);
+    return () => window.removeEventListener("popstate", handleGameHistoryReturn);
+  }, [rankedSoloContext, requiredStatus, room]);
   const markLocationReady = "markLocationReady" in activeGame ? activeGame.markLocationReady : undefined;
 
   useEffect(() => {
@@ -402,7 +426,7 @@ export function GameApp({
 
   useEffect(() => {
     const setupGame = rankedSoloContext ? rankedSoloGame : localGame;
-    if (rankedRestoring) return;
+    if (rankedRestoring || localGame.restoring) return;
     if (initialSetupSettingsHandledRef.current || !setupGame.room || setupGame.room.status !== "lobby") return;
     const params = new URLSearchParams(window.location.search);
     if (!params.has("rounds") && !params.has("time")) {
@@ -426,7 +450,7 @@ export function GameApp({
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (rankedRestoring) return;
+    if (rankedRestoring || localGame.restoring) return;
     if (params.get("room")) return;
     const queryMode = params.get("mode");
     const pathMode = modeFromPathname(window.location.pathname);
@@ -564,10 +588,69 @@ export function GameApp({
       setStartingRound(false);
     }
   };
+  const handleResumeRound = () => {
+    if (!resumePending || !resumeRound) return;
+    resumeRound();
+    const resumeRoute = room?.status === "finished" ? "/endergebnis" : room?.status === "results" ? "/aufloesung" : "/spielen";
+    router.replace(resumeRoute);
+  };
+  const freshStartAfterResumeRef = useRef(false);
+  const handleStartNewRound = () => {
+    if (!resumePending || !discardResume) {
+      void handleStartRound();
+      return;
+    }
+    freshStartAfterResumeRef.current = true;
+    discardResume();
+  };
+
+  useEffect(() => {
+    if (!freshStartAfterResumeRef.current || resumePending || room?.status !== "lobby") return;
+    freshStartAfterResumeRef.current = false;
+    void handleStartRound();
+  }, [resumePending, room?.status]);
   const handleSubmitGuess = (guess: LatLng & { countryCode?: string }, targetPlayerId?: string) => submitGuess(guess, targetPlayerId);
   const handleSetTeam = (team: TeamId) => setTeam(team);
   const handleCancelRound = () => {
+    const resultRouteTarget = requiredStatus
+      ? room?.kind === "online"
+        ? "/online-modus"
+        : room?.settings.localMode === "couch"
+          ? "/party-modus"
+          : "/solo-modus"
+      : null;
+    const setupRouteTarget = room?.kind === "online"
+      ? "/online-modus"
+      : room?.settings.localMode === "couch"
+        ? "/party-modus"
+        : "/solo-modus";
+    const onSetupRoute = window.location.pathname === setupRouteTarget;
+    // Leaving an active round must not cancel it. The setup route can restore
+    // the same room, while its absolute deadline keeps running in the background.
+    if (room && room.status !== "lobby" && (requiredStatus || onSetupRoute)) {
+      requestSetupResume();
+      const resumeQuery = room.kind === "solo"
+        ? rankedSoloContext
+          ? "?resume=ranked"
+          : "?resume=1"
+        : "";
+      const resumeUrl = `${resultRouteTarget ?? setupRouteTarget}${resumeQuery}`;
+      if (onSetupRoute) {
+        window.location.assign(resumeUrl);
+      } else {
+        router.replace(resumeUrl);
+      }
+      return;
+    }
     cancelRound();
+    // /endergebnis and /aufloesung are guarded routes: after leaving the
+    // result, the room is intentionally a lobby and therefore cannot remain
+    // on those routes. Otherwise the guard immediately reports "Keine
+    // passende Spielrunde" even though the user simply clicked Zurück.
+    if (resultRouteTarget) {
+      router.replace(resultRouteTarget);
+      return;
+    }
     if (window.location.pathname === "/solo-modus/direct") {
       try {
         window.sessionStorage.removeItem("punktlandung-direct-start");
@@ -670,7 +753,7 @@ export function GameApp({
     );
   }
 
-  if (room?.status === "guessing") {
+  if (room?.status === "guessing" && !resumePending) {
     return (
       <GameView
         room={room}
@@ -688,7 +771,7 @@ export function GameApp({
     );
   }
 
-  if (room?.status === "results" || room?.status === "finished") {
+  if ((room?.status === "results" || room?.status === "finished") && !resumePending) {
     return (
       <ResultsView
         room={room}
@@ -709,7 +792,7 @@ export function GameApp({
     );
   }
 
-  if (room?.status === "lobby") {
+  if (room && (room.status === "lobby" || resumePending)) {
     const isLiveOnlineWaitingRoom = room.kind === "online" && Boolean(onlineGame.room);
     if (redesignHomeEnabled && isLiveOnlineWaitingRoom) {
       return (
@@ -747,10 +830,12 @@ export function GameApp({
           error={error}
           canStart={!startingRound && (room.kind === "online" ? onlineGame.status === "open" : isHost && room.players.length > 0)}
           starting={startingRound}
+          resumePending={resumePending}
           onSettings={handleUpdateSettings}
           onRenamePlayer={renamePlayer}
           onHostParticipationChange={room.kind === "online" ? localGame.updateHostParticipation : undefined}
-          onStart={room.kind === "online" ? handleCreateLiveOnlineRoom : handleStartRound}
+          onStart={room.kind === "online" ? handleCreateLiveOnlineRoom : handleStartNewRound}
+          onResume={resumePending ? handleResumeRound : undefined}
           onBack={handleLeaveToHome}
           onSoundToggle={toggleSound}
         />

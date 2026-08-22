@@ -1,6 +1,7 @@
 import { unstable_rethrow } from "next/navigation";
 import { cookies } from "next/headers";
 import { getSupabaseAccountContext, supabaseAccountsEnabled } from "@/lib/supabase/auth.server";
+import { readBackendFeatureConfig } from "@/lib/backendConfig.server";
 import { SupabaseAccountProfileRepository } from "@/lib/supabase/accountProfileRepository.server";
 import { loadOptionalAccountNavigation } from "@/lib/optionalAccountNavigation";
 
@@ -10,6 +11,13 @@ export async function accountNavigationState() {
   // disabled account state into otherwise static pages.
   await cookies();
   const enabled = supabaseAccountsEnabled();
+  let rankedGamesEnabled = false;
+  try {
+    const config = readBackendFeatureConfig(process.env);
+    rankedGamesEnabled = config.provider === "supabase" && config.accountsEnabled && config.rankedGamesEnabled;
+  } catch {
+    rankedGamesEnabled = false;
+  }
   return loadOptionalAccountNavigation({
     enabled,
     loadContext: getSupabaseAccountContext,
@@ -26,5 +34,5 @@ export async function accountNavigationState() {
         error: error instanceof Error ? error.name : "UnknownError"
       });
     }
-  });
+  }).then((navigation) => ({ ...navigation, rankedGamesEnabled }));
 }

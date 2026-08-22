@@ -6442,12 +6442,46 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   flex: 0 0 auto;
 }
 
+.punktlandung-mobile-action-break {
+  display: none;
+}
+
+.punktlandung-next-round-label {
+  align-items: center;
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.05;
+  white-space: nowrap;
+  width: max-content;
+}
+
 .punktlandung-inline-action-content:has(svg:first-child) {
   transform: translateX(-0.16rem);
 }
 
 .punktlandung-inline-action-content:has(svg:last-child) {
   transform: translateX(0.16rem);
+}
+
+/* Selected game-flow actions: shift only the visible icon/text package. */
+.punktlandung-optical-arrow-left > :is(.punktlandung-inline-action-content, .punktlandung-back-control-content, .punktlandung-lobby-touch-button-inner),
+.punktlandung-optical-arrow-left > :is(span, svg) {
+  transform: translateX(-5%) !important;
+}
+
+.punktlandung-optical-arrow-right > :is(.punktlandung-inline-action-content, .punktlandung-back-control-content, .punktlandung-lobby-touch-button-inner),
+.punktlandung-optical-arrow-right > :is(span, svg) {
+  transform: translateX(5%) !important;
+}
+
+/* Redesign intro labels already inherit a mint eyebrow style from `.intro
+ * span`; keep these action labels visually identical to the original button
+ * text after wrapping the text node for the optical shift. */
+.punktlandung-optical-arrow-content-label {
+  color: inherit !important;
+  font: inherit !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
 }
 
 .punktlandung-inline-action-icon {
@@ -10502,26 +10536,24 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 
 .punktlandung-loader-ellipse-highlight {
   filter:
-    drop-shadow(0 0 5px rgba(167, 243, 208, 0.62))
-    drop-shadow(0 0 11px rgba(52, 211, 153, 0.34));
+    drop-shadow(0 0 7px rgba(167, 243, 208, 0.66))
+    drop-shadow(0 0 18px rgba(52, 211, 153, 0.42));
   opacity: 0.94;
   stroke-dashoffset: 0;
-  transform-box: fill-box;
-  transform-origin: center;
 }
 
 .punktlandung-loader-ellipse-highlight-outer {
   stroke: rgba(167, 243, 208, 0.94);
   stroke-width: 1.55;
-  stroke-dasharray: 8 92;
-  animation: punktlandung-loader-ellipse-orbit 3.2s linear infinite;
+  stroke-dasharray: 58 114;
+  animation: punktlandung-loader-ellipse-dash-outer 3.2s linear infinite;
 }
 
 .punktlandung-loader-ellipse-highlight-inner {
   stroke: rgba(110, 231, 183, 0.88);
   stroke-width: 1.35;
-  stroke-dasharray: 8 92;
-  animation: punktlandung-loader-ellipse-orbit 3.2s linear infinite;
+  stroke-dasharray: 34 72;
+  animation: punktlandung-loader-ellipse-dash-inner 3.2s linear infinite;
 }
 
 .punktlandung-loader-core-beam {
@@ -10616,8 +10648,14 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 }
 
-@keyframes punktlandung-loader-ellipse-orbit {
-  to { transform: rotate(-360deg); }
+@keyframes punktlandung-loader-ellipse-dash-outer {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -172; }
+}
+
+@keyframes punktlandung-loader-ellipse-dash-inner {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -106; }
 }
 
 @keyframes punktlandung-loader-sheen {
@@ -20465,4 +20503,129 @@ body :is(.punktlandung-back-button, .punktlandung-back-link):not(:disabled):not(
     height: 3rem !important;
     min-height: 3rem !important;
   }
+}
+
+/* Final mobile map-control cascade: keep the full-map header below the game
+ * HUD and use the same three-action ordering in replay. */
+@media (max-width: 879px) and (orientation: portrait),
+       (max-width: 1023px) and (orientation: landscape) {
+  body .punktlandung-game-shell .punktlandung-map-panel-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: .45rem !important;
+    justify-content: stretch !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-map-panel-actions .punktlandung-map-size-button {
+    grid-column: 1 !important;
+    order: 1 !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-map-panel-actions .punktlandung-map-primary-button {
+    grid-column: 2 !important;
+    order: 2 !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-map-panel-actions .punktlandung-map-close-button {
+    display: none !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--full {
+    top: calc(var(--pl-game-safe-top) + var(--mobile-game-hud-h) + var(--pl-game-rhythm)) !important;
+    border-radius: 0.85rem !important;
+    overflow: hidden !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-map-secondary-button { order: 1 !important; }
+  body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-map-size-button { order: 2 !important; }
+  body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-map-primary-button { order: 3 !important; }
+
+  body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-map-primary-button .punktlandung-inline-action-content,
+  body .punktlandung-results-mobile-actions .punktlandung-primary-action .punktlandung-inline-action-content {
+    white-space: normal !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-map-primary-button .punktlandung-inline-action-content > span:first-child,
+  body .punktlandung-results-mobile-actions .punktlandung-primary-action .punktlandung-inline-action-content > span:first-child {
+    line-height: 1.05 !important;
+    max-width: 5.2rem !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-map-primary-button .punktlandung-inline-action-content {
+    gap: .3rem !important;
+    transform: none !important;
+  }
+
+  body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-map-primary-button .punktlandung-inline-action-icon,
+  body .punktlandung-results-mobile-actions .punktlandung-primary-action .punktlandung-inline-action-icon {
+    transform: translateY(.06rem) !important;
+  }
+
+  /* Keep the right-pointing action at the same text/icon distance as the
+   * left-pointing Back action. The shared :has() rule adds a directional
+   * centering offset, which makes the right arrow look too far away on
+   * narrow three-column action rows. */
+  body .punktlandung-results-mobile-actions .punktlandung-primary-action .punktlandung-inline-action-content,
+  body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-map-secondary-button .punktlandung-inline-action-content {
+    display: inline-flex !important;
+    gap: .3rem !important;
+    width: max-content !important;
+    max-width: 100% !important;
+    transform: none !important;
+  }
+
+  /* Keep every arrow/text pair as one compact, centered unit. A two-column
+   * intrinsic grid prevents narrow phones from distributing the arrow across
+   * the full button width. */
+  body .punktlandung-results-mobile-actions .punktlandung-inline-action-content,
+  body .punktlandung-image-replay .punktlandung-map-panel-actions :is(.punktlandung-map-secondary-button, .punktlandung-map-primary-button) .punktlandung-inline-action-content {
+    display: inline-grid !important;
+    align-items: center !important;
+    grid-template-columns: max-content max-content !important;
+    column-gap: .3rem !important;
+    row-gap: 0 !important;
+    justify-content: center !important;
+    width: max-content !important;
+    max-width: 100% !important;
+    transform: none !important;
+  }
+
+  body .punktlandung-results-mobile-actions .punktlandung-inline-action-content > span:first-child,
+  body .punktlandung-image-replay .punktlandung-map-panel-actions .punktlandung-map-primary-button .punktlandung-inline-action-content > span:first-child {
+    flex: 0 0 auto !important;
+    /* Use the visible text width, not the old fixed max-width box. The
+     * latter made the right arrow appear far away from the label. */
+    width: max-content !important;
+    max-width: none !important;
+    text-align: center !important;
+  }
+
+  body .punktlandung-next-round-label {
+    align-items: center !important;
+    display: inline-flex !important;
+    flex-direction: column !important;
+    line-height: 1.05 !important;
+    white-space: nowrap !important;
+    width: max-content !important;
+  }
+
+  .punktlandung-mobile-action-break {
+    display: block !important;
+  }
+
+  /* Keep the selected optical correction active after the narrow-action
+   * layout's generic transform reset. */
+  body .punktlandung-optical-arrow-left > :is(.punktlandung-inline-action-content, .punktlandung-back-control-content, .punktlandung-lobby-touch-button-inner) {
+    transform: translateX(-5%) !important;
+  }
+
+  body .punktlandung-optical-arrow-right > :is(.punktlandung-inline-action-content, .punktlandung-back-control-content, .punktlandung-lobby-touch-button-inner) {
+    transform: translateX(5%) !important;
+  }
+
 }

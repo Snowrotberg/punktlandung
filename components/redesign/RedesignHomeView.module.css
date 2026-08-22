@@ -22,9 +22,6 @@
   min-width: 0;
   flex-direction: column;
   --pl-content-inset: clamp(1.5rem, 3vw, 4rem);
-  --pl-grid-attachment: scroll;
-  --pl-horizontal-grid-color: transparent;
-  --pl-horizontal-grid-position: 0 4.8rem;
   font-family: var(--font-inter);
 }
 
@@ -217,6 +214,7 @@
    repeating layer one complete tile below it avoids a doubled seam at every
    browser zoom level while preserving the grid rhythm through the page. */
 .content::before {
+  display: none;
   position: absolute;
   z-index: 0;
   top: var(--pl-grid-size);
@@ -272,6 +270,10 @@
 }
 
 .titleCompact {
+  display: none !important;
+}
+
+.titleLandscape {
   display: none !important;
 }
 
@@ -440,6 +442,14 @@
 }
 
 @media (min-width: 80rem) {
+  .titleWide {
+    display: none !important;
+  }
+
+  .titleCompact {
+    display: block !important;
+  }
+
   .page {
     height: 100dvh;
     overflow: hidden;
@@ -552,10 +562,6 @@
 }
 
 @media (min-width: 100rem) and (max-width: 149.999rem) {
-  .app {
-    --pl-horizontal-grid-position: 0 5.075rem;
-  }
-
   .hero {
     grid-template-columns: minmax(22rem, 0.8fr) minmax(32rem, 1.2fr);
   }
@@ -572,7 +578,6 @@
 @media (min-width: 150rem) {
   .app {
     --pl-content-inset: 7rem;
-    --pl-horizontal-grid-position: 0 7.25rem;
   }
 
   .app :global(.punktlandung-home-map-preview .punktlandung-map-label) {
@@ -711,26 +716,42 @@
 @media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
   .page {
     padding: 0;
+    height: 100dvh;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior-y: auto;
+    background-color: #0a101c;
+    background-image:
+      radial-gradient(circle 34rem at 10% 28%, rgb(52 211 153 / 0.18), transparent),
+      radial-gradient(circle 36rem at 88% 70%, rgb(99 102 241 / 0.18), transparent),
+      linear-gradient(90deg, rgb(148 163 184 / 0.055) 1px, transparent 1px),
+      linear-gradient(180deg, transparent, transparent);
+    background-position: 0 0, 0 0, 0 0, 0 0;
+    background-repeat: no-repeat, no-repeat, repeat, no-repeat;
+    background-size: 100% 100%, 100% 100%, 56px 56px, 100% 100%;
   }
 
   .frame {
-    min-height: 100dvh;
+    min-height: 100%;
     height: auto;
     gap: 0;
   }
 
   .app {
     --pl-content-inset: 2rem;
-    min-height: 100dvh;
+    min-height: 100%;
     height: auto;
     border-radius: 0;
+    overflow: visible;
   }
 
   .content {
     gap: 0.8rem;
     padding: 1.1rem 2rem;
-    overflow-x: hidden;
-    overflow-y: visible;
+    overflow: visible;
   }
 
   .hero {
@@ -750,6 +771,10 @@
   }
 
   .titleCompact {
+    display: none !important;
+  }
+
+  .titleLandscape {
     display: block !important;
   }
 
@@ -813,6 +838,18 @@
 
   .heroCopy {
     text-align: center;
+  }
+
+  .hero h1 {
+    margin-inline: auto;
+  }
+
+  .titleWide {
+    display: none !important;
+  }
+
+  .titleCompact {
+    display: block !important;
   }
 
   .heroCopy > p {
@@ -900,10 +937,6 @@
 }
 
 @media (min-width: 24.001rem) and (max-width: 30rem) and (orientation: portrait) {
-  .app {
-    --pl-horizontal-grid-position: 0 calc(3.75rem + 1px);
-  }
-
   .modeSection {
     transform: translateY(0.25rem);
   }
@@ -914,9 +947,6 @@
 }
 
 @media (max-width: 24rem) and (orientation: portrait) {
-  .app {
-    --pl-horizontal-grid-position: 0 calc(3.65rem + 1px);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

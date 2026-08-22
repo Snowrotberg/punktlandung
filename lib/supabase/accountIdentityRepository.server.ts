@@ -177,7 +177,7 @@ export class SupabaseAccountIdentityRepository implements AccountIdentityReposit
       p_new_account_id: newAccountId,
       p_now: new Date(now).toISOString(),
       p_provider_subject: principal.providerSubject,
-      p_target_account_id: targetAccountId ?? undefined,
+    p_target_account_id: targetAccountId ?? undefined,
       p_verified_at: new Date(principal.verifiedAt).toISOString()
     });
     if (error) throw identityError(error);

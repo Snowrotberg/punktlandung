@@ -204,9 +204,9 @@ const finalTableSummary = {
   }))
 };
 
-function roomState(status) {
+function roomState(status, overrides = {}) {
   const finished = status === "finished";
-  return {
+  const baseRoom = {
     code: "LOKAL",
     kind: "solo",
     hostId: "local_host",
@@ -224,6 +224,12 @@ function roomState(status) {
     summaries: status === "guessing" ? [] : [finished ? finalTableSummary : summary],
     emojiEvents: [],
     adGateUntil: null
+  };
+
+  return {
+    ...baseRoom,
+    ...overrides,
+    settings: { ...baseRoom.settings, ...(overrides.settings ?? {}) }
   };
 }
 
@@ -294,7 +300,34 @@ const targets = [
     note: "echter URL-Pfad mit QA-Online-Raum"
   },
   { name: "spielen", access: "state", path: "/spielen", status: "guessing", readySelector: ".punktlandung-game-shell", readyImageSelector: ".punktlandung-panorama-viewport img", note: "echter URL-Pfad mit QA-Session" },
+  {
+    name: "zeitablauf",
+    access: "state",
+    path: "/spielen",
+    status: "guessing",
+    stateOverrides: {
+      roundEndsAt: Date.now() - 1000,
+      timedOutPlayerIds: ["local_host", "local_2"]
+    },
+    expectedText: "Zeit abgelaufen",
+    readySelector: ".punktlandung-game-shell",
+    readyImageSelector: ".punktlandung-panorama-viewport img",
+    note: "laufende Runde mit abgelaufener Zeit und gesperrter Abgabe"
+  },
   { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", readySelector: ".punktlandung-results-grid", note: "echter URL-Pfad mit QA-Session" },
+  {
+    name: "letzte-runde",
+    access: "state",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: {
+      currentRound: settings.rounds,
+      summaries: [{ ...summary, roundNumber: settings.rounds }]
+    },
+    expectedText: `RUNDE ${settings.rounds} VON ${settings.rounds}`,
+    readySelector: ".punktlandung-results-grid",
+    note: "Ergebniszustand der letzten Runde mit erreichbarer Abschlussaktion"
+  },
   { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", readySelector: ".punktlandung-image-replay", readyImageSelector: ".punktlandung-panorama-viewport img", note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
   { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
   { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Nicht speichern", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session plus Klick auf Endstand ansehen" },
@@ -426,7 +459,7 @@ async function gotoFresh(page, url) {
   return navigatePage(page, url);
 }
 
-async function loadState(page, status, targetPath = "/") {
+async function loadState(page, status, targetPath = "/", stateOverrides = {}) {
   await gotoFresh(page, targetUrl("/"));
   await page.evaluate((nextRoom) => {
     localStorage.setItem(
@@ -441,7 +474,7 @@ async function loadState(page, status, targetPath = "/") {
       })
     );
     localStorage.setItem("punktlandung-name", "Responsive QA");
-  }, roomState(status));
+  }, roomState(status, stateOverrides));
   const url = new URL(targetUrl(targetPath));
   url.searchParams.set("responsive", `${status}-${Date.now()}`);
   await gotoFresh(page, url.toString());
@@ -547,7 +580,7 @@ async function openTarget(page, target) {
   }
 
   if (target.access === "state" || target.access === "state-click") {
-    await loadState(page, target.status, target.path);
+    await loadState(page, target.status, target.path, target.stateOverrides);
     if (target.access === "state-click") {
       await clickButtonByVisibleText(page, target.buttonText);
       await page.waitForTimeout(700);

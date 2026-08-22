@@ -36,12 +36,14 @@ type Props = {
   accountHref?: string;
   accountAuthenticated?: boolean;
   canStart: boolean;
+  resumePending?: boolean;
   starting?: boolean;
   error?: string | null;
   onSettings: (settings: Partial<GameSettings>) => void;
   onRenamePlayer: (playerId: string, name: string) => void;
   onHostParticipationChange?: (value: HostParticipation, playerName?: string) => void;
   onStart: () => void;
+  onResume?: () => void;
   onBack: () => void;
   onSoundToggle: () => void;
 };
@@ -196,12 +198,14 @@ export function RedesignSetupView({
   accountHref,
   accountAuthenticated,
   canStart,
+  resumePending = false,
   starting = false,
   error,
   onSettings,
   onRenamePlayer,
   onHostParticipationChange,
   onStart,
+  onResume,
   onBack,
   onSoundToggle
 }: Props) {
@@ -239,8 +243,9 @@ export function RedesignSetupView({
                   <span>{error}</span>
                 </p>
               )}
-              <RedesignButton onClick={onBack}><TriangleIcon direction="left" />Zurück</RedesignButton>
-              <RedesignButton tone="primary" disabled={!canStart} onClick={onStart}>{starting ? "Wird gestartet..." : "Spiel starten"}<TriangleIcon direction="right" /></RedesignButton>
+              <RedesignButton className="punktlandung-optical-arrow-left" onClick={onBack}><TriangleIcon direction="left" /><span className="punktlandung-optical-arrow-content-label">Zurück</span></RedesignButton>
+              <RedesignButton className="punktlandung-optical-arrow-right" tone="primary" disabled={!canStart} onClick={onStart}><span className="punktlandung-optical-arrow-content-label">{starting ? "Wird gestartet..." : resumePending ? "Neue Partie" : "Spiel starten"}</span><TriangleIcon direction="right" /></RedesignButton>
+              {resumePending && onResume && <RedesignButton className="punktlandung-optical-arrow-right" tone="primary" disabled={!canStart || starting} onClick={onResume}><span className="punktlandung-optical-arrow-content-label">Spiel fortsetzen</span><TriangleIcon direction="right" /></RedesignButton>}
               <small>{activeMode === "solo" ? "Solo" : isParty ? "Party" : "Online-Raum"} · {settings.rounds} Runden · {settings.timeLimitSec ? `${settings.timeLimitSec} s` : "frei"}</small>
             </div>
           </div>

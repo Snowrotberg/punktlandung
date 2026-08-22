@@ -30,6 +30,7 @@ const sessionResetStorageKey = "punktlandung-reset-session-v1";
 const recentLocationLimit = 400;
 const sessionTtlMs = 1000 * 60 * 60 * 6;
 const historyStateKey = "punktlandung-history-v1";
+export const setupResumeStorageKey = "punktlandung-resume-setup-v1";
 const locationCategories = new Set(["mixed", "landmarks", "cities", "landscapes", "flags", "capitals", "streetview"]);
 let locationCatalogPromise: Promise<GeoLocation[]> | null = null;
 
@@ -53,7 +54,12 @@ const defaultSettings: GameSettings = {
 };
 
 function pauseGuessingRoomUntilImageReady(room: RoomState): RoomState {
-  return room.status === "guessing" ? { ...room, roundEndsAt: null, roundStartedAt: null } : room;
+  // A restored round must wait for the visible image just like a fresh round.
+  // The old deadline is not allowed to keep the timer running behind the
+  // image-search state.
+  return room.status === "guessing"
+    ? { ...room, roundEndsAt: null, roundStartedAt: null }
+    : room;
 }
 
 function id(prefix: string): string {
@@ -170,6 +176,25 @@ function consumeSessionResetFlag(): boolean {
     return shouldReset;
   } catch {
     return false;
+  }
+}
+
+function consumeSetupResumeFlag(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const requested = window.sessionStorage.getItem(setupResumeStorageKey) === "1";
+    if (requested) window.sessionStorage.removeItem(setupResumeStorageKey);
+    return requested;
+  } catch {
+    return false;
+  }
+}
+
+export function requestSetupResume(): void {
+  try {
+    window.sessionStorage.setItem(setupResumeStorageKey, "1");
+  } catch {
+    // localStorage remains the fallback for the actual game state.
   }
 }
 
@@ -518,7 +543,10 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
   // A route-owned setup already exists synchronously. Hydrate a resumable
   // session in the effect below without blocking the normal page transition
   // behind the full-screen game loading state.
-  const [restoring, setRestoring] = useState(Boolean(restoreStoredSession));
+  // Let the setup route restore a browser-back session before GameApp creates
+  // a fresh lobby for the requested mode.
+  const [restoring, setRestoring] = useState(Boolean(restoreStoredSession || initialMode));
+  const [resumePending, setResumePending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recentLocationIds, setRecentLocationIds] = useState<string[]>([]);
   const locationsRef = useRef<GeoLocation[]>([]);
@@ -528,6 +556,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
   const isRestoringHistoryRef = useRef(false);
   const previousRoomRef = useRef<RoomState | null>(null);
   const roomRef = useRef<RoomState | null>(room);
+  const resumePendingRef = useRef(false);
   roomRef.current = room;
 
   const ensureLocationCatalog = useCallback(async () => {
@@ -557,6 +586,13 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
     },
     [recentLocationIds]
   );
+
+  // Start loading the catalog as soon as the setup lobby exists. This keeps
+  // the first click from having to wait for the catalog chunk to initialize.
+  useEffect(() => {
+    if (!room || room.status !== "lobby") return;
+    void ensureLocationCatalog();
+  }, [ensureLocationCatalog, room?.status]);
 
   // Build the first package while the player is still in the setup screen and
   // warm exactly one upcoming Wikimedia thumbnail. Subsequent rounds warm the
@@ -597,21 +633,27 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
 
     if (initialMode) {
       const storedSession = readStoredSession(playerId);
+      const browserState = readBrowserHistoryState();
       const returningFromLegalPage = consumeLegalReturn(window.location.pathname);
-      const canRestoreRouteSession = storedSession
-        && storedRoomMatchesInitialMode(storedSession.room, initialMode)
+      const returningToSetup = consumeSetupResumeFlag()
+        || new URLSearchParams(window.location.search).get("resume") === "1";
+      const resumableRoom = storedSession?.room ?? (returningToSetup ? browserState?.room ?? null : null);
+      const canRestoreRouteSession = resumableRoom
+        && storedRoomMatchesInitialMode(resumableRoom, initialMode)
         // A setup route is a deliberate new-game entry point. Only an
         // explicit recovery route (or a return from the legal page) may
         // restore a previously active round; otherwise an old PWA/browser
         // session must not hijack the Solo/Party setup screen.
-        && (returningFromLegalPage || restoreStoredSession);
+        && (returningFromLegalPage || restoreStoredSession || returningToSetup);
       if (canRestoreRouteSession) {
-        locationQueueRef.current = storedSession.locationQueue;
-        queueCategoryRef.current = storedSession.queueCategory;
-        lastLocationIdRef.current = storedSession.lastLocationId ?? storedSession.room.location?.id ?? null;
-        previousRoomRef.current = storedSession.room;
-        setRecentLocationIds(storedSession.recentLocationIds.length ? storedSession.recentLocationIds : readStoredRecentLocationIds());
-        setRoom(pauseGuessingRoomUntilImageReady(storedSession.room));
+        locationQueueRef.current = storedSession?.locationQueue ?? [];
+        queueCategoryRef.current = storedSession?.queueCategory ?? null;
+        lastLocationIdRef.current = storedSession?.lastLocationId ?? resumableRoom.location?.id ?? null;
+        previousRoomRef.current = resumableRoom;
+        setRecentLocationIds(storedSession?.recentLocationIds?.length ? storedSession.recentLocationIds : readStoredRecentLocationIds());
+        setRoom(pauseGuessingRoomUntilImageReady(resumableRoom));
+        resumePendingRef.current = returningToSetup && resumableRoom.status !== "lobby";
+        setResumePending(resumePendingRef.current);
         setRestoring(false);
         return;
       }
@@ -700,6 +742,9 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
     if (typeof window === "undefined") return;
 
     const handlePopState = () => {
+      const current = roomRef.current;
+      const setupPath = current?.settings.localMode === "couch" ? "/party-modus" : "/solo-modus";
+      if (current && current.status !== "lobby" && window.location.pathname === setupPath) requestSetupResume();
       const browserState = readBrowserHistoryState();
       isRestoringHistoryRef.current = true;
       setRoom(browserState?.room ?? null);
@@ -806,11 +851,24 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
 
   const updateSettings = useCallback((settings: Partial<GameSettings>) => {
     setRoom((current) => {
-      if (!current || current.status !== "lobby") return current;
+      if (!current || (current.status !== "lobby" && !resumePendingRef.current)) return current;
+      const baseRoom = current.status !== "lobby"
+        ? {
+            ...current,
+            status: "lobby" as const,
+            location: null,
+            guesses: [],
+            timedOutPlayerIds: [],
+            roundEndsAt: null,
+            roundStartedAt: null,
+            currentRound: 0,
+            summaries: []
+          }
+        : current;
       const nextSettings: GameSettings = {
         ...current.settings,
         ...settings,
-        mode: current.kind === "online" ? settings.mode ?? current.settings.mode : "classic",
+        mode: baseRoom.kind === "online" ? settings.mode ?? baseRoom.settings.mode : "classic",
         timeLimitSec: clampInt(settings.timeLimitSec, current.settings.timeLimitSec, 0, 600),
         rounds: clampInt(settings.rounds, current.settings.rounds, 1),
         localPlayerCount: clampInt(settings.localPlayerCount, current.settings.localPlayerCount, 1, 10)
@@ -818,8 +876,33 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       if (nextSettings.localMode === "couch" && nextSettings.localPlayerCount < 2) nextSettings.localPlayerCount = 2;
       if (nextSettings.localMode === "solo") nextSettings.localPlayerCount = 1;
       writeStoredSetupSettings(nextSettings);
-      return syncLocalPlayers({ ...current, settings: nextSettings });
+      resumePendingRef.current = false;
+      setResumePending(false);
+      return syncLocalPlayers({ ...baseRoom, settings: nextSettings });
     });
+  }, []);
+
+  const resumeRound = useCallback(() => {
+    resumePendingRef.current = false;
+    setResumePending(false);
+  }, []);
+
+  const discardResume = useCallback(() => {
+    resumePendingRef.current = false;
+    setResumePending(false);
+    setRoom((current) => current && current.status !== "lobby"
+      ? {
+          ...current,
+          status: "lobby",
+          location: null,
+          guesses: [],
+          timedOutPlayerIds: [],
+          roundEndsAt: null,
+          roundStartedAt: null,
+          currentRound: 0,
+          summaries: []
+        }
+      : current);
   }, []);
 
   const updateHostParticipation = useCallback((hostParticipation: HostParticipation, playerName?: string) => {
@@ -992,7 +1075,11 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
   const markLocationReady = useCallback((locationId: string, ready: boolean) => {
     setRoom((current) => {
       if (!current || current.status !== "guessing" || current.location?.id !== locationId) return current;
-      if (!ready) return current.roundEndsAt || current.roundStartedAt ? { ...current, roundEndsAt: null, roundStartedAt: null } : current;
+      if (!ready) {
+        return current.roundEndsAt || current.roundStartedAt
+          ? { ...current, roundEndsAt: null, roundStartedAt: null }
+          : current;
+      }
       if (current.roundEndsAt) return current;
       const roundStartedAt = Date.now();
       return {
@@ -1058,6 +1145,9 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       cancelRound,
       skipLocation,
       markLocationReady,
+      resumePending,
+      resumeRound,
+      discardResume,
       restart,
       readyNextRound: () => undefined,
       leaveRoom,
@@ -1065,6 +1155,6 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       setTeam,
       unlockCosmetic
     }),
-    [cancelRound, createOnlineSetup, createSolo, error, leaveRoom, markLocationReady, playerId, renamePlayer, restart, restoring, room, setTeam, skipLocation, startRound, submitGuess, unlockCosmetic, updateHostParticipation, updateSettings]
+    [cancelRound, createOnlineSetup, createSolo, discardResume, error, leaveRoom, markLocationReady, playerId, renamePlayer, restart, resumePending, resumeRound, restoring, room, setTeam, skipLocation, startRound, submitGuess, unlockCosmetic, updateHostParticipation, updateSettings]
   );
 }

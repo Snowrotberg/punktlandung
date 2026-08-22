@@ -27,9 +27,12 @@ const imageLoadTimeoutMs: Record<GeoLocation["category"], number> = {
   streetview: 6500
 };
 
-const slowLoadHintMs = 7000;
-const manualSkipHintMs = 8000;
-const locationLoadDeadlineMs = 12000;
+// Keep the normal candidate/proxy retries quiet first. Only show recovery
+// copy after a genuinely unusual wait, so the loader is not presented as an
+// error state during ordinary image delivery.
+const slowLoadHintMs = 12000;
+const manualSkipHintMs = 15000;
+const locationLoadDeadlineMs = 20000;
 const replayLoadOverlayDelayMs = 450;
 const defaultProxyWidth = 1400;
 const previewImageWidth = 160;
@@ -467,11 +470,19 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
     if (skipPending) return;
     skippedLocationIds.current.add(location.id);
     setSkipPending(true);
+    setImageFailed(false);
+    setShowLoadOverlay(true);
+    setShowSlowLoadHint(false);
+    setShowManualSkip(false);
     try {
       await onSkipLocation(location.id);
     } catch {
       // The caller owns the user-facing error state. Re-enable the action
       // immediately when the replacement request itself fails.
+      setImageFailed(true);
+      setShowLoadOverlay(true);
+      setShowSlowLoadHint(true);
+      setShowManualSkip(true);
     } finally {
       // onSkipLocation now resolves only after the next image has been
       // prepared (or rejects), so a fixed timeout cannot unlock this button
@@ -799,8 +810,8 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
               <svg className="punktlandung-loader-ellipses" viewBox="0 0 128 96" aria-hidden="true">
                 <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-outer" cx="64" cy="78" rx="38.5" ry="12" />
                 <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-inner" cx="64" cy="78" rx="22.5" ry="6.5" />
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-outer" cx="64" cy="78" rx="38.5" ry="12" pathLength="100" />
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-inner" cx="64" cy="78" rx="22.5" ry="6.5" pathLength="100" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-outer" cx="64" cy="78" rx="38.5" ry="12" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-inner" cx="64" cy="78" rx="22.5" ry="6.5" />
               </svg>
               <span className="punktlandung-loader-beam-orbit">
                 <span className="punktlandung-loader-beam" />
@@ -811,10 +822,10 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
             {showSlowLoadHint && (
               <>
                 <p className="mt-5 text-xs font-black uppercase tracking-[0.26em] text-emerald-200">
-                  "Das Bild braucht gerade ungewöhnlich lange"
+                  Das Laden des Bildes dauert ungewöhnlich lang
                 </p>
                 <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-300">
-                  "Das kann an der Verbindung liegen. Du kannst einen anderen Ort nehmen."
+                  Lass es uns mit einem anderen Ort versuchen.
                 </p>
               </>
             )}

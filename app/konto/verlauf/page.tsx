@@ -27,8 +27,8 @@ const categoryLabels: Record<string, string> = {
 
 function gameStatusLabel(status: string): string | null {
   if (status === "verified") return null;
-  if (status === "invalid") return "Nicht für Rankings gewertet";
-  return "Nur lokal gespeichert";
+  if (status === "invalid") return "Gespeichert · nicht für Rankings gewertet";
+  return "Im Konto gespeichert · noch nicht für Rankings verifiziert";
 }
 
 export default async function AccountHistoryPage() {

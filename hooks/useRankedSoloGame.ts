@@ -205,13 +205,15 @@ function roomFromRankedGame(next: PublicRankedGame, name: string, storedSettings
   };
 }
 
-export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled) {
+export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled, authenticated = false) {
   const [room, setRoom] = useState<RoomState | null>(null);
   const [game, setGame] = useState<PublicRankedGame | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingUploadCount, setPendingUploadCount] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [restoring, setRestoring] = useState(enabled && restoreStoredGame);
+  const [resumePending, setResumePending] = useState(false);
+  const resumePendingRef = useRef(false);
   const guessRef = useRef<Guess | null>(null);
   const expiryAttemptedRef = useRef(new Set<string>());
   const uploadFlushInFlightRef = useRef(false);
@@ -220,6 +222,7 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled)
   const advancingRoundRef = useRef(false);
   const rerollInFlightRef = useRef(new Set<string>());
   const recoveryStartedRef = useRef(false);
+  const claimInFlightRef = useRef<string | null>(null);
 
   const request = useCallback(async (url: string, init?: RequestInit) => {
     const retryDelays = [0, 250, 650];
@@ -340,6 +343,8 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled)
         const restoredRoom = roomFromRankedGame(visibleGame, recoveryName, recoverySettings);
         if (prepared) restoredRoom.location = prepared.location;
         setRoom(restoredRoom);
+        resumePendingRef.current = Boolean(resumeGameId) && restoredRoom.status !== "lobby";
+        setResumePending(resumePendingRef.current);
         setError(null);
         if (resumeGameId) {
           const cleanUrl = new URL(window.location.href);
@@ -378,6 +383,36 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled)
     return () => { cancelled = true; };
   }, [enabled, prepareRankedPrompt, request, restoreStoredGame]);
 
+  useEffect(() => {
+    const gameId = game?.gameId ?? null;
+    if (!authenticated || !gameId || game?.status !== "completed" || game.claimed || claimInFlightRef.current === gameId) return;
+    let cancelled = false;
+    const claimCompletedGame = async () => {
+      claimInFlightRef.current = gameId;
+      try {
+        const next = await request(`/api/v1/ranked-games/${encodeURIComponent(gameId)}/claim`, { method: "POST" });
+        if (cancelled) return;
+        setGame(next);
+        setRoom((current) => current
+          ? roomFromRankedGame(next, current.players[0]?.name ?? "Spieler 1", current.settings)
+          : current);
+        setError(null);
+      } catch (cause) {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : "Die Partie konnte noch nicht dem Konto zugeordnet werden.");
+      } finally {
+        if (claimInFlightRef.current === gameId) claimInFlightRef.current = null;
+      }
+    };
+    void claimCompletedGame();
+    const retryTimer = window.setInterval(() => void claimCompletedGame(), 5000);
+    window.addEventListener("online", claimCompletedGame);
+    return () => {
+      cancelled = true;
+      window.clearInterval(retryTimer);
+      window.removeEventListener("online", claimCompletedGame);
+    };
+  }, [authenticated, game?.claimed, game?.gameId, game?.status, request]);
+
   const applyResolved = useCallback((next: PublicRankedGame, guess: Guess | null, timedOut = false) => {
     setGame(next);
     const resolved = next.resolvedRounds.at(-1);
@@ -400,11 +435,30 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled)
 
   const updateSettings = useCallback((changes: Partial<GameSettings>) => {
     setRoom((current) => {
-      if (!current || current.status !== "lobby") return current;
-      const settings = { ...current.settings, ...changes, localMode: "solo" as const, localPlayerCount: 1 };
+      if (!current || (current.status !== "lobby" && !resumePendingRef.current)) return current;
+      const baseRoom = current.status !== "lobby"
+        ? { ...current, status: "lobby" as const, location: null, guesses: [], roundEndsAt: null, roundStartedAt: null, currentRound: 0, summaries: [] }
+        : current;
+      const settings = { ...baseRoom.settings, ...changes, localMode: "solo" as const, localPlayerCount: 1 };
       writeStoredSetupSettings(settings);
-      return { ...current, settings };
+      resumePendingRef.current = false;
+      setResumePending(false);
+      return { ...baseRoom, settings };
     });
+  }, []);
+
+  const resumeRound = useCallback(() => {
+    resumePendingRef.current = false;
+    setResumePending(false);
+  }, []);
+
+  const discardResume = useCallback(() => {
+    resumePendingRef.current = false;
+    setResumePending(false);
+    clearStoredRankedSession(activeGameIdRef.current);
+    activeGameIdRef.current = null;
+    setGame(null);
+    setRoom((current) => current ? makeRoom(current.players[0]?.name ?? "Spieler 1", current.settings) : current);
   }, []);
 
   const startRound = useCallback(async () => {
@@ -476,7 +530,9 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled)
       // timer only starts after the ready mutation, so this is safe until the
       // round has actually been acknowledged as ready.
       if (readyRoundRef.current !== roundId) {
-        setRoom((value) => value ? { ...value, roundStartedAt: null, roundEndsAt: null } : value);
+        setRoom((value) => value && (value.roundEndsAt || value.roundStartedAt)
+          ? { ...value, roundStartedAt: null, roundEndsAt: null }
+          : value);
       }
       return;
     }
@@ -689,6 +745,6 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled)
     restoring, pendingUploadCount, syncStatus: (pendingUploadCount > 0 ? (uploading ? "uploading" : "pending") : game?.status === "completed" && game.claimed && game.integrityStatus === "verified" ? "verified" : "secured") as RankedSyncStatus,
     clearError: () => setError(null), createSolo, createOnlineSetup: () => undefined, updateSettings, updateHostParticipation: () => undefined, renamePlayer,
     startRound, submitGuess, cancelRound, markLocationReady, skipLocation, restart, leaveRoom, setTeam: (_team: TeamId) => undefined,
-    readyNextRound: () => undefined, unlockCosmetic: () => undefined
-  }), [cancelRound, createSolo, error, game, leaveRoom, markLocationReady, pendingUploadCount, renamePlayer, restart, restoring, room, skipLocation, startRound, submitGuess, updateSettings, uploading]);
+    readyNextRound: () => undefined, unlockCosmetic: () => undefined, resumePending, resumeRound, discardResume
+  }), [cancelRound, createSolo, discardResume, error, game, leaveRoom, markLocationReady, pendingUploadCount, renamePlayer, restart, restoring, resumePending, resumeRound, room, skipLocation, startRound, submitGuess, updateSettings, uploading]);
 }

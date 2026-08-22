@@ -50,7 +50,7 @@ export function AccountRoundMap({ location, result, resolvedAt, playerName }: Ac
     <>
       <section className={`account-round-map ${styles.resultMapTheme}`}>
         <div className={styles.visualHeader}><span>Karte dieser Runde</span><button type="button" onClick={() => setMaximized(true)}>Maximieren</button></div>
-        <GuessMap mode="results" summary={summary} guesses={guess ? [guess as Guess] : []} players={players} showLabels resultPaddingScale={0.65} resultZoomScale={0.75} resultLabelLayout="account-history" resultControlInset noPan={false} noZoom={false} />
+        <GuessMap mode="results" summary={summary} guesses={guess ? [guess as Guess] : []} players={players} showLabels resultPaddingScale={0.8} resultZoomScale={0.68} resultLabelLayout="account-history" resultControlInset noPan={false} noZoom={false} />
       </section>
       {maximized && <div className={styles.modal} role="dialog" aria-modal="true" aria-label={`Karte zu ${location.title}`} onMouseDown={(event) => event.target === event.currentTarget && setMaximized(false)}>
         <div className={styles.modalPanel}>

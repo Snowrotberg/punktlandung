@@ -130,8 +130,8 @@ export function RedesignWaitingRoomView({
               <p>Teilt den Code, wählt Teams und startet gemeinsam.</p>
             </div>
             <div className={styles.introActions}>
-              <RedesignButton onClick={onLeave}><TriangleIcon direction="left" />Verlassen</RedesignButton>
-              <RedesignButton tone="primary" disabled={!isHost || players.length === 0 || !canStart} onClick={onStart}>Starten<TriangleIcon direction="right" /></RedesignButton>
+              <RedesignButton className="punktlandung-optical-arrow-left" onClick={onLeave}><TriangleIcon direction="left" /><span className="punktlandung-optical-arrow-content-label">Verlassen</span></RedesignButton>
+              <RedesignButton className="punktlandung-optical-arrow-right" tone="primary" disabled={!isHost || players.length === 0 || !canStart} onClick={onStart}><span className="punktlandung-optical-arrow-content-label">Starten</span><TriangleIcon direction="right" /></RedesignButton>
             </div>
           </div>
 

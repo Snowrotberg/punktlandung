@@ -63,8 +63,8 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   const fullMap = mapSize === "full";
   const isMobileTouchMap = isMobilePortrait || isMobileLandscape;
   const mapInteractive = expanded || isMobileTouchMap;
-  const showMapSizeButton = (expanded || isMobileTouchMap) && !fullMap;
-  const showMapCloseButton = expanded && (!isMobilePortrait || fullMap);
+  const showMapSizeButton = (expanded || isMobileTouchMap) && (!fullMap || isMobileTouchMap);
+  const showMapCloseButton = expanded && !isMobileTouchMap;
 
   useEffect(() => {
     setGuess(null);
@@ -300,7 +300,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
             <div className="punktlandung-game-actions pointer-events-auto order-3 col-span-1 flex justify-end gap-2">
                 {isHost && (
                   <BackButton
-                    className="punktlandung-game-back-button"
+                    className="punktlandung-game-back-button punktlandung-optical-arrow-left"
                     sound="click"
                     onClick={onCancelRound}
                     label="Zurück"
@@ -343,7 +343,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
 
       {!chromeSuppressed && (
       <section
-        className={`punktlandung-guess-map-panel ${fullMap ? "punktlandung-guess-map-panel--full" : expanded ? "punktlandung-guess-map-panel--open" : "punktlandung-guess-map-panel--closed"} origin-bottom-right transform-gpu z-50 rounded-md bg-slate-950/88 p-2.5 shadow-[0_24px_60px_rgba(0,0,0,0.34)] ring-1 ring-indigo-300/45 backdrop-blur-md transition-[width,height,transform] duration-300 sm:p-3 ${mapPanelLayout}`}
+        className={`punktlandung-guess-map-panel ${fullMap ? "punktlandung-guess-map-panel--full" : expanded ? "punktlandung-guess-map-panel--open" : "punktlandung-guess-map-panel--closed"} origin-bottom-right transform-gpu z-50 overflow-hidden rounded-md bg-slate-950/88 p-2.5 shadow-[0_24px_60px_rgba(0,0,0,0.34)] ring-1 ring-indigo-300/45 backdrop-blur-md transition-[width,height,transform] duration-300 sm:p-3 ${mapPanelLayout}`}
         onMouseEnter={openMapByHover}
         onMouseLeave={closeMapByHover}
         onClick={() => {

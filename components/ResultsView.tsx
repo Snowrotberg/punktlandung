@@ -20,7 +20,7 @@ import {
 import type { LocationCategory, Player, RoomState, RoundResult, RoundSummary } from "@/types/game";
 import { formatDistance, rankResults } from "@/lib/geo";
 import { BackButton } from "./BackButton";
-import { Button } from "./Button";
+import { Button, ButtonLink } from "./Button";
 import { GuessMap } from "./GuessMap";
 import { FeedbackDialog } from "./FeedbackDialog";
 import { LegalLinks } from "./LegalLinks";
@@ -28,7 +28,8 @@ import { PanoramaViewer } from "./PanoramaViewer";
 import { TriangleIcon } from "./TriangleIcon";
 import { useSound } from "./SoundProvider";
 import redesignStyles from "./redesign/RedesignResultsView.module.css";
-import { saveCompletedGame } from "@/app/endergebnis/actions";
+import { saveCompletedGame, type SaveCompletedGameInput } from "@/app/endergebnis/actions";
+import { enqueueCompletedGameSave, removeCompletedGameSave } from "@/lib/completedGameSaveQueue.client";
 import type { RankedSyncStatus } from "@/hooks/useRankedSoloGame";
 import { playerColorAt } from "@/lib/playerPalette";
 
@@ -419,6 +420,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const [replayChromeHoverHidden, setReplayChromeHoverHidden] = useState(false);
   const [isReplayMobilePortrait, setIsReplayMobilePortrait] = useState(false);
   const [isReplayMobileLandscape, setIsReplayMobileLandscape] = useState(false);
+  const savePromiseRef = useRef<Promise<boolean> | null>(null);
   const replayMapCloseTimer = useRef<number | null>(null);
   const summary = room.summaries?.[room.summaries.length - 1] ?? null;
   const location = summary?.location ?? null;
@@ -449,50 +451,76 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
     setShowFinalStandings(false);
   };
   const meStats = finalStats.find((entry) => entry.player.id === meId) ?? finalStats[0] ?? null;
-  const saveGame = async () => {
-    if (!meStats || saveState === "saving" || saveState === "saved") return;
+  const buildSaveInput = (): SaveCompletedGameInput | null => {
+    if (!meStats || !room.summaries.length) return null;
+    return {
+      saveKey: `${room.code}:${room.summaries[0]?.roundStartedAt ?? room.summaries[0]?.completedAt ?? 0}:${meStats.player.id}`,
+      category: room.settings.category,
+      timeLimitSec: room.settings.timeLimitSec,
+      difficulty: room.settings.difficulty === "easy" || room.settings.difficulty === "hard" ? room.settings.difficulty : "medium",
+      noZoom: room.settings.noZoom,
+      score: meStats.player.score,
+      completedRounds,
+      roundDurationMs: Math.max(1000, room.settings.timeLimitSec * 1000),
+      totalResponseTimeMs: Math.round((meStats.totalGuessSeconds ?? 0) * 1000),
+      startedAt: room.summaries[0]?.roundStartedAt ?? room.summaries[0]?.completedAt ?? Date.now(),
+      completedAt: room.summaries.at(-1)?.completedAt ?? Date.now(),
+      rounds: room.summaries.map((round, index) => ({
+        roundId: `${room.code}_${index + 1}`,
+        roundNumber: index + 1,
+        locationId: round.location.id,
+        locationSnapshot: round.location as unknown as Record<string, unknown>,
+        startedAt: round.roundStartedAt ?? Math.max(1, round.completedAt - Math.max(1000, room.settings.timeLimitSec * 1000)),
+        resolvedAt: round.completedAt,
+        result: round.results.find((entry) => entry.playerId === meStats.player.id) ?? {
+          points: 0,
+          distanceKm: 20_015,
+          badge: "Keine Abgabe",
+          countryCorrect: false,
+          eliminated: false,
+          guess: null
+        }
+      }))
+    };
+  };
+  const saveGame = async (): Promise<boolean> => {
+    if (savePromiseRef.current) return savePromiseRef.current;
+    if (!meStats || saveState === "saved") return saveState === "saved";
+    const input = buildSaveInput();
+    if (!input) return false;
     setSaveState("saving");
+    const savePromise = (async () => {
+      try {
+        // Queue before the network request. A reload or route change can no
+        // longer discard the completed result while the request is pending.
+        enqueueCompletedGameSave(input);
+        const result = await saveCompletedGame(input);
+        const saved = result.ok;
+        if (saved) removeCompletedGameSave(input.saveKey);
+        setSaveState(saved ? "saved" : result.code === "auth_required" ? "auth" : "error");
+        return saved;
+      } catch (error) {
+        console.error("[ResultsView] completed game save failed", error);
+        setSaveState("error");
+        return false;
+      }
+    })();
+    savePromiseRef.current = savePromise;
     try {
-      const result = await saveCompletedGame({
-        saveKey: `${room.code}:${room.summaries[0]?.roundStartedAt ?? room.summaries[0]?.completedAt ?? 0}:${meStats.player.id}`,
-        category: room.settings.category,
-        timeLimitSec: room.settings.timeLimitSec,
-        difficulty: room.settings.difficulty === "easy" || room.settings.difficulty === "hard" ? room.settings.difficulty : "medium",
-        noZoom: room.settings.noZoom,
-        score: meStats.player.score,
-        completedRounds,
-        roundDurationMs: Math.max(1000, room.settings.timeLimitSec * 1000),
-        totalResponseTimeMs: Math.round((meStats.totalGuessSeconds ?? 0) * 1000),
-        startedAt: room.summaries[0]?.roundStartedAt ?? room.summaries[0]?.completedAt ?? Date.now(),
-        completedAt: room.summaries.at(-1)?.completedAt ?? Date.now(),
-        rounds: room.summaries.map((round, index) => ({
-          roundId: `${room.code}_${index + 1}`,
-          roundNumber: index + 1,
-          locationId: round.location.id,
-          locationSnapshot: round.location as unknown as Record<string, unknown>,
-          startedAt: round.roundStartedAt ?? Math.max(1, round.completedAt - Math.max(1000, room.settings.timeLimitSec * 1000)),
-          resolvedAt: round.completedAt,
-          result: round.results.find((entry) => entry.playerId === meStats.player.id) ?? {
-            points: 0,
-            distanceKm: 20_015,
-            badge: "Keine Abgabe",
-            countryCorrect: false,
-            eliminated: false,
-            guess: null
-          }
-        }))
-      });
-      setSaveState(result.ok ? "saved" : result.code === "auth_required" ? "auth" : "error");
-    } catch (error) {
-      console.error("[ResultsView] completed game save failed", error);
-      setSaveState("error");
+      return await savePromise;
+    } finally {
+      if (savePromiseRef.current === savePromise) savePromiseRef.current = null;
     }
   };
 
   useEffect(() => {
-    if (serverRanked || !finished || !accountAuthenticated || saveState !== "idle") return;
+    if (serverRanked || !finished || !accountAuthenticated || saveState === "saved" || saveState === "saving") return;
     void saveGame();
-  }, [accountAuthenticated, finished, serverRanked, summary?.completedAt]);
+  }, [accountAuthenticated, finished, saveState, serverRanked, summary?.completedAt]);
+  const handleBackToLobby = async () => {
+    if (finished && accountAuthenticated && saveState !== "saved") await saveGame();
+    onBackToLobby();
+  };
   const isFlagRound = location?.category === "flags";
   const landingHits = useMemo(
     () => ranked.filter((result) => result.guess && (result.distanceKm <= punktlandungDistanceKm || result.countryCorrect)),
@@ -503,7 +531,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const replayMapExpanded = replayMapSize !== "closed";
   const replayMapFull = replayMapSize === "full";
   const replayMapInteractive = replayMapExpanded || isReplayMobilePortrait;
-  const showReplayMapSizeButton = (replayMapExpanded || isReplayMobilePortrait) && !replayMapFull;
+  const showReplayMapSizeButton = (replayMapExpanded || isReplayMobilePortrait) && (!replayMapFull || isReplayMobilePortrait);
   const showReplayMapCloseButton = replayMapExpanded && (!isReplayMobilePortrait || replayMapFull);
   const replayChromeSuppressed = replayChromeHidden || replayChromeHoverHidden;
   const isReplayMobileViewport = isReplayMobilePortrait || isReplayMobileLandscape;
@@ -528,6 +556,12 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
           ? readyStatusText
           : "Bereit für nächste Runde"
         : "Nächste Runde";
+    const nextRoundButtonContent = nextRoundButtonLabel === "Nächste Runde" ? (
+      <span className="punktlandung-next-round-label" aria-label="Nächste Runde">
+        <span>Nächste</span>
+        <span>Runde</span>
+      </span>
+    ) : nextRoundButtonLabel;
   const nextRoundButtonDisabled = advancingRound || (onlineNextRoundGate
     ? isHost
       ? Boolean(room.nextRoundStartsAt)
@@ -759,7 +793,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
 
               <div className="punktlandung-replay-top-actions grid gap-2 justify-self-end sm:flex">
                 <BackButton
-                  className="punktlandung-action-back-button min-h-12"
+                  className="punktlandung-action-back-button punktlandung-optical-arrow-left min-h-12"
                   onClick={() => {
                     setReplayMapSize("closed");
                     setShowImageReplay(false);
@@ -786,9 +820,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                     </Button>
                   )
                 ) : (
-                  <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-12 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
+                  <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-primary-action punktlandung-optical-arrow-right min-h-12 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                     <span className="punktlandung-inline-action-content">
-                      <span>{nextRoundButtonLabel}</span>
+                      <span>{nextRoundButtonContent}</span>
                       <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
                     </span>
                   </Button>
@@ -819,7 +853,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
 
           {!replayChromeSuppressed && (
             <section
-            className={`punktlandung-guess-map-panel ${replayMapFull ? "punktlandung-guess-map-panel--full" : replayMapExpanded ? "punktlandung-guess-map-panel--open" : "punktlandung-guess-map-panel--closed"} origin-bottom-right transform-gpu z-40 rounded-md bg-slate-950/88 p-2.5 shadow-[0_24px_60px_rgba(0,0,0,0.34)] ring-1 ring-indigo-300/45 backdrop-blur-md transition-[width,height,transform] duration-300 sm:p-3 ${replayMapPanelLayout}`}
+            className={`punktlandung-guess-map-panel ${replayMapFull ? "punktlandung-guess-map-panel--full" : replayMapExpanded ? "punktlandung-guess-map-panel--open" : "punktlandung-guess-map-panel--closed"} origin-bottom-right transform-gpu z-40 overflow-hidden rounded-md bg-slate-950/88 p-2.5 shadow-[0_24px_60px_rgba(0,0,0,0.34)] ring-1 ring-indigo-300/45 backdrop-blur-md transition-[width,height,transform] duration-300 sm:p-3 ${replayMapPanelLayout}`}
             onMouseEnter={openReplayMapByHover}
             onMouseLeave={closeReplayMapByHover}
             onClick={() => {
@@ -844,7 +878,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                     </Button>
                   )}
                   <Button
-                    className="punktlandung-replay-map-back punktlandung-map-secondary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
+                    className="punktlandung-replay-map-back punktlandung-map-secondary-button punktlandung-optical-arrow-left min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm"
                     tone="ghost"
                     onClick={(event) => {
                       event.stopPropagation();
@@ -878,9 +912,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                       </Button>
                     )
                   ) : (
-                    <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button punktlandung-primary-action min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
+                    <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button punktlandung-primary-action punktlandung-optical-arrow-right min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                       <span className="punktlandung-inline-action-content">
-                        <span>{nextRoundButtonLabel}</span>
+                        <span>{nextRoundButtonContent}</span>
                         <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
                       </span>
                     </Button>
@@ -907,6 +941,8 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                     players={canonicalPlayers}
                     summary={summary}
                     guesses={room.guesses}
+                    resultPaddingScale={0.9}
+                    resultZoomScale={replayMapFull ? 1.08 : 1.16}
                     noPan={!replayMapInteractive}
                     noZoom={!replayMapInteractive}
                     showLabels={replayMapInteractive}
@@ -1030,13 +1066,25 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-300">{accountAuthenticated ? "Automatisch speichern" : "Spielstand mitnehmen"}</p>
                 {serverRanked && finished ? (
                   rankedSyncStatus === "verified" ? (
-                    <p className="mt-1 text-sm font-semibold text-emerald-100">Verifiziert · im Konto gespeichert.</p>
+                    <p className="mt-1 text-sm font-semibold text-emerald-100">Gespeichert und fürs Ranking gewertet.</p>
                   ) : rankedSyncStatus === "uploading" ? (
-                    <p className="mt-1 text-sm font-semibold text-slate-200">Lokal gesichert · Übertragung läuft …</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird gerade gespeichert …</p>
                   ) : rankedSyncStatus === "pending" ? (
-                    <p className="mt-1 text-sm font-semibold text-amber-100">Lokal gesichert · {pendingUploadCount} Übertragung{pendingUploadCount === 1 ? "" : "en"} ausstehend. Wir versuchen es automatisch erneut.</p>
+                    <p className="mt-1 text-sm font-semibold text-amber-100">Die Speicherung läuft weiter. Dein Ergebnis bleibt erhalten.</p>
+                  ) : !accountAuthenticated ? (
+                    saveOfferDismissed ? (
+                      <p className="mt-1 text-sm font-semibold text-slate-300">Nicht gespeichert.</p>
+                    ) : (
+                      <div className="mt-1 grid gap-2">
+                        <p className="text-sm font-semibold text-slate-200">Melde dich an oder erstelle ein Konto, um deine Partie zu speichern und ins Ranking aufzunehmen. Das Spielen bleibt kostenlos.</p>
+                        <div className="flex flex-wrap gap-2">
+                          <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis">Spielstand speichern</ButtonLink>
+                          <Button tone="ghost" className="min-h-11 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
+                        </div>
+                      </div>
+                    )
                   ) : (
-                    <p className="mt-1 text-sm font-semibold text-slate-200">Lokal gesichert · Serverbestätigung wird vorbereitet.</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird deinem Konto hinzugefügt …</p>
                   )
                 ) : saveState === "saved" ? (
                   <p className="mt-1 text-sm font-semibold text-emerald-100">Gespeichert. Deine Partie erscheint jetzt im Spielverlauf.</p>
@@ -1046,11 +1094,11 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                   <p className="mt-1 text-sm font-semibold text-slate-200">Melde dich an, um diese Runde dauerhaft zu speichern. <a className="text-emerald-300 underline" href="/anmelden?returnTo=%2Fendergebnis">Jetzt anmelden</a></p>
                 ) : !accountAuthenticated && saveOfferDismissed ? (
                   <p className="mt-1 text-sm font-semibold text-slate-300">Nicht gespeichert.</p>
-                ) : !accountAuthenticated ? (
+                  ) : !accountAuthenticated ? (
                   <div className="mt-1 grid gap-2">
                     <p className="text-sm font-semibold text-slate-200">Möchtest du diese Partie dauerhaft speichern? Das Spiel bleibt auch ohne Konto kostenlos.</p>
                     <div className="flex flex-wrap gap-2">
-                      <a className="inline-flex min-h-9 items-center rounded-lg bg-emerald-300 px-3 text-xs font-black text-slate-950" href="/anmelden?returnTo=%2Fendergebnis">Anmelden &amp; speichern</a>
+                      <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis">Spielstand speichern</ButtonLink>
                       <Button tone="ghost" className="min-h-9 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
                     </div>
                   </div>
@@ -1071,7 +1119,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
               <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={showResolutionSurface}>
                 <span className="punktlandung-inline-action-content"><Images aria-hidden="true" className="h-4 w-4" /><span>Letzte Auflösung</span></span>
               </Button>
-              <BackButton className="min-h-11" disabled={!isHost} onClick={onBackToLobby} label="Zurueck" />
+              <BackButton className="punktlandung-optical-arrow-left min-h-11" disabled={!isHost} onClick={handleBackToLobby} label="Zurueck" />
               <Button tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" disabled={!isHost} onClick={onRestart}>
                 <span className="punktlandung-inline-action-content"><RotateCcw aria-hidden="true" className="h-4 w-4" /><span>Neue Partie</span></span>
               </Button>
@@ -1149,9 +1197,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                   {countryLabel} · {continentLabel}
                 </p>
               </div>
-              <BackButton className="punktlandung-results-mobile-header-back" disabled={!isHost} onClick={onBackToLobby} label="Zurueck" />
+              <BackButton className="punktlandung-results-mobile-header-back" disabled={!isHost} onClick={handleBackToLobby} label="Zurueck" />
               <div className="hidden sm:flex sm:flex-wrap sm:justify-end sm:gap-2">
-                <Button tone="ghost" className="punktlandung-command-button punktlandung-results-action-back min-h-12 text-xs normal-case" disabled={!isHost} onClick={onBackToLobby}>
+                <Button tone="ghost" className="punktlandung-command-button punktlandung-results-action-back punktlandung-optical-arrow-left min-h-12 text-xs normal-case" disabled={!isHost} onClick={handleBackToLobby}>
                   <span className="punktlandung-inline-action-content">
                     <TriangleIcon direction="left" className="h-4 w-4" />
                     <span>Zurück</span>
@@ -1161,9 +1209,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                   Bild nochmal ansehen
                 </Button>
                 {!finished ? (
-                  <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-12 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
+                  <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-primary-action punktlandung-optical-arrow-right min-h-12 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                     <span className="punktlandung-inline-action-content">
-                      <span>{nextRoundButtonLabel}</span>
+                    <span>{nextRoundButtonContent}</span>
                       <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
                     </span>
                   </Button>
@@ -1181,7 +1229,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
           </div>
 
           <div className="punktlandung-results-mobile-actions grid grid-cols-3 gap-2 sm:hidden">
-            <Button tone="ghost" className="min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={!isHost} onClick={onBackToLobby}>
+            <Button tone="ghost" className="punktlandung-optical-arrow-left min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={!isHost} onClick={handleBackToLobby}>
               <span className="punktlandung-inline-action-content">
                 <TriangleIcon direction="left" className="h-4 w-4" />
                 <span>Zurück</span>
@@ -1191,9 +1239,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
               Bild nochmal ansehen
             </Button>
             {!finished ? (
-              <Button sound="select" tone="selected" className="punktlandung-primary-action min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
+              <Button sound="select" tone="selected" className="punktlandung-primary-action punktlandung-optical-arrow-right min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={nextRoundButtonDisabled} onClick={handleNextRoundButton}>
                 <span className="punktlandung-inline-action-content">
-                  <span>{nextRoundButtonLabel}</span>
+                  <span>{nextRoundButtonContent}</span>
                   <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
                 </span>
               </Button>

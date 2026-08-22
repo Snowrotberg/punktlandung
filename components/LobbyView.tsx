@@ -266,8 +266,8 @@ export function LobbyView({
                 <p className="mt-1 text-sm text-slate-400">Großer Bildschirm: Raumleitung und Ergebnisanzeige.</p>
               </div>
               <div className="punktlandung-online-waiting-header-actions flex shrink-0 items-center gap-2">
-                <BackLink className="punktlandung-lobby-header-back punktlandung-mode-action punktlandung-mode-action--secondary" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
-                <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case" disabled={!isHost || players.length === 0 || !canStart} onClick={onStart}>
+                <BackLink className="punktlandung-lobby-header-back punktlandung-optical-arrow-left punktlandung-mode-action punktlandung-mode-action--secondary" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
+                <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-optical-arrow-right punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case" disabled={!isHost || players.length === 0 || !canStart} onClick={onStart}>
                   <span className="punktlandung-inline-action-content">
                     <span>Starten</span>
                     <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />
@@ -398,7 +398,7 @@ export function LobbyView({
           </div>
         </div>
         <div className="punktlandung-touch-only-grid punktlandung-lobby-touch-actions punktlandung-online-waiting-touch-actions fixed inset-x-2 bottom-2 z-50 grid grid-cols-2 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md">
-          <ButtonLink sound="click" tone="ghost" className="punktlandung-lobby-touch-back punktlandung-mode-action punktlandung-mode-action--secondary normal-case" href={leaveHref} onNavigate={onLeave} aria-label="Zurück" title="Zurück">
+          <ButtonLink sound="click" tone="ghost" className="punktlandung-lobby-touch-back punktlandung-optical-arrow-left punktlandung-mode-action punktlandung-mode-action--secondary normal-case" href={leaveHref} onNavigate={onLeave} aria-label="Zurück" title="Zurück">
             <span className="punktlandung-lobby-touch-button-inner">
               <TriangleIcon direction="left" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-back h-5 w-5" />
               <span>Zurück</span>
@@ -407,7 +407,7 @@ export function LobbyView({
           <Button
             sound="select"
             tone="selected"
-            className="punktlandung-command-button punktlandung-lobby-touch-primary punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case"
+            className="punktlandung-command-button punktlandung-lobby-touch-primary punktlandung-optical-arrow-right punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case"
             disabled={!isHost || players.length === 0 || !canStart}
             onClick={onStart}
           >
@@ -453,8 +453,8 @@ export function LobbyView({
                 <span className="block text-lg font-black tracking-[0.18em] text-white">{copied ? "KOPIERT" : code}</span>
               </button>
             )}
-            <BackLink className="punktlandung-lobby-header-back punktlandung-mode-action punktlandung-mode-action--secondary" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
-            <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
+            <BackLink className="punktlandung-lobby-header-back punktlandung-optical-arrow-left punktlandung-mode-action punktlandung-mode-action--secondary" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
+            <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-optical-arrow-right punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
               <span className="punktlandung-inline-action-content">
                 <span>{primaryActionLabel}</span>
                 {primaryActionLabel === "Starten" && <TriangleIcon direction="right" className="punktlandung-inline-action-icon h-4 w-4" />}
@@ -462,7 +462,7 @@ export function LobbyView({
             </Button>
           </div>
           <div className="punktlandung-lobby-mobile-back shrink-0">
-            <BackLink className="punktlandung-mode-action punktlandung-mode-action--secondary" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
+            <BackLink className="punktlandung-optical-arrow-left punktlandung-mode-action punktlandung-mode-action--secondary" href={leaveHref} onNavigate={onLeave} label="Zurueck" />
           </div>
         </header>
 
@@ -1006,13 +1006,13 @@ export function LobbyView({
           </div>
         )}
         <div className="punktlandung-touch-only-grid punktlandung-lobby-touch-actions fixed inset-x-2 bottom-2 z-50 grid grid-cols-1 gap-2 rounded-md bg-slate-950/92 p-2 shadow-[0_-18px_44px_rgba(0,0,0,0.32)] ring-1 ring-slate-700/70 backdrop-blur-md lg:hidden">
-          <ButtonLink sound="click" tone="ghost" className="punktlandung-lobby-touch-back punktlandung-mode-action punktlandung-mode-action--secondary normal-case" href={leaveHref} onNavigate={onLeave} aria-label="Zurück" title="Zurück">
+          <ButtonLink sound="click" tone="ghost" className="punktlandung-lobby-touch-back punktlandung-optical-arrow-left punktlandung-mode-action punktlandung-mode-action--secondary normal-case" href={leaveHref} onNavigate={onLeave} aria-label="Zurück" title="Zurück">
             <span className="punktlandung-lobby-touch-button-inner">
               <TriangleIcon direction="left" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-back h-5 w-5" />
               <span>Zurück</span>
             </span>
           </ButtonLink>
-          <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-lobby-touch-primary punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
+          <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-lobby-touch-primary punktlandung-optical-arrow-right punktlandung-mode-action punktlandung-mode-action--primary min-h-12 normal-case" disabled={primaryActionDisabled} onClick={handlePrimaryAction}>
             <span className="punktlandung-lobby-touch-button-inner">
               <span>{primaryActionLabel}</span>
               <TriangleIcon direction="right" className="punktlandung-lobby-touch-icon punktlandung-lobby-touch-icon-start h-5 w-5" />

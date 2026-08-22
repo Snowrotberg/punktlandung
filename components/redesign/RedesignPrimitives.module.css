@@ -49,8 +49,8 @@
   --pl-ambient-violet-origin-x: 88%;
   --pl-ambient-violet-origin-y: 70%;
   --pl-ambient-violet-radius: 36rem;
-  --pl-grid-attachment: fixed;
-  --pl-horizontal-grid-position: 0 0;
+  --pl-grid-attachment: local;
+  --pl-horizontal-grid-start: 4.75rem;
   --pl-header-separator-color: var(--pl-line);
   --pl-header-separator-width: 1px;
 
@@ -73,12 +73,41 @@
       transparent
     ),
     linear-gradient(90deg, var(--pl-grid) var(--pl-grid-line-width), transparent var(--pl-grid-line-width)),
-    linear-gradient(180deg, var(--pl-horizontal-grid-color) var(--pl-grid-line-width), transparent var(--pl-grid-line-width));
-  background-position: 0 0, 0 0, 0 0, var(--pl-horizontal-grid-position);
-  background-repeat: no-repeat, no-repeat, repeat, repeat;
-  background-size: 100% 100%, 100% 100%, var(--pl-grid-size) var(--pl-grid-size), var(--pl-grid-size) var(--pl-grid-size);
-  background-attachment: fixed, fixed, var(--pl-grid-attachment), var(--pl-grid-attachment);
+    linear-gradient(180deg, transparent, transparent);
+  background-position: 0 0, 0 0, 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat, repeat, no-repeat;
+  background-size: 100% 100%, 100% 100%, var(--pl-grid-size) var(--pl-grid-size), 100% 100%;
+  background-attachment: fixed, fixed, var(--pl-grid-attachment), fixed;
   box-shadow: 0 1.5rem 4rem var(--pl-shadow);
+}
+
+/* Keep horizontal grid lines below the shared header. A separate clipped
+   layer prevents the repeating pattern from creating a line inside it. */
+.shell::before {
+  position: absolute;
+  z-index: 0;
+  top: var(--pl-horizontal-grid-start);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  content: "";
+  pointer-events: none;
+  background-image: linear-gradient(180deg, var(--pl-horizontal-grid-color) var(--pl-grid-line-width), transparent var(--pl-grid-line-width));
+  background-position: 0 0;
+  background-repeat: repeat-y;
+  background-size: var(--pl-grid-size) var(--pl-grid-size);
+}
+
+.shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Menus opened from the shared header must sit above every page section.
+   The shell children are separate stacking contexts, so raising only the
+   dropdown itself is not sufficient. */
+.shell > .header {
+  z-index: 200;
 }
 
 @media (min-width: 150rem) {
@@ -108,6 +137,7 @@
 
 @media (min-width: 150rem) {
   .shell {
+    --pl-horizontal-grid-start: 7rem;
     --pl-grid: rgb(148 163 184 / 0.07);
     --pl-header-separator-color: color-mix(in srgb, var(--pl-line) 70%, #94a3b8 30%);
   }
@@ -143,8 +173,19 @@
 }
 
 .header {
+  box-sizing: border-box;
+  min-height: 4.75rem;
   justify-content: space-between;
   border-bottom: var(--pl-header-separator-width) solid var(--pl-header-separator-color);
+}
+
+/* On phones the shell is the viewport surface itself. Keep the page edge to
+   edge so the shared background, gradient and footer do not stop at rounded
+   corners on individual routes. */
+@media (max-width: 52rem) {
+  .shell {
+    border-radius: 0;
+  }
 }
 
 .brandGroup {
@@ -579,6 +620,10 @@
 }
 
 @media (max-width: 30rem) {
+  .shell { --pl-horizontal-grid-start: 4rem; }
+
+  .header { min-height: 4rem; }
+
   .brandGroup { gap: .35rem; }
   .brand {
     gap: 0.45rem;
@@ -682,6 +727,10 @@
 
 /* Phone Landscape: wordmark and WEB +10%; pin remains unchanged. */
 @media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
+  .shell { --pl-horizontal-grid-start: 4rem; }
+
+  .header { min-height: 4rem; }
+
   .brandBadge {
     display: none;
   }
@@ -700,6 +749,35 @@
     margin-left: 0;
     margin-right: -0.5rem;
     transform: translateX(-0.75rem) scale(1.25);
+  }
+}
+
+/* Every redesigned page uses the same header geometry. Route modules may
+   style their own content, but they must not move the shared header or its
+   separator relative to the shell grid. */
+.shell > .header {
+  min-height: 4.75rem;
+  padding: var(--pl-space-4) var(--pl-space-6);
+}
+
+@media (min-width: 150rem) {
+  .shell > .header {
+    min-height: 7rem;
+    padding: 1.5rem 4rem;
+  }
+}
+
+@media (max-width: 30rem) {
+  .shell > .header {
+    min-height: 4rem;
+    padding: .65rem 1rem;
+  }
+}
+
+@media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
+  .shell > .header {
+    min-height: 4rem;
+    padding: .65rem 1rem;
   }
 }
 

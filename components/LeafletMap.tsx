@@ -424,8 +424,9 @@ function homePreviewPlacements(mapSize: { x: number; y: number }, locationTitle:
   const playerDimensions = scaleForViewport(labelSize(playerLabel, false, compact));
   return {
     actual: {
-      // The target label sits below and to the left of the pin. Its visible
-      // right edge ends exactly beneath the geographic pin tip.
+      // The home-preview target label sits below and to the left of the pin.
+      // Result maps use the collision solver below so north/south ordering
+      // can be respected there.
       offset: [
         -actualDimensions.width / 2,
         actualDimensions.height / 2 + actualBadgeGap
@@ -433,9 +434,8 @@ function homePreviewPlacements(mapSize: { x: number; y: number }, locationTitle:
       size: actualDimensions
     },
     player: {
-      // The player label sits above and to the right of the pin. Its visible
-      // left edge starts exactly above the pin tip; the remaining vertical
-      // gap mirrors the target label's gap beneath the target ellipse.
+      // The home-preview player label sits above and to the right of the pin.
+      // Result maps use the collision solver below for the semantic ordering.
       offset: [playerDimensions.width / 2, -playerDimensions.height / 2 - playerBadgeGap] as [number, number],
       size: playerDimensions
     }
@@ -975,6 +975,9 @@ function resultTooltipPlacement(
   const compact = size.x <= 520 && size.y >= size.x;
   const dimensions = labelSize(label, actual, compact);
   const candidates = placementCandidates(dimensions.width, dimensions.height, actual, preferredVector, compact);
+  const verticalCandidates = strictVerticalSide && preferredVector?.y
+    ? candidates.filter((candidate) => Math.sign(candidate.dy) === Math.sign(preferredVector.y))
+    : candidates;
   const viewportMargin = compact ? 18 : 30;
   const pinRect: LabelRect = {
     left: pixel.x - 28,
@@ -998,7 +1001,7 @@ function resultTooltipPlacement(
       }
     | undefined;
 
-  for (const [index, candidate] of candidates.entries()) {
+  for (const [index, candidate] of verticalCandidates.entries()) {
     const { placement, rect } = clampLabelPlacementToViewport(
       pixel,
       { offset: [candidate.dx, candidate.dy], size: dimensions },
@@ -1052,31 +1055,13 @@ function resultTooltipPlacement(
 function pinBlockRect(map: LeafletMapInstance, point: LatLng): LabelRect {
   const pixel = map.latLngToContainerPoint([point.lat, point.lng]);
   return {
-    left: pixel.x - 28,
-    top: pixel.y - 56,
-    right: pixel.x + 28,
-    bottom: pixel.y + 20
+    // Include the visible pin and its landing rings. Labels must never use
+    // the narrow gap between two nearby markers as an apparent free lane.
+    left: pixel.x - 34,
+    top: pixel.y - 64,
+    right: pixel.x + 34,
+    bottom: pixel.y + 28
   };
-}
-
-function vectorAwayFrom(from: PixelPoint, to: PixelPoint): PixelPoint {
-  const x = from.x - to.x;
-  const y = from.y - to.y;
-  const length = Math.hypot(x, y) || 1;
-  return { x: x / length, y: y / length };
-}
-
-function blendedVector(vectors: Array<{ vector: PixelPoint; weight: number }>): PixelPoint {
-  const combined = vectors.reduce(
-    (sum, item) => ({
-      x: sum.x + item.vector.x * item.weight,
-      y: sum.y + item.vector.y * item.weight
-    }),
-    { x: 0, y: 0 }
-  );
-  const length = Math.hypot(combined.x, combined.y);
-  if (length < 0.001) return { x: 1, y: -0.35 };
-  return { x: combined.x / length, y: combined.y / length };
 }
 
 function ResultMarker({
@@ -1275,7 +1260,6 @@ function ResultsMarkers({
     const occupied: LabelRect[] = [];
     const playerPlacements = new Map<string, LabelPlacement>();
     const mapSize = map.getSize();
-    const mapCenter = { x: mapSize.x / 2, y: mapSize.y / 2 };
     const displayLocation = displayGeometry.location;
     const locationPoint = map.latLngToContainerPoint([displayLocation.lat, displayLocation.lng]);
     const accountHistoryLayout = resultLabelLayout === "account-history";
@@ -1285,6 +1269,10 @@ function ResultsMarkers({
     const firstGuessPoint = firstGuess
       ? map.latLngToContainerPoint([firstGuess.lat, firstGuess.lng])
       : null;
+    const compactResultLayout = mapSize.x <= 520 && mapSize.y >= mapSize.x;
+    const nearSameLatitude = firstGuessPoint
+      ? Math.abs(firstGuessPoint.y - locationPoint.y) <= (compactResultLayout ? 16 : 8)
+      : false;
     const blockedSegments: PixelSegment[] = rankedResults.flatMap((result) => {
       const displayGuess = displayGeometry.resultGuesses.get(result.playerId);
       if (!result.guess || !displayGuess) return [];
@@ -1337,11 +1325,14 @@ function ResultsMarkers({
       occupied,
       blockedSegments.map((segment) => trimSegment(segment, 0, 54)),
       true,
-      accountHistoryLayout && firstGuessPoint
-        ? { x: 0, y: locationPoint.y <= firstGuessPoint.y ? -1 : 1 }
+      firstGuessPoint
+        ? {
+            x: 0,
+            y: nearSameLatitude ? -1 : locationPoint.y < firstGuessPoint.y ? -1 : 1
+          }
         : undefined,
       resultControlInset,
-      accountHistoryLayout
+      true
     );
     occupied.push(paddedRect(actualPlacement.rect, 12));
     occupied.push(paddedRect(pinBlockRect(map, displayLocation), 8));
@@ -1353,14 +1344,14 @@ function ResultsMarkers({
       const hideDistance = isTerritoryHit(location, result);
       const resultLabel = hideDistance ? territoryHitLabel(location) : formatDistance(result.distanceKm);
       const label = `#${index + 1} ${playerName(players, result.playerId)} · ${resultLabel}`;
-      const outwardVector = vectorAwayFrom(guessPoint, mapCenter);
-      const targetVector = vectorAwayFrom(guessPoint, locationPoint);
-      const preferredVector = accountHistoryLayout
-        ? { x: 0, y: guessPoint.y <= locationPoint.y ? -1 : 1 }
-        : blendedVector([
-            { vector: outwardVector, weight: 1.85 },
-            { vector: targetVector, weight: 1.15 }
-          ]);
+      // Keep the two semantic labels on opposite vertical sides. A small
+      // tolerance prevents sub-pixel projection differences from flipping
+      // the layout when both pins are effectively on the same latitude.
+      const playerNearSameLatitude = Math.abs(guessPoint.y - locationPoint.y) <= (compactResultLayout ? 16 : 8);
+      const preferredVector = {
+        x: 0,
+        y: playerNearSameLatitude ? 1 : guessPoint.y < locationPoint.y ? -1 : 1
+      };
       const playerDimensions = labelSize(label, false, mapSize.x <= 520 && mapSize.y >= mapSize.x);
       const placement = resultLabelLayout === "home-preview"
         ? {
@@ -1382,7 +1373,7 @@ function ResultsMarkers({
         false,
         preferredVector,
         resultControlInset,
-        accountHistoryLayout
+        true
       );
       occupied.push(paddedRect(placement.rect, 12));
       playerPlacements.set(result.playerId, placement.placement);

@@ -21,7 +21,7 @@ export default async function DirectSoloPage({ searchParams }: { searchParams: P
   return (
     <AppErrorBoundary>
       <SoundProvider>
-        <GameApp key="solo-direct" initialMode="solo" directStart accountsEnabled={account.enabled} accountAuthenticated={account.authenticated} accountDisplayName={account.displayName} />
+        <GameApp key="solo-direct" initialMode="solo" directStart accountsEnabled={account.enabled} rankedGamesEnabled={account.rankedGamesEnabled} accountAuthenticated={account.authenticated} accountDisplayName={account.displayName} />
       </SoundProvider>
     </AppErrorBoundary>
   );
