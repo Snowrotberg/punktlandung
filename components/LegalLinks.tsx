@@ -10,6 +10,7 @@ type LegalLinksProps = {
   includeInfos?: boolean;
   align?: "start" | "center" | "end";
   preserveSession?: boolean;
+  onNavigate?: () => void;
   layout?: "default" | "grouped";
 };
 
@@ -26,11 +27,12 @@ const alignmentClasses = {
   end: "justify-end text-right"
 };
 
-export function LegalLinks({ className = "", includeInfos = true, align = "start", preserveSession = false, layout = "default" }: LegalLinksProps) {
+export function LegalLinks({ className = "", includeInfos = true, align = "start", preserveSession = false, onNavigate, layout = "default" }: LegalLinksProps) {
   const pathname = usePathname();
   const rememberReturn = (event: MouseEvent<HTMLAnchorElement>) => {
     if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     if (preserveSession && pathname) rememberLegalReturn(pathname);
+    onNavigate?.();
   };
 
   const visibleLinks = links.filter((link) => includeInfos || link.href !== "/infos");

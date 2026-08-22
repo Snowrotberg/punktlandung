@@ -29,8 +29,9 @@ import { TriangleIcon } from "./TriangleIcon";
 import { useSound } from "./SoundProvider";
 import redesignStyles from "./redesign/RedesignResultsView.module.css";
 import { saveCompletedGame, type SaveCompletedGameInput } from "@/app/endergebnis/actions";
-import { enqueueCompletedGameSave, removeCompletedGameSave } from "@/lib/completedGameSaveQueue.client";
+import { enqueueCompletedGameSave, flushCompletedGameSaves } from "@/lib/completedGameSaveQueue.client";
 import type { RankedSyncStatus } from "@/hooks/useRankedSoloGame";
+import { enqueueRankedGameClaim } from "@/lib/rankedGameClaimQueue.client";
 import { playerColorAt } from "@/lib/playerPalette";
 
 const punktlandungDistanceKm = 0.5;
@@ -127,10 +128,12 @@ type ResultsViewProps = {
   onBackToLobby: () => void;
   onRestart: () => void;
   onLeave: () => void;
+  onDiscardSession?: () => void;
   redesign?: boolean;
   accountsEnabled?: boolean;
   accountAuthenticated?: boolean;
   serverRanked?: boolean;
+  rankedGameId?: string | null;
   rankedSyncStatus?: RankedSyncStatus;
   pendingUploadCount?: number;
   initialSurface?: "resolution" | "final";
@@ -392,7 +395,7 @@ function writeStoredFinalSurface(room: RoomState, showFinal: boolean): void {
   }
 }
 
-export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBackToLobby, onRestart, redesign = false, accountsEnabled = false, accountAuthenticated = false, serverRanked = false, rankedSyncStatus = "secured", pendingUploadCount = 0, initialSurface }: ResultsViewProps) {
+export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBackToLobby, onRestart, onDiscardSession, redesign = false, accountsEnabled = false, accountAuthenticated = false, serverRanked = false, rankedGameId = null, rankedSyncStatus = "secured", pendingUploadCount = 0, initialSurface }: ResultsViewProps) {
   const { playSuccess } = useSound();
   const [revealed, setRevealed] = useState(false);
   const [nowTick, setNowTick] = useState(Date.now());
@@ -494,10 +497,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
         // Queue before the network request. A reload or route change can no
         // longer discard the completed result while the request is pending.
         enqueueCompletedGameSave(input);
-        const result = await saveCompletedGame(input);
-        const saved = result.ok;
-        if (saved) removeCompletedGameSave(input.saveKey);
-        setSaveState(saved ? "saved" : result.code === "auth_required" ? "auth" : "error");
+        const result = await flushCompletedGameSaves(saveCompletedGame);
+        const saved = result.savedKeys.includes(input.saveKey);
+        setSaveState(saved ? "saved" : result.authRequired ? "auth" : "error");
         return saved;
       } catch (error) {
         console.error("[ResultsView] completed game save failed", error);
@@ -520,6 +522,15 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const handleBackToLobby = async () => {
     if (finished && accountAuthenticated && saveState !== "saved") await saveGame();
     onBackToLobby();
+  };
+  const prepareSaveAndOpenLogin = () => {
+    if (serverRanked && rankedGameId) {
+      enqueueRankedGameClaim(rankedGameId);
+    } else {
+      const input = buildSaveInput();
+      if (input) enqueueCompletedGameSave(input);
+    }
+    window.location.assign("/anmelden?returnTo=%2Fendergebnis");
   };
   const isFlagRound = location?.category === "flags";
   const landingHits = useMemo(
@@ -798,7 +809,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                     setReplayMapSize("closed");
                     setShowImageReplay(false);
                   }}
-                  label={showFinalStandings ? "Zurueck zum Endstand" : "Zurueck zur Aufloesung"}
+                  label={showFinalStandings ? "Zurück zum Endstand" : "Zurück zur Auflösung"}
                 />
                 {finished ? (
                   showFinalStandings ? (
@@ -885,7 +896,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                       setReplayMapSize("closed");
                       setShowImageReplay(false);
                     }}
-                    title={showFinalStandings ? "Zurueck zum Endstand" : "Zurueck zur Aufloesung"}
+                    data-tooltip={showFinalStandings ? "Zurück zum Endstand" : "Zurück zur Auflösung"}
                   >
                     <span className="punktlandung-inline-action-content">
                       <TriangleIcon direction="left" className="h-4 w-4" />
@@ -1078,7 +1089,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                       <div className="mt-1 grid gap-2">
                         <p className="text-sm font-semibold text-slate-200">Melde dich an oder erstelle ein Konto, um deine Partie zu speichern und ins Ranking aufzunehmen. Das Spielen bleibt kostenlos.</p>
                         <div className="flex flex-wrap gap-2">
-                          <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis">Spielstand speichern</ButtonLink>
+                          <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis" onNavigate={prepareSaveAndOpenLogin}>Spielstand speichern</ButtonLink>
                           <Button tone="ghost" className="min-h-11 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
                         </div>
                       </div>
@@ -1091,14 +1102,14 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 ) : accountAuthenticated && saveState === "saving" ? (
                   <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird gerade automatisch gespeichert …</p>
                 ) : saveState === "auth" ? (
-                  <p className="mt-1 text-sm font-semibold text-slate-200">Melde dich an, um diese Runde dauerhaft zu speichern. <a className="text-emerald-300 underline" href="/anmelden?returnTo=%2Fendergebnis">Jetzt anmelden</a></p>
+                    <p className="mt-1 text-sm font-semibold text-slate-200">Melde dich an, um diese Runde dauerhaft zu speichern. <a className="text-emerald-300 underline" href="/anmelden?returnTo=%2Fendergebnis" onClick={(event) => { event.preventDefault(); prepareSaveAndOpenLogin(); }}>Jetzt anmelden</a></p>
                 ) : !accountAuthenticated && saveOfferDismissed ? (
                   <p className="mt-1 text-sm font-semibold text-slate-300">Nicht gespeichert.</p>
                   ) : !accountAuthenticated ? (
                   <div className="mt-1 grid gap-2">
                     <p className="text-sm font-semibold text-slate-200">Möchtest du diese Partie dauerhaft speichern? Das Spiel bleibt auch ohne Konto kostenlos.</p>
                     <div className="flex flex-wrap gap-2">
-                      <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis">Spielstand speichern</ButtonLink>
+                      <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis" onNavigate={prepareSaveAndOpenLogin}>Spielstand speichern</ButtonLink>
                       <Button tone="ghost" className="min-h-9 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
                     </div>
                   </div>
@@ -1119,7 +1130,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
               <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={showResolutionSurface}>
                 <span className="punktlandung-inline-action-content"><Images aria-hidden="true" className="h-4 w-4" /><span>Letzte Auflösung</span></span>
               </Button>
-              <BackButton className="punktlandung-optical-arrow-left min-h-11" disabled={!isHost} onClick={handleBackToLobby} label="Zurueck" />
+              <BackButton className="punktlandung-optical-arrow-left min-h-11" disabled={!isHost} onClick={handleBackToLobby} label="Zurück zu den Spieleinstellungen" />
               <Button tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" disabled={!isHost} onClick={onRestart}>
                 <span className="punktlandung-inline-action-content"><RotateCcw aria-hidden="true" className="h-4 w-4" /><span>Neue Partie</span></span>
               </Button>
@@ -1174,7 +1185,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 );
               })}
             </div>
-            <LegalLinks preserveSession className="punktlandung-final-footer mt-auto border-t border-slate-700/55 pt-3" align="end" />
+            <LegalLinks onNavigate={onDiscardSession} className="punktlandung-final-footer mt-auto border-t border-slate-700/55 pt-3" align="end" />
           </aside>
         </div>
       )}
@@ -1197,9 +1208,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                   {countryLabel} · {continentLabel}
                 </p>
               </div>
-              <BackButton className="punktlandung-results-mobile-header-back" disabled={!isHost} onClick={handleBackToLobby} label="Zurueck" />
+              <BackButton className="punktlandung-results-mobile-header-back" disabled={!isHost} onClick={handleBackToLobby} label="Zurück zu den Spieleinstellungen" />
               <div className="hidden sm:flex sm:flex-wrap sm:justify-end sm:gap-2">
-                <Button tone="ghost" className="punktlandung-command-button punktlandung-results-action-back punktlandung-optical-arrow-left min-h-12 text-xs normal-case" disabled={!isHost} onClick={handleBackToLobby}>
+                <Button data-tooltip="Zurück zu den Spieleinstellungen" tone="ghost" className="punktlandung-route-tooltip punktlandung-command-button punktlandung-results-action-back punktlandung-optical-arrow-left min-h-12 text-xs normal-case" disabled={!isHost} onClick={handleBackToLobby}>
                   <span className="punktlandung-inline-action-content">
                     <TriangleIcon direction="left" className="h-4 w-4" />
                     <span>Zurück</span>
@@ -1229,7 +1240,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
           </div>
 
           <div className="punktlandung-results-mobile-actions grid grid-cols-3 gap-2 sm:hidden">
-            <Button tone="ghost" className="punktlandung-optical-arrow-left min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={!isHost} onClick={handleBackToLobby}>
+            <Button aria-label="Zurück zu den Spieleinstellungen" tone="ghost" className="punktlandung-optical-arrow-left min-h-12 w-full px-3 py-2 text-xs normal-case" disabled={!isHost} onClick={handleBackToLobby}>
               <span className="punktlandung-inline-action-content">
                 <TriangleIcon direction="left" className="h-4 w-4" />
                 <span>Zurück</span>
@@ -1402,8 +1413,8 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
               })}
             </div>
           </div>
-          <LegalLinks preserveSession className="punktlandung-results-footer pt-1" align="start" />
-          <LegalLinks preserveSession className="punktlandung-results-footer-mobile pt-1" align="end" />
+          <LegalLinks onNavigate={onDiscardSession} className="punktlandung-results-footer pt-1" align="start" />
+          <LegalLinks onNavigate={onDiscardSession} className="punktlandung-results-footer-mobile pt-1" align="end" />
         </aside>
         </div>
       )}

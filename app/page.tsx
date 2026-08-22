@@ -24,7 +24,7 @@ export default async function Home({ searchParams }: HomeProps) {
   return (
     <AppErrorBoundary>
       <SoundProvider>
-        <HomeApp accountsEnabled={account.enabled} accountAuthenticated={account.authenticated} accountDisplayName={account.displayName} />
+        <HomeApp accountsEnabled={account.enabled} accountAuthenticated={account.authenticated} accountDisplayName={account.displayName} rankedGamesEnabled={account.rankedGamesEnabled} />
       </SoundProvider>
     </AppErrorBoundary>
   );

@@ -33,6 +33,7 @@ const imageLoadTimeoutMs: Record<GeoLocation["category"], number> = {
 const slowLoadHintMs = 12000;
 const manualSkipHintMs = 15000;
 const locationLoadDeadlineMs = 20000;
+const rankedAutomaticRecoveryMs = 4000;
 const replayLoadOverlayDelayMs = 450;
 const defaultProxyWidth = 1400;
 const previewImageWidth = 160;
@@ -243,6 +244,8 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
   const failureTrackedLocationIds = useRef(new Set<string>());
   const rankedRetryTimerRef = useRef<number | null>(null);
   const skipResetTimerRef = useRef<number | null>(null);
+  const rankedAutomaticRecoveryCountRef = useRef(0);
+  const rankedAutomaticRecoveryRoundRef = useRef<string | null>(null);
   const loadStartedAtRef = useRef(0);
   const loadStartedFromCacheRef = useRef(false);
   const reportedLocationIdRef = useRef<string | null>(null);
@@ -331,6 +334,11 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
   }, []);
 
   useEffect(() => {
+    const roundId = location.id.split("@", 1)[0];
+    if (rankedAutomaticRecoveryRoundRef.current !== roundId) {
+      rankedAutomaticRecoveryRoundRef.current = roundId;
+      rankedAutomaticRecoveryCountRef.current = 0;
+    }
     const cachedImageUrl = acceptedImageUrlFor(location.id)
       ?? (isPreparedImageUrl(location.deliveryUrl) ? location.deliveryUrl! : null);
     loadStartedAtRef.current = performance.now();
@@ -490,6 +498,25 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
       setSkipPending(false);
     }
   };
+
+  useEffect(() => {
+    if (!rankedPromptImage || !isHost || imageLoaded || skipPending) return;
+    const timer = window.setTimeout(() => {
+      if (loadedImageUrlRef.current) return;
+      if (rankedAutomaticRecoveryCountRef.current < 1) {
+        rankedAutomaticRecoveryCountRef.current += 1;
+        void skipCurrentLocation();
+        return;
+      }
+      // After one transparent automatic recovery, keep control with the
+      // player. The action appears promptly instead of after the old 15–20 s
+      // dead wait, while the current image request may still complete.
+      setShowLoadOverlay(true);
+      setShowSlowLoadHint(true);
+      setShowManualSkip(true);
+    }, rankedAutomaticRecoveryMs);
+    return () => window.clearTimeout(timer);
+  }, [imageLoaded, isHost, location.id, rankedPromptImage, skipPending]);
 
   const scale = zoom / 100;
   const canPanImage = !settings.noPan && zoom > 100;

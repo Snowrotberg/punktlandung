@@ -3,6 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import type { AccountSessionReader, VerifiedAccountSession } from "@/lib/accountSession.server";
 import type { LoginProvider } from "@/lib/accountProfile";
 import { resolveSupabaseAccount } from "./auth.server";
+import { hasSupabaseAuthCookie } from "./authCookie.server";
 import type { Database } from "./database.types";
 
 const providers = new Set<LoginProvider>(["email", "google", "apple"]);
@@ -25,27 +26,30 @@ export class SupabaseAccountSessionReader implements AccountSessionReader {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
     const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
     if (!url || !key) return null;
+    // Ranked guest requests carry their own signed HttpOnly guest cookie. Do
+    // not contact Supabase Auth at all when no Supabase session cookie exists;
+    // prompt/read/reroll requests otherwise burn Auth rate limits for a user
+    // who is not signed in.
+    if (!hasSupabaseAuthCookie(request, url)) return null;
     const supabase = createServerClient<Database>(url, key, {
       cookies: {
         getAll: () => requestCookies(request),
         setAll: () => undefined
       }
     });
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
-    const claims = claimsData?.claims as Record<string, unknown> | undefined;
-    if (claimsError || typeof claims?.sub !== "string") return null;
     const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user || data.user.id !== claims.sub) return null;
+    if (error || !data.user) return null;
     const context = await resolveSupabaseAccount(data.user);
     const authenticatedAt = Date.parse(data.user.last_sign_in_at ?? data.user.updated_at ?? data.user.created_at);
-    const exp = typeof claims.exp === "number" ? claims.exp * 1000 : NaN;
-    const rawSessionId = typeof claims.session_id === "string" ? claims.session_id : data.user.id;
     return {
       accountId: context.identity.account.accountId,
-      sessionId: rawSessionId,
+      sessionId: data.user.id,
       provider: provider(data.user),
       authenticatedAt: Number.isSafeInteger(authenticatedAt) ? authenticatedAt : Date.now() - 1_000,
-      expiresAt: Number.isSafeInteger(exp) ? exp : Date.now() + 5 * 60_000
+      // getUser() has just verified the bearer session with Supabase Auth. The
+      // ranked service deliberately revalidates this short-lived app context
+      // on the next request instead of trusting a long local expiry.
+      expiresAt: Date.now() + 5 * 60_000
     };
   }
 }

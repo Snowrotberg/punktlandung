@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
+import { createSupabaseSecretKeyFetch } from "./secretKeyFetch.server";
 
 let cachedClient: SupabaseClient<Database> | null = null;
 
@@ -26,7 +27,8 @@ export function createSupabaseAdminClient(
       autoRefreshToken: false,
       detectSessionInUrl: false,
       persistSession: false
-    }
+    },
+    global: { fetch: createSupabaseSecretKeyFetch(secretKey) }
   });
   return cachedClient;
 }

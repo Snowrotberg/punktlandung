@@ -57,11 +57,8 @@ export async function resolveSupabaseAccount(
 export async function getSupabaseAccountContext(): Promise<SupabaseAccountContext | null> {
   if (!supabaseAccountsEnabled()) return null;
   const supabase = await createClient();
-  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
-  if (claimsError || !claimsData?.claims?.sub) return null;
-
   const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user || data.user.id !== claimsData.claims.sub) return null;
+  if (error || !data.user) return null;
   try {
     return await resolveSupabaseAccount(data.user);
   } catch (error) {

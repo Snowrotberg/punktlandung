@@ -16791,9 +16791,9 @@ body .punktlandung-lobby
   }
 
   body .punktlandung-game-shell .punktlandung-task-card {
-    background: linear-gradient(180deg, rgba(49, 46, 129, 0.42), rgba(2, 6, 23, 0.78)) !important;
-    border: 1px solid rgba(129, 140, 248, 0.72) !important;
-    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), 0 0 28px rgba(129, 140, 248, 0.2) !important;
+    background: rgba(2, 6, 23, 0.46) !important;
+    border: 0 !important;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24), 0 0 28px rgba(52, 211, 153, 0.12) !important;
     height: 3.75rem !important;
     max-width: none !important;
     min-height: 3.75rem !important;
@@ -19384,6 +19384,45 @@ body :is(.punktlandung-back-button, .punktlandung-back-link):not(:disabled):not(
   outline: none !important;
   transform: none !important;
   translate: 0 0 !important;
+}
+
+/* Purpose labels for route-changing back controls. Native title tooltips use
+   browser styling and appeared as a detached black box over the game. */
+body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route-tooltip)[data-tooltip] {
+  position: relative;
+}
+
+body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route-tooltip)[data-tooltip]::after {
+  background: rgba(8, 18, 34, 0.96);
+  border: 1px solid rgba(110, 231, 183, 0.55);
+  border-radius: 0.4rem;
+  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.38);
+  color: rgb(226 232 240);
+  content: attr(data-tooltip);
+  font-size: 0.7rem;
+  font-weight: 700;
+  left: 50%;
+  line-height: 1.25;
+  max-width: min(18rem, calc(100vw - 1.5rem));
+  opacity: 0;
+  padding: 0.42rem 0.58rem;
+  pointer-events: none;
+  position: absolute;
+  text-transform: none;
+  top: calc(100% + 0.5rem);
+  transform: translateX(-50%) translateY(-0.2rem);
+  transition: opacity 120ms ease, transform 120ms ease;
+  visibility: hidden;
+  white-space: nowrap;
+  z-index: 140;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route-tooltip)[data-tooltip]:is(:hover, :focus-visible)::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    visibility: visible;
+  }
 }
 
 /* Canonical setup-page layout. This must remain after legacy viewport rules. */
