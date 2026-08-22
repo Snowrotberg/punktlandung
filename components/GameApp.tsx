@@ -1,12 +1,16 @@
 ﻿"use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { categoryOptions } from "@/lib/categories";
 import { trackAnalyticsEvent } from "@/lib/analytics";
-import { preferLocalRequiredSession } from "@/lib/gameSessionSelection";
-import { requestSetupResume, useLocalGame } from "@/hooks/useLocalGame";
+import { preferLocalRequiredSession, shouldRestoreRankedSoloSession, shouldUseRankedSoloSession } from "@/lib/gameSessionSelection";
+import { saveCompletedGame } from "@/app/endergebnis/actions";
+import { flushCompletedGameSaves } from "@/lib/completedGameSaveQueue.client";
+import { useLocalGame } from "@/hooks/useLocalGame";
+import { clearSetupResumeRequest, clearVisibleResumeSetup, markResumeSetupVisible, requestSetupResume, setupResumeUrl, shouldDiscardResumeOnHistoryExit } from "@/lib/gameResume.client";
+import { gameplayRouteForStatus } from "@/lib/gameplayRoute";
 import { useRankedSoloGame } from "@/hooks/useRankedSoloGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
 import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
@@ -46,6 +50,7 @@ export type RequiredGameStatus = Extract<RoundStatus, "guessing" | "results" | "
 const activeSessionStorageKey = "punktlandung-active-session-v1";
 const sessionResetStorageKey = "punktlandung-reset-session-v1";
 const historyStateKey = "punktlandung-history-v1";
+const gameBackBoundaryStateKey = "punktlandung-game-back-boundary-v1";
 const trackedGameStartPrefix = "punktlandung-ga-game-start-";
 const trackedGameCompletePrefix = "punktlandung-ga-game-complete-";
 const redesignHomeEnabled = process.env.NEXT_PUBLIC_REDESIGN_HOME !== "false";
@@ -208,10 +213,6 @@ function statusLabel(status: RequiredGameStatus) {
   return "Endergebnis";
 }
 
-function GameStateLoading() {
-  return <main className="min-h-dvh bg-slate-950" aria-busy="true" aria-label="Spielrunde wird vorbereitet" />;
-}
-
 function GameStateGuard({ requiredStatus, currentStatus }: { requiredStatus: RequiredGameStatus; currentStatus?: RoundStatus }) {
   return (
     <main className="grid min-h-dvh place-items-center bg-slate-950 p-4 text-slate-50">
@@ -290,32 +291,42 @@ export function GameApp({
   resumeRankedGame?: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const routeInitialMode: InitialLocalGameMode | undefined = initialMode === "home" ? undefined : initialMode;
   const localGame = useLocalGame(routeInitialMode, Boolean(requiredStatus));
   // An explicit signed guest resume link must use the server-backed ranked
   // game even when no player account is signed in. Falling back to useLocalGame
   // here can silently replace the requested game with an unrelated browser
   // session.
-  // A guest's local game must remain the active session on the setup route.
-  // The availability of the ranked feature alone must not replace it with a
-  // fresh ranked setup before the local resume marker has been consumed.
-  const rankedSoloEnabled = Boolean(accountAuthenticated) || resumeRankedGame;
-  const rankedSoloRestoreEnabled = Boolean(requiredStatus) || resumeRankedGame;
-  const rankedSoloGame = useRankedSoloGame(rankedSoloEnabled, rankedSoloRestoreEnabled, accountAuthenticated);
+  // Rankings-enabled Solo games are server-backed for signed-in players and
+  // guests alike. A deliberately restored legacy-local session keeps priority
+  // so an older in-progress game is never silently replaced.
+  const rankedSoloEnabled = Boolean(rankedGamesEnabled) || resumeRankedGame;
+  // Opening the normal setup or direct-play route always starts a fresh flow.
+  // Stored ranked games are restored only on gameplay/result routes or through
+  // the explicit "Spiel fortsetzen" action.
+  const rankedSoloRestoreEnabled = shouldRestoreRankedSoloSession(requiredStatus, resumeRankedGame);
+  const rankedSoloGame = useRankedSoloGame(
+    rankedSoloEnabled,
+    rankedSoloRestoreEnabled,
+    accountAuthenticated,
+    accountAuthenticated || resumeRankedGame
+  );
   const routeAllowsRankedSolo = initialMode !== "couch" && initialMode !== "online";
   const localRequiredSessionHasPriority = preferLocalRequiredSession(
     requiredStatus,
     localGame.restoring,
     localGame.room?.status
   );
-  const rankedSoloContext = rankedSoloEnabled
-    && routeAllowsRankedSolo
-    && !localRequiredSessionHasPriority
-    // A normal Solo click must open the local setup immediately. Ranked
-    // A signed-in Solo setup still creates a ranked game when the player
-    // starts it, but it must not restore an older ranked game merely because
-    // the browser opened the setup route again.
-    && (resumeRankedGame || Boolean(requiredStatus) || Boolean(accountAuthenticated));
+  const localSetupSessionHasPriority = initialMode === "solo"
+    && (localGame.restoring || Boolean(localGame.resumePending) || (localGame.room?.status !== undefined && localGame.room.status !== "lobby"));
+  const rankedSoloContext = shouldUseRankedSoloSession({
+    rankedGamesEnabled: rankedSoloEnabled,
+    resumeRankedGame,
+    routeAllowsRankedSolo,
+    localSessionHasPriority: localRequiredSessionHasPriority || localSetupSessionHasPriority,
+    onSoloFlow: resumeRankedGame || Boolean(requiredStatus) || initialMode === "solo"
+  });
   const rankedRestoring = rankedSoloContext && rankedSoloGame.restoring;
   const onlineGame = useOnlineRoomSocket();
   const { enabled: soundEnabled, toggle: toggleSound, playSelect } = useSound();
@@ -324,7 +335,7 @@ export function GameApp({
   const [pendingJoinCode, setPendingJoinCode] = useState<string | null>(null);
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [pendingOnlineSettings, setPendingOnlineSettings] = useState<GameSettings | null>(null);
-  const [startingRound, setStartingRound] = useState(directStart);
+  const [startingRound, setStartingRound] = useState(false);
   const initialModeHandledRef = useRef(false);
   const initialSetupSettingsHandledRef = useRef(false);
   const pendingDirectStartRef = useRef(false);
@@ -352,28 +363,59 @@ export function GameApp({
     cancelRound,
     skipLocation,
     restart,
+    leaveRoom,
     setTeam,
     readyNextRound
   } = activeGame;
   const resumePending = "resumePending" in activeGame && activeGame.resumePending;
   const resumeRound = "resumeRound" in activeGame ? activeGame.resumeRound : undefined;
   const discardResume = "discardResume" in activeGame ? activeGame.discardResume : undefined;
+  const restorationPending = isOnlineFlow
+    ? onlineGame.restoring
+    : rankedSoloContext
+      ? rankedRestoring
+      : localGame.restoring;
+  const gameplayRoute = gameplayRouteForStatus(room?.status, Boolean(resumePending));
+  const gameplayRouteMismatch = Boolean(gameplayRoute && pathname !== gameplayRoute);
+  const requestedGameplayRouteRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!requiredStatus || !room || room.status === "lobby") return;
+    if (restorationPending || !gameplayRoute || pathname === gameplayRoute) {
+      if (pathname === gameplayRoute) requestedGameplayRouteRef.current = null;
+      return;
+    }
+    if (requestedGameplayRouteRef.current === gameplayRoute) return;
+    requestedGameplayRouteRef.current = gameplayRoute;
+    router.replace(gameplayRoute);
+  }, [gameplayRoute, pathname, restorationPending, router]);
+
+  useEffect(() => {
+    if (!room || room.status === "lobby" || resumePending || restorationPending || pathname !== gameplayRoute) return;
     const handleGameHistoryReturn = () => {
       const setupPath = room.kind === "online" ? "/online-modus" : room.settings.localMode === "couch" ? "/party-modus" : "/solo-modus";
-      if (window.location.pathname !== setupPath) return;
-      requestSetupResume();
-      if (rankedSoloContext && room.kind === "solo") {
-        const url = new URL(window.location.href);
-        url.searchParams.set("resume", "1");
-        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+      if (room.status === "finished") {
+        clearSetupResumeRequest();
+        window.location.replace(setupPath);
+        return;
       }
+      const resumeKind = rankedSoloContext && room.kind === "solo" ? "ranked" : "local";
+      requestSetupResume(resumeKind);
+      window.location.replace(setupResumeUrl(setupPath, resumeKind));
     };
     window.addEventListener("popstate", handleGameHistoryReturn);
+
+    const currentState = window.history.state;
+    const boundaryState = currentState && typeof currentState === "object"
+      ? currentState[gameBackBoundaryStateKey]
+      : undefined;
+    if (boundaryState !== "guard") {
+      const stateBase = currentState && typeof currentState === "object" ? currentState : {};
+      window.history.replaceState({ ...stateBase, [gameBackBoundaryStateKey]: "base" }, "");
+      window.history.pushState({ ...stateBase, [gameBackBoundaryStateKey]: "guard" }, "");
+    }
+
     return () => window.removeEventListener("popstate", handleGameHistoryReturn);
-  }, [rankedSoloContext, requiredStatus, room]);
+  }, [gameplayRoute, pathname, rankedSoloContext, restorationPending, resumePending, room]);
   const markLocationReady = "markLocationReady" in activeGame ? activeGame.markLocationReady : undefined;
 
   useEffect(() => {
@@ -423,6 +465,18 @@ export function GameApp({
       localGame.renamePlayer(localAccountPlayer.id, accountDisplayName);
     }
   }, [accountDisplayName, localGame, rankedSoloGame]);
+
+  useEffect(() => {
+    if (!accountAuthenticated) return;
+    const flush = () => void flushCompletedGameSaves(saveCompletedGame);
+    flush();
+    window.addEventListener("online", flush);
+    window.addEventListener("pageshow", flush);
+    return () => {
+      window.removeEventListener("online", flush);
+      window.removeEventListener("pageshow", flush);
+    };
+  }, [accountAuthenticated]);
 
   useEffect(() => {
     const setupGame = rankedSoloContext ? rankedSoloGame : localGame;
@@ -561,6 +615,7 @@ export function GameApp({
       // Leaving a second session flag behind could start the same transition
       // twice while the homepage component was unmounting.
       window.sessionStorage.removeItem("punktlandung-direct-start");
+      clearSetupResumeRequest();
       window.localStorage.removeItem(activeSessionStorageKey);
       window.localStorage.removeItem("punktlandung-ranked-active-game-v1");
     } catch {
@@ -570,6 +625,7 @@ export function GameApp({
   const handleModeSelect = (_href: string) => {
     playSelect();
     try {
+      clearSetupResumeRequest();
       window.localStorage.removeItem(activeSessionStorageKey);
       window.localStorage.removeItem("punktlandung-ranked-active-game-v1");
     } catch {
@@ -581,6 +637,23 @@ export function GameApp({
   };
   const handleStartRound = async () => {
     if (startingRound) return;
+    if (rankedSoloContext && room?.kind === "solo" && room.status === "lobby") {
+      try {
+        window.localStorage.removeItem(activeSessionStorageKey);
+        const currentHistoryState = window.history.state;
+        window.history.replaceState(
+          {
+            ...(currentHistoryState && typeof currentHistoryState === "object" ? currentHistoryState : {}),
+            appState: historyStateKey,
+            room: null
+          },
+          ""
+        );
+      } catch {
+        // The new server-backed game remains authoritative in memory when
+        // browser persistence is unavailable.
+      }
+    }
     setStartingRound(true);
     try {
       await Promise.resolve(startRound());
@@ -590,6 +663,7 @@ export function GameApp({
   };
   const handleResumeRound = () => {
     if (!resumePending || !resumeRound) return;
+    clearVisibleResumeSetup();
     resumeRound();
     const resumeRoute = room?.status === "finished" ? "/endergebnis" : room?.status === "results" ? "/aufloesung" : "/spielen";
     router.replace(resumeRoute);
@@ -625,10 +699,19 @@ export function GameApp({
         ? "/party-modus"
         : "/solo-modus";
     const onSetupRoute = window.location.pathname === setupRouteTarget;
+    // A completed game may still be restored on /endergebnis for saving and
+    // claiming, but it is no longer a playable session. Leaving the final
+    // screen therefore opens a clean setup instead of advertising "Fortsetzen".
+    if (room?.status === "finished") {
+      clearSetupResumeRequest();
+      cancelRound();
+      router.replace(setupRouteTarget);
+      return;
+    }
     // Leaving an active round must not cancel it. The setup route can restore
     // the same room, while its absolute deadline keeps running in the background.
     if (room && room.status !== "lobby" && (requiredStatus || onSetupRoute)) {
-      requestSetupResume();
+      requestSetupResume(rankedSoloContext && room.kind === "solo" ? "ranked" : "local");
       const resumeQuery = room.kind === "solo"
         ? rankedSoloContext
           ? "?resume=ranked"
@@ -660,12 +743,14 @@ export function GameApp({
       router.replace("/solo-modus");
     }
   };
-  const handleLeaveToHome = () => {
-    initialModeHandledRef.current = true;
-    setPendingJoinCode(null);
+  const discardSessionForNavigation = () => {
+    leaveRoom();
     try {
+      clearSetupResumeRequest();
+      clearVisibleResumeSetup();
       window.sessionStorage.setItem(sessionResetStorageKey, "1");
       window.localStorage.removeItem(activeSessionStorageKey);
+      window.localStorage.removeItem("punktlandung-ranked-active-game-v1");
       const currentHistoryState = window.history.state;
       window.history.replaceState(
         {
@@ -678,11 +763,50 @@ export function GameApp({
     } catch {
       // The in-memory leave still works when browser storage is unavailable.
     }
+  };
+  const handleLeaveToHome = () => {
+    initialModeHandledRef.current = true;
+    setPendingJoinCode(null);
+    discardSessionForNavigation();
     // Keep the current screen mounted until Next has committed the homepage.
-    // Clearing the in-memory room here made the route guard render the
-    // full-screen "Spielrunde wird geladen" state during the transition.
     router.push("/");
   };
+
+  useEffect(() => {
+    if (!resumePending || !room) return;
+    markResumeSetupVisible();
+    const setupPath = room.kind === "online"
+      ? "/online-modus"
+      : room.settings.localMode === "couch"
+        ? "/party-modus"
+        : "/solo-modus";
+    const handleSetupHistoryExit = () => {
+      // Next applies the destination route immediately after popstate. Read it
+      // in the next task so we do not mistake the still-visible setup URL for
+      // the actual Back destination.
+      window.setTimeout(() => {
+        if (!shouldDiscardResumeOnHistoryExit(Boolean(resumePending), setupPath, window.location.pathname)) return;
+        // A second browser-Back from setup to another page is a deliberate exit.
+        // Convert the cached setup component to a clean lobby before removing
+        // durable recovery markers. Next may reuse that component on browser
+        // Forward; leaving it with room=null would otherwise render an empty
+        // shell even though the old game itself was correctly discarded.
+        if (discardResume) discardResume();
+        else leaveRoom();
+        clearSetupResumeRequest();
+        clearVisibleResumeSetup();
+        try {
+          window.sessionStorage.setItem(sessionResetStorageKey, "1");
+          window.localStorage.removeItem(activeSessionStorageKey);
+          window.localStorage.removeItem("punktlandung-ranked-active-game-v1");
+        } catch {
+          // The cached in-memory lobby still prevents a stale resume action.
+        }
+      }, 0);
+    };
+    window.addEventListener("popstate", handleSetupHistoryExit);
+    return () => window.removeEventListener("popstate", handleSetupHistoryExit);
+  }, [discardResume, leaveRoom, resumePending, room]);
   const handleLeaveWaitingRoom = () => {
     initialModeHandledRef.current = true;
     setPendingJoinCode(null);
@@ -692,25 +816,13 @@ export function GameApp({
     }
   };
 
-  const restorationPending = isOnlineFlow
-    ? onlineGame.restoring
-    : rankedSoloContext
-      ? rankedRestoring
-      : localGame.restoring;
-
-  if (
-    restorationPending
-    || (initialMode !== "home" && !room)
-    || (startingRound && room?.status === "results")
-  ) {
-    return <GameStateLoading />;
+  if (initialMode !== "home" && !room) {
+    // This exists only for the first client render while the route-owned room
+    // is initialized. Do not turn it into a visible loading interstitial.
+    return <main className="min-h-dvh bg-slate-950" />;
   }
 
-  if (directStart && startingRound) {
-    return <GameStateLoading />;
-  }
-
-  if (requiredStatus && room?.status !== requiredStatus) {
+  if (requiredStatus && room?.status !== requiredStatus && !restorationPending && !gameplayRouteMismatch) {
     return <GameStateGuard requiredStatus={requiredStatus} currentStatus={room?.status} />;
   }
 
@@ -782,10 +894,12 @@ export function GameApp({
         onBackToLobby={handleCancelRound}
         onRestart={restart}
         onLeave={handleLeaveToHome}
+        onDiscardSession={discardSessionForNavigation}
         redesign={redesignHomeEnabled}
         accountsEnabled={accountsEnabled}
         accountAuthenticated={accountAuthenticated}
         serverRanked={rankedSoloContext && room.kind === "solo" && room.settings.localMode === "solo"}
+        rankedGameId={rankedSoloContext ? rankedSoloGame.gameId : undefined}
         rankedSyncStatus={rankedSoloContext ? rankedSoloGame.syncStatus : undefined}
         pendingUploadCount={rankedSoloContext ? rankedSoloGame.pendingUploadCount : 0}
       />
@@ -1050,7 +1164,7 @@ export function GameApp({
                           event.preventDefault();
                           return;
                         }
-                        playSelect();
+                        handleModeSelect(appPathWithMode(mode.id));
                       }}
                       className={`punktlandung-home-mode-card punktlandung-interactive-surface group relative min-h-[46px] rounded-md px-3.5 py-1.5 text-left transition lg:min-h-[clamp(40px,4.5vh,52px)] ${
                         mode.available

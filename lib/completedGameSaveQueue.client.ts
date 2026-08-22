@@ -1,9 +1,17 @@
-import type { SaveCompletedGameInput } from "@/app/endergebnis/actions";
+import type { SaveCompletedGameInput, SaveCompletedGameResult } from "@/app/endergebnis/actions";
 
 const storageKey = "punktlandung-completed-game-save-queue-v1";
 const maxQueuedSaves = 5;
 
-type QueuedSave = SaveCompletedGameInput;
+export type QueuedSave = SaveCompletedGameInput;
+export type CompletedGameSaveExecutor = (input: SaveCompletedGameInput) => Promise<SaveCompletedGameResult>;
+export type CompletedGameSaveFlushResult = {
+  savedKeys: string[];
+  discardedInvalidKeys: string[];
+  authRequired: boolean;
+};
+
+let activeFlush: Promise<CompletedGameSaveFlushResult> | null = null;
 
 function readQueue(): QueuedSave[] {
   if (typeof window === "undefined") return [];
@@ -37,4 +45,39 @@ export function removeCompletedGameSave(saveKey: string): void {
 
 export function readCompletedGameSaves(): QueuedSave[] {
   return readQueue();
+}
+
+export function flushCompletedGameSaves(save: CompletedGameSaveExecutor): Promise<CompletedGameSaveFlushResult> {
+  if (activeFlush) return activeFlush;
+  const flush = (async () => {
+    const result: CompletedGameSaveFlushResult = { savedKeys: [], discardedInvalidKeys: [], authRequired: false };
+    for (const entry of readQueue()) {
+      let saved: SaveCompletedGameResult;
+      try {
+        saved = await save(entry);
+      } catch {
+        // Keep the entry for a later online/reload retry.
+        break;
+      }
+      if (saved.ok) {
+        removeCompletedGameSave(entry.saveKey);
+        result.savedKeys.push(entry.saveKey);
+        continue;
+      }
+      if (saved.code === "invalid") {
+        // A permanently invalid/corrupted payload must not block newer games.
+        removeCompletedGameSave(entry.saveKey);
+        result.discardedInvalidKeys.push(entry.saveKey);
+        continue;
+      }
+      if (saved.code === "auth_required") result.authRequired = true;
+      // Authentication and transient persistence failures remain queued.
+      break;
+    }
+    return result;
+  })();
+  activeFlush = flush;
+  return flush.finally(() => {
+    if (activeFlush === flush) activeFlush = null;
+  });
 }

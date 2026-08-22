@@ -303,7 +303,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
                     className="punktlandung-game-back-button punktlandung-optical-arrow-left"
                     sound="click"
                     onClick={onCancelRound}
-                    label="Zurück"
+                    label="Zurück zu den Spieleinstellungen"
                   />
                 )}
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Globe2, UserRound, UsersRound } from "lucide-react";
+import type { MouseEvent } from "react";
 import { AdContainer } from "@/components/AdContainer";
 import { LegalLinks } from "@/components/LegalLinks";
 import { TriangleIcon } from "@/components/TriangleIcon";
@@ -29,7 +30,7 @@ type RedesignHomeViewProps = {
   accountAuthenticated?: boolean;
   mapPreview: React.ReactNode;
   modes: ReadonlyArray<HomeMode>;
-  onDirectPlay: () => void;
+  onDirectPlay: (event: MouseEvent<HTMLAnchorElement>) => void;
   onModeSelect: (href: string) => void;
   onSoundToggle: () => void;
 };

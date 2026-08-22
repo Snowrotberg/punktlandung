@@ -309,10 +309,9 @@ const targets = [
       roundEndsAt: Date.now() - 1000,
       timedOutPlayerIds: ["local_host", "local_2"]
     },
-    expectedText: "Zeit abgelaufen",
-    readySelector: ".punktlandung-game-shell",
-    readyImageSelector: ".punktlandung-panorama-viewport img",
-    note: "laufende Runde mit abgelaufener Zeit und gesperrter Abgabe"
+    expectedText: "AUFLÖSUNG",
+    readySelector: ".punktlandung-results-grid",
+    note: "abgelaufene Runde wechselt automatisch und ohne weitere Eingabe zur Auflösung"
   },
   { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", readySelector: ".punktlandung-results-grid", note: "echter URL-Pfad mit QA-Session" },
   {
@@ -451,7 +450,14 @@ async function navigatePage(page, url, attempts = 3) {
 async function resetStorage(page) {
   await page.evaluate(() => {
     localStorage.removeItem("punktlandung-active-session-v1");
+    localStorage.removeItem("punktlandung-ranked-active-game-v1");
+    localStorage.removeItem("punktlandung-ranked-dismissed-game-v1");
     localStorage.setItem("punktlandung-name", "Responsive QA");
+    sessionStorage.removeItem("punktlandung-reset-session-v1");
+    sessionStorage.removeItem("punktlandung-resume-setup-v1");
+    sessionStorage.removeItem("punktlandung-visible-resume-setup-v1");
+    sessionStorage.removeItem("punktlandung-direct-start");
+    sessionStorage.removeItem("punktlandung-ranked-direct-start-v1");
   });
 }
 
@@ -462,6 +468,13 @@ async function gotoFresh(page, url) {
 async function loadState(page, status, targetPath = "/", stateOverrides = {}) {
   await gotoFresh(page, targetUrl("/"));
   await page.evaluate((nextRoom) => {
+    localStorage.removeItem("punktlandung-ranked-active-game-v1");
+    localStorage.removeItem("punktlandung-ranked-dismissed-game-v1");
+    sessionStorage.removeItem("punktlandung-reset-session-v1");
+    sessionStorage.removeItem("punktlandung-resume-setup-v1");
+    sessionStorage.removeItem("punktlandung-visible-resume-setup-v1");
+    sessionStorage.removeItem("punktlandung-direct-start");
+    sessionStorage.removeItem("punktlandung-ranked-direct-start-v1");
     localStorage.setItem(
       "punktlandung-active-session-v1",
       JSON.stringify({

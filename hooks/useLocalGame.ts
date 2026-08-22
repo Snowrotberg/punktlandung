@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { averageGuess, haversineDistanceKm } from "@/lib/geo";
 import { prepareLocationImage } from "@/lib/imagePreload.client";
 import { shuffledLocationIds } from "@/lib/locationSelection";
-import { consumeLegalReturn } from "@/lib/legalNavigation";
+import { consumeSetupResumeRequest, isResumableGameStatus, shouldRestoreStoredGame, shouldStartTimerAfterImageReady } from "@/lib/gameResume.client";
 import { PLAYER_PALETTE } from "@/lib/playerPalette";
 import { evaluatePlayerGuess } from "@/lib/roundEvaluation";
 import { readStoredSetupSettings, writeStoredSetupSettings } from "@/lib/setupSettings.client";
@@ -28,9 +28,8 @@ const recentLocationsStorageKey = "punktlandung-recent-location-ids";
 const sessionStorageKey = "punktlandung-active-session-v1";
 const sessionResetStorageKey = "punktlandung-reset-session-v1";
 const recentLocationLimit = 400;
-const sessionTtlMs = 1000 * 60 * 60 * 6;
+const sessionTtlMs = 1000 * 60 * 60 * 72;
 const historyStateKey = "punktlandung-history-v1";
-export const setupResumeStorageKey = "punktlandung-resume-setup-v1";
 const locationCategories = new Set(["mixed", "landmarks", "cities", "landscapes", "flags", "capitals", "streetview"]);
 let locationCatalogPromise: Promise<GeoLocation[]> | null = null;
 
@@ -52,15 +51,6 @@ const defaultSettings: GameSettings = {
   category: "mixed",
   difficulty: "medium"
 };
-
-function pauseGuessingRoomUntilImageReady(room: RoomState): RoomState {
-  // A restored round must wait for the visible image just like a fresh round.
-  // The old deadline is not allowed to keep the timer running behind the
-  // image-search state.
-  return room.status === "guessing"
-    ? { ...room, roundEndsAt: null, roundStartedAt: null }
-    : room;
-}
 
 function id(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
@@ -176,25 +166,6 @@ function consumeSessionResetFlag(): boolean {
     return shouldReset;
   } catch {
     return false;
-  }
-}
-
-function consumeSetupResumeFlag(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const requested = window.sessionStorage.getItem(setupResumeStorageKey) === "1";
-    if (requested) window.sessionStorage.removeItem(setupResumeStorageKey);
-    return requested;
-  } catch {
-    return false;
-  }
-}
-
-export function requestSetupResume(): void {
-  try {
-    window.sessionStorage.setItem(setupResumeStorageKey, "1");
-  } catch {
-    // localStorage remains the fallback for the actual game state.
   }
 }
 
@@ -634,8 +605,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
     if (initialMode) {
       const storedSession = readStoredSession(playerId);
       const browserState = readBrowserHistoryState();
-      const returningFromLegalPage = consumeLegalReturn(window.location.pathname);
-      const returningToSetup = consumeSetupResumeFlag()
+      const returningToSetup = consumeSetupResumeRequest("local")
         || new URLSearchParams(window.location.search).get("resume") === "1";
       const resumableRoom = storedSession?.room ?? (returningToSetup ? browserState?.room ?? null : null);
       const canRestoreRouteSession = resumableRoom
@@ -644,15 +614,15 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
         // explicit recovery route (or a return from the legal page) may
         // restore a previously active round; otherwise an old PWA/browser
         // session must not hijack the Solo/Party setup screen.
-        && (returningFromLegalPage || restoreStoredSession || returningToSetup);
+        && shouldRestoreStoredGame(resumableRoom.status, restoreStoredSession || returningToSetup);
       if (canRestoreRouteSession) {
         locationQueueRef.current = storedSession?.locationQueue ?? [];
         queueCategoryRef.current = storedSession?.queueCategory ?? null;
         lastLocationIdRef.current = storedSession?.lastLocationId ?? resumableRoom.location?.id ?? null;
         previousRoomRef.current = resumableRoom;
         setRecentLocationIds(storedSession?.recentLocationIds?.length ? storedSession.recentLocationIds : readStoredRecentLocationIds());
-        setRoom(pauseGuessingRoomUntilImageReady(resumableRoom));
-        resumePendingRef.current = returningToSetup && resumableRoom.status !== "lobby";
+        setRoom(resumableRoom);
+        resumePendingRef.current = returningToSetup && isResumableGameStatus(resumableRoom.status);
         setResumePending(resumePendingRef.current);
         setRestoring(false);
         return;
@@ -670,7 +640,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
     const storedSession = readStoredSession(playerId);
     if (browserState?.room) {
       previousRoomRef.current = browserState.room;
-      setRoom(pauseGuessingRoomUntilImageReady(browserState.room));
+      setRoom(browserState.room);
       lastLocationIdRef.current = browserState.room.location?.id ?? browserState.room.summaries.at(-1)?.location.id ?? null;
       setRecentLocationIds(readStoredRecentLocationIds());
       setRestoring(false);
@@ -682,7 +652,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       queueCategoryRef.current = storedSession.queueCategory;
       lastLocationIdRef.current = storedSession.lastLocationId ?? storedSession.room.location?.id ?? null;
       setRecentLocationIds(storedSession.recentLocationIds.length ? storedSession.recentLocationIds : readStoredRecentLocationIds());
-      setRoom(pauseGuessingRoomUntilImageReady(storedSession.room));
+      setRoom(storedSession.room);
       setRestoring(false);
       return;
     }
@@ -705,7 +675,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
   });
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
+    const reconcileElapsedRound = () => {
       setRoom((current) => {
         if (!current || current.status !== "guessing" || !current.roundEndsAt || Date.now() < current.roundEndsAt) return current;
         if (isLocalSequentialRoom(current)) {
@@ -722,9 +692,19 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
         }
         return evaluateRound(current);
       });
-    }, 250);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") reconcileElapsedRound();
+    };
+    const timer = window.setInterval(reconcileElapsedRound, 250);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pageshow", reconcileElapsedRound);
 
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pageshow", reconcileElapsedRound);
+    };
   }, []);
 
   useEffect(() => {
@@ -739,12 +719,32 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
   }, [room, recentLocationIds]);
 
   useEffect(() => {
+    const persistLatestSession = () => {
+      const current = roomRef.current;
+      if (!current) return;
+      writeStoredSession({
+        room: current,
+        recentLocationIds,
+        locationQueue: locationQueueRef.current,
+        queueCategory: queueCategoryRef.current,
+        lastLocationId: lastLocationIdRef.current
+      });
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") persistLatestSession();
+    };
+    window.addEventListener("pagehide", persistLatestSession);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("pagehide", persistLatestSession);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [recentLocationIds]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
 
     const handlePopState = () => {
-      const current = roomRef.current;
-      const setupPath = current?.settings.localMode === "couch" ? "/party-modus" : "/solo-modus";
-      if (current && current.status !== "lobby" && window.location.pathname === setupPath) requestSetupResume();
       const browserState = readBrowserHistoryState();
       isRestoringHistoryRef.current = true;
       setRoom(browserState?.room ?? null);
@@ -1051,8 +1051,9 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
     }
 
     if (!preparedLocation) {
-      setError("Der andere Ort konnte gerade nicht vorbereitet werden. Bitte versuche es erneut.");
-      return;
+      const message = "Der andere Ort konnte gerade nicht vorbereitet werden. Bitte versuche es erneut.";
+      setError(message);
+      throw new Error(message);
     }
 
     setRecentLocationIds((ids) => rememberLocationId(preparedLocation!.id, uniqueIds([...nextRecent, ...ids])));
@@ -1075,12 +1076,10 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
   const markLocationReady = useCallback((locationId: string, ready: boolean) => {
     setRoom((current) => {
       if (!current || current.status !== "guessing" || current.location?.id !== locationId) return current;
-      if (!ready) {
-        return current.roundEndsAt || current.roundStartedAt
-          ? { ...current, roundEndsAt: null, roundStartedAt: null }
-          : current;
-      }
-      if (current.roundEndsAt) return current;
+      // A transient remount/error after the round became visible must not reset
+      // its clock. Fresh rounds have null timestamps until the first successful
+      // image load; resumed rounds retain their original absolute deadline.
+      if (!shouldStartTimerAfterImageReady(ready, current.roundStartedAt, current.roundEndsAt)) return current;
       const roundStartedAt = Date.now();
       return {
         ...current,

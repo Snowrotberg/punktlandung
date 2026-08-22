@@ -36,7 +36,7 @@ export type SaveCompletedGameInput = {
   }>;
 };
 
-type SaveCompletedGameResult =
+export type SaveCompletedGameResult =
   | { ok: true; alreadySaved: boolean }
   | { ok: false; code: "auth_required" | "invalid" | "save_failed" };
 

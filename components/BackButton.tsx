@@ -20,11 +20,12 @@ export function BackControlContent() {
 }
 
 export function BackButton({ label = "Zurück", sound = "click", className = "", ...props }: BackButtonProps) {
+  const { title, ...buttonProps } = props;
   return (
     <Button
-      {...props}
-      aria-label={props["aria-label"] ?? label}
-      title={props.title ?? label}
+      {...buttonProps}
+      aria-label={buttonProps["aria-label"] ?? label}
+      data-tooltip={title ?? label}
       sound={sound}
       tone="ghost"
       className={`punktlandung-back-button ${className}`}
@@ -42,12 +43,13 @@ type BackLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "children" | 
 };
 
 export function BackLink({ href, label = "Zurück", sound = "click", className = "", onNavigate, ...props }: BackLinkProps) {
+  const { title, ...linkProps } = props;
   return (
     <ButtonLink
-      {...props}
+      {...linkProps}
       href={href}
-      aria-label={props["aria-label"] ?? label}
-      title={props.title ?? label}
+      aria-label={linkProps["aria-label"] ?? label}
+      data-tooltip={title ?? label}
       sound={sound}
       tone="ghost"
       onNavigate={onNavigate}

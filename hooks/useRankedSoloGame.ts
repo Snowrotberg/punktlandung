@@ -5,9 +5,11 @@ import type { PublicRankedGame, PublicResolvedRankedRound } from "@/lib/rankedGa
 import type { GameSettings, GeoLocation, Guess, LatLng, Player, RoomState, RoundSummary, TeamId } from "@/types/game";
 import { enqueueRankedUpload, getRankedUploadQueue, removeRankedUpload } from "@/lib/rankedUploadQueue";
 import { playerColorAt } from "@/lib/playerPalette";
-import { prepareLocationImage } from "@/lib/imagePreload.client";
 import { browserUuid } from "@/lib/browserUuid";
 import { readStoredSetupSettings, writeStoredSetupSettings } from "@/lib/setupSettings.client";
+import { consumeSetupResumeRequest, explicitRankedResumeGameId, isResumableGameStatus } from "@/lib/gameResume.client";
+import { enqueueRankedGameClaim, readPendingRankedGameClaims, removeRankedGameClaim } from "@/lib/rankedGameClaimQueue.client";
+import { consumeDirectRankedStart } from "@/lib/directRankedStart.client";
 
 type ApiPayload = { data?: PublicRankedGame; error?: { message?: string } };
 
@@ -205,7 +207,7 @@ function roomFromRankedGame(next: PublicRankedGame, name: string, storedSettings
   };
 }
 
-export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled, authenticated = false) {
+export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled, authenticated = false, recoverLatestGame = restoreStoredGame) {
   const [room, setRoom] = useState<RoomState | null>(null);
   const [game, setGame] = useState<PublicRankedGame | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -227,6 +229,7 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
   const request = useCallback(async (url: string, init?: RequestInit) => {
     const retryDelays = [0, 250, 650];
     let lastStatus = 0;
+    const timeoutSignal = AbortSignal.timeout(8_000);
 
     for (let attempt = 0; attempt < retryDelays.length; attempt += 1) {
       if (retryDelays[attempt] > 0) {
@@ -238,7 +241,8 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
           ...init,
           headers: { accept: "application/json", ...init?.headers },
           credentials: "same-origin",
-          cache: "no-store"
+          cache: "no-store",
+          signal: init?.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal
         });
         lastStatus = response.status;
         const rawPayload = await response.text();
@@ -266,27 +270,15 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
           );
         }
       } catch (cause) {
+        if (timeoutSignal.aborted) {
+          throw new RankedRequestError("Der Spielserver antwortet gerade nicht. Bitte versuche es noch einmal.", 504);
+        }
         if (cause instanceof RankedRequestError || attempt === retryDelays.length - 1) throw cause;
       }
     }
 
     throw new RankedRequestError("Der Spielserver ist momentan nicht erreichbar.", lastStatus || 503);
   }, []);
-
-  const prepareRankedPrompt = useCallback(async (initialGame: PublicRankedGame) => {
-    let next = initialGame;
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      const location = promptLocation(next);
-      if (!location || !next.activeRound) return null;
-      const preparedLocation = await prepareLocationImage(location);
-      if (preparedLocation) return { game: next, location: preparedLocation };
-      next = await request(
-        `/api/v1/ranked-games/${encodeURIComponent(next.gameId)}/rounds/${encodeURIComponent(next.activeRound.roundId)}/reroll`,
-        { method: "POST" }
-      );
-    }
-    return null;
-  }, [request]);
 
   useEffect(() => {
     activeGameIdRef.current = game?.gameId ?? null;
@@ -306,19 +298,53 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
     // overwrite the correct one in the UI.
     if (recoveryStartedRef.current) return;
     recoveryStartedRef.current = true;
+    const pendingDirectStart = consumeDirectRankedStart();
     const stored = readStoredRankedSession();
-    const resumeGameId = new URLSearchParams(window.location.search).get("resume");
+    const resumeValue = new URLSearchParams(window.location.search).get("resume");
+    const returningToSetup = consumeSetupResumeRequest("ranked") || resumeValue === "ranked";
+    const explicitResumeGameId = explicitRankedResumeGameId(resumeValue);
     const dismissedGameId = readDismissedRankedGameId();
     const recoveryName = stored?.name
       ?? window.localStorage.getItem("punktlandung-name")
       ?? "Spieler 1";
     const recoverySettings = stored?.settings
       ?? { ...initialSettings, ...readStoredSetupSettings(initialSettings), localMode: "solo" as const, localPlayerCount: 1 };
+    const clearResumeQuery = () => {
+      if (!resumeValue) return;
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("resume");
+      window.history.replaceState(window.history.state, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+    };
     setPendingUploadCount(pendingUploadsForGame(activeGameIdRef.current));
     let cancelled = false;
+    if (pendingDirectStart) {
+      const directRoom = roomFromRankedGame(pendingDirectStart.game, pendingDirectStart.name, pendingDirectStart.settings);
+      activeGameIdRef.current = pendingDirectStart.game.gameId;
+      setGame(pendingDirectStart.game);
+      setRoom(directRoom);
+      setRestoring(false);
+      writeStoredRankedSession(pendingDirectStart.game, directRoom);
+      return;
+    }
+    // A route change, reload or app resume must never leave a valid game behind
+    // a network/image preparation request. Hydrate the last fully persisted
+    // snapshot immediately, then reconcile it with the server below. Absolute
+    // round deadlines in the snapshot keep advancing while the tab is away.
+    if (stored?.game && stored.room) {
+      activeGameIdRef.current = stored.game.gameId;
+      setGame(stored.game);
+      setRoom(stored.room);
+      resumePendingRef.current = returningToSetup && isResumableGameStatus(stored.room.status);
+      setResumePending(resumePendingRef.current);
+      setRestoring(false);
+    }
+    if (!explicitResumeGameId && !recoverLatestGame && !returningToSetup && !stored) {
+      setRestoring(false);
+      return;
+    }
     const recoverGame = async () => {
-      if (resumeGameId) {
-        return request(`/api/v1/ranked-games/active?resume=${encodeURIComponent(resumeGameId)}`);
+      if (explicitResumeGameId) {
+        return request(`/api/v1/ranked-games/active?resume=${encodeURIComponent(explicitResumeGameId)}`);
       }
       if (stored) {
         try {
@@ -332,32 +358,31 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
       return request("/api/v1/ranked-games/active");
     };
     void recoverGame()
-      .then(async (next) => ({ next, prepared: next.status === "completed" ? null : await prepareRankedPrompt(next) }))
-      .then(({ next, prepared }) => {
+      .then((next) => {
         if (cancelled) return;
-        if (!stored && dismissedGameId === next.gameId) return;
-        if (next.status !== "completed" && !prepared) throw new Error("No ranked prompt image could be prepared.");
-        const visibleGame = prepared?.game ?? next;
-        activeGameIdRef.current = visibleGame.gameId;
-        setGame(visibleGame);
-        const restoredRoom = roomFromRankedGame(visibleGame, recoveryName, recoverySettings);
-        if (prepared) restoredRoom.location = prepared.location;
+        if (!stored && dismissedGameId === next.gameId) {
+          activeGameIdRef.current = null;
+          setGame(null);
+          setRoom(makeRoom(recoveryName, recoverySettings));
+          setResumePending(false);
+          clearResumeQuery();
+          return;
+        }
+        activeGameIdRef.current = next.gameId;
+        setGame(next);
+        const restoredRoom = roomFromRankedGame(next, recoveryName, recoverySettings);
         setRoom(restoredRoom);
-        resumePendingRef.current = Boolean(resumeGameId) && restoredRoom.status !== "lobby";
+        resumePendingRef.current = returningToSetup && isResumableGameStatus(restoredRoom.status);
         setResumePending(resumePendingRef.current);
         setError(null);
-        if (resumeGameId) {
-          const cleanUrl = new URL(window.location.href);
-          cleanUrl.searchParams.delete("resume");
-          window.history.replaceState(window.history.state, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
-        }
+        clearResumeQuery();
       })
       .catch((cause) => {
         if (cancelled) return;
         // An explicit recovery link must never silently open a different game
         // from localStorage. Keeping the requested id visible also makes a
         // transient server failure safely retryable with a reload.
-        if (resumeGameId) {
+        if (explicitResumeGameId) {
           setGame(null);
           setRoom(null);
           setError("Diese gespeicherte Partie konnte gerade nicht wiederhergestellt werden. Bitte lade die Seite erneut.");
@@ -368,6 +393,13 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
           cause instanceof RankedRequestError &&
           (cause.status === 401 || cause.status === 404)
         ) {
+          if (returningToSetup) {
+            activeGameIdRef.current = null;
+            setGame(null);
+            setRoom(makeRoom(recoveryName, recoverySettings));
+            setResumePending(false);
+            clearResumeQuery();
+          }
           return;
         }
         if (stored?.game && stored.room) {
@@ -381,35 +413,47 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
         if (!cancelled) setRestoring(false);
       });
     return () => { cancelled = true; };
-  }, [enabled, prepareRankedPrompt, request, restoreStoredGame]);
+  }, [enabled, recoverLatestGame, request, restoreStoredGame]);
 
   useEffect(() => {
-    const gameId = game?.gameId ?? null;
-    if (!authenticated || !gameId || game?.status !== "completed" || game.claimed || claimInFlightRef.current === gameId) return;
+    if (!authenticated) return;
+    const visibleGameId = game?.gameId ?? null;
+    if (visibleGameId && game?.status === "completed" && !game.claimed) enqueueRankedGameClaim(visibleGameId);
     let cancelled = false;
-    const claimCompletedGame = async () => {
-      claimInFlightRef.current = gameId;
-      try {
-        const next = await request(`/api/v1/ranked-games/${encodeURIComponent(gameId)}/claim`, { method: "POST" });
-        if (cancelled) return;
-        setGame(next);
-        setRoom((current) => current
-          ? roomFromRankedGame(next, current.players[0]?.name ?? "Spieler 1", current.settings)
-          : current);
-        setError(null);
-      } catch (cause) {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : "Die Partie konnte noch nicht dem Konto zugeordnet werden.");
-      } finally {
-        if (claimInFlightRef.current === gameId) claimInFlightRef.current = null;
+    const claimCompletedGames = async () => {
+      for (const gameId of readPendingRankedGameClaims()) {
+        if (claimInFlightRef.current) return;
+        claimInFlightRef.current = gameId;
+        try {
+          const next = await request(`/api/v1/ranked-games/${encodeURIComponent(gameId)}/claim`, { method: "POST" });
+          removeRankedGameClaim(gameId);
+          if (cancelled) return;
+          if (visibleGameId === gameId) {
+            setGame(next);
+            setRoom((current) => current
+              ? roomFromRankedGame(next, current.players[0]?.name ?? "Spieler 1", current.settings)
+              : current);
+          }
+          setError(null);
+        } catch (cause) {
+          if (!cancelled && visibleGameId === gameId) {
+            setError(cause instanceof Error ? cause.message : "Die Partie konnte noch nicht dem Konto zugeordnet werden.");
+          }
+          return;
+        } finally {
+          if (claimInFlightRef.current === gameId) claimInFlightRef.current = null;
+        }
       }
     };
-    void claimCompletedGame();
-    const retryTimer = window.setInterval(() => void claimCompletedGame(), 5000);
-    window.addEventListener("online", claimCompletedGame);
+    void claimCompletedGames();
+    const retryTimer = window.setInterval(() => void claimCompletedGames(), 5000);
+    window.addEventListener("online", claimCompletedGames);
+    window.addEventListener("pageshow", claimCompletedGames);
     return () => {
       cancelled = true;
       window.clearInterval(retryTimer);
-      window.removeEventListener("online", claimCompletedGame);
+      window.removeEventListener("online", claimCompletedGames);
+      window.removeEventListener("pageshow", claimCompletedGames);
     };
   }, [authenticated, game?.claimed, game?.gameId, game?.status, request]);
 
@@ -434,6 +478,11 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
   }, []);
 
   const updateSettings = useCallback((changes: Partial<GameSettings>) => {
+    if (resumePendingRef.current) {
+      clearStoredRankedSession(activeGameIdRef.current);
+      activeGameIdRef.current = null;
+      setGame(null);
+    }
     setRoom((current) => {
       if (!current || (current.status !== "lobby" && !resumePendingRef.current)) return current;
       const baseRoom = current.status !== "lobby"
@@ -485,19 +534,8 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
           return;
         }
 
-        const prepared = await prepareRankedPrompt(latest);
-        if (!prepared) throw new Error("Das nächste Bild ist gerade nicht erreichbar. Bitte versuche es erneut.");
-        setGame(prepared.game);
-        setRoom((value) => value ? {
-          ...value,
-          status: "guessing",
-          currentRound: prepared.game.activeRound?.roundNumber ?? value.currentRound + 1,
-          location: prepared.location,
-          guesses: [],
-          timedOutPlayerIds: [],
-          roundStartedAt: prepared.game.activeRound?.startedAt ?? null,
-          roundEndsAt: prepared.game.activeRound?.deadlineAt ?? null
-        } : value);
+        setGame(latest);
+        setRoom(roomFromRankedGame(latest, current.players[0]?.name ?? "Spieler 1", current.settings));
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : "Die nächste Runde konnte gerade nicht geladen werden. Bitte versuche es erneut.");
       } finally {
@@ -512,28 +550,21 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
       const timeLimitSec = ([0, 15, 30, 60] as number[]).includes(current.settings.timeLimitSec) ? current.settings.timeLimitSec : 60;
       const difficulty = current.settings.difficulty === "easy" || current.settings.difficulty === "hard" ? current.settings.difficulty : "medium";
       const next = await request("/api/v1/ranked-games", { method: "POST", headers: { "content-type": "application/json", "x-ranked-defer-start": "true" }, body: JSON.stringify({ requestId: browserUuid(), rulesetId: "daily-five", rounds: current.settings.rounds, timeLimitSec, category: current.settings.category, difficulty, noZoom: current.settings.noZoom }) });
-      const prepared = await prepareRankedPrompt(next);
-      if (!prepared) throw new Error("Die Bilder sind gerade nicht erreichbar. Bitte versuche es noch einmal.");
-      activeGameIdRef.current = prepared.game.gameId;
-      setGame(prepared.game);
-      setRoom((value) => value ? { ...value, status: "guessing", currentRound: prepared.game.activeRound?.roundNumber ?? 1, location: prepared.location, guesses: [], timedOutPlayerIds: [], roundStartedAt: prepared.game.activeRound?.startedAt ?? null, roundEndsAt: prepared.game.activeRound?.deadlineAt ?? null, settings: { ...value.settings, timeLimitSec: prepared.game.timeLimitSec ?? 60, difficulty: prepared.game.difficulty ?? "medium", noZoom: prepared.game.noZoom ?? false, rounds: prepared.game.activeRound?.totalRounds ?? value.settings.rounds } } : value);
+      activeGameIdRef.current = next.gameId;
+      setGame(next);
+      setRoom(roomFromRankedGame(next, current.players[0]?.name ?? "Spieler 1", current.settings));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Die Partie konnte nicht gestartet werden.");
     }
-  }, [game, prepareRankedPrompt, request, room]);
+  }, [game, request, room]);
 
   const markLocationReady = useCallback(async (locationId: string, ready: boolean) => {
     const roundId = roundIdFromPromptLocationId(locationId);
     if (!enabled || !game?.activeRound || game.activeRound.roundId !== roundId) return;
     if (!ready) {
-      // A failed first image must not consume the round timer. The server
-      // timer only starts after the ready mutation, so this is safe until the
-      // round has actually been acknowledged as ready.
-      if (readyRoundRef.current !== roundId) {
-        setRoom((value) => value && (value.roundEndsAt || value.roundStartedAt)
-          ? { ...value, roundStartedAt: null, roundEndsAt: null }
-          : value);
-      }
+      // A failed first image cannot consume the round timer because the
+      // server starts it only after /ready. A resumed round may already have
+      // an absolute deadline, which must never be cleared by a remount.
       return;
     }
     if (readyRoundRef.current === roundId) return;
@@ -654,9 +685,18 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
     // clock is noticeably ahead of the server clock.
     const timer = window.setInterval(() => void expire(), 4000);
     const reconciliationTimer = window.setInterval(() => void reconcileResolvedRound(), 2000);
+    const reconcileAfterInterruption = () => {
+      if (document.visibilityState !== "visible") return;
+      void expire();
+      void reconcileResolvedRound();
+    };
+    document.addEventListener("visibilitychange", reconcileAfterInterruption);
+    window.addEventListener("pageshow", reconcileAfterInterruption);
     return () => {
       window.clearInterval(timer);
       window.clearInterval(reconciliationTimer);
+      document.removeEventListener("visibilitychange", reconcileAfterInterruption);
+      window.removeEventListener("pageshow", reconcileAfterInterruption);
     };
   }, [applyResolved, enabled, game, request, room]);
 
@@ -721,10 +761,10 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
     setError(null);
     try {
       const next = await request(`/api/v1/ranked-games/${encodeURIComponent(game.gameId)}/rounds/${encodeURIComponent(roundId)}/reroll`, { method: "POST" });
-      const prepared = await prepareRankedPrompt(next);
-      if (!prepared) throw new Error("Das nächste Bild ist gerade nicht erreichbar. Bitte versuche es erneut.");
-      setGame(prepared.game);
-      setRoom((value) => value ? { ...value, location: prepared.location, roundStartedAt: null, roundEndsAt: null } : value);
+      const location = promptLocation(next);
+      if (!location) throw new Error("Es konnte kein anderer Ort geladen werden.");
+      setGame(next);
+      setRoom((value) => value ? { ...value, location, roundStartedAt: null, roundEndsAt: null } : value);
     } catch (cause) {
       const retryable = !(cause instanceof RankedRequestError)
         || cause.status >= 500
@@ -734,15 +774,17 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
         enqueueRankedUpload({ id: `reroll:${game.gameId}:${roundId}`, kind: "reroll", gameId: game.gameId, roundId, url: `/api/v1/ranked-games/${encodeURIComponent(game.gameId)}/rounds/${encodeURIComponent(roundId)}/reroll` });
         setPendingUploadCount(pendingUploadsForGame(activeGameIdRef.current));
       }
-      setError(cause instanceof Error ? cause.message : "Es konnte kein anderer Ort geladen werden.");
+      const error = cause instanceof Error ? cause : new Error("Es konnte kein anderer Ort geladen werden.");
+      setError(error.message);
+      throw error;
     } finally {
       rerollInFlightRef.current.delete(roundId);
     }
-  }, [game, prepareRankedPrompt, request]);
+  }, [game, request]);
 
   return useMemo(() => ({
     playerId, room, error, status: "open" as const, isHost: Boolean(room), me: room?.players[0] ?? null,
-    restoring, pendingUploadCount, syncStatus: (pendingUploadCount > 0 ? (uploading ? "uploading" : "pending") : game?.status === "completed" && game.claimed && game.integrityStatus === "verified" ? "verified" : "secured") as RankedSyncStatus,
+    restoring, gameId: game?.gameId ?? null, pendingUploadCount, syncStatus: (pendingUploadCount > 0 ? (uploading ? "uploading" : "pending") : game?.status === "completed" && game.claimed && game.integrityStatus === "verified" ? "verified" : "secured") as RankedSyncStatus,
     clearError: () => setError(null), createSolo, createOnlineSetup: () => undefined, updateSettings, updateHostParticipation: () => undefined, renamePlayer,
     startRound, submitGuess, cancelRound, markLocationReady, skipLocation, restart, leaveRoom, setTeam: (_team: TeamId) => undefined,
     readyNextRound: () => undefined, unlockCosmetic: () => undefined, resumePending, resumeRound, discardResume
