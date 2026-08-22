@@ -11,6 +11,7 @@ export type UsageEventName =
   | "room_joined"
   | "capacity_sample"
   | "page_view"
+  | "page_engagement"
   | "visit_start";
 
 export type UsageEvent = {
@@ -30,6 +31,10 @@ export type UsageEvent = {
   cacheHit?: boolean;
   connectionType?: "slow-2g" | "2g" | "3g" | "4g" | "unknown";
   locationId?: string;
+  path?: string;
+  visitId?: string;
+  deviceClass?: "phone" | "tablet" | "laptop" | "desktop" | "large-screen";
+  viewportBucket?: string;
 };
 
 export function usageMetricsPath(): string {

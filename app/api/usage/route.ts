@@ -3,13 +3,23 @@ import { recordUsageEvent } from "@/lib/usageMetrics.server";
 
 export const runtime = "nodejs";
 
-const allowedEvents = new Set(["game_start", "game_complete", "image_delivery", "page_view", "visit_start"]);
+const allowedEvents = new Set(["game_start", "game_complete", "image_delivery", "page_view", "page_engagement", "visit_start"]);
 const allowedGameTypes = new Set(["solo", "party", "online"]);
 const allowedGameModes = new Set(["classic", "crew", "elimination", "duel"]);
 const allowedCategories = new Set(["mixed", "landmarks", "cities", "landscapes", "flags", "capitals", "streetview"]);
 const allowedImageOutcomes = new Set(["loaded", "fallback", "failed"]);
 const allowedImageDeliveries = new Set(["direct", "proxy", "ranked"]);
 const allowedConnectionTypes = new Set(["slow-2g", "2g", "3g", "4g", "unknown"]);
+const allowedDeviceClasses = new Set(["phone", "tablet", "laptop", "desktop", "large-screen"]);
+const allowedViewportBuckets = new Set(["unter 360", "360–479", "480–767", "768–1023", "1024–1439", "1440–1919", "1920+"]);
+
+function validPageContext(input: Record<string, unknown>): boolean {
+  return typeof input.path === "string" &&
+    input.path.length >= 1 && input.path.length <= 100 && /^\/[a-z0-9/\-[\]]*$/.test(input.path) &&
+    typeof input.visitId === "string" && /^[A-Za-z0-9-]{16,64}$/.test(input.visitId) &&
+    typeof input.deviceClass === "string" && allowedDeviceClasses.has(input.deviceClass) &&
+    typeof input.viewportBucket === "string" && allowedViewportBuckets.has(input.viewportBucket);
+}
 
 function sameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get("origin");
@@ -40,7 +50,27 @@ export async function POST(request: NextRequest) {
   }
 
   if (input.event === "page_view" || input.event === "visit_start") {
-    await recordUsageEvent(input.event);
+    if (!validPageContext(input)) return NextResponse.json({ error: "Ungültige Daten." }, { status: 400 });
+    await recordUsageEvent(input.event, {
+      path: input.path as string,
+      visitId: input.visitId as string,
+      deviceClass: input.deviceClass as "phone" | "tablet" | "laptop" | "desktop" | "large-screen",
+      viewportBucket: input.viewportBucket as string
+    });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (input.event === "page_engagement") {
+    if (!validPageContext(input) || typeof input.durationMs !== "number" || !Number.isInteger(input.durationMs) || input.durationMs < 1_000 || input.durationMs > 30 * 60_000) {
+      return NextResponse.json({ error: "Ungültige Daten." }, { status: 400 });
+    }
+    await recordUsageEvent("page_engagement", {
+      path: input.path as string,
+      visitId: input.visitId as string,
+      deviceClass: input.deviceClass as "phone" | "tablet" | "laptop" | "desktop" | "large-screen",
+      viewportBucket: input.viewportBucket as string,
+      durationMs: input.durationMs
+    });
     return NextResponse.json({ ok: true });
   }
 
