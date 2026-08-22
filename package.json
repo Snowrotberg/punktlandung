@@ -20,6 +20,7 @@
     "catalog:descriptions": "node scripts/enrich-wikidata-descriptions.mjs",
     "catalog:augment-images": "node scripts/augment-wikimedia-images.mjs",
     "catalog:audit": "tsx scripts/audit-location-catalog.ts",
+    "catalog:sample": "node scripts/render-catalog-quality-sample.mjs",
     "catalog:quarantine-images": "tsx scripts/quarantine-image-delivery.ts",
     "assets:optimize-ui": "node scripts/optimize-ui-images.mjs",
     "licenses:generate": "tsx scripts/generate-image-licenses.ts",

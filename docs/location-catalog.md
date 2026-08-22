@@ -36,3 +36,16 @@ Schwierigkeitsgrad:
 - `hard`: bekannt genug fuer den Katalog, aber weniger global praesent.
 
 Die generierte Datei darf gross werden, bleibt aber klein im Vergleich zu Bilddateien, weil sie nur Textdaten enthaelt.
+
+## Aktives Qualitätsprofil
+
+Die generierte Datei ist der nachvollziehbare Quellbestand. Im Spiel aktiv sind nur Bilder, die das Profil `strict-2010-tv-v1` erfüllen:
+
+- Fotoaufnahme ab 2010; ein Uploaddatum ersetzt kein fehlendes Aufnahmejahr.
+- Quelldatei mindestens 2560 × 1440 Pixel.
+- Querformat zwischen 1,25:1 und 3:1, damit der `object-cover`-Ausschnitt auf Handy, Laptop und TV sinnvoll bleibt.
+- Primärbild eines passend typisierten Wikidata-Objekts oder semantisch geprüfte und freigegebene Commons-Variante.
+- Keine Quarantäne, Konfliktmotive, Karten, Collagen oder andere ausgeschlossene Inhalte.
+- Kuratierte Varianten benötigen mindestens Bildscore 8.
+
+Flaggen verwenden offizielle Vektordateien und sind von Aufnahmejahr und Pixelabmessungen ausgenommen. Für Handy, Laptop und TV gibt es bewusst keinen getrennten Ortskatalog: Ein TV-taugliches Masterbild bleibt die gemeinsame Quelle, Wikimedia liefert abhängig vom Viewport eine kleinere Ableitung. Der Adminbereich zeigt Quellbestand, aktive Bilder, Qualitätsausschlüsse, Aufnahmejahrabdeckung sowie TV- und 4K-Eignung.

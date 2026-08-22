@@ -1,20 +1,27 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { builtInLocations, prioritizeCatalogImages } from "../data/locations";
+import { builtInLocations, catalogInventoryLocations, prioritizeCatalogImages } from "../data/locations";
 import { locationVisualKey } from "../data/locations";
 import { shuffledLocationIds } from "../lib/locationSelection";
 import { buildCatalogStatistics } from "../lib/catalogStatistics";
+import { catalogImageIssues, catalogMinimumCaptureYear } from "../lib/catalogImageQuality";
 
 test("active catalog has enough unique tasks for every category and difficulty", () => {
-  const statistics = buildCatalogStatistics(builtInLocations);
+  const statistics = buildCatalogStatistics(builtInLocations, catalogInventoryLocations);
 
-  assert.ok(statistics.totalTasks >= 1200);
-  assert.equal(statistics.countriesAndTerritories, 204);
+  assert.ok(statistics.totalTasks >= 1600);
+  assert.ok(statistics.countriesAndTerritories >= 190);
+  assert.ok(statistics.sourceTasks >= 2800);
+  assert.ok(statistics.sourceCountriesAndTerritories >= 204);
   assert.equal(statistics.categories.length, 5);
-  assert.ok(statistics.uniqueVisuals >= 1200);
+  assert.ok(statistics.uniqueVisuals >= 1750);
 
   for (const category of statistics.categories) {
-    assert.ok(category.total >= 20, `${category.category} needs at least 20 tasks`);
+    if (category.category === "flags") {
+      assert.ok(category.total >= 190 && category.total <= 210, `flags should follow the real country and territory count`);
+    } else {
+      assert.ok(category.total >= 320, `${category.category} needs a strict catalog close to 400 playable tasks`);
+    }
     assert.ok(category.easy >= 20, `${category.category}/easy needs at least 20 tasks`);
     assert.ok(category.medium >= 20, `${category.category}/medium needs at least 20 tasks`);
     assert.ok(category.hard >= 20, `${category.category}/hard needs at least 20 tasks`);
@@ -81,4 +88,37 @@ test("reviewed images are raised gently without removing legacy images", () => {
   assert.equal(prioritized.length, 9);
   assert.equal(new Set(prioritized.map((location) => location.id)).size, 9);
   assert.deepEqual(prioritized.slice(0, 3).map((location) => location.imageReviewStatus), ["approved", undefined, undefined]);
+});
+
+test("quality prioritization keeps the shuffled order inside each cohort", () => {
+  const reviewed = builtInLocations.filter((location) => location.imageReviewStatus === "approved").slice(0, 4).reverse();
+  const primary = builtInLocations.filter((location) => location.imageReviewStatus !== "approved").slice(0, 8).reverse();
+  const input = [primary[0], reviewed[0], primary[1], reviewed[1], ...primary.slice(2), ...reviewed.slice(2)];
+  const output = prioritizeCatalogImages(input);
+
+  assert.deepEqual(
+    output.filter((location) => location.imageReviewStatus === "approved").map((location) => location.id),
+    input.filter((location) => location.imageReviewStatus === "approved").map((location) => location.id)
+  );
+});
+
+test("every active image satisfies the strict 2010 TV profile", () => {
+  assert.ok(builtInLocations.every((location) => catalogImageIssues(location).length === 0));
+  const statistics = buildCatalogStatistics(builtInLocations, catalogInventoryLocations);
+  assert.equal(statistics.strictQualifiedImages, statistics.totalTasks);
+  assert.equal(statistics.sourceTasks, catalogInventoryLocations.length);
+  assert.equal(statistics.excludedByQuality, statistics.sourceTasks - statistics.totalTasks);
+  assert.ok(statistics.exclusionReasons["captured-before-2010"] > 0);
+  assert.ok(statistics.exclusionReasons["resolution-below-tv"] > 0);
+  assert.ok(catalogMinimumCaptureYear >= 2010);
+});
+
+test("fresh independent shuffles do not have a deterministic first image", () => {
+  const firstImages = new Set<string>();
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const [firstId] = shuffledLocationIds(builtInLocations, "mixed", "medium", 15, [], null);
+    assert.ok(firstId);
+    firstImages.add(firstId);
+  }
+  assert.ok(firstImages.size >= 4, `only ${firstImages.size} different first images were selected`);
 });
