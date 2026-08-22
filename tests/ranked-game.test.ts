@@ -154,6 +154,7 @@ test("unclaimed guest retention expires after 72 hours but claimed games do not"
     point: { lat: 47, lng: 8 },
     now: 2_000
   });
+  assert.equal(completed.guestExpiresAt, 2_000 + rankedGuestRetentionMs);
   assert.equal(isExpiredUnclaimedRankedGame(claimRankedGame(completed, "account-1"), Number.MAX_SAFE_INTEGER), false);
 });
 

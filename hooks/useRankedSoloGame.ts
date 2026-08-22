@@ -176,7 +176,12 @@ function resolvedGuess(round: PublicResolvedRankedRound): Guess | null {
   return round.result.guess ? { ...round.result.guess, playerId } : null;
 }
 
-function roomFromRankedGame(next: PublicRankedGame, name: string, storedSettings: GameSettings): RoomState {
+export function roomFromRankedGame(
+  next: PublicRankedGame,
+  name: string,
+  storedSettings: GameSettings,
+  revealPendingRound = false
+): RoomState {
   const summaries = next.resolvedRounds.map((round) => summaryFor(round, resolvedGuess(round)));
   const latestResolved = next.resolvedRounds.at(-1) ?? null;
   const activeLocation = promptLocation(next);
@@ -192,17 +197,23 @@ function roomFromRankedGame(next: PublicRankedGame, name: string, storedSettings
     noZoom: next.noZoom ?? storedSettings.noZoom
   };
   const finished = next.status === "completed";
+  // The ranked API deliberately exposes the next pending round immediately
+  // after resolving the previous one. During recovery/navigation that pending
+  // prompt must not hide the just-finished round's result. It becomes visible
+  // only after the player explicitly chooses "Nächste Runde".
+  const showingResults = !finished && Boolean(latestResolved) && !revealPendingRound && next.activeRound?.startedAt == null;
+  const showingResolvedRound = finished || showingResults;
   const latestGuess = latestResolved ? resolvedGuess(latestResolved) : null;
   return {
     ...makeRoom(name, settings),
-    status: finished ? "finished" : "guessing",
+    status: finished ? "finished" : showingResults ? "results" : "guessing",
     players: [makePlayer(name, next.score)],
-    currentRound: next.activeRound?.roundNumber ?? latestResolved?.roundNumber ?? 0,
-    location: activeLocation ?? (latestResolved ? resolvedLocation(latestResolved) : null),
-    guesses: finished && latestGuess ? [latestGuess] : [],
-    timedOutPlayerIds: finished && latestResolved && !latestGuess ? [playerId] : [],
-    roundStartedAt: next.activeRound?.startedAt ?? null,
-    roundEndsAt: next.activeRound?.deadlineAt ?? null,
+    currentRound: showingResolvedRound ? latestResolved?.roundNumber ?? 0 : next.activeRound?.roundNumber ?? latestResolved?.roundNumber ?? 0,
+    location: showingResolvedRound && latestResolved ? resolvedLocation(latestResolved) : activeLocation ?? (latestResolved ? resolvedLocation(latestResolved) : null),
+    guesses: showingResolvedRound && latestGuess ? [latestGuess] : [],
+    timedOutPlayerIds: showingResolvedRound && latestResolved && !latestGuess ? [playerId] : [],
+    roundStartedAt: showingResolvedRound ? null : next.activeRound?.startedAt ?? null,
+    roundEndsAt: showingResolvedRound ? null : next.activeRound?.deadlineAt ?? null,
     summaries
   };
 }
@@ -535,7 +546,7 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
         }
 
         setGame(latest);
-        setRoom(roomFromRankedGame(latest, current.players[0]?.name ?? "Spieler 1", current.settings));
+        setRoom(roomFromRankedGame(latest, current.players[0]?.name ?? "Spieler 1", current.settings, true));
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : "Die nächste Runde konnte gerade nicht geladen werden. Bitte versuche es erneut.");
       } finally {

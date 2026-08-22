@@ -16691,7 +16691,7 @@ body .punktlandung-lobby
     display: grid !important;
     gap: 0.75rem !important;
     grid-template-columns: 3.08rem 3.08rem minmax(0, 1fr) 5.4rem !important;
-    grid-template-rows: 3.75rem 3.08rem !important;
+    grid-template-rows: 4.1rem 3.08rem !important;
     height: auto !important;
   }
 
@@ -16794,11 +16794,10 @@ body .punktlandung-lobby
     background: rgba(2, 6, 23, 0.46) !important;
     border: 0 !important;
     box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24), 0 0 28px rgba(52, 211, 153, 0.12) !important;
-    height: 3.75rem !important;
+    height: 4.1rem !important;
     max-width: none !important;
-    min-height: 3.75rem !important;
-    padding-bottom: 0.62rem !important;
-    padding-top: 0.6rem !important;
+    min-height: 4.1rem !important;
+    padding: 0.64rem 0.7rem 0.66rem !important;
     width: 100% !important;
   }
 
@@ -16823,7 +16822,7 @@ body .punktlandung-lobby
     align-items: center !important;
     display: inline-flex !important;
     flex-direction: row !important;
-    gap: 0.68rem !important;
+    gap: 0.86rem !important;
     justify-content: center !important;
     max-width: 100% !important;
     min-width: 0 !important;
@@ -16833,9 +16832,9 @@ body .punktlandung-lobby
   body .punktlandung-game-shell .punktlandung-task-card-label {
     color: rgb(110 231 183) !important;
     flex: 0 0 auto !important;
-    font-size: 0.62rem !important;
+    font-size: 0.8rem !important;
     font-weight: 900 !important;
-    letter-spacing: 0.14em !important;
+    letter-spacing: 0.16em !important;
     line-height: 1 !important;
     text-transform: uppercase !important;
     white-space: nowrap !important;
@@ -16844,7 +16843,7 @@ body .punktlandung-lobby
   body .punktlandung-game-shell .punktlandung-task-card-separator {
     background: rgba(110, 231, 183, 0.9) !important;
     flex: 0 0 auto !important;
-    height: 1.7rem !important;
+    height: 2.08rem !important;
     margin: 0 !important;
     width: 1px !important;
   }
@@ -16852,7 +16851,7 @@ body .punktlandung-lobby
   body .punktlandung-game-shell .punktlandung-task-card-title {
     display: block !important;
     flex: 0 1 auto !important;
-    font-size: clamp(1.08rem, 5.4vh, 1.44rem) !important;
+    font-size: 1.72rem !important;
     line-height: 1 !important;
     min-width: 0 !important;
     padding-bottom: 0.06em !important;
