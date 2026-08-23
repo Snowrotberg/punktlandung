@@ -34,6 +34,26 @@ export type CommunitySuggestion = {
   votedByViewer: boolean;
 };
 
+export type CommunityPublicMetrics = {
+  ideasInVoting: number;
+  plannedIdeas: number;
+  votesCast: number;
+};
+
+export function communityPublicMetrics(
+  suggestions: readonly Pick<CommunitySuggestion, "status" | "voteCount">[]
+): CommunityPublicMetrics {
+  const publicSuggestions = suggestions.filter(({ status }) =>
+    communityPublicStatuses.includes(status as typeof communityPublicStatuses[number])
+  );
+
+  return {
+    ideasInVoting: publicSuggestions.length,
+    plannedIdeas: publicSuggestions.filter(({ status }) => status === "planned").length,
+    votesCast: publicSuggestions.reduce((total, { voteCount }) => total + voteCount, 0)
+  };
+}
+
 export function communityAuthorLabel(profile: {
   handle: string;
   visibility: string;

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdContainer } from "@/components/AdContainer";
-import { ArrowBigUp, CheckCircle2, Clock3, Lightbulb, MessageSquareText, ShieldCheck } from "lucide-react";
+import { ArrowBigUp, CalendarCheck2, CheckCircle2, Clock3, Lightbulb, MessageSquareText, ShieldCheck } from "lucide-react";
 import { AccountHeaderControls } from "@/components/AccountHeaderControls";
 import { ContributionPaths } from "@/components/ContributionPaths";
 import { LegalLinks } from "@/components/LegalLinks";
 import { SectionNavigation } from "@/components/SectionNavigation";
 import { RedesignBrand, RedesignButtonLink, RedesignFooter, RedesignHeader, RedesignShell } from "@/components/redesign";
-import { communityPublicStatuses, communityStatusLabels, type CommunitySort, type CommunityStatus } from "@/lib/community";
+import { communityPublicMetrics, communityPublicStatuses, communityStatusLabels, type CommunitySort, type CommunityStatus } from "@/lib/community";
 import { readCommunitySuggestions, sortCommunitySuggestions, type CommunityReadResult } from "@/lib/communityRepository.server";
 import { getSupabaseAccountContext } from "@/lib/supabase/auth.server";
 import { toggleCommunityVote } from "./actions";
@@ -72,6 +72,7 @@ export default async function CommunityPage({ searchParams }: CommunityPageProps
   } catch (error) {
     console.error("Community page could not load suggestions", error instanceof Error ? error.message : "unknown error");
   }
+  const metrics = communityPublicMetrics(relatedSource.suggestions);
 
   return (
     <main className={styles.page}>
@@ -95,9 +96,9 @@ export default async function CommunityPage({ searchParams }: CommunityPageProps
                 <p>Schlage Funktionen vor, stimme für gute Ideen ab und sieh, woran als Nächstes gearbeitet wird.</p>
               </div>
               <div className={styles.process} id="ablauf">
-                <span><Lightbulb aria-hidden="true" /><b>1</b> Idee einreichen</span>
-                <span><ShieldCheck aria-hidden="true" /><b>2</b> Prüfung</span>
-                <span><ArrowBigUp aria-hidden="true" /><b>3</b> Community stimmt ab</span>
+                <span><Lightbulb aria-hidden="true" /><b>{metrics.ideasInVoting}</b> {metrics.ideasInVoting === 1 ? "Idee im Voting" : "Ideen im Voting"}</span>
+                <span><CalendarCheck2 aria-hidden="true" /><b>{metrics.plannedIdeas}</b> Geplant</span>
+                <span><ArrowBigUp aria-hidden="true" /><b>{metrics.votesCast}</b> {metrics.votesCast === 1 ? "Stimme abgegeben" : "Stimmen abgegeben"}</span>
               </div>
             </section>
 

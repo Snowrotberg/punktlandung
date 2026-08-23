@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { cleanCommunityDetails, cleanCommunityTitle, communityAuthorLabel, communityPublicStatuses, relatedCommunitySuggestions, validateCommunitySuggestion } from "../lib/community";
+import { cleanCommunityDetails, cleanCommunityTitle, communityAuthorLabel, communityPublicMetrics, communityPublicStatuses, relatedCommunitySuggestions, validateCommunitySuggestion } from "../lib/community";
 
 test("community suggestion input is normalized and bounded", () => {
   assert.equal(cleanCommunityTitle("  Eigene   Kartenrunden  "), "Eigene Kartenrunden");
@@ -17,6 +17,20 @@ test("community suggestion validation requires useful detail", () => {
 
 test("pending and declined ideas are never public voting states", () => {
   assert.deepEqual([...communityPublicStatuses], ["approved", "planned", "in_progress", "completed"]);
+});
+
+test("community metrics count public ideas, planned ideas, and their votes", () => {
+  assert.deepEqual(communityPublicMetrics([
+    { status: "approved", voteCount: 2 },
+    { status: "planned", voteCount: 1 },
+    { status: "completed", voteCount: 3 },
+    { status: "pending", voteCount: 50 },
+    { status: "declined", voteCount: 50 }
+  ]), {
+    ideasInVoting: 3,
+    plannedIdeas: 1,
+    votesCast: 6
+  });
 });
 
 test("community authors use the current public username, never the personal name", () => {

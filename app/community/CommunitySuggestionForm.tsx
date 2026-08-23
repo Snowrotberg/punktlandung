@@ -52,7 +52,7 @@ export function CommunitySuggestionForm({ candidates }: { candidates: RelatedCan
       </label>
       <label>
         <span>Beschreibung</span>
-        <textarea ref={detailsRef} name="details" value={details} onChange={(event) => { setDetails(event.target.value); setReviewed(false); setErrors((current) => ({ ...current, details: undefined })); }} minLength={20} maxLength={2000} required rows={4} placeholder="Was wünschst du dir – und was würde dadurch besser?" aria-invalid={Boolean(errors.details)} aria-describedby={errors.details ? "community-details-error" : undefined} />
+        <textarea ref={detailsRef} name="details" value={details} onChange={(event) => { setDetails(event.target.value); setReviewed(false); setErrors((current) => ({ ...current, details: undefined })); }} minLength={20} maxLength={2000} required rows={4} placeholder="Was fehlt dir noch, damit Punktlandung dein Lieblings-Geo-Guessing-Spiel wird?" aria-invalid={Boolean(errors.details)} aria-describedby={errors.details ? "community-details-error" : undefined} />
         {errors.details && <span id="community-details-error" className={styles.fieldError} role="alert"><b aria-hidden="true">!</b>{errors.details}</span>}
       </label>
       {reviewed && (
