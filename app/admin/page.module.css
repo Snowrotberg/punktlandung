@@ -24,6 +24,10 @@
 .usagePanel { order: 3 !important; }
 .imageRankingPanel { order: 4 !important; }
 .imageDeliveryPanel { order: 5 !important; }
+.scopeDivider { order: 8; grid-column: 1 / -1; display: grid; gap: .25rem; margin-top: .45rem; padding: 1rem 0 .15rem; border-top: 1px solid rgba(148,163,184,.22); }
+.scopeDivider span { color: #f8fafc; font-size: .9rem; font-weight: 850; }
+.scopeDivider p { max-width: 52rem; margin: 0; color: #718198; font-size: .7rem; line-height: 1.45; }
+.realtimeStats { order: 9; grid-column: 1 / -1; }
 .catalogOverviewPanel { order: 10 !important; }
 .difficultyPanel { order: 11 !important; }
 .accountProgressPanel { order: 12 !important; }
@@ -108,6 +112,9 @@
 .topList strong, .topList b { color: #f8fafc; font-size: .76rem; }
 .topList small { color: #718198; font-size: .64rem; line-height: 1.35; overflow-wrap: anywhere; }
 .topList li > span:last-child { display: grid; justify-items: end; gap: .12rem; }
+.topListLink { display: grid; min-width: 0; gap: .12rem; color: inherit; text-decoration: none; }
+.topListLink:hover strong, .topListLink:focus-visible strong { color: var(--pl-mint); }
+.topListLink:focus-visible { border-radius: .3rem; outline: 2px solid var(--pl-mint); outline-offset: .2rem; }
 .shareList, .compactList { display: grid; gap: .45rem; margin: 0; padding: 0; list-style: none; }
 .shareList li, .compactList li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding-bottom: .4rem; border-bottom: 1px solid rgba(148,163,184,.13); color: #cbd5e1; font-size: .75rem; }
 .shareList b, .compactList b { color: #f8fafc; }
@@ -175,6 +182,7 @@
   .detailDisclosure > summary span { text-align: left; }
   .list li { align-items: start; flex-direction: column; gap: .25rem; }
   .list strong, .metricValue { justify-content: flex-start; text-align: left; }
+  .scopeDivider { padding-top: .85rem; }
   .matrix { display: block; min-width: 0; border: 0; background: transparent; }
   .matrix thead { display: none; }
   .matrix tbody { display: grid; gap: .65rem; }
