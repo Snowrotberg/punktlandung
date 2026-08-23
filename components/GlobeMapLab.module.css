@@ -4,6 +4,22 @@
   gap: 0.75rem;
 }
 
+.embedded {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.embedded .mapFrame {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: inherit;
+  box-shadow: none;
+}
+
 .controlPanel {
   display: grid;
   grid-template-columns: minmax(14rem, 1.15fr) minmax(20rem, 1.65fr) minmax(14rem, 1fr);
@@ -117,6 +133,12 @@
 .map {
   position: absolute;
   inset: 0;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.mapFrame[data-surface-ready="true"] .map {
+  opacity: 1;
 }
 
 .preloadVeil {
@@ -148,6 +170,10 @@
 
 .routeOverlay[data-visible="true"] {
   opacity: 1;
+}
+
+.mapFrame[data-surface-ready="false"] .routeOverlay {
+  opacity: 0;
 }
 
 .routeClip {
@@ -257,25 +283,49 @@
   transform: translateY(0) scale(var(--marker-scale, 1));
 }
 
-.targetMarker[data-focus="true"] .markerRingOuter {
-  animation: targetFocus 850ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+.targetMarker .markerVisual {
+  transform: scale(var(--marker-scale, 1));
 }
 
-.targetMarker[data-visible="true"][data-focus="true"] .markerVisual {
-  animation: targetDrop 620ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+.targetMarker[data-visible="true"] .markerVisual {
+  transform: scale(var(--marker-scale, 1));
+}
+
+.targetMarker[data-visible="true"][data-focus="true"] .markerPin {
+  animation:
+    targetDrop 620ms cubic-bezier(0.16, 1, 0.3, 1) 1 both,
+    targetIdleBounce 2.25s cubic-bezier(0.45, 0, 0.25, 1) 760ms infinite;
+}
+
+.targetMarker[data-visible="true"][data-focus="true"] .markerRingInner {
+  animation: targetRipple 480ms cubic-bezier(0.16, 1, 0.3, 1) 300ms 1 both;
+}
+
+.targetMarker[data-visible="true"][data-focus="true"] .markerRingMiddle {
+  animation: targetRipple 520ms cubic-bezier(0.16, 1, 0.3, 1) 370ms 1 both;
+}
+
+.targetMarker[data-visible="true"][data-focus="true"] .markerRingOuter {
+  animation: targetRipple 580ms cubic-bezier(0.16, 1, 0.3, 1) 440ms 1 both;
 }
 
 @keyframes targetDrop {
-  0% { opacity: 0; transform: translateY(-3.5rem) scale(var(--marker-scale, 1)); }
-  68% { opacity: 1; transform: translateY(0.28rem) scale(var(--marker-scale, 1)); }
-  84% { transform: translateY(-0.12rem) scale(var(--marker-scale, 1)); }
-  100% { opacity: 1; transform: translateY(0) scale(var(--marker-scale, 1)); }
+  0% { opacity: 0; transform: translateX(-50%) translateY(-3.5rem) scale(1.12); }
+  68% { opacity: 1; transform: translateX(-50%) translateY(0.28rem) scale(1.12); }
+  84% { transform: translateX(-50%) translateY(-0.12rem) scale(1.12); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
 }
 
-@keyframes targetFocus {
-  0% { opacity: 0; transform: scale(0.4); }
-  55% { opacity: 0.95; transform: scale(1.18); }
-  100% { opacity: 0.68; transform: scale(1); }
+@keyframes targetRipple {
+  0% { opacity: 0; filter: drop-shadow(0 0 0 rgba(94, 231, 189, 0)); stroke-width: 1; transform: scale(0.18); }
+  58% { opacity: 1; filter: drop-shadow(0 0 0.35rem rgba(94, 231, 189, 0.82)); stroke-width: 1.55; transform: scale(2); }
+  100% { filter: drop-shadow(0 0 0 rgba(94, 231, 189, 0)); stroke-width: 1; transform: scale(1); }
+}
+
+@keyframes targetIdleBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0) scale(1.12); }
+  48% { transform: translateX(-50%) translateY(-5px) scale(1.12); }
+  68% { transform: translateX(-50%) translateY(0) scale(1.12); }
 }
 
 .markerPin {
@@ -349,7 +399,7 @@
 .targetMarker {
   --marker-color: #5ee7bd;
   pointer-events: auto;
-  cursor: pointer;
+  cursor: help;
 }
 
 .targetMarker .markerPin {
@@ -390,11 +440,65 @@
   border-color: #5ee7bd !important;
   background: #5ee7bd !important;
   color: #06231c !important;
+  padding-right: 1.65rem !important;
+}
+
+.targetMarker .markerLabel::after {
+  content: "?";
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  display: grid;
+  width: 0.9rem;
+  height: 0.9rem;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(6, 35, 28, 0.12);
+  color: #064e3b;
+  box-shadow: none;
+  font-size: 0.65rem;
+  font-weight: 800;
+  opacity: 0;
+  transform: translateY(-50%) scale(0.72);
+  transition: opacity 140ms ease, transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.targetMarker:hover .markerLabel::after,
+.targetMarker:focus-visible .markerLabel::after,
+.targetMarker:focus-within .markerLabel::after {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+.targetMarker:focus-visible {
+  outline: 2px solid rgba(94, 231, 189, 0.92);
+  outline-offset: 0.35rem;
+  border-radius: 0.55rem;
 }
 
 .resultMarker[data-visible="true"] .markerLabel {
   opacity: 1;
   transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.resultMarker[data-label-edge="right"] .markerLabel {
+  left: 0;
+  transform: translateX(0) translateY(0.35rem) scale(0.94);
+}
+
+.resultMarker[data-visible="true"][data-label-edge="right"] .markerLabel {
+  transform: translateX(0) translateY(0) scale(1);
+}
+
+.resultMarker[data-label-edge="left"] .markerLabel {
+  right: 0;
+  left: auto;
+  transform: translateX(0) translateY(0.35rem) scale(0.94);
+}
+
+.resultMarker[data-visible="true"][data-label-edge="left"] .markerLabel {
+  transform: translateX(0) translateY(0) scale(1);
 }
 
 .resultMarker[data-label-vertical="above"] .markerLabel {
@@ -417,6 +521,11 @@
 
 .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-tip) {
   border-top-color: rgba(2, 6, 23, 0.94);
+}
+
+.mapFrame :global(.kartenlabor-result-popup.is-below-label .maplibregl-popup-tip) {
+  border-top-color: transparent;
+  border-bottom-color: rgba(2, 6, 23, 0.94);
 }
 
 .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button) {
@@ -509,8 +618,8 @@
   }
 
   .routeLine,
-  .targetMarker[data-visible="true"][data-focus="true"] .markerVisual,
-  .targetMarker[data-focus="true"] .markerRingOuter {
+  .targetMarker[data-visible="true"][data-focus="true"] .markerPin,
+  .targetMarker[data-visible="true"][data-focus="true"] .markerRings ellipse {
     animation: none;
   }
 }

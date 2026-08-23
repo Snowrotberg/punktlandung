@@ -11,6 +11,7 @@ import { flushCompletedGameSaves } from "@/lib/completedGameSaveQueue.client";
 import { useLocalGame } from "@/hooks/useLocalGame";
 import { clearSetupResumeRequest, clearVisibleResumeSetup, markResumeSetupVisible, requestSetupResume, setupResumeUrl, shouldDiscardResumeOnHistoryExit } from "@/lib/gameResume.client";
 import { gameplayRouteForStatus, gameplayStatusForRoute } from "@/lib/gameplayRoute";
+import { punktlandungMapStyleUrl } from "@/lib/mapStyle";
 import { useRankedSoloGame } from "@/hooks/useRankedSoloGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
 import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
@@ -379,6 +380,15 @@ export function GameApp({
   const gameplayRouteMismatch = Boolean(gameplayRoute && pathname !== gameplayRoute);
   const routeRequiredStatus = gameplayStatusForRoute(pathname ?? "") ?? requiredStatus;
   const requestedGameplayRouteRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!room || room.status !== "guessing" || room.players.length !== 1) return;
+    // Warm the result-map code and style while the player is still looking at
+    // the round image. The visible transition can then begin with the map,
+    // rather than with an implementation-facing loading state.
+    void import("./GlobeMapLab").then((module) => module.prewarmGlobeResultMap());
+    void fetch(punktlandungMapStyleUrl("globe"), { cache: "force-cache" }).catch(() => undefined);
+  }, [room?.location?.id, room?.players.length, room?.status]);
 
   useEffect(() => {
     if (restorationPending || !gameplayRoute || pathname === gameplayRoute) {

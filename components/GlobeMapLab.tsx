@@ -22,6 +22,21 @@ type CameraPreset = { label: string; center: GlobeCoordinates; zoom: number; bea
 type CameraSnapshot = { lng: number; lat: number; zoom: number; bearing: number; pitch: number };
 type TerrainMode = "adaptive" | "on" | "off";
 type TimelineMetrics = { completed: boolean; maxFrameGapMs: number; slowFrames: number; pendingTileSamples: number; tileSamples: number };
+type GlobeMapLabProps = {
+  resultScenario?: ResultCameraScenario;
+  embedded?: boolean;
+  autoPlay?: boolean;
+  revealImmediately?: boolean;
+  onAnimationComplete?: () => void;
+  onUnavailable?: () => void;
+};
+
+export function prewarmGlobeResultMap(): void {
+  if (typeof window === "undefined") return;
+  // MapLibre normally creates its workers with the first visible map. Starting
+  // them during the guessing phase removes that setup cost from the reveal.
+  maplibregl.prewarm();
+}
 
 const CAMERA_PRESETS = {
   world: { label: "Welt", center: [8, 24], zoom: 1.35, bearing: 0, pitch: 0 },
@@ -54,6 +69,12 @@ function createResultMarker(kind: "guess" | "target", label: string): HTMLDivEle
   marker.className = `${styles.resultMarker} ${kind === "guess" ? styles.guessMarker : styles.targetMarker}`;
   marker.dataset.visible = "false";
   marker.setAttribute("aria-label", label);
+  if (kind === "target") {
+    marker.dataset.hasInfo = "true";
+    marker.tabIndex = 0;
+    marker.setAttribute("role", "button");
+    marker.setAttribute("aria-haspopup", "dialog");
+  }
   marker.innerHTML = `
     <span class="${styles.markerVisual}" aria-hidden="true">
       <svg class="${styles.markerPin}" viewBox="0 0 32 42">
@@ -79,14 +100,23 @@ function formatTimelineMetrics(metrics: TimelineMetrics): string {
   return `Frame-Lücke max. ${Math.round(metrics.maxFrameGapMs)} ms · lange Frames ${metrics.slowFrames} · Tiles offen ${metrics.pendingTileSamples}/${metrics.tileSamples}`;
 }
 
-export function GlobeMapLab() {
+export function GlobeMapLab({
+  resultScenario,
+  embedded = false,
+  autoPlay = false,
+  revealImmediately = false,
+  onAnimationComplete,
+  onUnavailable
+}: GlobeMapLabProps = {}) {
+  const initialScenario = resultScenario ?? RESULT_CAMERA_SCENARIOS[0];
+  const availableScenarios = resultScenario ? [resultScenario] : RESULT_CAMERA_SCENARIOS;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const journeyRunRef = useRef(0);
   const animationFrameRef = useRef<number | null>(null);
   const guessMarkerRef = useRef<maplibregl.Marker | null>(null);
   const targetMarkerRef = useRef<maplibregl.Marker | null>(null);
-  const activeScenarioRef = useRef<ResultCameraScenario>(RESULT_CAMERA_SCENARIOS[0]);
+  const activeScenarioRef = useRef<ResultCameraScenario>(initialScenario);
   const routeOverlayRef = useRef<SVGSVGElement | null>(null);
   const routeShadowRef = useRef<SVGPathElement | null>(null);
   const routeLineRef = useRef<SVGPathElement | null>(null);
@@ -102,6 +132,9 @@ export function GlobeMapLab() {
   const routeProgressRef = useRef(0);
   const reducedMotionRef = useRef(false);
   const lowPowerDeviceRef = useRef(false);
+  const autoPlayKeyRef = useRef<string | null>(null);
+  const onAnimationCompleteRef = useRef(onAnimationComplete);
+  const onUnavailableRef = useRef(onUnavailable);
   const [camera, setCamera] = useState<CameraSnapshot>(INITIAL_CAMERA);
   const [mapReady, setMapReady] = useState(false);
   const [journeyRunning, setJourneyRunning] = useState(false);
@@ -110,11 +143,17 @@ export function GlobeMapLab() {
   const [terrainStrength, setTerrainStrength] = useState<number>(DEFAULT_TERRAIN_STRENGTH);
   const [terrainPreparing, setTerrainPreparing] = useState(false);
   const [cameraPreparing, setCameraPreparing] = useState(false);
+  const [surfaceReady, setSurfaceReady] = useState(false);
   const [terrainActive, setTerrainActive] = useState(false);
-  const [selectedScenarioId, setSelectedScenarioId] = useState(RESULT_CAMERA_SCENARIOS[0].id);
+  const [selectedScenarioId, setSelectedScenarioId] = useState(initialScenario.id);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [deviceProfile, setDeviceProfile] = useState<"standard" | "compact">("standard");
   const [status, setStatus] = useState("Globe und Kartendaten werden geladen …");
+
+  useEffect(() => {
+    onAnimationCompleteRef.current = onAnimationComplete;
+    onUnavailableRef.current = onUnavailable;
+  }, [onAnimationComplete, onUnavailable]);
 
   const updateRouteOverlay = useCallback(() => {
     const map = mapRef.current;
@@ -125,7 +164,8 @@ export function GlobeMapLab() {
     const gradient = routeGradientRef.current;
     if (!map || !overlay || !route || !shadow || !clip || !gradient) return;
     const scenario = activeScenarioRef.current;
-    const points = routeLineCoordinates(scenario.guess, scenario.target).map((coordinate) => map.project(coordinate));
+    const coordinates = routeLineCoordinates(scenario.guess, scenario.target);
+    const points = coordinates.map((coordinate) => map.project(coordinate));
     if (points.length < 2 || points.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y))) return;
     const startCenter = map.project(scenario.guess);
     const endCenter = map.project(scenario.target);
@@ -145,22 +185,47 @@ export function GlobeMapLab() {
     const targetWidth = targetRingRect?.width || 58;
     const targetHeight = targetRingRect?.height || 18;
     const endGap = ellipseRadius(endUnit, targetWidth, targetHeight) + 6;
-    const visiblePoints = points.filter((point, index) => index > 0 && index < points.length - 1
-      && Math.hypot(point.x - startCenter.x, point.y - startCenter.y) > startGap
-      && Math.hypot(point.x - endCenter.x, point.y - endCenter.y) > endGap);
-    visiblePoints.unshift({ x: startCenter.x + startUnit.x * startGap, y: startCenter.y + startUnit.y * startGap } as typeof points[number]);
-    visiblePoints.push({ x: endCenter.x - endUnit.x * endGap, y: endCenter.y - endUnit.y * endGap } as typeof points[number]);
-    const d = visiblePoints.map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
+    const clippedPoints = points.map((point, index) => {
+      if (index === 0) return { x: startCenter.x + startUnit.x * startGap, y: startCenter.y + startUnit.y * startGap };
+      if (index === points.length - 1) return { x: endCenter.x - endUnit.x * endGap, y: endCenter.y - endUnit.y * endGap };
+      return point;
+    });
+    const visibility = coordinates.map((coordinate) => !map.transform.isLocationOccluded(
+      new maplibregl.LngLat(coordinate[0], coordinate[1])
+    ));
+    let drawing = false;
+    const commands: string[] = [];
+    clippedPoints.forEach((point, index) => {
+      if (!visibility[index]) {
+        drawing = false;
+        return;
+      }
+      commands.push(`${drawing ? "L" : "M"}${point.x.toFixed(2)} ${point.y.toFixed(2)}`);
+      drawing = true;
+    });
+    const d = commands.join(" ");
+    if (!d) {
+      route.setAttribute("d", ""); shadow.setAttribute("d", ""); clip.setAttribute("d", "");
+      return;
+    }
     route.setAttribute("d", d); shadow.setAttribute("d", d); clip.setAttribute("d", d);
-    gradient.setAttribute("x1", String(visiblePoints[0].x)); gradient.setAttribute("y1", String(visiblePoints[0].y));
-    gradient.setAttribute("x2", String(visiblePoints.at(-1)!.x)); gradient.setAttribute("y2", String(visiblePoints.at(-1)!.y));
+    gradient.setAttribute("x1", String(clippedPoints[0].x)); gradient.setAttribute("y1", String(clippedPoints[0].y));
+    gradient.setAttribute("x2", String(clippedPoints.at(-1)!.x)); gradient.setAttribute("y2", String(clippedPoints.at(-1)!.y));
     const length = route.getTotalLength();
     const drawn = Math.max(0.001, length * routeProgressRef.current);
     clip.setAttribute("stroke-dasharray", `${drawn} ${Math.max(0.001, length)}`);
     overlay.dataset.visible = routeVisibleRef.current ? "true" : "false";
     const mapWidth = map.getContainer().clientWidth;
-    guessMarkerRef.current?.getElement().setAttribute("data-label-side", startCenter.x < mapWidth / 2 ? "right" : "left");
-    targetMarkerRef.current?.getElement().setAttribute("data-label-side", endCenter.x < mapWidth / 2 ? "right" : "left");
+    const placeLabelAtEdge = (marker: maplibregl.Marker | null, centerX: number) => {
+      const element = marker?.getElement();
+      const label = element?.querySelector<HTMLElement>(`.${styles.markerLabel}`);
+      if (!element || !label) return;
+      const halfWidth = label.offsetWidth / 2;
+      const edge = centerX < halfWidth + 12 ? "right" : centerX > mapWidth - halfWidth - 12 ? "left" : "center";
+      element.setAttribute("data-label-edge", edge);
+    };
+    placeLabelAtEdge(guessMarkerRef.current, startCenter.x);
+    placeLabelAtEdge(targetMarkerRef.current, endCenter.x);
     const guessIsNorth = scenario.guess[1] >= scenario.target[1];
     guessMarkerRef.current?.getElement().setAttribute("data-label-vertical", guessIsNorth ? "above" : "below");
     targetMarkerRef.current?.getElement().setAttribute("data-label-vertical", guessIsNorth ? "below" : "above");
@@ -225,12 +290,14 @@ export function GlobeMapLab() {
     const popupDescription = document.createElement("span");
     popupDescription.textContent = scenario.targetDescription;
     popupContent.append(popupTitle, popupDescription);
+    const opensBelowTarget = scenario.target[1] < scenario.guess[1];
     targetMarkerRef.current?.setPopup(new maplibregl.Popup({
-      className: "kartenlabor-result-popup",
+      anchor: opensBelowTarget ? "top" : "bottom",
+      className: `kartenlabor-result-popup${opensBelowTarget ? " is-below-label" : ""}`,
       closeButton: true,
       closeOnClick: true,
       maxWidth: "280px",
-      offset: [0, -58]
+      offset: opensBelowTarget ? [0, 80] : [0, -112]
     }).setDOMContent(popupContent));
   }, []);
 
@@ -257,13 +324,13 @@ export function GlobeMapLab() {
         map.off("idle", finish);
         resolve();
       };
-      const timeout = window.setTimeout(finish, 1_500);
+      const timeout = window.setTimeout(finish, embedded ? 750 : 1_500);
       map.once("idle", finish);
     });
     const ready = run === journeyRunRef.current;
     if (ready) { terrainPreparedRef.current = preparationKey; setTerrainPreparing(false); }
     return ready;
-  }, [setTerrainLevel]);
+  }, [embedded, setTerrainLevel]);
 
   const preloadCameraViews = useCallback(async (plan: ResultCameraPlan, run: number): Promise<boolean> => {
     const map = mapRef.current;
@@ -286,18 +353,20 @@ export function GlobeMapLab() {
     });
     const transit = plan.keyframes.reduce((lowest, frame) => frame.zoom < lowest.zoom ? frame : lowest);
     const end = plan.keyframes.at(-1)!;
-    for (const frame of [transit, end]) {
+    const preparationFrames = embedded ? [end] : [transit, end];
+    const transitTimeout = embedded ? (plan.distanceClass === "long" ? 700 : 500) : 1_200;
+    for (const frame of preparationFrames) {
       if (run !== journeyRunRef.current) return false;
       map.jumpTo(frame);
-      await waitForTiles(1_200);
+      await waitForTiles(transitTimeout);
     }
     const start = plan.keyframes[0];
     map.jumpTo(start);
-    await waitForTiles(800);
+    await waitForTiles(embedded ? 350 : 800);
     const ready = run === journeyRunRef.current;
     if (ready) { cameraPreparedRef.current = key; setCameraPreparing(false); }
     return ready;
-  }, []);
+  }, [embedded]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -312,15 +381,73 @@ export function GlobeMapLab() {
     motionQuery.addEventListener("change", updateMotionPreference);
     lowPowerDeviceRef.current = (navigator.hardwareConcurrency || 8) <= 4 || (navigatorWithMemory.deviceMemory ?? 8) <= 4;
     setDeviceProfile(lowPowerDeviceRef.current ? "compact" : "standard");
+    setSurfaceReady(false);
 
-    const map = new maplibregl.Map({
-      container, style: punktlandungMapStyleUrl("globe"), center: CAMERA_PRESETS.world.center,
-      zoom: CAMERA_PRESETS.world.zoom, bearing: CAMERA_PRESETS.world.bearing, pitch: CAMERA_PRESETS.world.pitch,
-      maxPitch: 70, renderWorldCopies: false, attributionControl: false,
-      canvasContextAttributes: { antialias: !lowPowerDeviceRef.current }, fadeDuration: lowPowerDeviceRef.current ? 0 : 180
+    const initialPlan = buildResultCameraPlan(initialScenario.guess, initialScenario.target, {
+      compactViewport: container.clientWidth < 700
     });
+    const initialFrame = revealImmediately ? initialPlan.keyframes.at(-1)! : initialPlan.keyframes[0];
+
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container, style: punktlandungMapStyleUrl("globe"), center: initialFrame.center,
+        zoom: initialFrame.zoom, bearing: initialFrame.bearing, pitch: initialFrame.pitch,
+        maxPitch: 70, renderWorldCopies: false, attributionControl: false,
+        dragRotate: true, touchPitch: true, scrollZoom: true, keyboard: true, boxZoom: false,
+        canvasContextAttributes: { antialias: !lowPowerDeviceRef.current }, fadeDuration: lowPowerDeviceRef.current ? 0 : 180
+      });
+    } catch (error) {
+      console.error("[Punktlandung globe] WebGL konnte nicht initialisiert werden", error);
+      setStatus("3D-Karte auf diesem Gerät nicht verfügbar");
+      onUnavailableRef.current?.();
+      return;
+    }
     mapRef.current = map;
+    map.dragRotate.enable();
+    map.touchPitch.enable();
+    map.scrollZoom.enable();
+    map.boxZoom.disable();
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+
+    const canvas = map.getCanvas();
+    let shiftGesture: { pointerId: number; x: number; y: number; bearing: number; pitch: number; restorePan: boolean } | null = null;
+    const finishShiftGesture = () => {
+      if (!shiftGesture) return;
+      if (shiftGesture.restorePan) map.dragPan.enable();
+      shiftGesture = null;
+    };
+    const beginShiftGesture = (event: PointerEvent) => {
+      if (event.button !== 0 || !event.shiftKey) return;
+      event.preventDefault();
+      map.stop();
+      shiftGesture = {
+        pointerId: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        bearing: map.getBearing(),
+        pitch: map.getPitch(),
+        restorePan: map.dragPan.isEnabled()
+      };
+      map.dragPan.disable();
+      canvas.setPointerCapture?.(event.pointerId);
+    };
+    const updateShiftGesture = (event: PointerEvent) => {
+      if (!shiftGesture || event.pointerId !== shiftGesture.pointerId) return;
+      event.preventDefault();
+      map.jumpTo({
+        bearing: shiftGesture.bearing + (event.clientX - shiftGesture.x) * 0.32,
+        pitch: Math.max(0, Math.min(70, shiftGesture.pitch - (event.clientY - shiftGesture.y) * 0.24))
+      });
+    };
+    const endShiftGesture = (event: PointerEvent) => {
+      if (!shiftGesture || event.pointerId !== shiftGesture.pointerId) return;
+      finishShiftGesture();
+    };
+    canvas.addEventListener("pointerdown", beginShiftGesture, { capture: true });
+    window.addEventListener("pointermove", updateShiftGesture, { capture: true });
+    window.addEventListener("pointerup", endShiftGesture, { capture: true });
+    window.addEventListener("pointercancel", endShiftGesture, { capture: true });
 
     let lastTelemetryUpdate = 0;
     const updateCamera = () => {
@@ -353,29 +480,55 @@ export function GlobeMapLab() {
         opacityWhenCovered: 0,
         subpixelPositioning: true
       })
-        .setLngLat(RESULT_CAMERA_SCENARIOS[0].guess).addTo(map);
+        .setLngLat(initialScenario.guess).addTo(map);
       targetMarkerRef.current = new maplibregl.Marker({
         element: createResultMarker("target", "Ziel"),
         anchor: "bottom",
         opacityWhenCovered: 0,
         subpixelPositioning: true
       })
-        .setLngLat(RESULT_CAMERA_SCENARIOS[0].target).addTo(map);
-      setResultMarkerContent(RESULT_CAMERA_SCENARIOS[0]);
-      const initialPlan = buildResultCameraPlan(RESULT_CAMERA_SCENARIOS[0].guess, RESULT_CAMERA_SCENARIOS[0].target,
-        { compactViewport: container.clientWidth < 700 });
-      map.jumpTo(initialPlan.keyframes[0]);
-      setMarkerVisibility("guess", true);
-      setMarkerVisibility("target", false);
-      setRouteVisibility(false);
-    };
-    const reportReady = () => {
-      addResultOverlays(); setMapReady(true); updateCamera();
-      const scenario = RESULT_CAMERA_SCENARIOS[0];
-      const plan = buildResultCameraPlan(scenario.guess, scenario.target, { compactViewport: container.clientWidth < 700 });
-      void preloadTerrain(plan, journeyRunRef.current).then(() => preloadCameraViews(plan, journeyRunRef.current)).then(() => {
-        if (mapRef.current) setStatus(`${scenario.label} vorbereitet · Tipp sichtbar · ${formatDistance(plan.distanceKm)}`);
+        .setLngLat(initialScenario.target).addTo(map);
+      targetMarkerRef.current.getElement().addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        targetMarkerRef.current?.togglePopup();
       });
+      setResultMarkerContent(initialScenario);
+      map.jumpTo(revealImmediately ? initialPlan.keyframes.at(-1)! : initialPlan.keyframes[0]);
+      setMarkerVisibility("guess", true);
+      setMarkerVisibility("target", revealImmediately);
+      setRouteVisibility(revealImmediately);
+      if (revealImmediately) setRouteDrawProgress(1);
+    };
+    let mapLoaded = false;
+    const loadTimeout = window.setTimeout(() => {
+      if (mapLoaded) return;
+      console.warn("[Punktlandung globe] Kartenstart überschritt das Fallback-Zeitfenster");
+      onUnavailableRef.current?.();
+    }, embedded ? 8_000 : 12_000);
+    const reportReady = () => {
+      mapLoaded = true;
+      window.clearTimeout(loadTimeout);
+      addResultOverlays(); updateCamera();
+      const scenario = initialScenario;
+      const plan = initialPlan;
+      const preparationRun = journeyRunRef.current;
+      void (async () => {
+        await preloadTerrain(plan, preparationRun);
+        // A static replay is constructed at its final camera already. Repeating
+        // the animated end-view warm-up only delays the visible replay map.
+        if (!revealImmediately) await preloadCameraViews(plan, preparationRun);
+        if (!mapRef.current || preparationRun !== journeyRunRef.current) return;
+        map.jumpTo(revealImmediately ? plan.keyframes.at(-1)! : plan.keyframes[0]);
+        setMarkerVisibility("guess", true);
+        setMarkerVisibility("target", revealImmediately);
+        setRouteVisibility(revealImmediately);
+        if (revealImmediately) setRouteDrawProgress(1);
+        setSurfaceReady(true);
+        setMapReady(true);
+        setStatus(`${scenario.label} vorbereitet · Tipp sichtbar · ${formatDistance(plan.distanceKm)}`);
+        if (revealImmediately) onAnimationCompleteRef.current?.();
+      })();
     };
     const reportError = (event: maplibregl.ErrorEvent) => {
       console.error(`[Punktlandung globe] ${event.error.message}`, event.error);
@@ -387,13 +540,19 @@ export function GlobeMapLab() {
     resizeObserver.observe(container);
     return () => {
       journeyRunRef.current += 1;
+      window.clearTimeout(loadTimeout);
       if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
       motionQuery.removeEventListener("change", updateMotionPreference);
+      finishShiftGesture();
+      canvas.removeEventListener("pointerdown", beginShiftGesture, { capture: true });
+      window.removeEventListener("pointermove", updateShiftGesture, { capture: true });
+      window.removeEventListener("pointerup", endShiftGesture, { capture: true });
+      window.removeEventListener("pointercancel", endShiftGesture, { capture: true });
       resizeObserver.disconnect();
       map.off("style.load", configureGlobe); map.off("load", reportReady); map.off("move", updateCamera); map.off("error", reportError);
       guessMarkerRef.current?.remove(); targetMarkerRef.current?.remove(); map.remove(); mapRef.current = null;
     };
-  }, [preloadCameraViews, preloadTerrain, setMarkerVisibility, setResultMarkerContent, setRouteVisibility, updateRouteOverlay]);
+  }, [initialScenario, preloadCameraViews, preloadTerrain, revealImmediately, setMarkerVisibility, setResultMarkerContent, setRouteDrawProgress, setRouteVisibility, updateRouteOverlay]);
 
   const runTimeline = useCallback((keyframes: CameraKeyframe[], duration: number, run: number, onProgress?: (progress: number) => void): Promise<TimelineMetrics> => {
     const map = mapRef.current;
@@ -552,7 +711,7 @@ export function GlobeMapLab() {
 
   const runResultJourney = useCallback(async () => {
     const map = mapRef.current;
-    const scenario = RESULT_CAMERA_SCENARIOS.find((candidate) => candidate.id === selectedScenarioId);
+    const scenario = resultScenario ?? RESULT_CAMERA_SCENARIOS.find((candidate) => candidate.id === selectedScenarioId);
     if (!map || !scenario || !mapReady) return;
     stopCurrentJourney();
     const run = journeyRunRef.current + 1; journeyRunRef.current = run;
@@ -590,9 +749,18 @@ export function GlobeMapLab() {
       if (run === journeyRunRef.current) {
         setRouteVisibility(true); setMarkerVisibility("target", true); setRouteDrawProgress(1);
         if (reducedMotionRef.current) setStatus(`Ergebnis sichtbar · ${formatDistance(plan.distanceKm)} · Reduced-Motion-Ease · Terrain ${terrainLevelRef.current && terrainLevelRef.current > 0.05 ? "aktiv" : "aus"}`);
+        onAnimationCompleteRef.current?.();
       }
     } finally { if (run === journeyRunRef.current) setJourneyRunning(false); }
-  }, [mapReady, preloadCameraViews, preloadTerrain, runNativeResultFlight, selectedScenarioId, setMarkerVisibility, setRouteDrawProgress, setRouteVisibility, stopCurrentJourney, updateResultGeometry]);
+  }, [mapReady, preloadCameraViews, preloadTerrain, resultScenario, runNativeResultFlight, selectedScenarioId, setMarkerVisibility, setRouteDrawProgress, setRouteVisibility, stopCurrentJourney, updateResultGeometry]);
+
+  useEffect(() => {
+    if (!autoPlay || !mapReady || journeyRunning || terrainPreparing || cameraPreparing) return;
+    const key = `${initialScenario.id}:${initialScenario.guess.join(",")}:${initialScenario.target.join(",")}`;
+    if (autoPlayKeyRef.current === key) return;
+    autoPlayKeyRef.current = key;
+    void runResultJourney();
+  }, [autoPlay, cameraPreparing, initialScenario, journeyRunning, mapReady, runResultJourney, terrainPreparing]);
 
   const changeTerrainMode = useCallback((mode: TerrainMode) => {
     terrainPreparedRef.current = null;
@@ -612,12 +780,12 @@ export function GlobeMapLab() {
     setStatus(`Terrain An · 3D-Stärke ${strength.toFixed(2)}× aktiv`);
   }, [setTerrainLevel]);
 
-  const selectedScenario = RESULT_CAMERA_SCENARIOS.find((scenario) => scenario.id === selectedScenarioId) ?? RESULT_CAMERA_SCENARIOS[0];
+  const selectedScenario = availableScenarios.find((scenario) => scenario.id === selectedScenarioId) ?? initialScenario;
   const selectedPlan = buildResultCameraPlan(selectedScenario.guess, selectedScenario.target);
 
   return (
-    <section className={styles.lab} aria-label="Globe-Testansicht">
-      <div className={styles.controlPanel}>
+    <section className={`${styles.lab}${embedded ? ` ${styles.embedded}` : ""}`} aria-label={embedded ? "Interaktive 3D-Ergebniskarte" : "Globe-Testansicht"}>
+      {!embedded ? <div className={styles.controlPanel}>
         <div className={styles.controlGroup}>
           <span className={styles.controlLabel}>Durchgehender Referenzflug</span>
           <button className={styles.primaryButton} type="button" onClick={runMunichJourney} disabled={!mapReady || journeyRunning}>
@@ -627,7 +795,7 @@ export function GlobeMapLab() {
         <div className={styles.controlGroup}>
           <span className={styles.controlLabel}>Ergebnisdistanz</span>
           <div className={styles.segmented}>
-            {RESULT_CAMERA_SCENARIOS.map((scenario) => (
+            {availableScenarios.map((scenario) => (
               <button key={scenario.id} type="button" aria-pressed={scenario.id === selectedScenarioId}
                 onClick={() => prepareScenario(scenario)} disabled={!mapReady || journeyRunning}>
                 {scenario.id === "short" ? "Kurz" : scenario.id === "medium" ? "Mittel" : "Groß"}
@@ -658,14 +826,14 @@ export function GlobeMapLab() {
             ))}
           </div>
         </div>
-      </div>
-      <div className={styles.scenarioSummary}>
+      </div> : null}
+      {!embedded ? <div className={styles.scenarioSummary}>
         <strong>{selectedScenario.label}</strong><span>{selectedScenario.description}</span>
         <span>{formatDistance(selectedPlan.distanceKm)} · {selectedPlan.durationMs / 1_000}s · End-Pitch {selectedPlan.keyframes.at(-1)?.pitch}°</span>
-      </div>
-      <div className={styles.mapFrame}>
+      </div> : null}
+      <div className={styles.mapFrame} data-surface-ready={surfaceReady ? "true" : "false"}>
         <div ref={containerRef} className={styles.map} aria-label="Interaktiver Punktlandung-Globe" />
-        {cameraPreparing ? <div className={styles.preloadVeil}>Zielregion und Kartendaten werden vorbereitet …</div> : null}
+        {!embedded && (cameraPreparing || terrainPreparing) ? <div className={styles.preloadVeil}>Zielregion und Kartendaten werden vorbereitet …</div> : null}
         <svg ref={routeOverlayRef} className={styles.routeOverlay} aria-hidden="true">
           <defs>
             <linearGradient ref={routeGradientRef} id="kartenlabor-result-gradient" gradientUnits="userSpaceOnUse">
@@ -678,18 +846,38 @@ export function GlobeMapLab() {
           <path ref={routeShadowRef} className={styles.routeShadow} mask="url(#kartenlabor-result-reveal)" />
           <path ref={routeLineRef} className={styles.routeLine} mask="url(#kartenlabor-result-reveal)" />
         </svg>
-        <div className={styles.mapPresets} aria-label="Globe-Kamerapresets">
+        {!embedded ? <div className={styles.mapPresets} aria-label="Globe-Kamerapresets">
           {Object.values(CAMERA_PRESETS).map((preset) => (
             <button key={preset.label} type="button" onClick={() => moveToPreset(preset)} disabled={!mapReady || journeyRunning}>{preset.label}</button>
           ))}
-        </div>
-        <div className={styles.telemetry} aria-live="polite">
+        </div> : null}
+        {!embedded ? <div className={styles.telemetry} aria-live="polite">
           <strong>{status}</strong><span>Center {camera.lat.toFixed(2)}°, {camera.lng.toFixed(2)}°</span>
           <span>Zoom {camera.zoom.toFixed(2)} · Bearing {camera.bearing.toFixed(1)}° · Pitch {camera.pitch.toFixed(1)}°</span>
           <span>{reducedMotion ? "Reduced Motion aktiv" : "Volle Bewegung"} · Gerätprofil {deviceProfile} · Terrain {terrainActive ? `${terrainStrength.toFixed(2)}×` : terrainMode}</span>
-        </div>
+        </div> : null}
         <MapAttributionBadge />
       </div>
     </section>
+  );
+}
+
+type GlobeResultMapProps = {
+  scenario: ResultCameraScenario;
+  animate?: boolean;
+  onAnimationComplete?: () => void;
+  onUnavailable?: () => void;
+};
+
+export function GlobeResultMap({ scenario, animate = true, onAnimationComplete, onUnavailable }: GlobeResultMapProps) {
+  return (
+    <GlobeMapLab
+      resultScenario={scenario}
+      embedded
+      autoPlay={animate}
+      revealImmediately={!animate}
+      onAnimationComplete={onAnimationComplete}
+      onUnavailable={onUnavailable}
+    />
   );
 }
