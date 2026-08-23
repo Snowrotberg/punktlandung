@@ -1073,6 +1073,10 @@ function ResultMarker({
   edgeAnchor,
   insetEdgeAnchor,
   description,
+  popupDirection,
+  popupFitPoints,
+  renderTargetPin = false,
+  resultControlInset = false,
   zIndexOffset = 0
 }: {
   point: LatLng;
@@ -1083,12 +1087,19 @@ function ResultMarker({
   edgeAnchor?: "left" | "right";
   insetEdgeAnchor?: boolean;
   description?: string;
+  popupDirection?: "above" | "below";
+  popupFitPoints?: LatLng[];
+  renderTargetPin?: boolean;
+  resultControlInset?: boolean;
   zIndexOffset?: number;
 }) {
   const map = useMap();
   const markerRef = useRef<LeafletMarkerInstance | null>(null);
+  const targetPinRef = useRef<LeafletMarkerInstance | null>(null);
   const pinnedRef = useRef(false);
-  const closeTimerRef = useRef<number | null>(null);
+  const [popupPinned, setPopupPinned] = useState(false);
+  const fitFrameRef = useRef<number | null>(null);
+  const fitTimerRef = useRef<number | null>(null);
   const mapSize = map.getSize();
   const compactPortraitPopup = mapSize.x <= 480 && mapSize.x <= mapSize.y;
   const compactLandscapePopup = mapSize.x <= 960 && mapSize.x > mapSize.y;
@@ -1097,106 +1108,224 @@ function ResultMarker({
     : compactLandscapePopup
       ? 224
       : 260;
-  const markerPixel = map.latLngToContainerPoint([point.lat, point.lng]);
-  const labelCenterY = markerPixel.y + placement.offset[1];
+  const openBelowLabel = popupDirection === "below";
   const estimatedPopupHeight = compactPortraitPopup ? 172 : 132;
-  const openBelowLabel = labelCenterY - placement.size.height / 2 < estimatedPopupHeight + 28;
   const popupVerticalOffset = openBelowLabel
-    ? placement.size.height / 2 + 14 + estimatedPopupHeight
-    : -placement.size.height / 2 - 14;
+    ? placement.offset[1] + placement.size.height / 2 + 14 + estimatedPopupHeight
+    : placement.offset[1] - placement.size.height / 2 - 2;
 
-  const cancelScheduledClose = () => {
-    if (closeTimerRef.current === null) return;
-    window.clearTimeout(closeTimerRef.current);
-    closeTimerRef.current = null;
+  const schedulePopupSafeArea = (attempt = 0) => {
+    if (fitTimerRef.current !== null) window.clearTimeout(fitTimerRef.current);
+    fitTimerRef.current = window.setTimeout(() => {
+      fitTimerRef.current = null;
+      if (!pinnedRef.current) return;
+      const container = map.getContainer();
+      const containerRect = container.getBoundingClientRect();
+      const visuals = [
+        ...container.querySelectorAll<HTMLElement>(".punktlandung-map-label"),
+        ...container.querySelectorAll<HTMLElement>(".punktlandung-map-pin"),
+        ...container.querySelectorAll<HTMLElement>(".punktlandung-location-info-popup")
+      ].filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element);
+        return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+      });
+      if (!visuals.length || containerRect.width <= 0 || containerRect.height <= 0) return;
+      const visualRect = visuals
+        .map((element) => element.getBoundingClientRect())
+        .reduce<LabelRect>((combined, rect) => ({
+          left: Math.min(combined.left, rect.left),
+          top: Math.min(combined.top, rect.top),
+          right: Math.max(combined.right, rect.right),
+          bottom: Math.max(combined.bottom, rect.bottom)
+        }), { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
+      const margin = compactPortraitPopup ? 8 : 12;
+      const safeWidth = containerRect.width - margin * 2;
+      const safeHeight = containerRect.height - margin * 2;
+      const visualWidth = visualRect.right - visualRect.left;
+      const visualHeight = visualRect.bottom - visualRect.top;
+
+      if (
+        attempt < 12 &&
+        (visualWidth > safeWidth + 0.5 || visualHeight > safeHeight + 0.5) &&
+        map.getZoom() > map.getMinZoom() + 0.05
+      ) {
+        const requiredScale = Math.min(safeWidth / visualWidth, safeHeight / visualHeight);
+        const zoomStep = Math.max(-0.5, Math.min(-0.12, Math.log2(Math.max(0.68, requiredScale))));
+        map.setZoom(Math.max(map.getMinZoom(), map.getZoom() + zoomStep), { animate: false });
+        schedulePopupSafeArea(attempt + 1);
+        return;
+      }
+
+      let translateX = 0;
+      let translateY = 0;
+      const safeLeft = containerRect.left + margin;
+      const safeRight = containerRect.right - margin;
+      const safeTop = containerRect.top + margin;
+      const safeBottom = containerRect.bottom - margin;
+      if (visualRect.left < safeLeft) translateX = safeLeft - visualRect.left;
+      if (visualRect.right + translateX > safeRight) translateX += safeRight - (visualRect.right + translateX);
+      if (visualRect.top < safeTop) translateY = safeTop - visualRect.top;
+      if (visualRect.bottom + translateY > safeBottom) translateY += safeBottom - (visualRect.bottom + translateY);
+      if (Math.abs(translateX) > 0.5 || Math.abs(translateY) > 0.5) {
+        map.panBy([-translateX, -translateY], { animate: false });
+        if (attempt < 18) schedulePopupSafeArea(attempt + 1);
+      }
+    }, 40);
   };
 
-  const scheduleClose = () => {
-    cancelScheduledClose();
-    closeTimerRef.current = window.setTimeout(() => {
-      closeTimerRef.current = null;
-      if (!pinnedRef.current) markerRef.current?.closePopup();
-    }, 180);
+  const fitPinnedPopup = () => {
+    if (!popupFitPoints || popupFitPoints.length < 2) return;
+    if (fitFrameRef.current !== null) window.cancelAnimationFrame(fitFrameRef.current);
+    fitFrameRef.current = window.requestAnimationFrame(() => {
+      fitFrameRef.current = null;
+      if (!pinnedRef.current) return;
+      try {
+        map.invalidateSize(false);
+        const size = map.getSize();
+        const popupElement = map.getContainer().querySelector<HTMLElement>(".punktlandung-location-info-popup");
+        const measuredPopupHeight = popupElement?.getBoundingClientRect().height ?? estimatedPopupHeight;
+        const horizontalPadding = Math.min(
+          Math.max(56, size.x * 0.28),
+          Math.max(popupWidth / 2 + 24, placement.size.width / 2 + 24)
+        );
+        const quietSidePadding = Math.min(92, Math.max(56, size.y * 0.2));
+        const popupSidePadding = Math.min(
+          Math.max(quietSidePadding, size.y - quietSidePadding - 28),
+          measuredPopupHeight + placement.size.height + 52
+        );
+        const controlInset = resultControlInset ? Math.min(76, Math.max(58, size.x * 0.22)) : 0;
+        const previousZoomSnap = map.options.zoomSnap;
+        map.options.zoomSnap = 1;
+        map.fitBounds(latLngBounds(popupFitPoints.map((fitPoint) => [fitPoint.lat, fitPoint.lng])), {
+          animate: false,
+          paddingTopLeft: [horizontalPadding, openBelowLabel ? quietSidePadding : popupSidePadding],
+          paddingBottomRight: [horizontalPadding + controlInset, openBelowLabel ? popupSidePadding : quietSidePadding],
+          maxZoom: Math.min(RESULT_MAX_ZOOM, map.getZoom())
+        });
+        map.options.zoomSnap = previousZoomSnap;
+        schedulePopupSafeArea();
+      } catch {
+        // The result map may unmount while the popup is being opened.
+      }
+    });
+  };
+
+  const togglePinnedPopup = () => {
+    pinnedRef.current = !pinnedRef.current;
+    setPopupPinned(pinnedRef.current);
+    if (!pinnedRef.current) {
+      markerRef.current?.closePopup();
+      return;
+    }
+    markerRef.current?.openPopup();
+    fitPinnedPopup();
   };
 
   useEffect(() => {
     if (!description) return;
     const markerElement = markerRef.current?.getElement();
-    const openOnFocus = () => {
-      cancelScheduledClose();
-      markerRef.current?.openPopup();
-    };
-    const closeOnBlur = scheduleClose;
+    const targetPinElement = targetPinRef.current?.getElement();
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       pinnedRef.current = false;
-      cancelScheduledClose();
+      setPopupPinned(false);
       markerRef.current?.closePopup();
     };
     const closeOnOutsidePointer = (event: PointerEvent) => {
       if (!pinnedRef.current || !(event.target instanceof Element)) return;
-      if (markerElement?.contains(event.target) || event.target.closest(".punktlandung-location-info-popup")) return;
+      if (
+        markerElement?.contains(event.target) ||
+        targetPinElement?.contains(event.target) ||
+        event.target.closest(".punktlandung-location-info-popup")
+      ) return;
       pinnedRef.current = false;
-      cancelScheduledClose();
+      setPopupPinned(false);
       markerRef.current?.closePopup();
     };
-    markerElement?.addEventListener("focus", openOnFocus);
-    markerElement?.addEventListener("blur", closeOnBlur);
     document.addEventListener("keydown", closeOnEscape);
     document.addEventListener("pointerdown", closeOnOutsidePointer);
     return () => {
-      markerElement?.removeEventListener("focus", openOnFocus);
-      markerElement?.removeEventListener("blur", closeOnBlur);
       document.removeEventListener("keydown", closeOnEscape);
       document.removeEventListener("pointerdown", closeOnOutsidePointer);
-      cancelScheduledClose();
+      if (fitFrameRef.current !== null) window.cancelAnimationFrame(fitFrameRef.current);
+      if (fitTimerRef.current !== null) window.clearTimeout(fitTimerRef.current);
     };
   }, [description]);
 
   return (
-    <Marker
-      ref={markerRef}
-      position={[point.lat, point.lng]}
-      icon={labelIcon(label, className, placement, labelHtml, edgeAnchor, insetEdgeAnchor, Boolean(description))}
-      interactive={Boolean(description)}
-      keyboard={Boolean(description)}
-      title={description ? `${label}: Zusatzinformationen anzeigen` : undefined}
-      alt={description ? `${label}: Zusatzinformationen anzeigen` : label}
-      eventHandlers={description ? {
-        mouseover: () => {
-          cancelScheduledClose();
-          markerRef.current?.openPopup();
-        },
-        mouseout: scheduleClose,
-        click: () => {
-          cancelScheduledClose();
-          pinnedRef.current = !pinnedRef.current;
-          if (pinnedRef.current) markerRef.current?.openPopup();
-          else markerRef.current?.closePopup();
-        }
-      } : undefined}
-      zIndexOffset={zIndexOffset}
-    >
-      {description && (
-        <Popup
-          className={`punktlandung-location-info-popup${openBelowLabel ? " is-below-label" : ""}`}
-          offset={[0, popupVerticalOffset]}
-          minWidth={popupWidth}
-          maxWidth={compactPortraitPopup || compactLandscapePopup ? popupWidth : 320}
-          autoPan
-          autoPanPadding={[32, 32]}
-          keepInView
-          closeButton
-          eventHandlers={{
-            mouseover: cancelScheduledClose,
-            mouseout: scheduleClose
-          }}
+    <>
+      {renderTargetPin && (
+        <Marker
+          ref={targetPinRef}
+          position={[point.lat, point.lng]}
+          icon={actualPinIcon}
+          interactive={Boolean(description)}
+          keyboard={Boolean(description)}
+          alt={description ? `${label}: Zusatzinformationen anzeigen` : label}
+          bubblingMouseEvents={false}
+          eventHandlers={description ? { click: togglePinnedPopup } : undefined}
+          zIndexOffset={zIndexOffset}
         >
-          <strong>{label}</strong>
-          <span>{description}</span>
-        </Popup>
+          {description && !popupPinned && (
+            <Tooltip
+              direction={openBelowLabel ? "bottom" : "top"}
+              offset={[0, openBelowLabel ? 48 : -48]}
+              opacity={1}
+              className="punktlandung-map-action-tooltip"
+            >
+              Zusatzinformationen anzeigen
+            </Tooltip>
+          )}
+        </Marker>
       )}
-    </Marker>
+      <Marker
+        ref={markerRef}
+        position={[point.lat, point.lng]}
+        icon={labelIcon(label, className, placement, labelHtml, edgeAnchor, insetEdgeAnchor, Boolean(description))}
+        interactive={Boolean(description)}
+        keyboard={Boolean(description)}
+        alt={description ? `${label}: Zusatzinformationen anzeigen` : label}
+        bubblingMouseEvents={false}
+        eventHandlers={description ? { click: togglePinnedPopup } : undefined}
+        zIndexOffset={zIndexOffset}
+      >
+        {description && (
+          <>
+            {!popupPinned && <Tooltip
+              direction={openBelowLabel ? "bottom" : "top"}
+              offset={[
+                placement.offset[0],
+                placement.offset[1] + (openBelowLabel ? placement.size.height / 2 + 8 : -placement.size.height / 2 - 8)
+              ]}
+              opacity={1}
+              className="punktlandung-map-action-tooltip"
+            >
+              Zusatzinformationen anzeigen
+            </Tooltip>}
+            <Popup
+              className={`punktlandung-location-info-popup${openBelowLabel ? " is-below-label" : ""}`}
+              offset={[0, popupVerticalOffset]}
+              minWidth={popupWidth}
+              maxWidth={compactPortraitPopup || compactLandscapePopup ? popupWidth : 320}
+              autoPan={false}
+              keepInView={false}
+              closeOnClick={false}
+              closeButton
+              eventHandlers={{
+                remove: () => {
+                  pinnedRef.current = false;
+                  setPopupPinned(false);
+                }
+              }}
+            >
+              <strong>{label}</strong>
+              <span>{description}</span>
+            </Popup>
+          </>
+        )}
+      </Marker>
+    </>
   );
 }
 
@@ -1254,7 +1383,11 @@ function ResultsMarkers({
 
   const placements = useMemo(() => {
     if (!showLabels || !location || !displayGeometry) {
-      return { actual: null as LabelPlacement | null, players: new Map<string, LabelPlacement>() };
+      return {
+        actual: null as LabelPlacement | null,
+        actualPopupDirection: "above" as const,
+        players: new Map<string, LabelPlacement>()
+      };
     }
 
     const occupied: LabelRect[] = [];
@@ -1269,6 +1402,9 @@ function ResultsMarkers({
     const firstGuessPoint = firstGuess
       ? map.latLngToContainerPoint([firstGuess.lat, firstGuess.lng])
       : null;
+    const actualPopupDirection: "above" | "below" = firstGuessPoint && locationPoint.y > firstGuessPoint.y
+      ? "below"
+      : "above";
     const compactResultLayout = mapSize.x <= 520 && mapSize.y >= mapSize.x;
     const nearSameLatitude = firstGuessPoint
       ? Math.abs(firstGuessPoint.y - locationPoint.y) <= (compactResultLayout ? 16 : 8)
@@ -1379,8 +1515,19 @@ function ResultsMarkers({
       playerPlacements.set(result.playerId, placement.placement);
     }
 
-    return { actual: actualPlacement.placement, players: playerPlacements };
+    return { actual: actualPlacement.placement, actualPopupDirection, players: playerPlacements };
   }, [showLabels, location, rankedResults, map, players, viewportVersion, resizeSignal, displayGeometry, resultLabelLayout, resultLabelInset, resultControlInset]);
+
+  const popupFitPoints = useMemo(() => {
+    if (!displayGeometry) return [];
+    return [
+      displayGeometry.location,
+      ...rankedResults.flatMap((result) => {
+        const point = displayGeometry.resultGuesses.get(result.playerId);
+        return point ? [point] : [];
+      })
+    ];
+  }, [displayGeometry, rankedResults]);
 
   return (
     <>
@@ -1451,7 +1598,6 @@ function ResultsMarkers({
               interactive={false}
               zIndexOffset={-900}
             />
-            <Marker position={[displayGeometry?.location.lat ?? location.lat, displayGeometry?.location.lng ?? location.lng]} icon={actualPinIcon} zIndexOffset={1000} />
             <ResultMarker
               point={displayGeometry?.location ?? location}
               label={location.title}
@@ -1460,6 +1606,10 @@ function ResultsMarkers({
               edgeAnchor={resultLabelLayout === "home-preview" ? "right" : undefined}
               insetEdgeAnchor={resultLabelInset}
               description={resultLabelLayout === "home-preview" ? undefined : location.shortDescription}
+              popupDirection={placements.actualPopupDirection}
+              popupFitPoints={popupFitPoints}
+              renderTargetPin
+              resultControlInset={resultControlInset}
               zIndexOffset={1000}
             />
           </>

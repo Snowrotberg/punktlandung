@@ -201,6 +201,11 @@
   text-align: center;
 }
 
+.redesign :global(.punktlandung-image-replay .punktlandung-replay-top-actions button) {
+  height: 3.35rem !important;
+  min-height: 3.35rem !important;
+}
+
 @media (max-width: 52rem) and (orientation: portrait) {
   .redesign :global(.punktlandung-replay-top-actions) {
     margin-right: 0;

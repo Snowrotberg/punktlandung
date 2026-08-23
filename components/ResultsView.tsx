@@ -397,7 +397,7 @@ function writeStoredFinalSurface(room: RoomState, showFinal: boolean): void {
 
 export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBackToLobby, onRestart, onDiscardSession, redesign = false, accountsEnabled = false, accountAuthenticated = false, serverRanked = false, rankedGameId = null, rankedSyncStatus = "secured", pendingUploadCount = 0, initialSurface }: ResultsViewProps) {
   const { playSuccess } = useSound();
-  const [revealed, setRevealed] = useState(false);
+  const revealed = true;
   const [nowTick, setNowTick] = useState(Date.now());
   const [showLanding, setShowLanding] = useState(false);
   const [showImageReplay, setShowImageReplay] = useState(false);
@@ -604,7 +604,6 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
       : "absolute bottom-3 left-3 right-3 h-[14.5rem] cursor-pointer sm:bottom-4 sm:left-auto sm:right-4 sm:h-[16.5rem] sm:w-[min(52vw,440px)] min-[1900px]:h-[18rem] min-[1900px]:w-[min(48vw,520px)] sm:hover:-translate-y-1";
 
   useEffect(() => {
-    setRevealed(false);
     setShowLanding(false);
     setShowImageReplay(false);
     setShowFinalStandings(readStoredFinalSurface(room));
@@ -612,11 +611,6 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
     setReplayMapSize("closed");
     setReplayChromeHidden(false);
     setReplayChromeHoverHidden(false);
-    // The result is already calculated when this view mounts. Keep only a
-    // short visual handover so submitting a pin feels immediate instead of
-    // looking unresponsive for almost a full second.
-    const timer = window.setTimeout(() => setRevealed(true), 180);
-    return () => window.clearTimeout(timer);
   }, [room.code, room.status, summary?.roundNumber, summary?.completedAt]);
 
   useEffect(() => {
@@ -718,15 +712,6 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
 
   return (
     <main className={`punktlandung-results-shell h-dvh overflow-x-hidden overflow-y-auto bg-slate-950 p-2 text-slate-50 md:p-4 xl:overflow-hidden ${redesign ? redesignStyles.redesign : ""}`}>
-      {!revealed && (
-        <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950 p-4">
-          <div className="w-full max-w-md rounded-md bg-slate-900/90 p-6 text-center shadow-[0_24px_70px_rgba(0,0,0,0.38)] ring-1 ring-indigo-300/40">
-            <p className="text-xs font-black uppercase tracking-[0.35em] text-emerald-300">Auflösung</p>
-            <p className="mt-3 text-2xl font-black">Karte wird vorbereitet</p>
-          </div>
-        </div>
-      )}
-
       {showLanding && landingHits.length > 0 && (
         <div
           aria-live="polite"

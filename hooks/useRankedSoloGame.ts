@@ -218,6 +218,13 @@ export function roomFromRankedGame(
   };
 }
 
+export function shouldRevealPendingRankedRound(next: PublicRankedGame, storedRoom: RoomState | null | undefined): boolean {
+  const activeRound = next.activeRound;
+  if (next.status !== "active" || !activeRound || activeRound.startedAt != null || storedRoom?.status !== "guessing") return false;
+  const storedLocationId = storedRoom.location?.id;
+  return Boolean(storedLocationId && roundIdFromPromptLocationId(storedLocationId) === activeRound.roundId);
+}
+
 export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled, authenticated = false, recoverLatestGame = restoreStoredGame) {
   const [room, setRoom] = useState<RoomState | null>(null);
   const [game, setGame] = useState<PublicRankedGame | null>(null);
@@ -381,7 +388,12 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
         }
         activeGameIdRef.current = next.gameId;
         setGame(next);
-        const restoredRoom = roomFromRankedGame(next, recoveryName, recoverySettings);
+        const restoredRoom = roomFromRankedGame(
+          next,
+          recoveryName,
+          recoverySettings,
+          shouldRevealPendingRankedRound(next, stored?.room)
+        );
         setRoom(restoredRoom);
         resumePendingRef.current = returningToSetup && isResumableGameStatus(restoredRoom.status);
         setResumePending(resumePendingRef.current);
@@ -545,8 +557,13 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
           return;
         }
 
+        const pendingRoom = roomFromRankedGame(latest, current.players[0]?.name ?? "Spieler 1", current.settings, true);
+        // Persist the player's explicit advance before React navigates from the
+        // result route to the play route. Otherwise a fast remount can recover
+        // the still-unstarted prompt as the previous result and bounce back.
+        writeStoredRankedSession(latest, pendingRoom);
         setGame(latest);
-        setRoom(roomFromRankedGame(latest, current.players[0]?.name ?? "Spieler 1", current.settings, true));
+        setRoom(pendingRoom);
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : "Die nächste Runde konnte gerade nicht geladen werden. Bitte versuche es erneut.");
       } finally {

@@ -8455,6 +8455,29 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   transform: rotate(180deg);
 }
 
+/* Result-map actions use the same compact, rounded hint language as the
+   header controls. Marker `title` attributes would fall back to the browser's
+   detached rectangular tooltip and cannot be styled consistently. */
+.punktlandung-map-action-tooltip.leaflet-tooltip {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--pl-line);
+  border-radius: 0.55rem;
+  color: var(--pl-text);
+  background: rgb(10 16 28 / 0.97);
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.34);
+  font-family: var(--font-inter), "Segoe UI", sans-serif;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.punktlandung-map-action-tooltip.leaflet-tooltip::before {
+  display: none;
+}
+
 /* Keep the desktop footer as one ordinary flex row. The wrapper only becomes
    visible in portrait phone layouts, where it prevents orphaned link words. */
 .punktlandung-legal-links-support,
@@ -8512,6 +8535,10 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 @media (max-width: 30rem) and (orientation: portrait) {
+  .punktlandung-results-map:has(.punktlandung-location-info-popup) {
+    min-height: 31rem;
+  }
+
   .punktlandung-location-info-popup .leaflet-popup-content {
     width: auto;
     gap: 0.25rem;
@@ -10539,21 +10566,21 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     drop-shadow(0 0 7px rgba(167, 243, 208, 0.66))
     drop-shadow(0 0 18px rgba(52, 211, 153, 0.42));
   opacity: 0.94;
-  stroke-dashoffset: 0;
+  stroke-dashoffset: 5.5;
 }
 
 .punktlandung-loader-ellipse-highlight-outer {
   stroke: rgba(167, 243, 208, 0.94);
   stroke-width: 1.55;
-  stroke-dasharray: 58 114;
-  animation: punktlandung-loader-ellipse-dash-outer 3.2s linear infinite;
+  stroke-dasharray: 11 89;
+  animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
 }
 
 .punktlandung-loader-ellipse-highlight-inner {
   stroke: rgba(110, 231, 183, 0.88);
   stroke-width: 1.35;
-  stroke-dasharray: 34 72;
-  animation: punktlandung-loader-ellipse-dash-inner 3.2s linear infinite;
+  stroke-dasharray: 11 89;
+  animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
 }
 
 .punktlandung-loader-core-beam {
@@ -10648,14 +10675,10 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 }
 
-@keyframes punktlandung-loader-ellipse-dash-outer {
-  from { stroke-dashoffset: 0; }
-  to { stroke-dashoffset: -172; }
-}
-
-@keyframes punktlandung-loader-ellipse-dash-inner {
-  from { stroke-dashoffset: 0; }
-  to { stroke-dashoffset: -106; }
+@keyframes punktlandung-loader-ellipse-dash {
+  to {
+    stroke-dashoffset: 105.5;
+  }
 }
 
 @keyframes punktlandung-loader-sheen {
@@ -16791,9 +16814,10 @@ body .punktlandung-lobby
   }
 
   body .punktlandung-game-shell .punktlandung-task-card {
-    background: rgba(2, 6, 23, 0.46) !important;
-    border: 0 !important;
-    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24), 0 0 28px rgba(52, 211, 153, 0.12) !important;
+    background: rgb(12 22 38 / 0.84) !important;
+    border: 1px solid rgb(38 53 74 / 0.92) !important;
+    box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.28) !important;
+    backdrop-filter: blur(14px) !important;
     height: 4.1rem !important;
     max-width: none !important;
     min-height: 4.1rem !important;

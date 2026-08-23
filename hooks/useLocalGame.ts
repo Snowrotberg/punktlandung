@@ -449,7 +449,16 @@ function evaluateRound(room: RoomState): RoomState {
   };
 }
 
-function createInitialRoom(playerId: string, playerName: string, mode: InitialLocalGameMode): RoomState {
+function createInitialRoom(
+  playerId: string,
+  playerName: string,
+  mode: InitialLocalGameMode,
+  hydrateStoredSettings = false
+): RoomState {
+  // Browser storage is intentionally read only after React has hydrated.
+  // Reading it during the lazy state initializer makes the first client
+  // render differ from SSR whenever a player has saved setup preferences.
+  const storedSettings = hydrateStoredSettings ? readStoredSetupSettings(defaultSettings) : {};
   if (mode === "online") {
     return syncLocalPlayers({
       code: "ONLINE",
@@ -460,7 +469,7 @@ function createInitialRoom(playerId: string, playerName: string, mode: InitialLo
       status: "lobby",
       settings: {
         ...defaultSettings,
-        ...readStoredSetupSettings(defaultSettings),
+        ...storedSettings,
         localMode: "solo",
         localPlayerCount: 1
       },
@@ -489,7 +498,7 @@ function createInitialRoom(playerId: string, playerName: string, mode: InitialLo
     status: "lobby",
     settings: {
       ...defaultSettings,
-      ...readStoredSetupSettings(defaultSettings),
+      ...storedSettings,
       localMode: normalizedLocalMode,
       localPlayerCount: normalizedLocalMode === "couch" ? 2 : 1
     },
@@ -628,7 +637,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
         return;
       }
       clearStoredSession();
-      const clientInitialRoom = createInitialRoom(playerId, "Geo-Gast", initialMode);
+      const clientInitialRoom = createInitialRoom(playerId, "Geo-Gast", initialMode, true);
       previousRoomRef.current = clientInitialRoom;
       setRoom(clientInitialRoom);
       setRecentLocationIds(readStoredRecentLocationIds());

@@ -139,6 +139,19 @@ const sampleLocation = {
   shortDescription: "Das Brandenburger Tor ist ein frühklassizistisches Triumphtor in Berlin. Es wurde zwischen 1788 und 1791 errichtet."
 };
 
+const cambodiaFlagLocation = {
+  ...sampleLocation,
+  id: "cambodia-flag",
+  title: "Flagge von Kambodscha",
+  countryCode: "KH",
+  countryName: "Kambodscha",
+  continent: "Asia",
+  lat: 12.5657,
+  lng: 104.991,
+  category: "flags",
+  shortDescription: "Die Flagge Kambodschas zeigt den Tempel Angkor Wat zwischen zwei blauen Streifen."
+};
+
 const settings = {
   mode: "classic",
   localMode: "solo",
@@ -274,6 +287,13 @@ const targets = [
     note: "echter URL-Pfad"
   },
   {
+    name: "solo-modus-gespeicherte-einstellungen",
+    access: "route-stored-settings",
+    path: "/solo-modus",
+    expectedText: "10 Runden",
+    note: "SSR-Hydration mit von den Standardwerten abweichenden gespeicherten Einstellungen"
+  },
+  {
     name: "party-modus",
     access: "route",
     path: "/party-modus",
@@ -300,6 +320,18 @@ const targets = [
     note: "echter URL-Pfad mit QA-Online-Raum"
   },
   { name: "spielen", access: "state", path: "/spielen", status: "guessing", readySelector: ".punktlandung-game-shell", readyImageSelector: ".punktlandung-panorama-viewport img", note: "echter URL-Pfad mit QA-Session" },
+  { name: "bild-laden", access: "state", path: "/spielen", status: "guessing", forceImageLoader: true, readySelector: ".punktlandung-image-loader", note: "erster Bildladezustand mit synchronem Suchscheinwerfer und zwei beleuchteten Ellipsensegmenten" },
+  {
+    name: "tipp-zu-aufloesung",
+    access: "state-submit",
+    path: "/spielen",
+    status: "guessing",
+    stateOverrides: { players: [hostPlayer], guesses: [], summaries: [] },
+    expectedPath: "/aufloesung",
+    expectedText: "AUFLÖSUNG",
+    readySelector: ".punktlandung-results-grid",
+    note: "echte Pin-Abgabe wechselt ohne leeren Zwischenframe und ohne Seiten-Remount zur Auflösung"
+  },
   {
     name: "zeitablauf",
     access: "state",
@@ -314,6 +346,93 @@ const targets = [
     note: "abgelaufene Runde wechselt automatisch und ohne weitere Eingabe zur Auflösung"
   },
   { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", readySelector: ".punktlandung-results-grid", note: "echter URL-Pfad mit QA-Session" },
+  {
+    name: "aufloesung-zielinfo",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: {
+      players: [hostPlayer],
+      guesses: [summary.results[0].guess],
+      summaries: [{ ...summary, results: [summary.results[0]] }]
+    },
+    clickSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-pin-actual):visible",
+    expectedText: summary.location.shortDescription,
+    readySelector: ".punktlandung-location-info-popup",
+    note: "Ergebniszustand plus Klick auf den echten Zielpin und eingepasste Ortsinfo"
+  },
+  {
+    name: "aufloesung-zielinfo-oben",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: {
+      players: [hostPlayer],
+      guesses: [{ ...summary.results[0].guess, lat: 52.49 }],
+      summaries: [{
+        ...summary,
+        results: [{
+          ...summary.results[0],
+          guess: { ...summary.results[0].guess, lat: 52.49 }
+        }]
+      }]
+    },
+    clickSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-pin-actual):visible",
+    expectedText: summary.location.shortDescription,
+    readySelector: ".punktlandung-location-info-popup",
+    note: "Zielpin oberhalb des Spielerpins; Ortsinfo öffnet außerhalb der Ergebnisgrafik nach oben"
+  },
+  {
+    name: "aufloesung-zielinfo-nord-sued",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: {
+      settings: { category: "flags" },
+      players: [hostPlayer],
+      guesses: [{ ...summary.results[0].guess, lat: -1.2654, lng: 116.8312 }],
+      summaries: [{
+        ...summary,
+        location: cambodiaFlagLocation,
+        results: [{
+          ...summary.results[0],
+          distanceKm: 2255,
+          guess: { ...summary.results[0].guess, lat: -1.2654, lng: 116.8312 }
+        }]
+      }]
+    },
+    clickSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-pin-actual):visible",
+    hoverSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-label-actual):visible",
+    expectedHoverText: "Zusatzinformationen anzeigen",
+    expectTooltipOutside: true,
+    expectedText: cambodiaFlagLocation.shortDescription,
+    readySelector: ".punktlandung-location-info-popup",
+    note: "Realer Fernfall Kambodscha zu Indonesien; nördliches Ziel öffnet die Ortsinfo oberhalb"
+  },
+  {
+    name: "aufloesung-zielinfo-unten",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: {
+      players: [hostPlayer],
+      guesses: [{ ...summary.results[0].guess, lat: 53.4 }],
+      summaries: [{
+        ...summary,
+        results: [{
+          ...summary.results[0],
+          guess: { ...summary.results[0].guess, lat: 53.4 }
+        }]
+      }]
+    },
+    clickSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-pin-actual):visible",
+    hoverSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-label-actual):visible",
+    expectedHoverText: "Zusatzinformationen anzeigen",
+    expectTooltipOutside: true,
+    expectedText: summary.location.shortDescription,
+    readySelector: ".punktlandung-location-info-popup",
+    note: "Südliches Ziel; Aktionshinweis und Ortsinfo öffnen außerhalb der Ergebnisgrafik nach unten"
+  },
   {
     name: "letzte-runde",
     access: "state",
@@ -572,6 +691,23 @@ async function clickButtonByVisibleText(page, text) {
 }
 
 async function openTarget(page, target) {
+  if (target.access === "route-stored-settings") {
+    await gotoFresh(page, targetUrl("/"));
+    await resetStorage(page);
+    await page.evaluate(() => {
+      localStorage.setItem("punktlandung-setup-settings-v3", JSON.stringify({
+        timeLimitSec: 30,
+        rounds: 10,
+        noMove: false,
+        noPan: false,
+        noZoom: false,
+        category: "mixed",
+        difficulty: "medium"
+      }));
+    });
+    return gotoFresh(page, targetUrl(target.path));
+  }
+
   if (target.access === "route") {
     const response = await gotoFresh(page, targetUrl(target.path));
     if (target.resetSession) {
@@ -592,11 +728,104 @@ async function openTarget(page, target) {
     return response;
   }
 
-  if (target.access === "state" || target.access === "state-click") {
+  if (target.access === "state" || target.access === "state-click" || target.access === "state-submit") {
     await loadState(page, target.status, target.path, target.stateOverrides);
+    if (target.access === "state-submit") {
+      const game = page.locator(".punktlandung-game-shell");
+      await game.waitFor({ state: "visible", timeout: 15000 });
+      const timer = page.locator(".punktlandung-game-stat-value-time");
+      await timer.waitFor({ state: "visible", timeout: 15000 });
+      const startedAt = Date.now();
+      while (!/^\d+s$/.test((await timer.innerText()).trim())) {
+        if (Date.now() - startedAt > 30000) throw new Error("Die QA-Runde wurde nicht rechtzeitig zur Tippabgabe freigegeben.");
+        await page.waitForTimeout(100);
+      }
+      const openMap = page.getByRole("button", { name: "Pin setzen" });
+      if (await openMap.isVisible().catch(() => false) && await openMap.isEnabled().catch(() => false)) await openMap.click();
+      const map = page.locator(".punktlandung-guess-map-panel .leaflet-container:visible").first();
+      await map.waitFor({ state: "visible", timeout: 15000 });
+      const box = await map.boundingBox();
+      if (!box) throw new Error("Die Tippkarte besitzt keine sichtbare Größe.");
+      await map.click({ position: { x: Math.round(box.width * 0.53), y: Math.round(box.height * 0.47) } });
+      const submit = page.getByRole("button", { name: /Pin abgeben|Tipp abgeben|Tipp bestätigen/ }).first();
+      await submit.waitFor({ state: "visible", timeout: 10000 });
+      await page.evaluate(() => {
+        window.__punktlandungTransitionProbe = { active: true, blankFrames: 0, frames: 0, paths: [window.location.pathname], states: [] };
+        const sample = () => {
+          const probe = window.__punktlandungTransitionProbe;
+          if (!probe?.active) return;
+          probe.frames += 1;
+          const path = window.location.pathname;
+          if (probe.paths.at(-1) !== path) probe.paths.push(path);
+          const gameVisible = Boolean(document.querySelector(".punktlandung-game-shell"));
+          const resultsVisible = Boolean(document.querySelector(".punktlandung-results-grid"));
+          const state = `${path}|${gameVisible ? "game" : resultsVisible ? "results" : document.querySelector("main")?.className || "empty"}`;
+          if (probe.states.at(-1) !== state) probe.states.push(state);
+          if (!gameVisible && !resultsVisible) {
+            probe.blankFrames += 1;
+          }
+          window.requestAnimationFrame(sample);
+        };
+        window.requestAnimationFrame(sample);
+      });
+      await submit.click();
+      await page.locator(".punktlandung-results-grid").waitFor({ state: "visible", timeout: 15000 });
+      await page.waitForURL((url) => url.pathname === "/aufloesung", { timeout: 15000 });
+      await page.waitForTimeout(350);
+      await page.evaluate(() => {
+        if (window.__punktlandungTransitionProbe) window.__punktlandungTransitionProbe.active = false;
+      });
+    }
     if (target.access === "state-click") {
-      await clickButtonByVisibleText(page, target.buttonText);
-      await page.waitForTimeout(700);
+      if (target.hoverSelector) {
+        const hoverTarget = page.locator(target.hoverSelector).first();
+        await hoverTarget.waitFor({ state: "visible", timeout: 15000 });
+        const nativeTitle = await hoverTarget.getAttribute("title");
+        if (nativeTitle) throw new Error(`Nativer Browser-Tooltip ist noch vorhanden: ${nativeTitle}`);
+        await hoverTarget.hover({ timeout: 5000 });
+        const actionTooltip = page.locator(".punktlandung-map-action-tooltip:visible").first();
+        await actionTooltip.waitFor({ state: "visible", timeout: 5000 });
+        if (target.expectedHoverText && !(await actionTooltip.innerText()).includes(target.expectedHoverText)) {
+          throw new Error(`Kartenhinweis enthält nicht den erwarteten Text: ${target.expectedHoverText}`);
+        }
+        const tooltipStyle = await actionTooltip.evaluate((element) => {
+          const style = window.getComputedStyle(element);
+          return { borderRadius: parseFloat(style.borderRadius), backgroundColor: style.backgroundColor };
+        });
+        if (tooltipStyle.borderRadius < 6 || tooltipStyle.backgroundColor === "rgba(0, 0, 0, 0)") {
+          throw new Error(`Kartenhinweis verwendet nicht den Punktlandung-Stil: ${JSON.stringify(tooltipStyle)}`);
+        }
+        if (target.expectTooltipOutside) {
+          const placement = await page.evaluate(() => {
+            const map = document.querySelector(".punktlandung-results-map");
+            const actual = map?.querySelector(".punktlandung-map-pin-actual")?.getBoundingClientRect();
+            const player = map?.querySelector(".punktlandung-map-pin-player")?.getBoundingClientRect();
+            const tooltip = map?.querySelector(".punktlandung-map-action-tooltip")?.getBoundingClientRect();
+            if (!actual || !player || !tooltip) return null;
+            const actualAbovePlayer = (actual.top + actual.bottom) / 2 < (player.top + player.bottom) / 2;
+            return {
+              actualAbovePlayer,
+              outside: actualAbovePlayer ? tooltip.bottom <= actual.top + 2 : tooltip.top >= actual.bottom - 2,
+              actual: { top: actual.top, bottom: actual.bottom },
+              tooltip: { top: tooltip.top, bottom: tooltip.bottom }
+            };
+          });
+          if (!placement?.outside) {
+            throw new Error(`Kartenhinweis liegt nicht auf der freien Außenseite: ${JSON.stringify(placement)}`);
+          }
+        }
+      }
+      if (target.clickSelector) {
+        const clickTarget = page.locator(target.clickSelector).first();
+        await clickTarget.waitFor({ state: "visible", timeout: 15000 });
+        await clickTarget.click({ timeout: 5000 });
+      } else {
+        await clickButtonByVisibleText(page, target.buttonText);
+      }
+      await page.waitForTimeout(target.clickSelector ? 1200 : 700);
+      if (target.hoverSelector && await page.locator(".punktlandung-map-action-tooltip:visible").count()) {
+        throw new Error("Kartenhinweis bleibt trotz bereits geöffneter Zusatzinformation sichtbar.");
+      }
       if (target.dismissButtonText) {
         await clickButtonByVisibleText(page, target.dismissButtonText);
         await page.waitForTimeout(250);
@@ -621,6 +850,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
     const viewportHeight = window.innerHeight;
     let roomState = null;
     let onlineRoomState = null;
+    const transitionProbe = window.__punktlandungTransitionProbe ?? null;
     try {
       const rawSession = window.localStorage.getItem("punktlandung-active-session-v1");
       const storedSession = rawSession ? JSON.parse(rawSession) : null;
@@ -737,6 +967,21 @@ async function collectLayoutMetrics(page, readySelector = null) {
             return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
           })
       : [];
+    const resultMap = document.querySelector(".punktlandung-results-map");
+    const resultMapRect = resultMap?.getBoundingClientRect() ?? null;
+    const firstVisibleRect = (selector) => {
+      const element = resultMap ? [...resultMap.querySelectorAll(selector)].find(visible) : null;
+      return element?.getBoundingClientRect() ?? null;
+    };
+    const popupRect = firstVisibleRect(".punktlandung-location-info-popup");
+    const actualPinRect = firstVisibleRect(".punktlandung-map-pin-actual");
+    const playerPinRect = firstVisibleRect(".punktlandung-map-pin-player");
+    const actualLabelRect = firstVisibleRect(".punktlandung-map-label-actual");
+    const playerLabelRect = firstVisibleRect(".punktlandung-map-label-player");
+    const resultInfoVisuals = [popupRect, actualPinRect, playerPinRect, actualLabelRect, playerLabelRect].filter(Boolean);
+    const actualAbovePlayer = actualPinRect && playerPinRect
+      ? (actualPinRect.top + actualPinRect.bottom) / 2 < (playerPinRect.top + playerPinRect.bottom) / 2
+      : null;
 
     return {
       title: document.title,
@@ -753,6 +998,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
       bodyText: (body?.innerText ?? "").replace(/\s+/g, " ").trim(),
       roomState,
       onlineRoomState,
+      transitionProbe,
       visibleElementCount: visibleElements.length,
       overflowingElements,
       textClippingCandidates,
@@ -775,6 +1021,28 @@ async function collectLayoutMetrics(page, readySelector = null) {
           visual.top >= homeMapRect.top + 12 &&
           visual.bottom <= homeMapRect.bottom - 12
         )
+      } : null,
+      resultPopupSafety: popupRect && resultMapRect ? {
+        visualCount: resultInfoVisuals.length,
+        bounds: {
+          map: { left: resultMapRect.left, top: resultMapRect.top, right: resultMapRect.right, bottom: resultMapRect.bottom },
+          popup: { left: popupRect.left, top: popupRect.top, right: popupRect.right, bottom: popupRect.bottom },
+          actualPin: actualPinRect ? { left: actualPinRect.left, top: actualPinRect.top, right: actualPinRect.right, bottom: actualPinRect.bottom } : null,
+          playerPin: playerPinRect ? { left: playerPinRect.left, top: playerPinRect.top, right: playerPinRect.right, bottom: playerPinRect.bottom } : null,
+          actualLabel: actualLabelRect ? { left: actualLabelRect.left, top: actualLabelRect.top, right: actualLabelRect.right, bottom: actualLabelRect.bottom } : null,
+          playerLabel: playerLabelRect ? { left: playerLabelRect.left, top: playerLabelRect.top, right: playerLabelRect.right, bottom: playerLabelRect.bottom } : null
+        },
+        allInside: resultInfoVisuals.every((rect) =>
+          rect.left >= resultMapRect.left + 3 &&
+          rect.right <= resultMapRect.right - 3 &&
+          rect.top >= resultMapRect.top + 3 &&
+          rect.bottom <= resultMapRect.bottom - 3
+        ),
+        directionCorrect: actualAbovePlayer === null || !actualLabelRect
+          ? false
+          : actualAbovePlayer
+            ? popupRect.bottom <= Math.min(actualPinRect.top, actualLabelRect.top) + 8
+            : popupRect.top >= Math.max(actualPinRect.bottom, actualLabelRect.bottom) - 8
       } : null,
       fontStatus: document.fonts?.status ?? "unsupported",
       readyElementFullyVisible: readyRect
@@ -830,7 +1098,7 @@ function normalizeConsoleMessages(messages) {
   return { relevant, ignored };
 }
 
-async function blockResponsiveThirdParties(context) {
+async function blockResponsiveThirdParties(context, target) {
   await context.route("**/*", async (route) => {
     const requestUrl = route.request().url();
     let parsedUrl = null;
@@ -840,6 +1108,11 @@ async function blockResponsiveThirdParties(context) {
       hostname = parsedUrl.hostname;
     } catch {
       hostname = "";
+    }
+
+    const isGameplayImage = parsedUrl?.pathname === "/api/image" || hostname.endsWith("wikimedia.org");
+    if (target.forceImageLoader && isGameplayImage) {
+      await new Promise((resolve) => setTimeout(resolve, 8000));
     }
 
     if (parsedUrl?.pathname === "/api/image") {
@@ -872,7 +1145,7 @@ async function runTargetViewport(browser, target, viewport) {
     locale: "de-DE",
     colorScheme: "dark"
   });
-  await blockResponsiveThirdParties(context);
+  await blockResponsiveThirdParties(context, target);
   const page = await context.newPage();
   const consoleErrors = [];
   const httpErrors = [];
@@ -923,6 +1196,53 @@ async function runTargetViewport(browser, target, viewport) {
       await page.waitForTimeout(150);
     }
 
+    if (target.name === "bild-laden") {
+      const animationMetrics = await page.evaluate(() => {
+        const readAnimation = (selector) => {
+          const element = document.querySelector(selector);
+          const animation = element?.getAnimations()[0];
+          const effect = animation?.effect;
+          const timing = effect?.getComputedTiming();
+          return element && animation && effect ? {
+            animationName: getComputedStyle(element).animationName,
+            duration: timing?.duration ?? null,
+            progress: timing?.progress ?? null,
+            pathLength: element.getAttribute("pathLength"),
+            keyframes: effect.getKeyframes().map((frame) => ({
+              offset: frame.offset,
+              strokeDashoffset: frame.strokeDashoffset ?? null,
+              transform: frame.transform ?? null
+            }))
+          } : null;
+        };
+        return {
+          beam: readAnimation(".punktlandung-loader-beam-orbit"),
+          outer: readAnimation(".punktlandung-loader-ellipse-highlight-outer"),
+          inner: readAnimation(".punktlandung-loader-ellipse-highlight-inner")
+        };
+      });
+      const animations = [animationMetrics.beam, animationMetrics.outer, animationMetrics.inner];
+      const progresses = animations.map((animation) => Number(animation?.progress ?? Number.NaN));
+      const phaseSpread = Math.max(...progresses) - Math.min(...progresses);
+      const ellipseKeyframeIsHistorical = [animationMetrics.outer, animationMetrics.inner].every((animation) => (
+        animation?.animationName === "punktlandung-loader-ellipse-dash" &&
+        animation.duration === 3200 &&
+        animation.pathLength === "100" &&
+        animation.keyframes.at(-1)?.strokeDashoffset === "105.5px"
+      ));
+      const beamRotatesCounterClockwise = (
+        animationMetrics.beam?.animationName === "punktlandung-loader-beam-orbit" &&
+        animationMetrics.beam.duration === 3200 &&
+        animationMetrics.beam.keyframes.at(-1)?.transform?.includes("rotate(-360deg)")
+      );
+      if (!ellipseKeyframeIsHistorical || !beamRotatesCounterClockwise || !Number.isFinite(phaseSpread) || phaseSpread > 0.04) {
+        problems.push(`Loader-Animation ist nicht synchron (${JSON.stringify({ phaseSpread, animationMetrics })}).`);
+      }
+      await page.screenshot({ path: path.join(outDir, `${target.name}-${viewport.name}-phase-a.png`), fullPage: true });
+      await page.waitForTimeout(800);
+      await page.screenshot({ path: path.join(outDir, `${target.name}-${viewport.name}-phase-b.png`), fullPage: true });
+    }
+
     if (target.expectedText) {
       await page
         .getByText(target.expectedText, { exact: false })
@@ -962,12 +1282,11 @@ async function runTargetViewport(browser, target, viewport) {
     );
 
     if (target.name === "aufloesung") {
-      // Leaflet can briefly retain the previous marker node while its pane is
-      // reconciling. The latest node is the visible, current label.
-      const targetLabel = page.locator(".punktlandung-map-label-marker.is-interactive").last();
-      await targetLabel.waitFor({ state: "visible", timeout: 10000 });
-      if (viewport.category === "mobile") await targetLabel.dispatchEvent("click");
-      else await targetLabel.dispatchEvent("mouseover");
+      const targetPin = page.locator(
+        ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-pin-actual):visible"
+      ).first();
+      await targetPin.waitFor({ state: "visible", timeout: 10000 });
+      await targetPin.click();
       const infoPopup = page.locator(".punktlandung-location-info-popup").first();
       await infoPopup.waitFor({ state: "visible", timeout: 5000 });
       // Opening a Leaflet popup can auto-pan the map with a short animation.
@@ -1116,6 +1435,33 @@ async function runTargetViewport(browser, target, viewport) {
       || metrics.homeMapStability.intendedMotion?.targetPinAnimation === "none"
     )) {
       problems.push("Die vorgesehene Linien- oder Zielpin-Animation ist nicht aktiv.");
+    }
+
+    if (target.name === "nochmal-ansehen") {
+      const topActionHeights = await page.locator(".punktlandung-replay-top-actions > button:visible").evaluateAll(
+        (buttons) => buttons.map((button) => button.getBoundingClientRect().height)
+      );
+      if (topActionHeights.length >= 2 && Math.max(...topActionHeights) - Math.min(...topActionHeights) > 1) {
+        problems.push(`Replay-Buttons sind nicht gleich hoch (${topActionHeights.map((height) => height.toFixed(1)).join(" / ")} px).`);
+      }
+    }
+    if (target.expectedPath && metrics.pathname !== target.expectedPath) {
+      problems.push(`Erwarteter Pfad fehlt: ${metrics.pathname} statt ${target.expectedPath}.`);
+    }
+    if (target.name === "tipp-zu-aufloesung" && (
+      !metrics.transitionProbe ||
+      metrics.transitionProbe.blankFrames !== 0 ||
+      !metrics.transitionProbe.paths.includes("/aufloesung")
+    )) {
+      problems.push(`Der Wechsel zur Auflösung enthielt ${metrics.transitionProbe?.blankFrames ?? "unbekannt viele"} leere Zwischenframes.`);
+    }
+    if (target.name.startsWith("aufloesung-zielinfo") && (
+      !metrics.resultPopupSafety ||
+      metrics.resultPopupSafety.visualCount < 5 ||
+      !metrics.resultPopupSafety.allInside ||
+      !metrics.resultPopupSafety.directionCorrect
+    )) {
+      problems.push("Zielinfo, beide Pins und beide Labels liegen nicht vollständig und richtungsrichtig innerhalb der Auflösungskarte.");
     }
     if (requiresViewportFit(target, viewport) && metrics.verticalOverflow) {
       problems.push(`Unerlaubtes Desktop-Scrollen: Dokument ${metrics.documentHeight}px bei Viewport ${metrics.viewportHeight}px.`);
