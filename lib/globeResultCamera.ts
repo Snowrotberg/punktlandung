@@ -56,7 +56,7 @@ export const RESULT_CAMERA_SCENARIOS: ResultCameraScenario[] = [
     description: "regionaler Push ohne Globe-Rückzug",
     playerName: "#1 Testspieler",
     targetName: "München",
-    targetDescription: "München · Bayern · Deutschland",
+    targetDescription: "München ist die Landeshauptstadt Bayerns und liegt nördlich der Alpen an der Isar.",
     guess: [10.8978, 48.3705],
     target: [11.5761, 48.1372]
   },
@@ -66,7 +66,7 @@ export const RESULT_CAMERA_SCENARIOS: ResultCameraScenario[] = [
     description: "Landesflug mit moderatem Herauszoomen",
     playerName: "#1 Testspieler",
     targetName: "München",
-    targetDescription: "München · Bayern · Deutschland",
+    targetDescription: "München ist die Landeshauptstadt Bayerns und liegt nördlich der Alpen an der Isar.",
     guess: [6.9603, 50.9375],
     target: [11.5761, 48.1372]
   },
@@ -76,7 +76,7 @@ export const RESULT_CAMERA_SCENARIOS: ResultCameraScenario[] = [
     description: "sichtbare Globe-Phase und interkontinentale Beziehung",
     playerName: "#1 Testspieler",
     targetName: "Tokio",
-    targetDescription: "Tokio · Kantō · Japan",
+    targetDescription: "Tokio ist die Hauptstadt Japans und das politische, wirtschaftliche und kulturelle Zentrum des Landes.",
     guess: [13.405, 52.52],
     target: [139.6917, 35.6895]
   }
@@ -152,6 +152,29 @@ function interpolateGreatCircle(from: GlobeCoordinates, to: GlobeCoordinates, pr
   );
   const angle = Math.acos(dot);
   if (angle < 0.000001) return from;
+  if (Math.PI - angle < 0.00001) {
+    // Antipodal points have infinitely many valid great circles. Pick one
+    // stable axis so the route and midpoint never collapse into NaN or jump
+    // between opposite arcs on maximum-distance guesses.
+    const reference = Math.abs(fromVector[2]) < 0.9 ? [0, 0, 1] : [0, 1, 0];
+    const axisCandidate = [
+      fromVector[1] * reference[2] - fromVector[2] * reference[1],
+      fromVector[2] * reference[0] - fromVector[0] * reference[2],
+      fromVector[0] * reference[1] - fromVector[1] * reference[0]
+    ];
+    const axisLength = Math.hypot(...axisCandidate);
+    const axis = axisCandidate.map((value) => value / axisLength);
+    const turn = Math.PI * progress;
+    const cross = [
+      axis[1] * fromVector[2] - axis[2] * fromVector[1],
+      axis[2] * fromVector[0] - axis[0] * fromVector[2],
+      axis[0] * fromVector[1] - axis[1] * fromVector[0]
+    ];
+    const x = fromVector[0] * Math.cos(turn) + cross[0] * Math.sin(turn);
+    const y = fromVector[1] * Math.cos(turn) + cross[1] * Math.sin(turn);
+    const z = fromVector[2] * Math.cos(turn) + cross[2] * Math.sin(turn);
+    return [normalizeLongitude(toDegrees(Math.atan2(y, x))), toDegrees(Math.atan2(z, Math.hypot(x, y)))];
+  }
   const denominator = Math.sin(angle);
   const fromWeight = Math.sin((1 - progress) * angle) / denominator;
   const toWeight = Math.sin(progress * angle) / denominator;
@@ -187,11 +210,32 @@ export function buildResultCameraPlan(
 ): ResultCameraPlan {
   const distanceKm = distanceBetweenCoordinatesKm(guess, target);
   const distanceClass = classifyResultDistance(distanceKm);
-  const compactAdjustment = options.compactViewport ? -0.35 : 0;
+  // Compact result maps need additional breathing room for the two badges
+  // and the target information card, not just for the geographic points.
+  const compactLongAdjustment = distanceKm < 6_000
+    ? -1.8
+    : distanceKm < 9_000
+      ? -2.3
+      : distanceKm < 12_500
+        ? -2
+        : -1.8;
+  const compactAdjustment = options.compactViewport
+    ? distanceClass === "short" ? -0.3 : distanceClass === "medium" ? -0.55 : compactLongAdjustment
+    : 0;
   const direction = initialBearing(guess, target);
   const endBearing = clamp(direction - 18, -24, 24);
   const midpoint = relationshipCenter(guess, target);
   const durationScale = clamp(options.durationScale ?? 1, 0.65, 1.5);
+
+  const longEndZoom = distanceKm < 6_000
+    ? 3.05
+    : distanceKm < 9_000
+      ? 2.68
+      : distanceKm < 12_500
+        ? 2.42
+        : 2.24;
+  const longTransitZoom = longEndZoom - (distanceKm < 9_000 ? 0.32 : 0.26);
+  const longEndPitch = distanceKm < 6_000 ? 40 : distanceKm < 10_000 ? 36 : 31;
 
   const profiles = {
     short: {
@@ -201,7 +245,7 @@ export function buildResultCameraPlan(
       startPitch: 43,
       transitPitch: 48,
       curve: 0.08,
-      revealProgress: 0.48,
+      revealProgress: 0,
       targetRevealProgress: 0.84,
       terrainRampProgress: 0.12
     },
@@ -212,24 +256,24 @@ export function buildResultCameraPlan(
       startPitch: 38,
       transitPitch: 30,
       curve: 0.48,
-      revealProgress: 0.58,
+      revealProgress: 0,
       targetRevealProgress: 0.84,
       terrainRampProgress: 0.66
     },
     long: {
       startZoom: 5.0,
-      transitZoom: 1.72,
-      endZoom: 1.94,
+      transitZoom: longTransitZoom,
+      endZoom: longEndZoom,
       startPitch: 34,
       transitPitch: 8,
       curve: 5.5,
-      revealProgress: 0.62,
+      revealProgress: 0,
       targetRevealProgress: 0.82,
       terrainRampProgress: null
     }
   } as const;
   const profile = profiles[distanceClass];
-  const endPitch = RESULT_CAMERA_CONFIG.endPitch[distanceClass];
+  const endPitch = distanceClass === "long" ? longEndPitch : RESULT_CAMERA_CONFIG.endPitch[distanceClass];
 
   const startFrame: CameraKeyframe = {
     at: 0,
@@ -293,7 +337,9 @@ export function buildResultCameraPlan(
     distanceKm,
     durationMs: Math.round(RESULT_CAMERA_CONFIG.durationMs[distanceClass] * durationScale),
     revealProgress: profile.revealProgress,
-    targetRevealProgress: profile.targetRevealProgress,
+    targetRevealProgress: options.compactViewport
+      ? Math.min(profile.targetRevealProgress, distanceClass === "long" ? 0.48 : 0.58)
+      : profile.targetRevealProgress,
     terrainRampProgress: profile.terrainRampProgress,
     keyframes
   };

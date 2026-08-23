@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   Activity,
@@ -33,6 +34,15 @@ import { enqueueCompletedGameSave, flushCompletedGameSaves } from "@/lib/complet
 import type { RankedSyncStatus } from "@/hooks/useRankedSoloGame";
 import { enqueueRankedGameClaim } from "@/lib/rankedGameClaimQueue.client";
 import { playerColorAt } from "@/lib/playerPalette";
+import type { ResultCameraScenario } from "@/lib/globeResultCamera";
+
+const GlobeResultMap = dynamic(
+  () => import("./GlobeMapLab").then((module) => module.GlobeResultMap),
+  {
+    ssr: false,
+    loading: () => <div className="h-full min-h-[18rem] bg-slate-950" aria-hidden="true" />
+  }
+);
 
 const punktlandungDistanceKm = 0.5;
 const punktlandungDelayMs = 850;
@@ -407,6 +417,8 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const [saveOfferDismissed, setSaveOfferDismissed] = useState(false);
   const [replayMapSize, setReplayMapSize] = useState<"closed" | "open" | "full">("closed");
   const [advancingRound, setAdvancingRound] = useState(false);
+  const [globeUnavailable, setGlobeUnavailable] = useState(false);
+  const [resultAnimationComplete, setResultAnimationComplete] = useState(false);
 
   useEffect(() => {
     if (!room.nextRoundPreviewUrl) return;
@@ -432,6 +444,25 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
     () => room.players.map((player, index) => ({ ...player, color: player.color || playerColorAt(index) })),
     [room.players]
   );
+  const globeScenario = useMemo<ResultCameraScenario | null>(() => {
+    if (!summary || !location) return null;
+    const submittedResults = ranked.filter((result) => result.guess);
+    if (submittedResults.length !== 1) return null;
+    const primaryResult = submittedResults.find((result) => result.playerId === meId) ?? submittedResults[0];
+    if (!primaryResult?.guess) return null;
+    const player = playerFor(canonicalPlayers, primaryResult.playerId);
+    const rankIndex = ranked.findIndex((result) => result.playerId === primaryResult.playerId);
+    return {
+      id: `result-${summary.roundNumber}-${summary.completedAt}-${primaryResult.playerId}`,
+      label: `${player?.name ?? "Spieler"} → ${location.title}`,
+      description: "Echte Tipp- und Zielkoordinaten dieser Runde",
+      playerName: `#${Math.max(0, rankIndex) + 1} ${player?.name ?? "Spieler"}`,
+      targetName: location.title,
+      targetDescription: location.shortDescription ?? `${location.countryName} · ${location.continent}`,
+      guess: [primaryResult.guess.lng, primaryResult.guess.lat],
+      target: [location.lng, location.lat]
+    };
+  }, [canonicalPlayers, location, meId, ranked, summary]);
   const sortedPlayers = [...canonicalPlayers].sort((a, b) => b.score - a.score);
   const finalStats = useMemo(() => buildFinalStats(canonicalPlayers, room.summaries ?? []), [canonicalPlayers, room.summaries]);
   const finalHighlights = useMemo(() => buildFinalHighlights(finalStats, room.summaries ?? [], canonicalPlayers), [canonicalPlayers, finalStats, room.summaries]);
@@ -611,7 +642,12 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
     setReplayMapSize("closed");
     setReplayChromeHidden(false);
     setReplayChromeHoverHidden(false);
+    setGlobeUnavailable(false);
   }, [room.code, room.status, summary?.roundNumber, summary?.completedAt]);
+
+  useEffect(() => {
+    setResultAnimationComplete(!globeScenario);
+  }, [globeScenario]);
 
   useEffect(() => {
     if (!finished || !showFinalStandings || !feedbackPromptAllowed()) return;
@@ -656,7 +692,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   }, []);
 
   useEffect(() => {
-    if (landingHits.length === 0 || !revealed) return;
+    if (landingHits.length === 0 || !revealed || !resultAnimationComplete) return;
     const showTimer = window.setTimeout(() => {
       setShowLanding(true);
       playSuccess();
@@ -666,7 +702,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
       window.clearTimeout(showTimer);
       window.clearTimeout(hideTimer);
     };
-  }, [landingHits.length, playSuccess, revealed, summary?.roundNumber]);
+  }, [landingHits.length, playSuccess, resultAnimationComplete, revealed, summary?.roundNumber]);
 
   const openImageReplay = () => {
     setReplayMapSize("closed");
@@ -932,18 +968,27 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
               </div>
               <div className="relative min-h-0 flex-1 overflow-hidden rounded-md ring-1 ring-slate-700/70">
                 <div className={replayMapInteractive ? "h-full w-full" : "pointer-events-none h-full w-full"}>
-                  <GuessMap
-                    mode="results"
-                    players={canonicalPlayers}
-                    summary={summary}
-                    guesses={room.guesses}
-                    resultPaddingScale={0.9}
-                    resultZoomScale={replayMapFull ? 1.08 : 1.16}
-                    noPan={!replayMapInteractive}
-                    noZoom={!replayMapInteractive}
-                    showLabels={replayMapInteractive}
-                    resizeSignal={`${replayMapSize}-${replayMapInteractive ? "interactive" : "locked"}-${showImageReplay ? "replay" : "hidden"}`}
-                  />
+                  {showImageReplay && globeScenario && !globeUnavailable ? (
+                    <GlobeResultMap
+                      key={`${globeScenario.id}-replay`}
+                      scenario={globeScenario}
+                      animate={false}
+                      onUnavailable={() => setGlobeUnavailable(true)}
+                    />
+                  ) : showImageReplay ? (
+                    <GuessMap
+                      mode="results"
+                      players={canonicalPlayers}
+                      summary={summary}
+                      guesses={room.guesses}
+                      resultPaddingScale={0.9}
+                      resultZoomScale={replayMapFull ? 1.08 : 1.16}
+                      noPan={!replayMapInteractive}
+                      noZoom={!replayMapInteractive}
+                      showLabels={replayMapInteractive}
+                      resizeSignal={`${replayMapSize}-${replayMapInteractive ? "interactive" : "locked"}-${showImageReplay ? "replay" : "hidden"}`}
+                    />
+                  ) : null}
                 </div>
                 {!replayMapInteractive && <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0)_0%,rgba(2,6,23,0.06)_100%)]" />}
               </div>
@@ -1221,7 +1266,19 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
           </div>
 
           <div className="punktlandung-results-map min-h-0 overflow-hidden rounded-md bg-slate-900 shadow-[0_22px_58px_rgba(0,0,0,0.28)] ring-1 ring-slate-700/70">
-            <GuessMap mode="results" players={canonicalPlayers} summary={summary} guesses={room.guesses} noPan={false} noZoom={false} />
+            {globeScenario && !globeUnavailable ? (
+              <GlobeResultMap
+                key={globeScenario.id}
+                scenario={globeScenario}
+                onAnimationComplete={() => setResultAnimationComplete(true)}
+                onUnavailable={() => {
+                  setGlobeUnavailable(true);
+                  setResultAnimationComplete(true);
+                }}
+              />
+            ) : (
+              <GuessMap mode="results" players={canonicalPlayers} summary={summary} guesses={room.guesses} noPan={false} noZoom={false} />
+            )}
           </div>
 
           <div className="punktlandung-results-mobile-actions grid grid-cols-3 gap-2 sm:hidden">

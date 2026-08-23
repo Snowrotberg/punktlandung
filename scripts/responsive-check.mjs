@@ -349,6 +349,20 @@ const targets = [
   },
   { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", readySelector: ".punktlandung-results-grid", note: "echter URL-Pfad mit QA-Session" },
   {
+    name: "aufloesung-globe",
+    access: "state",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: {
+      players: [hostPlayer],
+      guesses: [summary.results[0].guess],
+      summaries: [{ ...summary, results: [summary.results[0]] }]
+    },
+    expectedText: "AUFLÖSUNG",
+    readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    note: "Solo-Auflösung mit echter Globe-Ergebnisanimation"
+  },
+  {
     name: "aufloesung-zielinfo",
     access: "state-click",
     path: "/aufloesung",
@@ -449,6 +463,20 @@ const targets = [
     note: "Ergebniszustand der letzten Runde mit erreichbarer Abschlussaktion"
   },
   { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", readySelector: ".punktlandung-image-replay", readyImageSelector: ".punktlandung-panorama-viewport img", note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
+  {
+    name: "nochmal-ansehen-globe",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: {
+      players: [hostPlayer],
+      guesses: [summary.results[0].guess],
+      summaries: [{ ...summary, results: [summary.results[0]] }]
+    },
+    buttonText: "Bild nochmal ansehen",
+    readySelector: ".punktlandung-image-replay [aria-label='Interaktive 3D-Ergebniskarte'] [data-surface-ready='true'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    note: "Bild-Replay mit derselben statischen Globe-Endkomposition"
+  },
   { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
   { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Nicht speichern", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session plus Klick auf Endstand ansehen" },
   { name: "infos", access: "route", path: "/infos", note: "echter URL-Pfad" },
