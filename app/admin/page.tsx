@@ -24,6 +24,7 @@ import { SectionNavigation } from "@/components/SectionNavigation";
 import { builtInLocations, catalogInventoryLocations } from "@/data/locations";
 import { getAdminAccountContext } from "@/lib/adminAccess.server";
 import { adConfig } from "@/lib/ads";
+import { buildUsageTimeline, earliestUsageTimestamp } from "@/lib/adminUsageTimeline";
 import { buildCatalogStatistics, catalogCategoryLabels } from "@/lib/catalogStatistics";
 import {
   applyLocationDifficultyOverrides,
@@ -56,14 +57,6 @@ const periods = {
 
 type PeriodKey = keyof typeof periods;
 type MetricTone = "good" | "warning" | "critical" | "neutral";
-type TimelineBucket = {
-  label: string;
-  pageViews: number;
-  visits: number;
-  starts: number;
-  finishes: number;
-  images: number;
-};
 const ROADMAP_PAGE_SIZE = 5;
 
 function AdminMetricValue({
@@ -134,6 +127,16 @@ function pageLabel(path: string): string {
   return labels[path] ?? path;
 }
 
+function pageAdminHref(path: string): string | null {
+  if (path === "/aufloesung" || path === "/endergebnis") return `/admin/vorschau?seite=${path.slice(1)}`;
+  if (path === "/konto/verlauf/[spiel]") return "/konto/verlauf";
+  return /^\/[a-z0-9_/-]*$/.test(path) ? path : null;
+}
+
+function formatAdminDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString("de-DE", { dateStyle: "medium", timeZone: "Europe/Berlin" });
+}
+
 function formatBytes(bytes: number | null): string {
   if (bytes === null) return "Nicht verfügbar";
   return `${(bytes / 1024 / 1024).toLocaleString("de-DE", { maximumFractionDigits: 1 })} MB`;
@@ -148,45 +151,6 @@ function formatUptime(seconds: number | null): string {
 
 function AdminSectionTitle({ icon: Icon, children }: { icon: LucideIcon; children: string }) {
   return <h2 className={styles.sectionTitle}><Icon aria-hidden="true" /><span>{children}</span></h2>;
-}
-
-function buildUsageTimeline(events: UsageEvent[], periodKey: PeriodKey, since: Date | undefined, now: Date): TimelineBucket[] {
-  const dayMs = 24 * 60 * 60 * 1_000;
-  const validEventTimes = events.map((event) => Date.parse(event.at)).filter(Number.isFinite);
-  const fallbackStart = now.getTime() - 30 * dayMs;
-  const requestedStart = since?.getTime() ?? (validEventTimes.length ? Math.min(...validEventTimes) : fallbackStart);
-  const startMs = Math.min(requestedStart, now.getTime() - 1);
-  const bucketTargets: Record<Exclude<PeriodKey, "all">, number> = { today: 1, "7d": 7, "30d": 15, "3m": 13, "6m": 13 };
-  const bucketCount = periodKey === "all"
-    ? Math.min(12, Math.max(1, Math.ceil((now.getTime() - startMs) / dayMs)))
-    : bucketTargets[periodKey];
-  const bucketDuration = Math.max(1, (now.getTime() - startMs) / bucketCount);
-  const showYear = now.getTime() - startMs > 330 * dayMs;
-  const buckets = Array.from({ length: bucketCount }, (_, index): TimelineBucket => {
-    const bucketDate = new Date(startMs + index * bucketDuration);
-    return {
-      label: periodKey === "today" ? "Heute" : bucketDate.toLocaleDateString("de-DE", showYear
-        ? { month: "short", year: "2-digit" }
-        : { day: "2-digit", month: "2-digit" }),
-      pageViews: 0,
-      visits: 0,
-      starts: 0,
-      finishes: 0,
-      images: 0
-    };
-  });
-
-  for (const event of events) {
-    const eventTime = Date.parse(event.at);
-    if (!Number.isFinite(eventTime) || eventTime < startMs || eventTime > now.getTime()) continue;
-    const bucketIndex = Math.min(bucketCount - 1, Math.max(0, Math.floor((eventTime - startMs) / bucketDuration)));
-    if (event.event === "page_view") buckets[bucketIndex].pageViews += 1;
-    if (event.event === "visit_start") buckets[bucketIndex].visits += 1;
-    if (event.event === "game_start") buckets[bucketIndex].starts += 1;
-    if (event.event === "game_complete") buckets[bucketIndex].finishes += 1;
-    if (event.event === "image_delivery" && event.outcome !== "failed") buckets[bucketIndex].images += 1;
-  }
-  return buckets;
 }
 
 const communityFilters: Array<{ value: "all" | CommunityStatus; label: string }> = [
@@ -253,18 +217,23 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     admin.from("ranked_games").select("game_id", { count: "exact", head: true }).eq("integrity_status", "verified"),
     admin.from("ranked_games").select("game_id", { count: "exact", head: true }).eq("status", "active"),
     admin.from("ranked_games").select("game_id", { count: "exact", head: true }).eq("status", "active").lt("started_at", staleGameThreshold),
-    readUsageEvents(since),
+    readUsageEvents(),
     admin.from("location_difficulty_metrics")
       .select("location_id, verified_rounds, suggested_difficulty, confidence, calculated_at"),
     readRoomServerHealth()
   ]);
+  const measurementStart = earliestUsageTimestamp(usageEvents);
   const todayKey = leaderboardPeriodKey(now.getTime(), "daily");
+  const periodEvents = since ? usageEvents.filter((event) => {
+    const timestamp = Date.parse(event.at);
+    return Number.isFinite(timestamp) && timestamp >= since.getTime();
+  }) : usageEvents;
   const events = periodKey === "today"
-    ? usageEvents.filter((event) => {
+    ? periodEvents.filter((event) => {
         const timestamp = Date.parse(event.at);
         return Number.isFinite(timestamp) && leaderboardPeriodKey(timestamp, "daily") === todayKey;
       })
-    : usageEvents;
+    : periodEvents;
   const count = (name: string) => events.filter((event) => event.event === name).length;
   const starts = count("game_start");
   const finishes = count("game_complete");
@@ -314,7 +283,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const rejectionRate = connectionAttempts ? (rejectedConnections / connectionAttempts) * 100 : null;
   const staleActiveCount = staleActive.count ?? 0;
   const latestSignalAgeMinutes = latestSignal ? Math.max(0, (now.getTime() - new Date(latestSignal).getTime()) / 60_000) : null;
-  const usageTimeline = buildUsageTimeline(events, periodKey, since, now);
+  const usageTimeline = buildUsageTimeline(events, periodKey, since, now, measurementStart);
   const metricRows = difficultyMetrics.data ?? [];
   const catalogIds = new Set(builtInLocations.map((location) => location.id));
   const activeMetricRows = metricRows.filter((row) => catalogIds.has(row.location_id));
@@ -330,7 +299,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     applyLocationDifficultyOverrides(builtInLocations, overrides),
     applyLocationDifficultyOverrides(catalogInventoryLocations, overrides)
   );
-  const locationTitles = new Map(builtInLocations.map((location) => [location.id, location.title]));
+  const locationsById = new Map(builtInLocations.map((location) => [location.id, location]));
   const topImages = [...imageEvents.filter((event) => event.outcome !== "failed" && event.locationId).reduce((counts, event) => {
     counts.set(event.locationId!, (counts.get(event.locationId!) ?? 0) + 1);
     return counts;
@@ -363,6 +332,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     roadmapPage * ROADMAP_PAGE_SIZE
   );
   const periodHeading = periodKey === "all" ? "Gesamt" : periodKey === "today" ? "Heute" : `letzte ${period.label}`;
+  const measurementLabel = measurementStart === null ? "noch ohne Messdaten" : `Messbeginn ${formatAdminDate(measurementStart)}`;
 
   return <main className={layoutStyles.page}><div className={`${layoutStyles.frame} ${layoutStyles.frameNoAds}`}>
     <RedesignShell className={layoutStyles.app}>
@@ -375,7 +345,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <nav className={styles.periods} aria-label="Zeitraum für Nutzung und Auslieferung">
             {Object.entries(periods).map(([key, item]) => <a key={key} href={`/admin?period=${key}`} className={key === "all" ? styles.periodAll : undefined} aria-current={key === periodKey ? "page" : undefined}>{item.label}</a>)}
           </nav>
-          <p>Bestands-, Konto- und Serverwerte zeigen unabhängig davon den aktuellen Stand.</p>
+          <p>Historische Werte folgen dem gewählten Zeitraum. „Gesamt“ beginnt beim ersten vorhandenen Messsignal ({measurementLabel}); frühere Nutzung wurde nicht rückwirkend erfasst.</p>
         </div>
         <div className={styles.metricLegend} aria-label="Bedeutung der Kennzahlenfarben">
           <span><i className={styles.legendGood} />Unauffällig</span>
@@ -388,7 +358,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <div className={styles.stat}><Users aria-hidden="true" /><strong>{visits}</strong><span>Besuche · {periodHeading}</span></div>
           <div className={styles.stat}><Activity aria-hidden="true" /><strong>{starts}</strong><span>Spielstarts · {periodHeading}</span></div>
           <div className={styles.stat}><CircleCheckBig aria-hidden="true" /><strong>{completionRate === null ? "–" : `${completionRate} %`}</strong><span>Abschlussquote · {periodHeading}</span></div>
-          <div className={styles.stat}><MonitorSmartphone aria-hidden="true" /><strong>{averageVisitDuration === null ? "–" : formatDuration(averageVisitDuration)}</strong><span>Ø aktive Besuchszeit</span></div>
+          <div className={styles.stat}><MonitorSmartphone aria-hidden="true" /><strong>{averageVisitDuration === null ? "–" : formatDuration(averageVisitDuration)}</strong><span>Ø aktive Besuchszeit · {periodHeading}</span></div>
         </div>
         <div className={styles.grid}>
           <section className={`${styles.panel} ${styles.catalogPanel} ${styles.communityPanel}`}><div className={styles.panelHeading}><div><AdminSectionTitle icon={Lightbulb}>Neue Vorschläge prüfen</AdminSectionTitle><p className={styles.muted}>Neue Einreichungen sind nicht öffentlich. Du kannst den Text korrigieren und sie anschließend freigeben oder ablehnen.</p></div><a href="/community">Community ansehen</a></div>
@@ -415,6 +385,13 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               <p className={styles.paginationSummary}>{managedCommunitySuggestions.length} geprüfte {managedCommunitySuggestions.length === 1 ? "Idee" : "Ideen"} · Seite {roadmapPage} von {roadmapPageCount}</p>
             </>}
           </section>
+          <div className={styles.scopeDivider}><span>Aktueller Stand · Echtzeit</span><p>Die folgenden Bestands-, Konto-, Community- und Serverwerte werden beim Öffnen neu geladen und sind unabhängig vom Zeitraumfilter.</p></div>
+          <div className={`${styles.stats} ${styles.realtimeStats}`}>
+            <div className={styles.stat}><Users aria-hidden="true" /><strong>{accountProgress.accountCount}</strong><span>aktive Spielerkonten</span></div>
+            <div className={styles.stat}><CircleCheckBig aria-hidden="true" /><strong>{completed.count ?? 0}</strong><span>abgeschlossene Partien</span></div>
+            <div className={styles.stat}><Gauge aria-hidden="true" /><strong>{verified.count ?? 0}</strong><span>verifizierte Partien</span></div>
+            <div className={styles.stat}><Server aria-hidden="true" /><strong>{active.count ?? 0}</strong><span>aktive Serverpartien</span></div>
+          </div>
           <section className={`${styles.panel} ${styles.catalogPanel} ${styles.catalogOverviewPanel}`}><AdminSectionTitle icon={Database}>Aktueller Aufgabenbestand</AdminSectionTitle>
             <div className={styles.tableWrap}><table className={styles.matrix}>
               <thead><tr><th>Kategorie</th><th>Gesamt</th><th>Leicht</th><th>Mittel</th><th>Schwer</th></tr></thead>
@@ -455,7 +432,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           </div><p className={styles.muted}>Live-Verteilung aller aktiven Konten. Damit wird sichtbar, wann weitere Meilensteinstufen und Motivationstexte benötigt werden.</p></section>
           <section className={`${styles.panel} ${styles.insightsPanel}`}>
             <AdminSectionTitle icon={Activity}>Top-Seiten &amp; Verweildauer</AdminSectionTitle>
-            {topPages.length ? <ol className={styles.topList}>{topPages.map(([path, value]) => <li key={path}><span><strong>{pageLabel(path)}</strong><small>{path}</small></span><span><b>{value.views} Aufrufe</b><small>Ø {value.views && value.durationMs ? formatDuration(value.durationMs / value.views) : "noch ohne Zeitwert"}</small></span></li>)}</ol> : <p className={styles.muted}>Die Seitenstatistik beginnt mit diesem Update. Für den gewählten Zeitraum liegen noch keine aufgeschlüsselten Daten vor.</p>}
+            {topPages.length ? <ol className={styles.topList}>{topPages.map(([path, value]) => { const href = pageAdminHref(path); return <li key={path}><span>{href ? <a className={styles.topListLink} href={href} target="_blank" rel="noreferrer"><strong>{pageLabel(path)}</strong><small>{path} · öffnen</small></a> : <><strong>{pageLabel(path)}</strong><small>{path}</small></>}</span><span><b>{value.views} Aufrufe</b><small>Ø {value.views && value.durationMs ? formatDuration(value.durationMs / value.views) : "noch ohne Zeitwert"}</small></span></li>; })}</ol> : <p className={styles.muted}>Die Seitenstatistik beginnt mit diesem Update. Für den gewählten Zeitraum liegen noch keine aufgeschlüsselten Daten vor.</p>}
             <p className={styles.muted}>Ø aktive Besuchszeit: <strong>{averageVisitDuration === null ? "Noch keine Daten" : formatDuration(averageVisitDuration)}</strong>. Zeit zählt nur, solange der Tab sichtbar ist.</p>
           </section>
           <section className={`${styles.panel} ${styles.insightsPanel}`}>
@@ -465,7 +442,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <section className={`${styles.panel} ${styles.analyticsPanel} ${styles.analyticsPriorityPanel}`}>
             <div className={styles.analyticsHeading}>
               <AdminSectionTitle icon={Activity}>{`Entwicklung · ${periodHeading}`}</AdminSectionTitle>
-              <p className={styles.muted}>Die Kurven folgen demselben Zeitraum wie die Kennzahlen für Nutzung und Bildauslieferung.</p>
+              <p className={styles.muted}>Die Kurven folgen demselben Zeitraum wie die Kennzahlen für Nutzung und Bildauslieferung. Zeiten vor dem Messbeginn bleiben bewusst frei und werden nicht als Nutzung mit dem Wert null ausgegeben.</p>
             </div>
             <div className={styles.chartGrid}>
               <AdminLineChart
@@ -492,6 +469,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                 buckets={usageTimeline}
                 series={[{ label: "Bilder", color: "#34d399", values: usageTimeline.map((bucket) => bucket.images) }]}
               />
+              <AdminLineChart
+                title="Aktive Nutzungszeit"
+                description="Summierte Zeit in Minuten, während Seiten sichtbar und aktiv genutzt wurden."
+                buckets={usageTimeline}
+                series={[{ label: "Minuten", color: "#fb7185", values: usageTimeline.map((bucket) => bucket.activeMinutes) }]}
+              />
             </div>
           </section>
           <section className={`${styles.panel} ${styles.usagePanel}`}><AdminSectionTitle icon={Activity}>{`Nutzung · ${periodHeading}`}</AdminSectionTitle><ul className={styles.list}><li><span>Seitenaufrufe</span><AdminMetricValue tone="neutral">{pageViews}</AdminMetricValue></li><li><span>Besuche</span><AdminMetricValue tone="neutral">{visits}</AdminMetricValue></li><li><span>Ø Seiten pro Besuch</span><AdminMetricValue tone="neutral">{visits ? (pageViews / visits).toLocaleString("de-DE", { maximumFractionDigits: 1 }) : "Noch keine Daten"}</AdminMetricValue></li><li><span>Spielstarts</span><AdminMetricValue tone="neutral">{starts}</AdminMetricValue></li><li><span>Spielabschlüsse</span><AdminMetricValue tone="neutral">{finishes}</AdminMetricValue></li><li><span>Abschlussquote</span><AdminMetricValue tone={higherIsBetter(completionRate, 60, 25)} recommendation={completionRate === null ? "Noch keine Spielstarts im gewählten Zeitraum; die Quote kann noch nicht bewertet werden." : completionRate < 25 ? "Kritisch: Weniger als ein Viertel der gestarteten Partien wird beendet. Abbruchstellen im Spielablauf prüfen." : completionRate < 60 ? "Beobachten: Viele gestartete Partien werden nicht abgeschlossen. Den Verlauf nach Geräten und Spielschritten untersuchen." : "Unauffällig: Mindestens 60 % der gestarteten Partien werden abgeschlossen."}>{completionRate === null ? "–" : `${completionRate} %`}</AdminMetricValue></li><li><span>Erstellte Onlineräume</span><AdminMetricValue tone="neutral">{count("room_created")}</AdminMetricValue></li></ul><p className={styles.muted}>Anonyme Erfassung ohne Query-Parameter, Nutzerkennung oder persistente Besuchs-ID. Ein Besuch gilt jeweils für einen geöffneten Browser-Tab.</p></section>
@@ -508,7 +491,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             <li><span>Letztes Messsignal</span><AdminMetricValue tone={latestSignalAgeMinutes === null ? "critical" : lowerIsBetter(latestSignalAgeMinutes, 5, 15)} recommendation={latestSignalAgeMinutes === null ? "Kritisch: Es liegt kein Messsignal vor. Telemetrie und Healthcheck prüfen." : latestSignalAgeMinutes >= 15 ? "Kritisch: Seit mehr als 15 Minuten fehlt ein aktuelles Signal. Server und Telemetrie prüfen." : latestSignalAgeMinutes >= 5 ? "Beobachten: Das letzte Signal ist älter als fünf Minuten." : "Unauffällig: Das letzte Messsignal ist aktuell."}>{latestSignal ? new Date(latestSignal).toLocaleString("de-DE") : "Keines"}</AdminMetricValue></li>
           </ul><p className={styles.muted}>Die Wiederholungswarteschlange für Ranking-Aktionen liegt absichtlich lokal im jeweiligen Browser. Zentral sichtbar sind deshalb die offenen Serverpartien und ungewöhnlich lange laufende Synchronisierungen.</p></section>
           <section className={`${styles.panel} ${styles.imageRankingPanel}`}><AdminSectionTitle icon={ScanSearch}>Top 5 ausgespielte Bilder</AdminSectionTitle>
-            {topImages.length ? <ol className={styles.topList}>{topImages.map(([locationId, value]) => <li key={locationId}><span><strong>{locationTitles.get(locationId) ?? locationId}</strong><small>{locationId}</small></span><b>{value}×</b></li>)}</ol> : <p className={styles.muted}>Im gewählten Zeitraum wurden noch keine erfolgreich angezeigten Spielbilder gemessen.</p>}
+            {topImages.length ? <ol className={styles.topList}>{topImages.map(([locationId, value]) => { const location = locationsById.get(locationId); const href = location?.sourceUrl ?? location?.panoramaUrl; return <li key={locationId}><span>{href ? <a className={styles.topListLink} href={href} target="_blank" rel="noreferrer"><strong>{location?.title ?? locationId}</strong><small>{locationId} · Bild öffnen</small></a> : <><strong>{location?.title ?? locationId}</strong><small>{locationId}</small></>}</span><b>{value}×</b></li>; })}</ol> : <p className={styles.muted}>Im gewählten Zeitraum wurden noch keine erfolgreich angezeigten Spielbilder gemessen.</p>}
             <p className={styles.muted}>Gezählt wird eine erfolgreich geladene Anzeige je Aufgabe; technische Wiederholungen innerhalb derselben Runde werden unterdrückt.</p>
           </section>
           <section className={`${styles.panel} ${styles.imageDeliveryPanel}`}><AdminSectionTitle icon={ScanSearch}>{`Bildauslieferung · ${periodHeading}`}</AdminSectionTitle><ul className={styles.list}>
