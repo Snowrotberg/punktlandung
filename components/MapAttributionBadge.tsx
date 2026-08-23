@@ -34,6 +34,9 @@ export function MapAttributionBadge({ locationInfoSourceUrl }: { locationInfoSou
           <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">
             OpenFreeMap
           </a>
+          <a href="https://mapterhorn.com/attribution" target="_blank" rel="noopener noreferrer">
+            © Mapterhorn
+          </a>
           {locationInfoSourceUrl && (
             <a href={locationInfoSourceUrl} target="_blank" rel="noopener noreferrer">
               Ortsinformation: Wikipedia

@@ -1,0 +1,516 @@
+.lab {
+  display: grid;
+  min-height: 0;
+  gap: 0.75rem;
+}
+
+.controlPanel {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1.15fr) minmax(20rem, 1.65fr) minmax(14rem, 1fr);
+  gap: 0.7rem;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  border-radius: 1rem;
+  background: rgba(2, 6, 23, 0.82);
+  padding: 0.75rem;
+  box-shadow: 0 1rem 3rem rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.controlGroup {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(51, 65, 85, 0.62);
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 0.6rem;
+}
+
+.controlLabel {
+  flex-basis: 100%;
+  color: #94a3b8;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.controlPanel button,
+.mapPresets button {
+  min-height: 2.5rem;
+  border: 1px solid rgba(100, 116, 139, 0.72);
+  border-radius: 0.65rem;
+  background: rgba(2, 6, 23, 0.9);
+  padding: 0.55rem 0.75rem;
+  color: #e2e8f0;
+  font-size: 0.72rem;
+  font-weight: 850;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.controlPanel button:hover:not(:disabled),
+.mapPresets button:hover:not(:disabled) {
+  border-color: rgba(110, 231, 183, 0.85);
+  color: #a7f3d0;
+  transform: translateY(-1px);
+}
+
+.controlPanel button:disabled,
+.mapPresets button:disabled {
+  cursor: wait;
+  opacity: 0.48;
+}
+
+.controlPanel .primaryButton,
+.controlPanel .resultButton {
+  border-color: rgba(52, 211, 153, 0.84);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.98), rgba(45, 212, 191, 0.94));
+  color: #022c22;
+}
+
+.controlPanel .resultButton {
+  flex: 1 1 11rem;
+}
+
+.segmented {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.segmented button[aria-pressed="true"] {
+  border-color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.2);
+  color: #a7f3d0;
+  box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.24);
+}
+
+.scenarioSummary {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.85rem;
+  color: #94a3b8;
+  font-size: 0.72rem;
+}
+
+.scenarioSummary strong {
+  color: #e2e8f0;
+  font-size: 0.8rem;
+}
+
+.mapFrame {
+  position: relative;
+  min-height: clamp(30rem, 68dvh, 48rem);
+  overflow: hidden;
+  border: 1px solid rgba(71, 85, 105, 0.72);
+  border-radius: 1.25rem;
+  background: #0f172a;
+  box-shadow: 0 1.5rem 5rem rgba(2, 6, 23, 0.48);
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+}
+
+.preloadVeil {
+  position: absolute;
+  z-index: 8;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.72);
+  color: #a7f3d0;
+  font-size: 0.8rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  text-align: center;
+  backdrop-filter: blur(5px);
+}
+
+.routeOverlay {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.routeOverlay[data-visible="true"] {
+  opacity: 1;
+}
+
+.routeClip {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
+.routeShadow,
+.routeLine {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.routeShadow {
+  stroke: rgba(2, 6, 23, 0.42);
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: blur(1px);
+}
+
+.routeLine {
+  stroke: url(#kartenlabor-result-gradient);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 6 9;
+  animation: routeFlow 900ms linear infinite;
+}
+
+@keyframes routeFlow {
+  to { stroke-dashoffset: -15; }
+}
+
+.mapFrame :global(.maplibregl-ctrl-group button) {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.mapFrame :global(button[aria-label="Kartenquellen anzeigen"]) {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+}
+
+.mapPresets {
+  position: absolute;
+  z-index: 3;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  max-width: calc(100% - 6.5rem);
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.mapPresets button {
+  background: rgba(2, 6, 23, 0.84);
+  box-shadow: 0 0.6rem 1.5rem rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.telemetry {
+  position: absolute;
+  z-index: 3;
+  right: 1rem;
+  bottom: 1rem;
+  display: grid;
+  max-width: min(34rem, calc(100% - 5.5rem));
+  gap: 0.22rem;
+  border: 1px solid rgba(71, 85, 105, 0.72);
+  border-radius: 0.8rem;
+  background: rgba(2, 6, 23, 0.86);
+  padding: 0.7rem 0.85rem;
+  color: #94a3b8;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  backdrop-filter: blur(12px);
+}
+
+.telemetry strong {
+  color: #6ee7b7;
+  font-size: 0.74rem;
+}
+
+.resultMarker {
+  position: absolute;
+  width: 3.625rem;
+  height: 2.625rem;
+  pointer-events: none;
+  z-index: 4;
+  will-change: transform;
+}
+
+.markerVisual {
+  position: absolute;
+  inset: 0;
+  display: block;
+  color: var(--marker-color);
+  opacity: 0;
+  transform: translateY(0.55rem) scale(calc(var(--marker-scale, 1) * 0.82));
+  transform-origin: 50% 100%;
+  transition: opacity 220ms ease, transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.resultMarker[data-visible="true"] .markerVisual {
+  opacity: 1;
+  transform: translateY(0) scale(var(--marker-scale, 1));
+}
+
+.targetMarker[data-focus="true"] .markerRingOuter {
+  animation: targetFocus 850ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+.targetMarker[data-visible="true"][data-focus="true"] .markerVisual {
+  animation: targetDrop 620ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+@keyframes targetDrop {
+  0% { opacity: 0; transform: translateY(-3.5rem) scale(var(--marker-scale, 1)); }
+  68% { opacity: 1; transform: translateY(0.28rem) scale(var(--marker-scale, 1)); }
+  84% { transform: translateY(-0.12rem) scale(var(--marker-scale, 1)); }
+  100% { opacity: 1; transform: translateY(0) scale(var(--marker-scale, 1)); }
+}
+
+@keyframes targetFocus {
+  0% { opacity: 0; transform: scale(0.4); }
+  55% { opacity: 0.95; transform: scale(1.18); }
+  100% { opacity: 0.68; transform: scale(1); }
+}
+
+.markerPin {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: -0.35rem;
+  display: block;
+  width: 2rem;
+  height: 2.625rem;
+  overflow: visible;
+  filter: drop-shadow(0 0.4rem 0.65rem rgba(2, 6, 23, 0.5));
+  transform: translateX(-50%) scale(0.9);
+  transform-origin: 50% 100%;
+}
+
+.markerPinOutline,
+.markerPinCore {
+  fill: #f8fafc;
+}
+
+.markerPinFill {
+  fill: var(--marker-color);
+}
+
+.markerRings {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 2.05rem;
+  display: block;
+  width: 3.625rem;
+  height: 1.125rem;
+  overflow: visible;
+  shape-rendering: geometricPrecision;
+}
+
+.markerRings ellipse {
+  stroke: var(--marker-color);
+  stroke-width: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+  vector-effect: non-scaling-stroke;
+}
+
+.markerRingOuter {
+  fill: none;
+  opacity: 0.68;
+}
+
+.markerRingMiddle {
+  fill: color-mix(in srgb, var(--marker-color) 17%, transparent);
+  opacity: 0.84;
+}
+
+.markerRingInner {
+  fill: color-mix(in srgb, var(--marker-color) 38%, transparent);
+}
+
+.guessMarker {
+  --marker-color: #f43f7a;
+}
+
+.guessMarker .markerRings {
+  left: 0.375rem;
+  top: 2.15rem;
+  width: 2.875rem;
+  height: 0.875rem;
+}
+
+.targetMarker {
+  --marker-color: #5ee7bd;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.targetMarker .markerPin {
+  top: -0.55rem;
+  filter: drop-shadow(0 0 0.75rem rgba(94, 231, 189, 0.56));
+  transform: translateX(-50%) scale(1.12);
+}
+
+.markerLabel {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: auto;
+  right: auto;
+  white-space: nowrap;
+  border: 1px solid #334155 !important;
+  border-radius: 0.7rem !important;
+  background: rgb(10 16 28 / 0.94) !important;
+  box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.28) !important;
+  color: #f8fafc !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  padding: 0.62rem 0.82rem 0.62rem 0.95rem !important;
+  opacity: 0;
+  transform: translateX(-50%) translateY(0.35rem) scale(0.94);
+  transition: opacity 180ms ease 80ms, transform 260ms ease 80ms;
+}
+
+.markerLabel::before {
+  display: none !important;
+}
+
+.guessMarker .markerLabel {
+  border-color: var(--marker-color) !important;
+}
+
+.targetMarker .markerLabel {
+  border-color: #5ee7bd !important;
+  background: #5ee7bd !important;
+  color: #06231c !important;
+}
+
+.resultMarker[data-visible="true"] .markerLabel {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.resultMarker[data-label-vertical="above"] .markerLabel {
+  bottom: calc(100% + 1.25rem);
+}
+
+.resultMarker[data-label-vertical="below"] .markerLabel {
+  top: calc(100% + 1.25rem);
+}
+
+.mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-content) {
+  border: 1px solid rgba(94, 231, 189, 0.52);
+  border-radius: 0.8rem;
+  background: rgba(2, 6, 23, 0.94);
+  padding: 0.75rem 2rem 0.75rem 0.85rem;
+  color: #e2e8f0;
+  box-shadow: 0 0.8rem 2rem rgba(2, 6, 23, 0.48);
+  backdrop-filter: blur(12px);
+}
+
+.mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-tip) {
+  border-top-color: rgba(2, 6, 23, 0.94);
+}
+
+.mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button) {
+  min-width: 2rem;
+  min-height: 2rem;
+  color: #cbd5e1;
+  font-size: 1.15rem;
+}
+
+.markerPopupContent {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 10rem;
+}
+
+.markerPopupContent strong {
+  color: #6ee7b7;
+  font-size: 0.82rem;
+}
+
+.markerPopupContent span {
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 1050px) {
+  .controlPanel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .controlGroup:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .controlPanel {
+    grid-template-columns: 1fr;
+    padding: 0.55rem;
+  }
+
+  .controlGroup:last-child {
+    grid-column: auto;
+  }
+
+  .controlPanel button,
+  .mapPresets button {
+    min-height: 2.6rem;
+  }
+
+  .primaryButton,
+  .resultButton {
+    width: 100%;
+  }
+
+  .scenarioSummary {
+    display: grid;
+    gap: 0.2rem;
+    padding-inline: 0.25rem;
+  }
+
+  .mapFrame {
+    min-height: 34rem;
+    border-radius: 1rem;
+  }
+
+  .mapPresets {
+    top: 0.7rem;
+    left: 0.7rem;
+    max-width: calc(100% - 4.8rem);
+    gap: 0.35rem;
+  }
+
+  .telemetry {
+    right: 0.7rem;
+    bottom: 0.7rem;
+    max-width: calc(100% - 4.6rem);
+    font-size: 0.62rem;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .controlPanel button,
+  .mapPresets button,
+  .markerVisual,
+  .markerLabel {
+    transition-duration: 1ms;
+  }
+
+  .routeLine,
+  .targetMarker[data-visible="true"][data-focus="true"] .markerVisual,
+  .targetMarker[data-focus="true"] .markerRingOuter {
+    animation: none;
+  }
+}

@@ -85,9 +85,13 @@ type PixelSegment = {
 const PLAYER_ELLIPSE_SIZE = { width: 46, height: 14 };
 const ACTUAL_ELLIPSE_SIZE = { width: 58, height: 18 };
 const RESULT_MAX_ZOOM = 17;
-const GUESS_WORLD_BOUNDS = latLngBounds([
+const SINGLE_WORLD_BOUNDS = latLngBounds([
   [-85, -180],
   [85, 180]
+]);
+const GUESS_PAN_BOUNDS = latLngBounds([
+  [-85, -360],
+  [85, 360]
 ]);
 
 function StrictSafeMapContainer({
@@ -148,24 +152,8 @@ function lngNearestTo(lng: number, referenceLng: number): number {
   return next;
 }
 
-function displayPointsForShortestWorld(points: LatLng[]): LatLng[] {
-  if (points.length <= 1) return points;
-
-  const normalized = points.map((point) => normalizeLng(point.lng)).sort((a, b) => a - b);
-  let largestGap = -1;
-  let gapIndex = 0;
-  for (let index = 0; index < normalized.length; index += 1) {
-    const current = normalized[index] ?? 0;
-    const next = index === normalized.length - 1 ? (normalized[0] ?? 0) + 360 : normalized[index + 1] ?? 0;
-    const gap = next - current;
-    if (gap > largestGap) {
-      largestGap = gap;
-      gapIndex = index;
-    }
-  }
-
-  const arcStart = normalized[(gapIndex + 1) % normalized.length] ?? 0;
-  return points.map((point) => ({ ...point, lng: lngNearestTo(point.lng, arcStart) }));
+function displayPointsForSingleWorld(points: LatLng[]): LatLng[] {
+  return points.map((point) => ({ ...point, lng: normalizeLng(point.lng) }));
 }
 
 function pinIcon(color = playerColorAt(0), actual = false) {
@@ -274,6 +262,89 @@ function MapInteractionState({ noPan, noZoom }: { noPan?: boolean; noZoom?: bool
   }, [map, noPan, noZoom]);
 
   return noZoom ? null : <ZoomControl position="topright" />;
+}
+
+function ResultWorldLimits() {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    let frame: number | null = null;
+    const applyLimits = () => {
+      try {
+        const width = Math.max(1, map.getSize().x);
+        // At zoom 0 Leaflet's projected world is 256 CSS pixels wide. Keep
+        // one world at least as wide as the result map so zooming out never
+        // reveals repeated copies or empty space beside it.
+        const minZoom = Math.max(1, Math.ceil(Math.log2(width / 256)));
+        map.setMinZoom(minZoom);
+        if (map.getZoom() < minZoom) map.setZoom(minZoom, { animate: false });
+      } catch {
+        // The result map can be between responsive layouts while it resizes.
+      }
+    };
+    const scheduleLimits = () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        applyLimits();
+      });
+    };
+    const observer = new ResizeObserver(scheduleLimits);
+    observer.observe(container);
+    scheduleLimits();
+    return () => {
+      observer.disconnect();
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [map]);
+
+  return null;
+}
+
+function GuessMarker({
+  guess,
+  players,
+  currentPlayerColor,
+  showLabels,
+  colorIndex
+}: {
+  guess: LatLng;
+  players?: Player[];
+  currentPlayerColor?: string;
+  showLabels: boolean;
+  colorIndex: number;
+}) {
+  const map = useMap();
+  const nearestLng = useCallback(
+    () => lngNearestTo(guess.lng, map.getCenter().lng),
+    [guess.lng, map]
+  );
+  const [displayLng, setDisplayLng] = useState(nearestLng);
+
+  useEffect(() => {
+    const updateWorldCopy = () => setDisplayLng(nearestLng());
+    updateWorldCopy();
+    map.on("moveend", updateWorldCopy);
+    return () => {
+      map.off("moveend", updateWorldCopy);
+    };
+  }, [map, nearestLng]);
+
+  return (
+    <Marker position={[guess.lat, displayLng]} icon={pinIcon(guessColor(players, guess, currentPlayerColor))}>
+      {showLabels && (
+        <Tooltip
+          permanent
+          direction="right"
+          offset={[18, -18]}
+          className={`punktlandung-map-label punktlandung-map-label-guess punktlandung-player-color-${colorIndex}`}
+        >
+          Dein Tipp
+        </Tooltip>
+      )}
+    </Marker>
+  );
 }
 
 function GuessViewportReset({
@@ -446,7 +517,7 @@ function centerHomePreviewVisuals(map: LeafletMapInstance, summary: RoundSummary
   const result = rankResults(summary.results).find((item) => item.guess);
   if (!result?.guess) return;
 
-  const displayPoints = displayPointsForShortestWorld([summary.location, result.guess]);
+  const displayPoints = displayPointsForSingleWorld([summary.location, result.guess]);
   const displayLocation = displayPoints[0] ?? summary.location;
   const displayGuess = displayPoints[1] ?? result.guess;
   const mapSize = map.getSize();
@@ -737,7 +808,7 @@ function resultPoints(summary?: RoundSummary | null): LatLngExpression[] {
     if (result.guess) rawPoints.push(result.guess);
   }
   if (summary.crewGuess) rawPoints.push(summary.crewGuess);
-  return displayPointsForShortestWorld(rawPoints).map((point) => [point.lat, point.lng]);
+  return displayPointsForSingleWorld(rawPoints).map((point) => [point.lat, point.lng]);
 }
 
 function rectanglesOverlap(a: LabelRect, b: LabelRect) {
@@ -1357,7 +1428,7 @@ function ResultsMarkers({
   const displayGeometry = useMemo(() => {
     if (!location) return null;
     const sourcePoints: LatLng[] = [location, ...rankedResults.flatMap((result) => (result.guess ? [result.guess] : [])), ...guesses];
-    const displayPoints = displayPointsForShortestWorld(sourcePoints);
+    const displayPoints = displayPointsForSingleWorld(sourcePoints);
     let cursor = 0;
     const displayLocation = displayPoints[cursor++] ?? location;
     const resultGuesses = new Map<string, LatLng>();
@@ -1732,7 +1803,7 @@ export function LeafletMap({
   const maxZoom = mode === "results" ? RESULT_MAX_ZOOM : 14;
   const guessOverviewZoom = 2;
   const guessColorIndex = playerColorIndexByColor(currentPlayerColor);
-  const restrictToSingleWorld = mode === "guess";
+  const isGuessMap = mode === "guess";
 
   return (
     <div className="punktlandung-map-shell" style={playerPaletteStyle}>
@@ -1748,40 +1819,38 @@ export function LeafletMap({
       doubleClickZoom={false}
       touchZoom={false}
       dragging={false}
-      maxBounds={restrictToSingleWorld ? GUESS_WORLD_BOUNDS : undefined}
-      maxBoundsViscosity={restrictToSingleWorld ? 1 : 0}
-      worldCopyJump={!restrictToSingleWorld}
+      maxBounds={isGuessMap ? GUESS_PAN_BOUNDS : SINGLE_WORLD_BOUNDS}
+      maxBoundsViscosity={1}
+      worldCopyJump={false}
       >
       <MapInteractionState noPan={noPan} noZoom={noZoom} />
       <MapResizer resizeSignal={resizeSignal} />
       {mode === "guess" && <GuessViewportReset center={center} zoom={guessOverviewZoom} resetSignal={resetSignal} />}
       {mode === "results" && (
-        <ResultBounds
-          summary={summary}
-          players={players}
-          showLabels={showLabels}
-          resultPaddingScale={resultPaddingScale}
-          resultZoomScale={resultZoomScale}
-          resizeSignal={resizeSignal}
-          resultLabelLayout={resultLabelLayout}
-          resultControlInset={resultControlInset}
-        />
+        <>
+          <ResultWorldLimits />
+          <ResultBounds
+            summary={summary}
+            players={players}
+            showLabels={showLabels}
+            resultPaddingScale={resultPaddingScale}
+            resultZoomScale={resultZoomScale}
+            resizeSignal={resizeSignal}
+            resultLabelLayout={resultLabelLayout}
+            resultControlInset={resultControlInset}
+          />
+        </>
       )}
-      <MapLibreBaseLayer renderWorldCopies={!restrictToSingleWorld} onReady={onBaseMapReady} />
+      <MapLibreBaseLayer renderWorldCopies={isGuessMap} styleVariant="mercator" onReady={onBaseMapReady} />
       {mode === "guess" && <ClickHandler disabled={disabled} onGuess={onGuess} />}
       {guess && (
-        <Marker position={[guess.lat, guess.lng]} icon={pinIcon(guessColor(players, guess, currentPlayerColor))}>
-          {showLabels && (
-            <Tooltip
-              permanent
-              direction="right"
-              offset={[18, -18]}
-              className={`punktlandung-map-label punktlandung-map-label-guess punktlandung-player-color-${guessColorIndex}`}
-            >
-              Dein Tipp
-            </Tooltip>
-          )}
-        </Marker>
+        <GuessMarker
+          guess={guess}
+          players={players}
+          currentPlayerColor={currentPlayerColor}
+          showLabels={showLabels}
+          colorIndex={guessColorIndex}
+        />
       )}
       {mode === "results" && (
         <ResultsMarkers

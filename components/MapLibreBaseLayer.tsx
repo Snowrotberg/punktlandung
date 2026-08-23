@@ -4,16 +4,18 @@ import { useEffect, useRef } from "react";
 import { maplibreGL } from "leaflet";
 import "@maplibre/maplibre-gl-leaflet";
 import { useMap } from "react-leaflet";
-import { PUNKTLANDUNG_MAP_STYLE_URL } from "@/lib/mapStyle";
+import { punktlandungMapStyleUrl } from "@/lib/mapStyle";
+import type { PunktlandungMapStyleVariant } from "@/lib/mapStyle";
 
 type MapLibreBaseLayerProps = {
   renderWorldCopies: boolean;
+  styleVariant?: PunktlandungMapStyleVariant;
   onReady?: () => void;
 };
 
-export function MapLibreBaseLayer({ renderWorldCopies, onReady }: MapLibreBaseLayerProps) {
+export function MapLibreBaseLayer({ renderWorldCopies, styleVariant = "mercator", onReady }: MapLibreBaseLayerProps) {
   const map = useMap();
-  const styleUrl = PUNKTLANDUNG_MAP_STYLE_URL;
+  const styleUrl = punktlandungMapStyleUrl(styleVariant);
   const onReadyRef = useRef(onReady);
 
   useEffect(() => {

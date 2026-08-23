@@ -277,20 +277,22 @@ function onlineWaitingRoomState() {
 
 const targets = [
   { name: "home", access: "route", path: "/", resetSession: true, note: "echter URL-Pfad" },
+  { name: "kartenlabor", access: "route", path: "/kartenlabor", expectedText: "Globe-Kartenlabor", note: "interne Globe-Testansicht" },
   {
     name: "solo-modus",
     access: "route",
     path: "/solo-modus",
     resetSession: true,
     expectedText: "Passe deine Partie an",
-    expectedRoom: { kind: "solo", localMode: "solo" },
+    expectedActiveControls: ["Solo"],
     note: "echter URL-Pfad"
   },
   {
     name: "solo-modus-gespeicherte-einstellungen",
     access: "route-stored-settings",
     path: "/solo-modus",
-    expectedText: "10 Runden",
+    expectedText: "Passe deine Partie an",
+    expectedActiveControls: ["30 s", "10"],
     note: "SSR-Hydration mit von den Standardwerten abweichenden gespeicherten Einstellungen"
   },
   {
@@ -473,6 +475,7 @@ const targets = [
 ];
 
 const documentTargetNames = new Set([
+  "kartenlabor",
   "infos",
   "hilfe",
   "hilfe-spielablauf",
@@ -1087,6 +1090,8 @@ function normalizeConsoleMessages(messages) {
       /\[Punktlandung map\].*Failed to fetch/i.test(compact) ||
       /Unable to load glyph range.*openfreemap\.org/i.test(compact) ||
       /Image "circle-11" could not be loaded.*map\.addImage/i.test(compact) ||
+      /calculateFogMatrix is not supported on globe projection/i.test(compact) ||
+      /performance warning: READ-usage buffer was written, then fenced/i.test(compact) ||
       /^error:\s*Event$/i.test(compact)
     ) {
       ignored.push(compact.slice(0, 500));
@@ -1273,6 +1278,16 @@ async function runTargetViewport(browser, target, viewport) {
           { timeout: 5000 }
         )
         .catch(() => {});
+    }
+
+    if (target.expectedActiveControls) {
+      for (const label of target.expectedActiveControls) {
+        const control = page.locator('[data-active="true"]').filter({ hasText: label }).first();
+        await control.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+        if ((await control.textContent().catch(() => null))?.trim() !== label) {
+          problems.push(`Erwartete Auswahl ist nicht aktiv: "${label}".`);
+        }
+      }
     }
 
     await page.waitForFunction(
