@@ -837,8 +837,8 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
               <svg className="punktlandung-loader-ellipses" viewBox="0 0 128 96" aria-hidden="true">
                 <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-outer" cx="64" cy="78" rx="38.5" ry="12" />
                 <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-inner" cx="64" cy="78" rx="22.5" ry="6.5" />
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-outer" cx="64" cy="78" rx="38.5" ry="12" />
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-inner" cx="64" cy="78" rx="22.5" ry="6.5" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-outer" cx="64" cy="78" rx="38.5" ry="12" pathLength="100" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-inner" cx="64" cy="78" rx="22.5" ry="6.5" pathLength="100" />
               </svg>
               <span className="punktlandung-loader-beam-orbit">
                 <span className="punktlandung-loader-beam" />

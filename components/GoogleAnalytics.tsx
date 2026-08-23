@@ -19,14 +19,27 @@ function viewportContext() {
 
 function visitId(): string {
   const key = "punktlandung-operational-visit-id-v2";
+  const createId = () => {
+    if (typeof globalThis.crypto?.randomUUID === "function") return globalThis.crypto.randomUUID();
+    const bytes = new Uint8Array(16);
+    try {
+      globalThis.crypto?.getRandomValues?.(bytes);
+    } catch {
+      for (let index = 0; index < bytes.length; index += 1) bytes[index] = Math.floor(Math.random() * 256);
+    }
+    if (bytes.every((value) => value === 0)) {
+      for (let index = 0; index < bytes.length; index += 1) bytes[index] = Math.floor(Math.random() * 256);
+    }
+    return `visit-${Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("")}`;
+  };
   try {
     const stored = window.sessionStorage.getItem(key);
     if (stored) return stored;
-    const created = crypto.randomUUID();
+    const created = createId();
     window.sessionStorage.setItem(key, created);
     return created;
   } catch {
-    return crypto.randomUUID();
+    return createId();
   }
 }
 

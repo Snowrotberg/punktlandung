@@ -10539,21 +10539,21 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
     drop-shadow(0 0 7px rgba(167, 243, 208, 0.66))
     drop-shadow(0 0 18px rgba(52, 211, 153, 0.42));
   opacity: 0.94;
-  stroke-dashoffset: 0;
+  stroke-dashoffset: 5.5;
 }
 
 .punktlandung-loader-ellipse-highlight-outer {
   stroke: rgba(167, 243, 208, 0.94);
   stroke-width: 1.55;
-  stroke-dasharray: 58 114;
-  animation: punktlandung-loader-ellipse-dash-outer 3.2s linear infinite;
+  stroke-dasharray: 11 89;
+  animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
 }
 
 .punktlandung-loader-ellipse-highlight-inner {
   stroke: rgba(110, 231, 183, 0.88);
   stroke-width: 1.35;
-  stroke-dasharray: 34 72;
-  animation: punktlandung-loader-ellipse-dash-inner 3.2s linear infinite;
+  stroke-dasharray: 11 89;
+  animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
 }
 
 .punktlandung-loader-core-beam {
@@ -10648,14 +10648,10 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 }
 
-@keyframes punktlandung-loader-ellipse-dash-outer {
-  from { stroke-dashoffset: 0; }
-  to { stroke-dashoffset: -172; }
-}
-
-@keyframes punktlandung-loader-ellipse-dash-inner {
-  from { stroke-dashoffset: 0; }
-  to { stroke-dashoffset: -106; }
+@keyframes punktlandung-loader-ellipse-dash {
+  to {
+    stroke-dashoffset: 105.5;
+  }
 }
 
 @keyframes punktlandung-loader-sheen {

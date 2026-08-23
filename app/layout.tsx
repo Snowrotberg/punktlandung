@@ -89,9 +89,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <link rel="preconnect" href="https://commons.wikimedia.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://upload.wikimedia.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://tiles.openfreemap.org" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://tiles.mapterhorn.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://commons.wikimedia.org" />
         <link rel="dns-prefetch" href="https://upload.wikimedia.org" />
         <link rel="dns-prefetch" href="https://tiles.openfreemap.org" />
+        <link rel="dns-prefetch" href="https://tiles.mapterhorn.com" />
         <script
           dangerouslySetInnerHTML={{
             __html:

@@ -264,6 +264,7 @@ function onlineWaitingRoomState() {
 
 const targets = [
   { name: "home", access: "route", path: "/", resetSession: true, note: "echter URL-Pfad" },
+  { name: "kartenlabor", access: "route", path: "/kartenlabor", expectedText: "Globe-Kartenlabor", note: "interne Globe-Testansicht" },
   {
     name: "solo-modus",
     access: "route",
@@ -354,6 +355,7 @@ const targets = [
 ];
 
 const documentTargetNames = new Set([
+  "kartenlabor",
   "infos",
   "hilfe",
   "hilfe-spielablauf",
@@ -819,6 +821,8 @@ function normalizeConsoleMessages(messages) {
       /\[Punktlandung map\].*Failed to fetch/i.test(compact) ||
       /Unable to load glyph range.*openfreemap\.org/i.test(compact) ||
       /Image "circle-11" could not be loaded.*map\.addImage/i.test(compact) ||
+      /calculateFogMatrix is not supported on globe projection/i.test(compact) ||
+      /performance warning: READ-usage buffer was written, then fenced/i.test(compact) ||
       /^error:\s*Event$/i.test(compact)
     ) {
       ignored.push(compact.slice(0, 500));
