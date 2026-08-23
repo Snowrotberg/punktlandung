@@ -206,6 +206,18 @@
   min-height: 3.35rem !important;
 }
 
+.redesign :global(.punktlandung-image-replay .punktlandung-replay-top-actions .punktlandung-back-control-content) {
+  display: inline-grid !important;
+  grid-template-columns: 1rem max-content 1rem !important;
+  transform: none !important;
+}
+
+.redesign :global(.punktlandung-image-replay .punktlandung-replay-top-actions .punktlandung-back-control-content)::after {
+  display: block;
+  width: 1rem;
+  content: "";
+}
+
 @media (max-width: 52rem) and (orientation: portrait) {
   .redesign :global(.punktlandung-replay-top-actions) {
     margin-right: 0;

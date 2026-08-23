@@ -755,11 +755,21 @@ function ResultBounds({
         const paddingY = resultControlInset
           ? Math.max(fittedPaddingY, Math.min(104, container.clientHeight * 0.4))
           : fittedPaddingY;
+        const reserveDesktopPopup = showLabels
+          && resultLabelLayout !== "home-preview"
+          && resultLabelLayout !== "account-history"
+          && container.clientWidth >= 900
+          && container.clientHeight >= 480;
+        const firstGuess = summary.results.find((result) => result.guess)?.guess;
+        const actualPoint = map.latLngToContainerPoint([summary.location.lat, summary.location.lng]);
+        const firstGuessPoint = firstGuess ? map.latLngToContainerPoint([firstGuess.lat, firstGuess.lng]) : null;
+        const actualBelowPlayer = Boolean(firstGuessPoint && actualPoint.y > firstGuessPoint.y);
+        const popupReserve = reserveDesktopPopup ? Math.min(178, Math.max(126, container.clientHeight * 0.18)) : 0;
         const controlInset = resultControlInset ? Math.min(76, Math.max(58, container.clientWidth * 0.22)) : 0;
         map.fitBounds(bounds, {
           animate: false,
-          paddingTopLeft: [paddingX, paddingY],
-          paddingBottomRight: [paddingX + controlInset, paddingY],
+          paddingTopLeft: [paddingX, paddingY + (actualBelowPlayer ? 0 : popupReserve)],
+          paddingBottomRight: [paddingX + controlInset, paddingY + (actualBelowPlayer ? popupReserve : 0)],
           maxZoom: RESULT_MAX_ZOOM
         });
         if (resultZoomScale && resultZoomScale !== 1) {
@@ -1181,9 +1191,11 @@ function ResultMarker({
       : 260;
   const openBelowLabel = popupDirection === "below";
   const estimatedPopupHeight = compactPortraitPopup ? 172 : 132;
+  const popupAboveAdjustment = compactPortraitPopup ? 7 : compactLandscapePopup ? 30 : 56;
+  const popupBelowAdjustment = compactLandscapePopup ? 1 : -14;
   const popupVerticalOffset = openBelowLabel
-    ? placement.offset[1] + placement.size.height / 2 + 14 + estimatedPopupHeight
-    : placement.offset[1] - placement.size.height / 2 - 2;
+    ? placement.offset[1] + placement.size.height / 2 + popupBelowAdjustment + estimatedPopupHeight
+    : placement.offset[1] - placement.size.height / 2 + popupAboveAdjustment;
 
   const schedulePopupSafeArea = (attempt = 0) => {
     if (fitTimerRef.current !== null) window.clearTimeout(fitTimerRef.current);
@@ -1254,6 +1266,10 @@ function ResultMarker({
       try {
         map.invalidateSize(false);
         const size = map.getSize();
+        if (size.x >= 900 && size.y >= 480) {
+          schedulePopupSafeArea();
+          return;
+        }
         const popupElement = map.getContainer().querySelector<HTMLElement>(".punktlandung-location-info-popup");
         const measuredPopupHeight = popupElement?.getBoundingClientRect().height ?? estimatedPopupHeight;
         const horizontalPadding = Math.min(

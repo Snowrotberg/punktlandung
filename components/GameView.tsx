@@ -276,13 +276,13 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
         <div className="punktlandung-game-hud absolute inset-x-3 top-3 z-40 sm:inset-x-4 sm:top-4">
           <div className="punktlandung-game-hud-grid grid grid-cols-[auto_1fr_auto] items-start gap-2 xl:gap-3">
             <div className="punktlandung-game-stats pointer-events-none order-1 col-span-1 flex min-w-0 flex-wrap gap-1.5 sm:gap-2">
-              <div className="punktlandung-game-stat flex min-h-10 w-fit flex-col justify-center rounded-md bg-slate-950/52 px-3 py-1 shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-indigo-300/30 backdrop-blur-md sm:min-h-11 sm:px-3.5">
+              <div className="punktlandung-game-stat flex min-h-10 w-16 flex-col items-center justify-center rounded-md bg-slate-950/52 px-3 py-1 text-center shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-indigo-300/30 backdrop-blur-md sm:min-h-11 sm:px-3.5 min-[2400px]:w-24">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Runde</p>
                 <p className="punktlandung-game-stat-value punktlandung-game-stat-value-round text-[18px] font-black leading-tight sm:text-[20px]">
                   {room.currentRound}/{room.settings.rounds}
                 </p>
               </div>
-              <div className="punktlandung-game-stat flex min-h-10 w-fit flex-col justify-center rounded-md bg-slate-950/52 px-3 py-1 shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-emerald-300/40 backdrop-blur-md sm:min-h-11 sm:px-3.5">
+              <div className="punktlandung-game-stat flex min-h-10 w-16 flex-col items-center justify-center rounded-md bg-slate-950/52 px-3 py-1 text-center shadow-[0_14px_30px_rgba(0,0,0,0.22)] ring-1 ring-emerald-300/40 backdrop-blur-md sm:min-h-11 sm:px-3.5 min-[2400px]:w-24">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-300">Zeit</p>
                 <p className="punktlandung-game-stat-value punktlandung-game-stat-value-time text-[18px] font-black leading-tight sm:text-[20px]">{secondsLeft === null ? "frei" : `${secondsLeft}s`}</p>
               </div>

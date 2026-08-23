@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { directImageFallbackDelayMs, gameplayImageWidth, normalizeEffectiveConnectionType } from "@/lib/imageDelivery";
 import { isPreparedImageUrl } from "@/lib/imagePreload.client";
@@ -35,6 +35,7 @@ const manualSkipHintMs = 15000;
 const locationLoadDeadlineMs = 20000;
 const rankedAutomaticRecoveryMs = 4000;
 const replayLoadOverlayDelayMs = 450;
+const loaderOrbitDurationMs = 3200;
 const defaultProxyWidth = 1400;
 const previewImageWidth = 160;
 const acceptedImageUrls = new Set<string>();
@@ -230,6 +231,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [skipPending, setSkipPending] = useState(false);
   const viewportRef = useRef<HTMLElement | null>(null);
+  const loaderMarkRef = useRef<HTMLDivElement | null>(null);
   const dragging = useRef(false);
   const lastPointer = useRef({ x: 0, y: 0 });
   const activePointers = useRef(new Map<number, { x: number; y: number }>());
@@ -250,6 +252,16 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
   const loadStartedFromCacheRef = useRef(false);
   const reportedLocationIdRef = useRef<string | null>(null);
   const [proxyWidth, setProxyWidth] = useState(() => estimateResponsiveImageWidth());
+
+  // Keep the searchlight phase continuous across React's development remount
+  // and fast route handovers. A fresh DOM node therefore joins the global
+  // orbit instead of visibly jumping back to zero degrees.
+  useLayoutEffect(() => {
+    const loaderMark = loaderMarkRef.current;
+    if (!loaderMark) return;
+    const phaseMs = Date.now() % loaderOrbitDurationMs;
+    loaderMark.style.setProperty("--punktlandung-loader-phase-delay", `${-phaseMs}ms`);
+  }, [imageFailed, location.id, showLoadOverlay]);
 
   const imageUrls = useMemo(() => {
     const urls = location.panoramaUrls?.length ? location.panoramaUrls : [location.panoramaUrl];
@@ -829,16 +841,18 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
       )}
 
       {!imageLoaded && (showLoadOverlay || imageFailed) && (
-        <div className={`pointer-events-none absolute inset-0 z-20 grid place-items-center p-6 text-center backdrop-blur-[2px] ${previewLoaded ? "bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.10),rgba(2,6,23,0.48)_62%,rgba(2,6,23,0.76)_100%)]" : "bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.16),rgba(2,6,23,0.72)_58%,rgba(2,6,23,0.9)_100%)]"}`}>
+        <div className={`punktlandung-image-load-overlay pointer-events-none absolute inset-0 z-20 grid place-items-center p-6 text-center backdrop-blur-[2px] ${previewLoaded ? "has-preview" : "without-preview"}`}>
           <div
             className="punktlandung-image-loader pointer-events-auto h-56 w-56 bg-transparent p-0 shadow-none ring-0"
           >
-            <div className="punktlandung-loader-mark mx-auto">
+            <div ref={loaderMarkRef} className="punktlandung-loader-mark mx-auto">
               <svg className="punktlandung-loader-ellipses" viewBox="0 0 128 96" aria-hidden="true">
                 <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-outer" cx="64" cy="78" rx="38.5" ry="12" />
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-inner" cx="64" cy="78" rx="22.5" ry="6.5" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-middle" cx="64" cy="78" rx="26.2" ry="8.2" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-base punktlandung-loader-ellipse-base-inner" cx="64" cy="78" rx="14.6" ry="4.6" />
                 <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-outer" cx="64" cy="78" rx="38.5" ry="12" pathLength="100" />
-                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-inner" cx="64" cy="78" rx="22.5" ry="6.5" pathLength="100" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-middle" cx="64" cy="78" rx="26.2" ry="8.2" pathLength="100" />
+                <ellipse className="punktlandung-loader-ellipse punktlandung-loader-ellipse-highlight punktlandung-loader-ellipse-highlight-inner" cx="64" cy="78" rx="14.6" ry="4.6" pathLength="100" />
               </svg>
               <span className="punktlandung-loader-beam-orbit">
                 <span className="punktlandung-loader-beam" />

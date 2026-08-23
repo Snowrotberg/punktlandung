@@ -10415,6 +10415,19 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   z-index: 1;
 }
 
+.punktlandung-image-load-overlay {
+  background:
+    radial-gradient(circle at 47% 48%, rgba(52, 211, 153, 0.15) 0%, rgba(35, 168, 128, 0.105) 16%, rgba(21, 119, 98, 0.064) 33%, rgba(9, 60, 58, 0.032) 50%, transparent 72%),
+    radial-gradient(ellipse at 54% 53%, rgba(46, 190, 145, 0.072) 0%, rgba(16, 96, 82, 0.038) 38%, transparent 76%),
+    linear-gradient(rgba(2, 6, 23, 0.84), rgba(2, 6, 23, 0.9));
+}
+
+.punktlandung-image-load-overlay.has-preview {
+  background:
+    radial-gradient(circle at 47% 48%, rgba(52, 211, 153, 0.095) 0%, rgba(21, 119, 98, 0.052) 36%, transparent 72%),
+    linear-gradient(rgba(2, 6, 23, 0.44), rgba(2, 6, 23, 0.76));
+}
+
 .punktlandung-loader-mark {
   --punktlandung-loader-origin-y: calc(50% + 1.875rem);
   --punktlandung-loader-orbit-scale-y: 0.54;
@@ -10435,9 +10448,9 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   height: 24rem;
   width: 24rem;
   border-radius: 999px;
-  background: radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.26), rgba(52, 211, 153, 0.14) 22%, rgba(52, 211, 153, 0.06) 44%, transparent 70%);
-  filter: blur(4px);
-  opacity: 0.86;
+  background: radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.23) 0%, rgba(52, 211, 153, 0.185) 12%, rgba(46, 190, 145, 0.135) 25%, rgba(35, 155, 124, 0.09) 39%, rgba(24, 115, 99, 0.054) 53%, rgba(15, 78, 72, 0.026) 66%, transparent 80%);
+  filter: blur(10px);
+  opacity: 0.9;
   transform: translate(-50%, -50%);
 }
 
@@ -10456,6 +10469,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   transform: translateY(-50%);
   transform-origin: left center;
   animation: punktlandung-loader-beam-orbit 3.2s linear infinite;
+  animation-delay: var(--punktlandung-loader-phase-delay, 0ms);
 }
 
 .punktlandung-loader-beam {
@@ -10552,11 +10566,19 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 .punktlandung-loader-ellipse-base-outer {
+  fill: rgba(52, 211, 153, 0.035);
   stroke: rgba(52, 211, 153, 0.36);
   stroke-width: 1.15;
 }
 
+.punktlandung-loader-ellipse-base-middle {
+  fill: rgba(52, 211, 153, 0.07);
+  stroke: rgba(83, 221, 170, 0.36);
+  stroke-width: 1.1;
+}
+
 .punktlandung-loader-ellipse-base-inner {
+  fill: rgba(110, 231, 183, 0.13);
   stroke: rgba(110, 231, 183, 0.34);
   stroke-width: 1.05;
 }
@@ -10574,6 +10596,15 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   stroke-width: 1.55;
   stroke-dasharray: 11 89;
   animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
+  animation-delay: var(--punktlandung-loader-phase-delay, 0ms);
+}
+
+.punktlandung-loader-ellipse-highlight-middle {
+  stroke: rgba(147, 239, 202, 0.92);
+  stroke-width: 1.45;
+  stroke-dasharray: 11 89;
+  animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
+  animation-delay: var(--punktlandung-loader-phase-delay, 0ms);
 }
 
 .punktlandung-loader-ellipse-highlight-inner {
@@ -10581,6 +10612,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   stroke-width: 1.35;
   stroke-dasharray: 11 89;
   animation: punktlandung-loader-ellipse-dash 3.2s linear infinite;
+  animation-delay: var(--punktlandung-loader-phase-delay, 0ms);
 }
 
 .punktlandung-loader-core-beam {

@@ -322,7 +322,7 @@ const targets = [
     note: "echter URL-Pfad mit QA-Online-Raum"
   },
   { name: "spielen", access: "state", path: "/spielen", status: "guessing", readySelector: ".punktlandung-game-shell", readyImageSelector: ".punktlandung-panorama-viewport img", note: "echter URL-Pfad mit QA-Session" },
-  { name: "bild-laden", access: "state", path: "/spielen", status: "guessing", forceImageLoader: true, readySelector: ".punktlandung-image-loader", note: "erster Bildladezustand mit synchronem Suchscheinwerfer und zwei beleuchteten Ellipsensegmenten" },
+  { name: "bild-laden", access: "state", path: "/spielen", status: "guessing", forceImageLoader: true, readySelector: ".punktlandung-image-loader", note: "erster Bildladezustand mit kontinuierlichem Suchscheinwerfer und drei beleuchteten Ellipsensegmenten" },
   {
     name: "tipp-zu-aufloesung",
     access: "state-submit",
@@ -407,6 +407,7 @@ const targets = [
     hoverSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-label-actual):visible",
     expectedHoverText: "Zusatzinformationen anzeigen",
     expectTooltipOutside: true,
+    expectStableMapOnPopup: true,
     expectedText: cambodiaFlagLocation.shortDescription,
     readySelector: ".punktlandung-location-info-popup",
     note: "Realer Fernfall Kambodscha zu Indonesien; nördliches Ziel öffnet die Ortsinfo oberhalb"
@@ -431,6 +432,7 @@ const targets = [
     hoverSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-label-actual):visible",
     expectedHoverText: "Zusatzinformationen anzeigen",
     expectTooltipOutside: true,
+    expectStableMapOnPopup: true,
     expectedText: summary.location.shortDescription,
     readySelector: ".punktlandung-location-info-popup",
     note: "Südliches Ziel; Aktionshinweis und Ortsinfo öffnen außerhalb der Ergebnisgrafik nach unten"
@@ -821,11 +823,39 @@ async function openTarget(page, target) {
       if (target.clickSelector) {
         const clickTarget = page.locator(target.clickSelector).first();
         await clickTarget.waitFor({ state: "visible", timeout: 15000 });
+        if (target.expectStableMapOnPopup) {
+          await page.evaluate(() => {
+            const center = (selector) => {
+              const rect = document.querySelector(selector)?.getBoundingClientRect();
+              return rect ? { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 } : null;
+            };
+            window.__punktlandungPopupMapProbe = {
+              before: {
+                actual: center(".punktlandung-results-map .punktlandung-map-pin-actual"),
+                player: center(".punktlandung-results-map .punktlandung-map-pin-player")
+              }
+            };
+          });
+        }
         await clickTarget.click({ timeout: 5000 });
       } else {
         await clickButtonByVisibleText(page, target.buttonText);
       }
       await page.waitForTimeout(target.clickSelector ? 1200 : 700);
+      if (target.expectStableMapOnPopup) {
+        await page.evaluate(() => {
+          const center = (selector) => {
+            const rect = document.querySelector(selector)?.getBoundingClientRect();
+            return rect ? { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 } : null;
+          };
+          if (window.__punktlandungPopupMapProbe) {
+            window.__punktlandungPopupMapProbe.after = {
+              actual: center(".punktlandung-results-map .punktlandung-map-pin-actual"),
+              player: center(".punktlandung-results-map .punktlandung-map-pin-player")
+            };
+          }
+        });
+      }
       if (target.hoverSelector && await page.locator(".punktlandung-map-action-tooltip:visible").count()) {
         throw new Error("Kartenhinweis bleibt trotz bereits geöffneter Zusatzinformation sichtbar.");
       }
@@ -977,6 +1007,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
       return element?.getBoundingClientRect() ?? null;
     };
     const popupRect = firstVisibleRect(".punktlandung-location-info-popup");
+    const popupTipRect = firstVisibleRect(".punktlandung-location-info-popup .leaflet-popup-tip");
     const actualPinRect = firstVisibleRect(".punktlandung-map-pin-actual");
     const playerPinRect = firstVisibleRect(".punktlandung-map-pin-player");
     const actualLabelRect = firstVisibleRect(".punktlandung-map-label-actual");
@@ -1002,6 +1033,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
       roomState,
       onlineRoomState,
       transitionProbe,
+      popupMapProbe: window.__punktlandungPopupMapProbe ?? null,
       visibleElementCount: visibleElements.length,
       overflowingElements,
       textClippingCandidates,
@@ -1030,6 +1062,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
         bounds: {
           map: { left: resultMapRect.left, top: resultMapRect.top, right: resultMapRect.right, bottom: resultMapRect.bottom },
           popup: { left: popupRect.left, top: popupRect.top, right: popupRect.right, bottom: popupRect.bottom },
+          popupTip: popupTipRect ? { left: popupTipRect.left, top: popupTipRect.top, right: popupTipRect.right, bottom: popupTipRect.bottom } : null,
           actualPin: actualPinRect ? { left: actualPinRect.left, top: actualPinRect.top, right: actualPinRect.right, bottom: actualPinRect.bottom } : null,
           playerPin: playerPinRect ? { left: playerPinRect.left, top: playerPinRect.top, right: playerPinRect.right, bottom: playerPinRect.bottom } : null,
           actualLabel: actualLabelRect ? { left: actualLabelRect.left, top: actualLabelRect.top, right: actualLabelRect.right, bottom: actualLabelRect.bottom } : null,
@@ -1045,7 +1078,12 @@ async function collectLayoutMetrics(page, readySelector = null) {
           ? false
           : actualAbovePlayer
             ? popupRect.bottom <= Math.min(actualPinRect.top, actualLabelRect.top) + 8
-            : popupRect.top >= Math.max(actualPinRect.bottom, actualLabelRect.bottom) - 8
+            : popupRect.top >= Math.max(actualPinRect.bottom, actualLabelRect.bottom) - 8,
+        tipMeetsLabelEdge: actualAbovePlayer === null || !actualLabelRect || !popupTipRect
+          ? false
+          : actualAbovePlayer
+            ? Math.abs(popupTipRect.bottom - actualLabelRect.top) <= 12
+            : Math.abs(popupTipRect.top - actualLabelRect.bottom) <= 12
       } : null,
       fontStatus: document.fonts?.status ?? "unsupported",
       readyElementFullyVisible: readyRect
@@ -1087,6 +1125,7 @@ function normalizeConsoleMessages(messages) {
       /ERR_BLOCKED_BY_CLIENT/i.test(compact) ||
       /WebSocket connection to ['"]ws:\/\/(?:localhost|127\.0\.0\.1):3001\/['"] failed/i.test(compact) ||
       /googletagmanager\.com\/gtag\/js.*preloaded.*not used/i.test(compact) ||
+      /_next\/static\/css\/.*preloaded using link preload but not used/i.test(compact) ||
       /\[Punktlandung map\].*Failed to fetch/i.test(compact) ||
       /Unable to load glyph range.*openfreemap\.org/i.test(compact) ||
       /Image "circle-11" could not be loaded.*map\.addImage/i.test(compact) ||
@@ -1202,6 +1241,20 @@ async function runTargetViewport(browser, target, viewport) {
     }
 
     if (target.name === "bild-laden") {
+      const animationCurrentTimes = [];
+      for (let sampleIndex = 0; sampleIndex < 10; sampleIndex += 1) {
+        animationCurrentTimes.push(await page.evaluate(() => {
+          const animation = document.querySelector(".punktlandung-loader-beam-orbit")?.getAnimations()[0];
+          return Number(animation?.currentTime ?? Number.NaN);
+        }));
+        await page.waitForTimeout(80);
+      }
+      const loaderRestarted = animationCurrentTimes.some((currentTime, index) => (
+        index > 0 && Number.isFinite(currentTime) && currentTime + 30 < animationCurrentTimes[index - 1]
+      ));
+      if (loaderRestarted) {
+        problems.push(`Der Loader startet während derselben Ladephase sichtbar neu (${animationCurrentTimes.map((value) => value.toFixed(0)).join(" / ")} ms).`);
+      }
       const animationMetrics = await page.evaluate(() => {
         const readAnimation = (selector) => {
           const element = document.querySelector(selector);
@@ -1220,16 +1273,29 @@ async function runTargetViewport(browser, target, viewport) {
             }))
           } : null;
         };
+        const readEllipseGeometry = (selector) => {
+          const element = document.querySelector(selector);
+          return element ? {
+            rx: Number(element.getAttribute("rx")),
+            ry: Number(element.getAttribute("ry"))
+          } : null;
+        };
         return {
           beam: readAnimation(".punktlandung-loader-beam-orbit"),
           outer: readAnimation(".punktlandung-loader-ellipse-highlight-outer"),
-          inner: readAnimation(".punktlandung-loader-ellipse-highlight-inner")
+          middle: readAnimation(".punktlandung-loader-ellipse-highlight-middle"),
+          inner: readAnimation(".punktlandung-loader-ellipse-highlight-inner"),
+          geometry: {
+            outer: readEllipseGeometry(".punktlandung-loader-ellipse-highlight-outer"),
+            middle: readEllipseGeometry(".punktlandung-loader-ellipse-highlight-middle"),
+            inner: readEllipseGeometry(".punktlandung-loader-ellipse-highlight-inner")
+          }
         };
       });
-      const animations = [animationMetrics.beam, animationMetrics.outer, animationMetrics.inner];
+      const animations = [animationMetrics.beam, animationMetrics.outer, animationMetrics.middle, animationMetrics.inner];
       const progresses = animations.map((animation) => Number(animation?.progress ?? Number.NaN));
       const phaseSpread = Math.max(...progresses) - Math.min(...progresses);
-      const ellipseKeyframeIsHistorical = [animationMetrics.outer, animationMetrics.inner].every((animation) => (
+      const ellipseKeyframeIsHistorical = [animationMetrics.outer, animationMetrics.middle, animationMetrics.inner].every((animation) => (
         animation?.animationName === "punktlandung-loader-ellipse-dash" &&
         animation.duration === 3200 &&
         animation.pathLength === "100" &&
@@ -1240,7 +1306,13 @@ async function runTargetViewport(browser, target, viewport) {
         animationMetrics.beam.duration === 3200 &&
         animationMetrics.beam.keyframes.at(-1)?.transform?.includes("rotate(-360deg)")
       );
-      if (!ellipseKeyframeIsHistorical || !beamRotatesCounterClockwise || !Number.isFinite(phaseSpread) || phaseSpread > 0.04) {
+      const ellipseGeometryMatchesResultPin = (
+        Math.abs((animationMetrics.geometry.middle.rx / animationMetrics.geometry.outer.rx) - 0.68) < 0.01 &&
+        Math.abs((animationMetrics.geometry.middle.ry / animationMetrics.geometry.outer.ry) - 0.68) < 0.01 &&
+        Math.abs((animationMetrics.geometry.inner.rx / animationMetrics.geometry.outer.rx) - 0.38) < 0.01 &&
+        Math.abs((animationMetrics.geometry.inner.ry / animationMetrics.geometry.outer.ry) - 0.38) < 0.01
+      );
+      if (!ellipseKeyframeIsHistorical || !beamRotatesCounterClockwise || !ellipseGeometryMatchesResultPin || !Number.isFinite(phaseSpread) || phaseSpread > 0.04) {
         problems.push(`Loader-Animation ist nicht synchron (${JSON.stringify({ phaseSpread, animationMetrics })}).`);
       }
       await page.screenshot({ path: path.join(outDir, `${target.name}-${viewport.name}-phase-a.png`), fullPage: true });
@@ -1393,6 +1465,33 @@ async function runTargetViewport(browser, target, viewport) {
       }
     }
 
+    if (target.name === "spielen") {
+      const readHudGeometry = () => page.evaluate(() => {
+        const timeValue = document.querySelector(".punktlandung-game-stat-value-time");
+        const timeBox = timeValue?.closest(".punktlandung-game-stat");
+        const timeLabel = timeBox?.querySelector("p:first-child");
+        const task = document.querySelector(".punktlandung-task-card");
+        const rect = (element) => {
+          const box = element?.getBoundingClientRect();
+          return box ? { left: box.left, right: box.right, width: box.width, centerX: (box.left + box.right) / 2 } : null;
+        };
+        return { value: timeValue?.textContent?.trim() ?? "", timeBox: rect(timeBox), timeLabel: rect(timeLabel), task: rect(task) };
+      });
+      const hudBefore = await readHudGeometry();
+      await page.waitForFunction(
+        (previousValue) => document.querySelector(".punktlandung-game-stat-value-time")?.textContent?.trim() !== previousValue,
+        hudBefore.value,
+        { timeout: 2500 }
+      ).catch(() => {});
+      const hudAfter = await readHudGeometry();
+      const timeBoxDelta = Math.abs((hudBefore.timeBox?.width ?? 0) - (hudAfter.timeBox?.width ?? 0));
+      const taskCenterDelta = Math.abs((hudBefore.task?.centerX ?? 0) - (hudAfter.task?.centerX ?? 0));
+      const labelCenterDelta = Math.abs((hudAfter.timeLabel?.centerX ?? 0) - (hudAfter.timeBox?.centerX ?? 0));
+      if (!hudBefore.timeBox || !hudAfter.timeBox || timeBoxDelta > 0.5 || taskCenterDelta > 0.5 || labelCenterDelta > 1) {
+        problems.push(`Zeit-HUD oder Suchkategorie wandert beim Countdown (${JSON.stringify({ timeBoxDelta, taskCenterDelta, labelCenterDelta, hudBefore, hudAfter })}).`);
+      }
+    }
+
     await page.evaluate(async () => {
       if (document.fonts) await document.fonts.ready;
     }).catch(() => {});
@@ -1459,6 +1558,18 @@ async function runTargetViewport(browser, target, viewport) {
       if (topActionHeights.length >= 2 && Math.max(...topActionHeights) - Math.min(...topActionHeights) > 1) {
         problems.push(`Replay-Buttons sind nicht gleich hoch (${topActionHeights.map((height) => height.toFixed(1)).join(" / ")} px).`);
       }
+      const backCentering = await page.locator(".punktlandung-replay-top-actions .punktlandung-back-button:visible").first().evaluate((button) => {
+        const content = button.querySelector(".punktlandung-back-control-content");
+        const buttonRect = button.getBoundingClientRect();
+        const contentRect = content?.getBoundingClientRect();
+        return contentRect ? {
+          horizontalDelta: Math.abs((buttonRect.left + buttonRect.right) / 2 - (contentRect.left + contentRect.right) / 2),
+          verticalDelta: Math.abs((buttonRect.top + buttonRect.bottom) / 2 - (contentRect.top + contentRect.bottom) / 2)
+        } : null;
+      }).catch(() => null);
+      if (!backCentering || backCentering.horizontalDelta > 1 || backCentering.verticalDelta > 1) {
+        problems.push(`Replay-Zurück-Inhalt ist nicht exakt zentriert (${JSON.stringify(backCentering)}).`);
+      }
     }
     if (target.expectedPath && metrics.pathname !== target.expectedPath) {
       problems.push(`Erwarteter Pfad fehlt: ${metrics.pathname} statt ${target.expectedPath}.`);
@@ -1470,13 +1581,26 @@ async function runTargetViewport(browser, target, viewport) {
     )) {
       problems.push(`Der Wechsel zur Auflösung enthielt ${metrics.transitionProbe?.blankFrames ?? "unbekannt viele"} leere Zwischenframes.`);
     }
+    const strictPopupEdge = viewport.width > 480;
     if (target.name.startsWith("aufloesung-zielinfo") && (
       !metrics.resultPopupSafety ||
       metrics.resultPopupSafety.visualCount < 5 ||
       !metrics.resultPopupSafety.allInside ||
-      !metrics.resultPopupSafety.directionCorrect
+      (strictPopupEdge && (!metrics.resultPopupSafety.directionCorrect || !metrics.resultPopupSafety.tipMeetsLabelEdge))
     )) {
       problems.push("Zielinfo, beide Pins und beide Labels liegen nicht vollständig und richtungsrichtig innerhalb der Auflösungskarte.");
+    }
+    if (target.expectStableMapOnPopup && viewport.width >= 900 && viewport.height >= 480) {
+      const before = metrics.popupMapProbe?.before;
+      const after = metrics.popupMapProbe?.after;
+      // The mint target pin deliberately has a subtle idle motion. The player
+      // pin is static and therefore the reliable reference for map movement.
+      const movement = before?.player && after?.player
+        ? [Math.abs(before.player.x - after.player.x), Math.abs(before.player.y - after.player.y)]
+        : [Number.POSITIVE_INFINITY];
+      if (!movement.length || Math.max(...movement) > 1) {
+        problems.push(`Die Desktop-Ergebniskarte bewegt sich beim Öffnen der Ortsinfo (${movement.join(" / ")} px).`);
+      }
     }
     if (requiresViewportFit(target, viewport) && metrics.verticalOverflow) {
       problems.push(`Unerlaubtes Desktop-Scrollen: Dokument ${metrics.documentHeight}px bei Viewport ${metrics.viewportHeight}px.`);
