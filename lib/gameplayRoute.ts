@@ -7,3 +7,10 @@ export function gameplayRouteForStatus(status: RoundStatus | undefined, resumePe
   if (status === "finished") return "/endergebnis";
   return null;
 }
+
+export function gameplayStatusForRoute(pathname: string): Exclude<RoundStatus, "lobby"> | null {
+  if (pathname === "/spielen") return "guessing";
+  if (pathname === "/aufloesung") return "results";
+  if (pathname === "/endergebnis") return "finished";
+  return null;
+}

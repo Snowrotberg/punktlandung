@@ -10,7 +10,7 @@ import { saveCompletedGame } from "@/app/endergebnis/actions";
 import { flushCompletedGameSaves } from "@/lib/completedGameSaveQueue.client";
 import { useLocalGame } from "@/hooks/useLocalGame";
 import { clearSetupResumeRequest, clearVisibleResumeSetup, markResumeSetupVisible, requestSetupResume, setupResumeUrl, shouldDiscardResumeOnHistoryExit } from "@/lib/gameResume.client";
-import { gameplayRouteForStatus } from "@/lib/gameplayRoute";
+import { gameplayRouteForStatus, gameplayStatusForRoute } from "@/lib/gameplayRoute";
 import { useRankedSoloGame } from "@/hooks/useRankedSoloGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
 import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
@@ -18,6 +18,7 @@ import type { GameSettings, LatLng, RoomState, RoundStatus, TeamId } from "@/typ
 import { AdContainer } from "./AdContainer";
 import { ENABLE_FULLSCREEN_INTRO, FullscreenIntro } from "./FullscreenIntro";
 import { HomeMapPreview } from "./HomeMapPreview";
+import { ResultsView } from "./ResultsView";
 import { LegalLinks } from "./LegalLinks";
 import { LobbyView } from "./LobbyView";
 import { PublicBetaBadge } from "./PublicBetaBadge";
@@ -30,7 +31,6 @@ import { RedesignWaitingRoomView } from "./redesign/RedesignWaitingRoomView";
 // modules. Setup and landing pages do not need them, so load them only when a
 // round or its result is actually shown.
 const GameView = dynamic(() => import("./GameView").then((module) => module.GameView), { ssr: false });
-const ResultsView = dynamic(() => import("./ResultsView").then((module) => module.ResultsView), { ssr: false });
 
 const modePreview: Array<{
   id: GameSettings["localMode"] | "online";
@@ -377,6 +377,7 @@ export function GameApp({
       : localGame.restoring;
   const gameplayRoute = gameplayRouteForStatus(room?.status, Boolean(resumePending));
   const gameplayRouteMismatch = Boolean(gameplayRoute && pathname !== gameplayRoute);
+  const routeRequiredStatus = gameplayStatusForRoute(pathname ?? "") ?? requiredStatus;
   const requestedGameplayRouteRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -386,6 +387,8 @@ export function GameApp({
     }
     if (requestedGameplayRouteRef.current === gameplayRoute) return;
     requestedGameplayRouteRef.current = gameplayRoute;
+    // All three routes share the persistent gameplay layout, so this URL
+    // change no longer remounts GameApp or exposes an empty transition frame.
     router.replace(gameplayRoute);
   }, [gameplayRoute, pathname, restorationPending, router]);
 
@@ -822,8 +825,8 @@ export function GameApp({
     return <main className="min-h-dvh bg-slate-950" />;
   }
 
-  if (requiredStatus && room?.status !== requiredStatus && !restorationPending && !gameplayRouteMismatch) {
-    return <GameStateGuard requiredStatus={requiredStatus} currentStatus={room?.status} />;
+  if (routeRequiredStatus && room?.status !== routeRequiredStatus && !restorationPending && !gameplayRouteMismatch) {
+    return <GameStateGuard requiredStatus={routeRequiredStatus} currentStatus={room?.status} />;
   }
 
   if (requireOnlineWaitingRoom && !onlineGame.room) {

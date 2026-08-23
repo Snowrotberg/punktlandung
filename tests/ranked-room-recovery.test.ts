@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { roomFromRankedGame } from "../hooks/useRankedSoloGame";
+import { roomFromRankedGame, shouldRevealPendingRankedRound } from "../hooks/useRankedSoloGame";
 import type { PublicRankedGame } from "../lib/rankedGame";
 import type { GameSettings } from "../types/game";
 
@@ -86,11 +86,24 @@ test("recovery keeps the resolved round visible while the next round is pending"
 });
 
 test("explicit next-round action reveals the pending prompt", () => {
-  const room = roomFromRankedGame(rankedGame(null), "Spieler 1", settings, true);
+  const game = rankedGame(null);
+  const room = roomFromRankedGame(game, "Spieler 1", settings, true);
 
   assert.equal(room.status, "guessing");
   assert.equal(room.currentRound, 2);
   assert.match(room.location?.panoramaUrl ?? "", /round-2\/prompt/);
+  assert.equal(shouldRevealPendingRankedRound(game, room), true);
+
+  const recovered = roomFromRankedGame(game, "Spieler 1", settings, shouldRevealPendingRankedRound(game, room));
+  assert.equal(recovered.status, "guessing");
+  assert.equal(recovered.currentRound, 2);
+});
+
+test("a stored result does not accidentally reveal the pending prompt", () => {
+  const game = rankedGame(null);
+  const resultRoom = roomFromRankedGame(game, "Spieler 1", settings);
+
+  assert.equal(shouldRevealPendingRankedRound(game, resultRoom), false);
 });
 
 test("recovery resumes an already started round with its absolute deadline", () => {
