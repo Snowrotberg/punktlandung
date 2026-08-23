@@ -4,6 +4,7 @@ import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { analyticsEnabled, analyticsMeasurementId, referralAttribution, trackAnalyticsEvent } from "@/lib/analytics";
+import { browserUuid } from "@/lib/browserUuid";
 
 function normalizedPath(pathname: string): string {
   if (/^\/konto\/verlauf\/[^/]+$/.test(pathname)) return "/konto/verlauf/[spiel]";
@@ -19,15 +20,16 @@ function viewportContext() {
 
 function visitId(): string {
   const key = "punktlandung-operational-visit-id-v2";
+  const created = browserUuid();
   try {
     const stored = window.sessionStorage.getItem(key);
     if (stored) return stored;
-    const created = crypto.randomUUID();
     window.sessionStorage.setItem(key, created);
-    return created;
   } catch {
-    return crypto.randomUUID();
+    // A per-page identifier still keeps operational metrics usable when
+    // session storage is blocked by the browser.
   }
+  return created;
 }
 
 function recordOperationalEvent(event: "page_view" | "page_engagement" | "visit_start", path: string, id: string, durationMs?: number) {
