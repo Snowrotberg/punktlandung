@@ -368,6 +368,7 @@ const targets = [
     path: "/aufloesung",
     status: "results",
     stateOverrides: {
+      settings: { localMode: "couch", localPlayerCount: 2 },
       players: [hostPlayer],
       guesses: [summary.results[0].guess],
       summaries: [{ ...summary, results: [summary.results[0]] }]
@@ -383,6 +384,7 @@ const targets = [
     path: "/aufloesung",
     status: "results",
     stateOverrides: {
+      settings: { localMode: "couch", localPlayerCount: 2 },
       players: [hostPlayer],
       guesses: [{ ...summary.results[0].guess, lat: 52.49 }],
       summaries: [{
@@ -404,7 +406,7 @@ const targets = [
     path: "/aufloesung",
     status: "results",
     stateOverrides: {
-      settings: { category: "flags" },
+      settings: { category: "flags", localMode: "couch", localPlayerCount: 2 },
       players: [hostPlayer],
       guesses: [{ ...summary.results[0].guess, lat: -1.2654, lng: 116.8312 }],
       summaries: [{
@@ -432,6 +434,7 @@ const targets = [
     path: "/aufloesung",
     status: "results",
     stateOverrides: {
+      settings: { localMode: "couch", localPlayerCount: 2 },
       players: [hostPlayer],
       guesses: [{ ...summary.results[0].guess, lat: 53.4 }],
       summaries: [{
@@ -1586,11 +1589,17 @@ async function runTargetViewport(browser, target, viewport) {
       if (topActionHeights.length >= 2 && Math.max(...topActionHeights) - Math.min(...topActionHeights) > 1) {
         problems.push(`Replay-Buttons sind nicht gleich hoch (${topActionHeights.map((height) => height.toFixed(1)).join(" / ")} px).`);
       }
-      const backCentering = await page.locator(".punktlandung-replay-top-actions .punktlandung-back-button:visible").first().evaluate((button) => {
-        const content = button.querySelector(".punktlandung-back-control-content");
-        const buttonRect = button.getBoundingClientRect();
+      const backCentering = await page.evaluate(() => {
+        const button = [...document.querySelectorAll(".punktlandung-replay-top-actions .punktlandung-back-button, .punktlandung-map-panel-actions .punktlandung-replay-map-back")]
+          .find((candidate) => {
+            const rect = candidate.getBoundingClientRect();
+            const style = getComputedStyle(candidate);
+            return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+          });
+        const content = button?.querySelector(".punktlandung-back-control-content, .punktlandung-inline-action-content");
+        const buttonRect = button?.getBoundingClientRect();
         const contentRect = content?.getBoundingClientRect();
-        return contentRect ? {
+        return buttonRect && contentRect ? {
           horizontalDelta: Math.abs((buttonRect.left + buttonRect.right) / 2 - (contentRect.left + contentRect.right) / 2),
           verticalDelta: Math.abs((buttonRect.top + buttonRect.bottom) / 2 - (contentRect.top + contentRect.bottom) / 2)
         } : null;

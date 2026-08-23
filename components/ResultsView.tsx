@@ -446,6 +446,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   );
   const globeScenario = useMemo<ResultCameraScenario | null>(() => {
     if (!summary || !location) return null;
+    if (room.kind !== "solo" || room.settings.localMode !== "solo" || room.settings.localPlayerCount !== 1) return null;
     const submittedResults = ranked.filter((result) => result.guess);
     if (submittedResults.length !== 1) return null;
     const primaryResult = submittedResults.find((result) => result.playerId === meId) ?? submittedResults[0];
@@ -462,7 +463,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
       guess: [primaryResult.guess.lng, primaryResult.guess.lat],
       target: [location.lng, location.lat]
     };
-  }, [canonicalPlayers, location, meId, ranked, summary]);
+  }, [canonicalPlayers, location, meId, ranked, room.kind, room.settings.localMode, room.settings.localPlayerCount, summary]);
   const sortedPlayers = [...canonicalPlayers].sort((a, b) => b.score - a.score);
   const finalStats = useMemo(() => buildFinalStats(canonicalPlayers, room.summaries ?? []), [canonicalPlayers, room.summaries]);
   const finalHighlights = useMemo(() => buildFinalHighlights(finalStats, room.summaries ?? [], canonicalPlayers), [canonicalPlayers, finalStats, room.summaries]);
