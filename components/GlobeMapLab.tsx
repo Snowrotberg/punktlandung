@@ -6,6 +6,7 @@ import { MapAttributionBadge } from "@/components/MapAttributionBadge";
 import {
   buildMunichJourneyKeyframes,
   buildResultCameraPlan,
+  distanceBetweenCoordinatesKm,
   type CameraKeyframe,
   type GlobeCoordinates,
   RESULT_CAMERA_CONFIG,
@@ -20,6 +21,8 @@ import styles from "./GlobeMapLab.module.css";
 
 type CameraPreset = { label: string; center: GlobeCoordinates; zoom: number; bearing: number; pitch: number };
 type CameraSnapshot = { lng: number; lat: number; zoom: number; bearing: number; pitch: number };
+type ScreenPoint = { x: number; y: number };
+type ScreenBounds = { minX: number; minY: number; maxX: number; maxY: number };
 type TerrainMode = "adaptive" | "on" | "off";
 type TimelineMetrics = { completed: boolean; maxFrameGapMs: number; slowFrames: number; pendingTileSamples: number; tileSamples: number };
 type GlobeMapLabProps = {
@@ -68,6 +71,7 @@ function createResultMarker(kind: "guess" | "target", label: string): HTMLDivEle
   const marker = document.createElement("div");
   marker.className = `${styles.resultMarker} ${kind === "guess" ? styles.guessMarker : styles.targetMarker}`;
   marker.dataset.visible = "false";
+  if (kind === "target") marker.dataset.labelVisible = "false";
   marker.setAttribute("aria-label", label);
   if (kind === "target") {
     marker.dataset.hasInfo = "true";
@@ -96,6 +100,59 @@ function timelineProgress(progress: number): number {
   return 0.5 - Math.cos(Math.PI * progress) / 2;
 }
 
+function screenDistance(from: ScreenPoint, to: ScreenPoint): number {
+  return Math.hypot(to.x - from.x, to.y - from.y);
+}
+
+function trimScreenPolyline(points: ScreenPoint[], startGap: number, endGap: number): ScreenPoint[] {
+  if (points.length < 2) return [];
+  const cumulative = [0];
+  for (let index = 1; index < points.length; index += 1) {
+    cumulative.push(cumulative[index - 1] + screenDistance(points[index - 1], points[index]));
+  }
+  const total = cumulative.at(-1) ?? 0;
+  const start = Math.min(startGap, Math.max(0, total - endGap - 1));
+  const end = Math.max(start + 1, total - endGap);
+  const interpolateAt = (distance: number): ScreenPoint => {
+    const segment = cumulative.findIndex((value) => value >= distance);
+    const endIndex = segment <= 0 ? 1 : segment;
+    const segmentStart = cumulative[endIndex - 1];
+    const segmentLength = Math.max(0.001, cumulative[endIndex] - segmentStart);
+    const progress = Math.min(1, Math.max(0, (distance - segmentStart) / segmentLength));
+    return {
+      x: points[endIndex - 1].x + (points[endIndex].x - points[endIndex - 1].x) * progress,
+      y: points[endIndex - 1].y + (points[endIndex].y - points[endIndex - 1].y) * progress
+    };
+  };
+  const trimmed = [interpolateAt(start)];
+  points.forEach((point, index) => {
+    if (cumulative[index] > start && cumulative[index] < end) trimmed.push(point);
+  });
+  trimmed.push(interpolateAt(end));
+  return trimmed;
+}
+
+function longestVisibleScreenSegment(points: ScreenPoint[], visibility: boolean[]): { points: ScreenPoint[]; startsRoute: boolean; endsRoute: boolean } {
+  const segments: Array<{ points: ScreenPoint[]; startsRoute: boolean; endsRoute: boolean; length: number }> = [];
+  let current: ScreenPoint[] = [];
+  let startIndex = 0;
+  const finish = (endIndex: number) => {
+    if (current.length >= 2) {
+      const length = current.slice(1).reduce((sum, point, index) => sum + screenDistance(current[index], point), 0);
+      segments.push({ points: current, startsRoute: startIndex === 0, endsRoute: endIndex === points.length - 1, length });
+    }
+    current = [];
+  };
+  points.forEach((point, index) => {
+    if (visibility[index]) {
+      if (current.length === 0) startIndex = index;
+      current.push(point);
+    } else finish(index - 1);
+  });
+  finish(points.length - 1);
+  return segments.sort((left, right) => right.length - left.length)[0] ?? { points: [], startsRoute: false, endsRoute: false };
+}
+
 function formatTimelineMetrics(metrics: TimelineMetrics): string {
   return `Frame-Lücke max. ${Math.round(metrics.maxFrameGapMs)} ms · lange Frames ${metrics.slowFrames} · Tiles offen ${metrics.pendingTileSamples}/${metrics.tileSamples}`;
 }
@@ -122,6 +179,8 @@ export function GlobeMapLab({
   const routeLineRef = useRef<SVGPathElement | null>(null);
   const routeClipRef = useRef<SVGPathElement | null>(null);
   const routeGradientRef = useRef<SVGLinearGradientElement | null>(null);
+  const routeBoundsRef = useRef<ScreenBounds | null>(null);
+  const composedEndFrameRef = useRef<{ key: string; frame: CameraKeyframe } | null>(null);
   const routeVisibleRef = useRef(false);
   const terrainLevelRef = useRef<number | null>(null);
   const terrainPreparedRef = useRef<string | null>(null);
@@ -184,51 +243,63 @@ export function GlobeMapLab({
     const targetRingRect = targetRing?.getBoundingClientRect();
     const targetWidth = targetRingRect?.width || 58;
     const targetHeight = targetRingRect?.height || 18;
-    const endGap = ellipseRadius(endUnit, targetWidth, targetHeight) + 6;
-    const clippedPoints = points.map((point, index) => {
-      if (index === 0) return { x: startCenter.x + startUnit.x * startGap, y: startCenter.y + startUnit.y * startGap };
-      if (index === points.length - 1) return { x: endCenter.x - endUnit.x * endGap, y: endCenter.y - endUnit.y * endGap };
-      return point;
-    });
+    const endGap = ellipseRadius(endUnit, targetWidth, targetHeight) + 12;
     const visibility = coordinates.map((coordinate) => !map.transform.isLocationOccluded(
       new maplibregl.LngLat(coordinate[0], coordinate[1])
     ));
-    let drawing = false;
-    const commands: string[] = [];
-    clippedPoints.forEach((point, index) => {
-      if (!visibility[index]) {
-        drawing = false;
-        return;
-      }
-      commands.push(`${drawing ? "L" : "M"}${point.x.toFixed(2)} ${point.y.toFixed(2)}`);
-      drawing = true;
-    });
-    const d = commands.join(" ");
+    const visibleSegment = longestVisibleScreenSegment(points, visibility);
+    const clippedPoints = trimScreenPolyline(
+      visibleSegment.points,
+      visibleSegment.startsRoute ? startGap : 0,
+      visibleSegment.endsRoute ? endGap : 0
+    );
+    const d = clippedPoints.map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
     if (!d) {
       route.setAttribute("d", ""); shadow.setAttribute("d", ""); clip.setAttribute("d", "");
+      routeBoundsRef.current = null;
       return;
     }
     route.setAttribute("d", d); shadow.setAttribute("d", d); clip.setAttribute("d", d);
     gradient.setAttribute("x1", String(clippedPoints[0].x)); gradient.setAttribute("y1", String(clippedPoints[0].y));
     gradient.setAttribute("x2", String(clippedPoints.at(-1)!.x)); gradient.setAttribute("y2", String(clippedPoints.at(-1)!.y));
+    routeBoundsRef.current = clippedPoints.reduce<ScreenBounds>((bounds, point) => ({
+      minX: Math.min(bounds.minX, point.x), minY: Math.min(bounds.minY, point.y),
+      maxX: Math.max(bounds.maxX, point.x), maxY: Math.max(bounds.maxY, point.y)
+    }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
     const length = route.getTotalLength();
     const drawn = Math.max(0.001, length * routeProgressRef.current);
     clip.setAttribute("stroke-dasharray", `${drawn} ${Math.max(0.001, length)}`);
     overlay.dataset.visible = routeVisibleRef.current ? "true" : "false";
     const mapWidth = map.getContainer().clientWidth;
+    const mapHeight = map.getContainer().clientHeight;
+    const compactExtremeGlobe = (mapWidth < 700 || mapHeight < 520)
+      && distanceBetweenCoordinatesKm(scenario.guess, scenario.target) >= 12_500;
     const placeLabelAtEdge = (marker: maplibregl.Marker | null, centerX: number) => {
       const element = marker?.getElement();
       const label = element?.querySelector<HTMLElement>(`.${styles.markerLabel}`);
       if (!element || !label) return;
       const halfWidth = label.offsetWidth / 2;
-      const edge = centerX < halfWidth + 12 ? "right" : centerX > mapWidth - halfWidth - 12 ? "left" : "center";
+      const edge = centerX < halfWidth + 16 ? "right" : centerX > mapWidth - halfWidth - 76 ? "left" : "center";
       element.setAttribute("data-label-edge", edge);
     };
-    placeLabelAtEdge(guessMarkerRef.current, startCenter.x);
-    placeLabelAtEdge(targetMarkerRef.current, endCenter.x);
-    const guessIsNorth = scenario.guess[1] >= scenario.target[1];
-    guessMarkerRef.current?.getElement().setAttribute("data-label-vertical", guessIsNorth ? "above" : "below");
-    targetMarkerRef.current?.getElement().setAttribute("data-label-vertical", guessIsNorth ? "below" : "above");
+    const guessElement = guessMarkerRef.current?.getElement();
+    const targetElement = targetMarkerRef.current?.getElement();
+    if (compactExtremeGlobe) {
+      // On a narrow portrait map, near-antipodal anchors already occupy the
+      // upper and lower globe rim. Keep their labels on the inside of that
+      // composition; exterior labels would be clipped even when both actual
+      // geographical anchors are correctly visible.
+      guessElement?.setAttribute("data-label-edge", "center");
+      targetElement?.setAttribute("data-label-edge", "center");
+      guessElement?.setAttribute("data-label-vertical", "above");
+      targetElement?.setAttribute("data-label-vertical", "below");
+    } else {
+      placeLabelAtEdge(guessMarkerRef.current, startCenter.x);
+      placeLabelAtEdge(targetMarkerRef.current, endCenter.x);
+      const guessIsHigherOnScreen = startCenter.y <= endCenter.y;
+      guessElement?.setAttribute("data-label-vertical", guessIsHigherOnScreen ? "above" : "below");
+      targetElement?.setAttribute("data-label-vertical", guessIsHigherOnScreen ? "below" : "above");
+    }
   }, []);
 
   const setRouteDrawProgress = useCallback((progress: number) => {
@@ -240,7 +311,14 @@ export function GlobeMapLab({
   const setMarkerVisibility = useCallback((kind: "guess" | "target", visible: boolean) => {
     const marker = kind === "guess" ? guessMarkerRef.current : targetMarkerRef.current;
     marker?.getElement().setAttribute("data-visible", visible ? "true" : "false");
-    if (kind === "target") marker?.getElement().setAttribute("data-focus", visible ? "true" : "false");
+    if (kind === "target") {
+      marker?.getElement().setAttribute("data-focus", visible ? "true" : "false");
+      if (!visible) marker?.getElement().setAttribute("data-label-visible", "false");
+    }
+  }, []);
+
+  const setTargetLabelVisibility = useCallback((visible: boolean) => {
+    targetMarkerRef.current?.getElement().setAttribute("data-label-visible", visible ? "true" : "false");
   }, []);
 
   const setRouteVisibility = useCallback((visible: boolean) => {
@@ -291,14 +369,20 @@ export function GlobeMapLab({
     popupDescription.textContent = scenario.targetDescription;
     popupContent.append(popupTitle, popupDescription);
     const opensBelowTarget = scenario.target[1] < scenario.guess[1];
-    targetMarkerRef.current?.setPopup(new maplibregl.Popup({
+    const popup = new maplibregl.Popup({
       anchor: opensBelowTarget ? "top" : "bottom",
       className: `kartenlabor-result-popup${opensBelowTarget ? " is-below-label" : ""}`,
       closeButton: true,
       closeOnClick: true,
       maxWidth: "280px",
       offset: opensBelowTarget ? [0, 80] : [0, -112]
-    }).setDOMContent(popupContent));
+    }).setDOMContent(popupContent);
+    popup.on("open", () => {
+      const closeButton = popup.getElement()?.querySelector<HTMLButtonElement>(".maplibregl-popup-close-button");
+      closeButton?.setAttribute("aria-label", "Zusatzinformation schließen");
+      closeButton?.removeAttribute("title");
+    });
+    targetMarkerRef.current?.setPopup(popup);
   }, []);
 
   const preloadTerrain = useCallback(async (plan: ResultCameraPlan, run: number): Promise<boolean> => {
@@ -332,11 +416,113 @@ export function GlobeMapLab({
     return ready;
   }, [embedded, setTerrainLevel]);
 
+  const composeResultEndFrame = useCallback(async (plan: ResultCameraPlan): Promise<CameraKeyframe> => {
+    const map = mapRef.current;
+    if (!map) return plan.keyframes.at(-1)!;
+    const container = map.getContainer();
+    const scenario = activeScenarioRef.current;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    const key = `${scenario.guess.join(",")}:${scenario.target.join(",")}:${width}x${height}:${terrainModeRef.current}:${terrainStrengthRef.current}`;
+    const end = plan.keyframes.at(-1)!;
+    const frame: CameraKeyframe = { ...end, center: [...end.center] as GlobeCoordinates };
+    const compact = width < 700 || height < 520;
+    const extremeGlobe = plan.distanceClass === "long" && plan.distanceKm >= 12_500;
+    if (extremeGlobe) {
+      frame.pitch = compact ? 0 : Math.min(frame.pitch, 8);
+      if (compact) frame.zoom = Math.max(frame.zoom, 2.48);
+    }
+    const safe = {
+      left: compact ? 14 : 28,
+      top: extremeGlobe && compact ? 14 : compact ? 72 : 32,
+      right: width - (compact ? 14 : 86),
+      bottom: height - (extremeGlobe && compact ? 14 : compact ? 72 : 48)
+    };
+    const minimumZoom = plan.distanceClass === "long"
+      ? compact ? 0.2 : Math.max(1.15, end.zoom - 0.95)
+      : plan.distanceClass === "medium" ? Math.max(4.1, end.zoom - 1.55) : Math.max(6.75, end.zoom - 2.05);
+
+    for (let iteration = 0; iteration < 7; iteration += 1) {
+      map.jumpTo(frame);
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+      updateRouteOverlay();
+      const bounds: ScreenBounds[] = [];
+      const routeBounds = routeBoundsRef.current;
+      if (routeBounds) bounds.push(routeBounds);
+      ([guessMarkerRef.current, targetMarkerRef.current] as const).forEach((marker) => {
+        const element = marker?.getElement();
+        const pin = element?.querySelector<SVGElement>(`.${styles.markerPin}`);
+        const rings = element?.querySelector<SVGElement>(`.${styles.markerRings}`);
+        const label = element?.querySelector<HTMLElement>(`.${styles.markerLabel}`);
+        if (!element || !pin || !rings || !label) return;
+        const containerRect = container.getBoundingClientRect();
+        // The pin and rings intentionally overflow their marker wrapper. A
+        // wrapper rect therefore misses exactly the clipped tip/ripple cases
+        // seen on narrow result cards. Measure every visible part separately.
+        [pin, rings, label].forEach((part) => {
+          const rect = part.getBoundingClientRect();
+          bounds.push({
+            minX: rect.left - containerRect.left,
+            minY: rect.top - containerRect.top,
+            maxX: rect.right - containerRect.left,
+            maxY: rect.bottom - containerRect.top
+          });
+        });
+      });
+      if (bounds.length === 0) break;
+      const union = bounds.reduce<ScreenBounds>((result, value) => ({
+        minX: Math.min(result.minX, value.minX), minY: Math.min(result.minY, value.minY),
+        maxX: Math.max(result.maxX, value.maxX), maxY: Math.max(result.maxY, value.maxY)
+      }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+      const safeWidth = Math.max(1, safe.right - safe.left);
+      const safeHeight = Math.max(1, safe.bottom - safe.top);
+      const contentWidth = Math.max(1, union.maxX - union.minX);
+      const contentHeight = Math.max(1, union.maxY - union.minY);
+      let fitScale = Math.min(1, safeWidth / contentWidth, safeHeight / contentHeight);
+      if (extremeGlobe) {
+        // Near-antipodal results must keep their geographic midpoint fixed or
+        // one endpoint crosses the horizon. Fit their hull around the visual
+        // map centre instead of merely comparing width/height; this also
+        // catches a pin tip that protrudes through one edge.
+        const origin = { x: width / 2, y: height / 2 };
+        const directionalScales = [
+          union.minX < origin.x ? (origin.x - safe.left) / (origin.x - union.minX) : 1,
+          union.maxX > origin.x ? (safe.right - origin.x) / (union.maxX - origin.x) : 1,
+          union.minY < origin.y ? (origin.y - safe.top) / (origin.y - union.minY) : 1,
+          union.maxY > origin.y ? (safe.bottom - origin.y) / (union.maxY - origin.y) : 1
+        ];
+        fitScale = Math.min(fitScale, ...directionalScales.map((value) => Math.min(1, value)));
+      }
+      if (fitScale < 0.99) frame.zoom = Math.max(minimumZoom, frame.zoom + Math.log2(Math.max(0.45, fitScale)));
+
+      const contentCenter = { x: (union.minX + union.maxX) / 2, y: (union.minY + union.maxY) / 2 };
+      const safeCenter = { x: (safe.left + safe.right) / 2, y: (safe.top + safe.bottom) / 2 };
+      const shiftX = safeCenter.x - contentCenter.x;
+      const shiftY = safeCenter.y - contentCenter.y;
+      // With near-antipodal points the spherical midpoint is the only camera
+      // center that guarantees both endpoints share the visible hemisphere.
+      // Screen-space recentering can move that midpoint across the horizon, so
+      // these extreme results are composed by zoom alone.
+      if (!extremeGlobe && (Math.abs(shiftX) > 1 || Math.abs(shiftY) > 1)) {
+        const centerPoint = map.project(map.getCenter());
+        const shiftedCenter = map.unproject([centerPoint.x - shiftX, centerPoint.y - shiftY]);
+        frame.center = [shiftedCenter.lng, shiftedCenter.lat];
+      }
+    }
+    map.jumpTo(frame);
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    updateRouteOverlay();
+    Object.assign(end, frame);
+    composedEndFrameRef.current = { key, frame: { ...frame, center: [...frame.center] as GlobeCoordinates } };
+    return end;
+  }, [updateRouteOverlay]);
+
   const preloadCameraViews = useCallback(async (plan: ResultCameraPlan, run: number): Promise<boolean> => {
     const map = mapRef.current;
     const scenario = activeScenarioRef.current;
     if (!map || run !== journeyRunRef.current) return false;
-    const key = `${scenario.id}:${map.getContainer().clientWidth}:${terrainModeRef.current}:${terrainStrengthRef.current}`;
+    const key = `${scenario.guess.join(",")}:${scenario.target.join(",")}:${map.getContainer().clientWidth}x${map.getContainer().clientHeight}:${terrainModeRef.current}:${terrainStrengthRef.current}`;
+    await composeResultEndFrame(plan);
     if (cameraPreparedRef.current === key) return true;
     setCameraPreparing(true);
     const waitForTiles = (timeoutMs: number) => new Promise<void>((resolve) => {
@@ -366,7 +552,7 @@ export function GlobeMapLab({
     const ready = run === journeyRunRef.current;
     if (ready) { cameraPreparedRef.current = key; setCameraPreparing(false); }
     return ready;
-  }, [embedded]);
+  }, [composeResultEndFrame, embedded]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -408,7 +594,23 @@ export function GlobeMapLab({
     map.touchPitch.enable();
     map.scrollZoom.enable();
     map.boxZoom.disable();
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+    const navigationControl = new maplibregl.NavigationControl({ visualizePitch: true });
+    map.addControl(navigationControl, "top-right");
+    const localizeNavigationControl = () => {
+      const labels = [
+        [".maplibregl-ctrl-zoom-in", "Vergrößern"],
+        [".maplibregl-ctrl-zoom-out", "Verkleinern"],
+        [".maplibregl-ctrl-compass", "Karte drehen; klicken für Norden oben"]
+      ] as const;
+      labels.forEach(([selector, label]) => {
+        const button = container.querySelector<HTMLButtonElement>(selector);
+        if (!button) return;
+        button.removeAttribute("title");
+        button.setAttribute("aria-label", label);
+        button.dataset.tooltip = label;
+      });
+    };
+    localizeNavigationControl();
 
     const canvas = map.getCanvas();
     let shiftGesture: { pointerId: number; x: number; y: number; bearing: number; pitch: number; restorePan: boolean } | null = null;
@@ -497,6 +699,7 @@ export function GlobeMapLab({
       map.jumpTo(revealImmediately ? initialPlan.keyframes.at(-1)! : initialPlan.keyframes[0]);
       setMarkerVisibility("guess", true);
       setMarkerVisibility("target", revealImmediately);
+      setTargetLabelVisibility(revealImmediately);
       setRouteVisibility(revealImmediately);
       if (revealImmediately) setRouteDrawProgress(1);
     };
@@ -515,13 +718,15 @@ export function GlobeMapLab({
       const preparationRun = journeyRunRef.current;
       void (async () => {
         await preloadTerrain(plan, preparationRun);
-        // A static replay is constructed at its final camera already. Repeating
-        // the animated end-view warm-up only delays the visible replay map.
-        if (!revealImmediately) await preloadCameraViews(plan, preparationRun);
+        // Both the animated result and the static replay use the same measured
+        // end composition. This keeps pins, labels and route inside the real
+        // card footprint instead of relying on geographic bounds alone.
+        await preloadCameraViews(plan, preparationRun);
         if (!mapRef.current || preparationRun !== journeyRunRef.current) return;
         map.jumpTo(revealImmediately ? plan.keyframes.at(-1)! : plan.keyframes[0]);
         setMarkerVisibility("guess", true);
         setMarkerVisibility("target", revealImmediately);
+        setTargetLabelVisibility(revealImmediately);
         setRouteVisibility(revealImmediately);
         if (revealImmediately) setRouteDrawProgress(1);
         setSurfaceReady(true);
@@ -536,7 +741,11 @@ export function GlobeMapLab({
     };
 
     map.on("style.load", configureGlobe); map.on("load", reportReady); map.on("move", updateCamera); map.on("error", reportError);
-    const resizeObserver = new ResizeObserver(() => map.resize());
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize();
+      cameraPreparedRef.current = null;
+      composedEndFrameRef.current = null;
+    });
     resizeObserver.observe(container);
     return () => {
       journeyRunRef.current += 1;
@@ -552,7 +761,7 @@ export function GlobeMapLab({
       map.off("style.load", configureGlobe); map.off("load", reportReady); map.off("move", updateCamera); map.off("error", reportError);
       guessMarkerRef.current?.remove(); targetMarkerRef.current?.remove(); map.remove(); mapRef.current = null;
     };
-  }, [initialScenario, preloadCameraViews, preloadTerrain, revealImmediately, setMarkerVisibility, setResultMarkerContent, setRouteDrawProgress, setRouteVisibility, updateRouteOverlay]);
+  }, [initialScenario, preloadCameraViews, preloadTerrain, revealImmediately, setMarkerVisibility, setResultMarkerContent, setRouteDrawProgress, setRouteVisibility, setTargetLabelVisibility, updateRouteOverlay]);
 
   const runTimeline = useCallback((keyframes: CameraKeyframe[], duration: number, run: number, onProgress?: (progress: number) => void): Promise<TimelineMetrics> => {
     const map = mapRef.current;
@@ -720,6 +929,7 @@ export function GlobeMapLab({
     });
     let routeRevealed = false;
     let targetRevealed = false;
+    let targetLabelRevealed = false;
     let lastRouteUpdate = 0;
     setJourneyRunning(true); updateResultGeometry(scenario); map.jumpTo(plan.keyframes[0]);
     setMarkerVisibility("guess", true); setMarkerVisibility("target", false); setRouteVisibility(false);
@@ -730,29 +940,33 @@ export function GlobeMapLab({
     try {
       if (reducedMotionRef.current) {
         const end = plan.keyframes[plan.keyframes.length - 1];
-        setRouteVisibility(true); setMarkerVisibility("target", true); setRouteDrawProgress(1);
+        setRouteVisibility(true); setMarkerVisibility("target", true); setTargetLabelVisibility(true); setRouteDrawProgress(1);
         map.easeTo({ center: end.center, zoom: end.zoom, bearing: end.bearing, pitch: end.pitch, duration: 320, essential: false });
         await pause(350);
       } else {
-        const metrics = await runNativeResultFlight(plan, run, (progress) => {
+        const updateReveal = (progress: number) => {
           if (!routeRevealed && progress >= plan.revealProgress) { routeRevealed = true; setRouteVisibility(true); }
           if (!targetRevealed && progress >= plan.targetRevealProgress) { targetRevealed = true; setMarkerVisibility("target", true); }
+          if (!targetLabelRevealed && progress >= plan.targetLabelRevealProgress) { targetLabelRevealed = true; setTargetLabelVisibility(true); }
           if (routeRevealed && progress - lastRouteUpdate >= 0.025) {
             lastRouteUpdate = progress;
             setRouteDrawProgress((progress - plan.revealProgress) / Math.max(0.001, 1 - plan.revealProgress));
           }
-        });
+        };
+        const metrics = plan.distanceClass === "long"
+          ? await runNativeResultFlight(plan, run, updateReveal)
+          : await runTimeline(plan.keyframes, plan.durationMs, run, updateReveal);
         if (run === journeyRunRef.current && metrics.completed) {
           setStatus(`Ergebnis sichtbar · ${formatDistance(plan.distanceKm)} · Pitch ${plan.keyframes.at(-1)?.pitch ?? 0}° · Terrain ${terrainLevelRef.current && terrainLevelRef.current > 0.05 ? "aktiv" : "aus"} · ${formatTimelineMetrics(metrics)}`);
         }
       }
       if (run === journeyRunRef.current) {
-        setRouteVisibility(true); setMarkerVisibility("target", true); setRouteDrawProgress(1);
+        setRouteVisibility(true); setMarkerVisibility("target", true); setTargetLabelVisibility(true); setRouteDrawProgress(1);
         if (reducedMotionRef.current) setStatus(`Ergebnis sichtbar · ${formatDistance(plan.distanceKm)} · Reduced-Motion-Ease · Terrain ${terrainLevelRef.current && terrainLevelRef.current > 0.05 ? "aktiv" : "aus"}`);
         onAnimationCompleteRef.current?.();
       }
     } finally { if (run === journeyRunRef.current) setJourneyRunning(false); }
-  }, [mapReady, preloadCameraViews, preloadTerrain, resultScenario, runNativeResultFlight, selectedScenarioId, setMarkerVisibility, setRouteDrawProgress, setRouteVisibility, stopCurrentJourney, updateResultGeometry]);
+  }, [mapReady, preloadCameraViews, preloadTerrain, resultScenario, runNativeResultFlight, runTimeline, selectedScenarioId, setMarkerVisibility, setRouteDrawProgress, setRouteVisibility, setTargetLabelVisibility, stopCurrentJourney, updateResultGeometry]);
 
   useEffect(() => {
     if (!autoPlay || !mapReady || journeyRunning || terrainPreparing || cameraPreparing) return;
@@ -765,6 +979,7 @@ export function GlobeMapLab({
   const changeTerrainMode = useCallback((mode: TerrainMode) => {
     terrainPreparedRef.current = null;
     cameraPreparedRef.current = null;
+    composedEndFrameRef.current = null;
     terrainModeRef.current = mode; setTerrainMode(mode);
     if (mode === "on") setTerrainLevel(terrainStrengthRef.current);
     else setTerrainLevel(null);
@@ -775,6 +990,7 @@ export function GlobeMapLab({
   const changeTerrainStrength = useCallback((strength: number) => {
     terrainPreparedRef.current = null;
     cameraPreparedRef.current = null;
+    composedEndFrameRef.current = null;
     terrainStrengthRef.current = strength; setTerrainStrength(strength);
     terrainModeRef.current = "on"; setTerrainMode("on"); setTerrainLevel(strength);
     setStatus(`Terrain An · 3D-Stärke ${strength.toFixed(2)}× aktiv`);
@@ -831,7 +1047,11 @@ export function GlobeMapLab({
         <strong>{selectedScenario.label}</strong><span>{selectedScenario.description}</span>
         <span>{formatDistance(selectedPlan.distanceKm)} · {selectedPlan.durationMs / 1_000}s · End-Pitch {selectedPlan.keyframes.at(-1)?.pitch}°</span>
       </div> : null}
-      <div className={styles.mapFrame} data-surface-ready={surfaceReady ? "true" : "false"}>
+      <div
+        className={styles.mapFrame}
+        data-surface-ready={surfaceReady ? "true" : "false"}
+        data-result-journey={journeyRunning ? "running" : "settled"}
+      >
         <div ref={containerRef} className={styles.map} aria-label="Interaktiver Punktlandung-Globe" />
         {!embedded && (cameraPreparing || terrainPreparing) ? <div className={styles.preloadVeil}>Zielregion und Kartendaten werden vorbereitet …</div> : null}
         <svg ref={routeOverlayRef} className={styles.routeOverlay} aria-hidden="true">

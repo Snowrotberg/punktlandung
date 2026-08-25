@@ -363,6 +363,42 @@ const targets = [
     note: "Solo-Auflösung mit echter Globe-Ergebnisanimation"
   },
   {
+    name: "aufloesung-globe-ferndistanz",
+    access: "state",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: {
+      players: [hostPlayer],
+      guesses: [{ ...summary.results[0].guess, lat: -33.8688, lng: 151.2093 }],
+      summaries: [{
+        ...summary,
+        results: [{
+          ...summary.results[0],
+          distanceKm: 16000,
+          guess: { ...summary.results[0].guess, lat: -33.8688, lng: 151.2093 }
+        }]
+      }]
+    },
+    expectedText: "AUFLÖSUNG",
+    readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    note: "Extreme Globe-Ferndistanz mit beiden Pins, Labels und Route im sicheren Kartenrahmen"
+  },
+  {
+    name: "aufloesung-globe-zielinfo",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: {
+      players: [hostPlayer],
+      guesses: [summary.results[0].guess],
+      summaries: [{ ...summary, results: [summary.results[0]] }]
+    },
+    clickSelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    expectedText: summary.location.shortDescription,
+    readySelector: ".kartenlabor-result-popup",
+    note: "Mobile Globe-Ortsinfo als zentriertes Overlay ohne Kamera-Neupositionierung"
+  },
+  {
     name: "aufloesung-zielinfo",
     access: "state-click",
     path: "/aufloesung",
@@ -813,6 +849,10 @@ async function openTarget(page, target) {
       });
     }
     if (target.access === "state-click") {
+      if (target.name === "aufloesung-globe-zielinfo") {
+        await page.locator("[aria-label='Interaktive 3D-Ergebniskarte'] [data-result-journey='settled']")
+          .waitFor({ state: "visible", timeout: 20000 });
+      }
       if (target.hoverSelector) {
         const hoverTarget = page.locator(target.hoverSelector).first();
         await hoverTarget.waitFor({ state: "visible", timeout: 15000 });
@@ -1256,6 +1296,12 @@ async function runTargetViewport(browser, target, viewport) {
         target.readySelector,
         { timeout: 15000 }
       );
+      await page.waitForTimeout(250);
+    }
+
+    if (target.name === "aufloesung-globe" || target.name === "aufloesung-globe-ferndistanz") {
+      await page.locator("[aria-label='Interaktive 3D-Ergebniskarte'] [data-result-journey='settled']")
+        .waitFor({ state: "visible", timeout: 20000 });
       await page.waitForTimeout(250);
     }
 
