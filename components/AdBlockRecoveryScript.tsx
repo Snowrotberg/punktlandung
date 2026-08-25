@@ -2,24 +2,18 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-
-const excludedPrefixes = [
-  "/spielen",
-  "/aufloesung",
-  "/endergebnis",
-  "/anmelden",
-  "/registrieren",
-  "/datenschutz",
-  "/impressum",
-  "/cookies"
-];
+import { isEditorialAdRoute } from "@/lib/adRoutePolicy";
 
 /** Loads only the official tag copied from AdSense Privacy & messaging. */
 export function AdBlockRecoveryScript({ enabled, tagUrl }: { enabled: boolean; tagUrl: string }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!enabled || !tagUrl || !pathname || excludedPrefixes.some((prefix) => pathname.startsWith(prefix))) return;
+    const existingScript = document.getElementById("punktlandung-adblock-recovery");
+    if (!enabled || !tagUrl || !isEditorialAdRoute(pathname)) {
+      existingScript?.remove();
+      return;
+    }
     if (document.getElementById("punktlandung-adblock-recovery")) return;
     let parsed: URL;
     try {

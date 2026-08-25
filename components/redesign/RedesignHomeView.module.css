@@ -264,17 +264,13 @@
   letter-spacing: -0.045em;
 }
 
-.hero h1 span {
+.titleBreakCompact,
+.titleBreakLandscape {
+  display: none !important;
+}
+
+.titleBreakWide {
   display: block;
-  white-space: nowrap;
-}
-
-.titleCompact {
-  display: none !important;
-}
-
-.titleLandscape {
-  display: none !important;
 }
 
 .heroCopy > p {
@@ -442,11 +438,11 @@
 }
 
 @media (min-width: 80rem) {
-  .titleWide {
+  .titleBreakWide {
     display: none !important;
   }
 
-  .titleCompact {
+  .titleBreakCompact {
     display: block !important;
   }
 
@@ -766,15 +762,12 @@
     font-size: clamp(2.45rem, 5vw, 3.15rem);
   }
 
-  .titleWide {
+  .titleBreakWide,
+  .titleBreakCompact {
     display: none !important;
   }
 
-  .titleCompact {
-    display: none !important;
-  }
-
-  .titleLandscape {
+  .titleBreakLandscape {
     display: block !important;
   }
 
@@ -844,11 +837,12 @@
     margin-inline: auto;
   }
 
-  .titleWide {
+  .titleBreakWide,
+  .titleBreakLandscape {
     display: none !important;
   }
 
-  .titleCompact {
+  .titleBreakCompact {
     display: block !important;
   }
 

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { adConfig, type AdPlacement, type AdVariant, isAdPlacementConfigured } from "@/lib/ads";
+import { isEditorialAdRoute } from "@/lib/adRoutePolicy";
 
 type AdContainerProps = {
   placement?: AdPlacement;
@@ -41,10 +43,12 @@ export function AdContainer({
   position = "relative",
   fullWidthResponsive = true
 }: AdContainerProps) {
+  const pathname = usePathname();
+  const routeAllowsAds = isEditorialAdRoute(pathname);
   const requestedRef = useRef(false);
   const adElementRef = useRef<HTMLModElement | null>(null);
   const slotId = adConfig.slots[placement];
-  const placementConfigured = isAdPlacementConfigured(placement);
+  const placementConfigured = routeAllowsAds && isAdPlacementConfigured(placement);
   const shape = variantShape(variant);
   const positionClass = position === "absolute" ? "absolute" : "relative";
   const defaultFormat = adFormat ?? variantFormat(variant);
@@ -154,6 +158,8 @@ export function AdContainer({
       detail: { placement, deliveryState }
     }));
   }, [deliveryState, placement]);
+
+  if (!routeAllowsAds) return null;
 
   return (
     <aside

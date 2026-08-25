@@ -42,6 +42,38 @@ export const seoRoutes = [
     changeFrequency: "monthly"
   },
   {
+    path: "/faq/spielablauf",
+    title: "Punktlandung Spielablauf - Partie starten und Orte erraten",
+    description:
+      "So läuft eine Partie Punktlandung ab: Modus und Kategorie wählen, Aufgabe ansehen, Tipp auf der Karte setzen und die Auflösung auswerten.",
+    priority: 0.65,
+    changeFrequency: "monthly"
+  },
+  {
+    path: "/faq/punkte",
+    title: "Punktlandung Punkte - Entfernung und Wertung erklärt",
+    description:
+      "Wie die Punkte bei Punktlandung berechnet werden: Entfernung zum Ziel, bis zu 5.000 Punkte pro Runde und Tippzeit bei Punktgleichheit.",
+    priority: 0.65,
+    changeFrequency: "monthly"
+  },
+  {
+    path: "/faq/konten",
+    title: "Punktlandung Konto - Spielen und Spielstände speichern",
+    description:
+      "Punktlandung funktioniert ohne Anmeldung. Erfahre, wann ein Konto nötig ist und wie abgeschlossene Partien dauerhaft gespeichert werden.",
+    priority: 0.65,
+    changeFrequency: "monthly"
+  },
+  {
+    path: "/faq/rankings",
+    title: "Punktlandung Rankings - gewertete Partien erklärt",
+    description:
+      "Welche Partien bei Punktlandung in öffentlichen Rankings zählen und wie Kategorien, Zeitlimit, Profil und technische Prüfung zusammenspielen.",
+    priority: 0.65,
+    changeFrequency: "monthly"
+  },
+  {
     path: "/so-funktioniert-punktlandung",
     title: "Wie funktioniert Punktlandung? Spielablauf und Punkte",
     description:

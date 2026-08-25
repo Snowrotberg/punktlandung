@@ -69,9 +69,7 @@ export function RedesignHomeView({
               <div className={styles.heroCopy}>
                 <span className={styles.eyebrow}>Das Geo-Spiel für alle</span>
                 <h1 id="home-title">
-                  <span className={styles.titleWide}>Wie gut kennst du</span><span className={styles.titleWide}>die Welt?</span>
-                  <span className={styles.titleCompact}>Wie gut</span><span className={styles.titleCompact}>kennst du die Welt?</span>
-                  <span className={styles.titleLandscape}>Wie gut kennst</span><span className={styles.titleLandscape}>du die Welt?</span>
+                  Wie gut<br className={styles.titleBreakCompact} /> kennst<br className={styles.titleBreakLandscape} /> du<br className={styles.titleBreakWide} /> die Welt?
                 </h1>
                 <p><span>Errate Orte, Städte, Wahrzeichen &amp; mehr.</span><span>Spiel für dich, gemeinsam mit Freunden oder online.</span></p>
                 <div className={styles.heroActions}>

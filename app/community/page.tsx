@@ -16,7 +16,8 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Community & Roadmap",
-  description: "Schlage neue Funktionen für Punktlandung vor, stimme für Ideen ab und verfolge die öffentliche Roadmap."
+  description: "Schlage neue Funktionen für Punktlandung vor, stimme für Ideen ab und verfolge die öffentliche Roadmap.",
+  robots: { index: false, follow: false }
 };
 export const dynamic = "force-dynamic";
 
