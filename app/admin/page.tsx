@@ -18,13 +18,14 @@ import {
 import { redirect } from "next/navigation";
 import { AccountHeaderControls } from "@/components/AccountHeaderControls";
 import { AdminLineChart } from "@/components/admin/AdminLineChart";
+import { InlineInfoPopover } from "@/components/InlineInfoPopover";
 import { LegalLinks } from "@/components/LegalLinks";
 import { RedesignBrand, RedesignButtonLink, RedesignFooter, RedesignHeader, RedesignShell } from "@/components/redesign";
 import { SectionNavigation } from "@/components/SectionNavigation";
 import { builtInLocations, catalogInventoryLocations } from "@/data/locations";
 import { getAdminAccountContext } from "@/lib/adminAccess.server";
 import { adConfig } from "@/lib/ads";
-import { buildUsageTimeline, earliestUsageTimestamp } from "@/lib/adminUsageTimeline";
+import { buildUsageTimeline, earliestUsageTimestamp, PUBLIC_BETA_STARTED_AT } from "@/lib/adminUsageTimeline";
 import { buildCatalogStatistics, catalogCategoryLabels } from "@/lib/catalogStatistics";
 import {
   applyLocationDifficultyOverrides,
@@ -149,8 +150,12 @@ function formatUptime(seconds: number | null): string {
   return days > 0 ? `${days} T ${hours} Std.` : `${hours} Std. ${Math.floor((seconds % 3_600) / 60)} Min.`;
 }
 
-function AdminSectionTitle({ icon: Icon, children }: { icon: LucideIcon; children: string }) {
+function AdminSectionTitle({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return <h2 className={styles.sectionTitle}><Icon aria-hidden="true" /><span>{children}</span></h2>;
+}
+
+function AdminHelp({ title, children }: { title: string; children: ReactNode }) {
+  return <InlineInfoPopover align="right" title={title} ariaLabel={`${title} erklären`}>{children}</InlineInfoPopover>;
 }
 
 const communityFilters: Array<{ value: "all" | CommunityStatus; label: string }> = [
@@ -299,7 +304,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     applyLocationDifficultyOverrides(builtInLocations, overrides),
     applyLocationDifficultyOverrides(catalogInventoryLocations, overrides)
   );
-  const locationsById = new Map(builtInLocations.map((location) => [location.id, location]));
+  // Historische Ausspielungen können inzwischen gefilterte Katalogeinträge enthalten.
+  // Ihre Quellen bleiben im vollständigen Inventar weiterhin nachvollziehbar.
+  const locationsById = new Map(catalogInventoryLocations.map((location) => [location.id, location]));
   const topImages = [...imageEvents.filter((event) => event.outcome !== "failed" && event.locationId).reduce((counts, event) => {
     counts.set(event.locationId!, (counts.get(event.locationId!) ?? 0) + 1);
     return counts;
@@ -332,7 +339,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     roadmapPage * ROADMAP_PAGE_SIZE
   );
   const periodHeading = periodKey === "all" ? "Gesamt" : periodKey === "today" ? "Heute" : `letzte ${period.label}`;
-  const measurementLabel = measurementStart === null ? "noch ohne Messdaten" : `Messbeginn ${formatAdminDate(measurementStart)}`;
+  const measurementNotice = measurementStart === null
+    ? "Für diesen Datenbestand liegen noch keine Messdaten vor."
+    : `Für diesen Datenbestand liegen Messwerte ab dem ${formatAdminDate(measurementStart)} vor.`;
+  const publicBetaStartLabel = formatAdminDate(PUBLIC_BETA_STARTED_AT);
 
   return <main className={layoutStyles.page}><div className={`${layoutStyles.frame} ${layoutStyles.frameNoAds}`}>
     <RedesignShell className={layoutStyles.app}>
@@ -345,7 +355,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <nav className={styles.periods} aria-label="Zeitraum für Nutzung und Auslieferung">
             {Object.entries(periods).map(([key, item]) => <a key={key} href={`/admin?period=${key}`} className={key === "all" ? styles.periodAll : undefined} aria-current={key === periodKey ? "page" : undefined}>{item.label}</a>)}
           </nav>
-          <p>Historische Werte folgen dem gewählten Zeitraum. „Gesamt“ beginnt beim ersten vorhandenen Messsignal ({measurementLabel}); frühere Nutzung wurde nicht rückwirkend erfasst.</p>
+          <p>Historische Werte folgen dem gewählten Zeitraum. „Gesamt“ beginnt mit der öffentlichen Beta am {publicBetaStartLabel} und reicht bis heute. {measurementNotice} Frühere Nutzung wurde nicht rückwirkend erfasst.</p>
         </div>
         <div className={styles.metricLegend} aria-label="Bedeutung der Kennzahlenfarben">
           <span><i className={styles.legendGood} />Unauffällig</span>
@@ -357,7 +367,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <div className={styles.stats}>
           <div className={styles.stat}><Users aria-hidden="true" /><strong>{visits}</strong><span>Besuche · {periodHeading}</span></div>
           <div className={styles.stat}><Activity aria-hidden="true" /><strong>{starts}</strong><span>Spielstarts · {periodHeading}</span></div>
-          <div className={styles.stat}><CircleCheckBig aria-hidden="true" /><strong>{completionRate === null ? "–" : `${completionRate} %`}</strong><span>Abschlussquote · {periodHeading}</span></div>
+          <div className={styles.stat}><CircleCheckBig aria-hidden="true" /><strong>{completionRate === null ? "–" : `${completionRate} %`}</strong><span className={styles.statLabelWithHelp}>Abschlussquote · {periodHeading}<AdminHelp title="Abschlussquote">Die Quote teilt die im gewählten Zeitraum gemessenen Spielabschlüsse durch die Spielstarts. Abgebrochene Partien und Starts, deren Abschluss außerhalb des Zeitraums liegt, senken den Wert.</AdminHelp></span></div>
           <div className={styles.stat}><MonitorSmartphone aria-hidden="true" /><strong>{averageVisitDuration === null ? "–" : formatDuration(averageVisitDuration)}</strong><span>Ø aktive Besuchszeit · {periodHeading}</span></div>
         </div>
         <div className={styles.grid}>
@@ -390,7 +400,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             <div className={styles.stat}><Users aria-hidden="true" /><strong>{accountProgress.accountCount}</strong><span>aktive Spielerkonten</span></div>
             <div className={styles.stat}><CircleCheckBig aria-hidden="true" /><strong>{completed.count ?? 0}</strong><span>abgeschlossene Partien</span></div>
             <div className={styles.stat}><Gauge aria-hidden="true" /><strong>{verified.count ?? 0}</strong><span>verifizierte Partien</span></div>
-            <div className={styles.stat}><Server aria-hidden="true" /><strong>{active.count ?? 0}</strong><span>aktive Serverpartien</span></div>
+            <div className={styles.stat}><Server aria-hidden="true" /><strong>{active.count ?? 0}</strong><span className={styles.statLabelWithHelp}>aktive Serverpartien<AdminHelp title="Aktive Serverpartien">Gezählt werden in Supabase noch als aktiv gespeicherte Ranking-Partien. Das sind nicht die gleichzeitig verbundenen Personen oder Räume. Ungewöhnlich alte Einträge werden im Bereich „Raumserver &amp; Synchronisierung“ separat ausgewiesen.</AdminHelp></span></div>
           </div>
           <section className={`${styles.panel} ${styles.catalogPanel} ${styles.catalogOverviewPanel}`}><AdminSectionTitle icon={Database}>Aktueller Aufgabenbestand</AdminSectionTitle>
             <div className={styles.tableWrap}><table className={styles.matrix}>
@@ -418,7 +428,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               <li><span>Ø automatischer Bildscore</span><AdminMetricValue tone="neutral" recommendation="Für diesen projektspezifischen Score ist noch kein verbindlicher Qualitätsgrenzwert definiert. Er dient vorerst nur dem Vergleich.">{catalogStatistics.averageImageQualityScore?.toLocaleString("de-DE") ?? "Noch ohne Wert"}</AdminMetricValue></li>
             </ul></details>
           </section>
-          <section className={`${styles.panel} ${styles.difficultyPanel}`}><AdminSectionTitle icon={Gauge}>Automatische Schwierigkeit</AdminSectionTitle><ul className={styles.list}>
+          <section className={`${styles.panel} ${styles.difficultyPanel}`}><AdminSectionTitle icon={Gauge}><span className={styles.sectionTitleWithHelp}>Automatische Schwierigkeit<AdminHelp title="Automatische Schwierigkeit">Die vier Werte zählen Aufgaben, nicht Bildausspielungen. Einbezogen werden nur aufgelöste Runden aus vollständig abgeschlossenen, verifizierten Konto-Partien mit 15, 30 oder 60 Sekunden. Ab {MINIMUM_DIFFICULTY_SAMPLES} geeigneten Runden ist eine Einstufung vorläufig, ab {STABLE_DIFFICULTY_SAMPLES} stabil.</AdminHelp></span></AdminSectionTitle><ul className={styles.list}>
             <li><span>Noch unter {MINIMUM_DIFFICULTY_SAMPLES} verifizierten Runden</span><AdminMetricValue tone={insufficientMetrics > 0 ? "warning" : "good"} recommendation={insufficientMetrics > 0 ? "Beobachten: Diese Aufgaben behalten ihre Starteinstufung, bis genügend verifizierte Runden vorliegen." : "Unauffällig: Keine Aufgabe liegt unter der Mindestzahl verifizierter Runden."}>{insufficientMetrics}</AdminMetricValue></li>
             <li><span>Vorläufig · {MINIMUM_DIFFICULTY_SAMPLES} bis {STABLE_DIFFICULTY_SAMPLES - 1} Runden</span><AdminMetricValue tone={provisionalMetrics > 0 ? "warning" : "good"} recommendation={provisionalMetrics > 0 ? "Beobachten: Diese Einstufungen sind bereits datenbasiert, können sich mit weiteren Runden aber noch ändern." : "Unauffällig: Keine Einstufung befindet sich im vorläufigen Bereich."}>{provisionalMetrics}</AdminMetricValue></li>
             <li><span>Stabil · ab {STABLE_DIFFICULTY_SAMPLES} Runden</span><AdminMetricValue tone={stableMetrics > 0 ? "good" : "warning"} recommendation={stableMetrics > 0 ? "Unauffällig: Für diese Aufgaben liegt eine belastbare automatische Einstufung vor." : "Beobachten: Noch keine Aufgabe hat genügend Daten für eine stabile Einstufung."}>{stableMetrics}</AdminMetricValue></li>
@@ -490,9 +500,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             <li><span>Akzeptierte / abgewiesene Verbindungen</span><AdminMetricValue tone={rejectionRate === null ? "neutral" : lowerIsBetter(rejectionRate, 1, 5)} recommendation={rejectionRate === null ? "Im gewählten Zeitraum wurden keine Verbindungsversuche erfasst." : rejectionRate >= 5 ? "Kritisch: Mehr als 5 % der Verbindungen wurden abgewiesen. Kapazität, Authentifizierung und Fehlermeldungen prüfen." : rejectionRate >= 1 ? "Beobachten: Die Ablehnungsquote liegt über 1 %. Ursachen in den Serverprotokollen prüfen." : "Unauffällig: Weniger als 1 % der Verbindungsversuche wurden abgewiesen."}>{acceptedConnections} / {rejectedConnections}</AdminMetricValue></li>
             <li><span>Letztes Messsignal</span><AdminMetricValue tone={latestSignalAgeMinutes === null ? "critical" : lowerIsBetter(latestSignalAgeMinutes, 5, 15)} recommendation={latestSignalAgeMinutes === null ? "Kritisch: Es liegt kein Messsignal vor. Telemetrie und Healthcheck prüfen." : latestSignalAgeMinutes >= 15 ? "Kritisch: Seit mehr als 15 Minuten fehlt ein aktuelles Signal. Server und Telemetrie prüfen." : latestSignalAgeMinutes >= 5 ? "Beobachten: Das letzte Signal ist älter als fünf Minuten." : "Unauffällig: Das letzte Messsignal ist aktuell."}>{latestSignal ? new Date(latestSignal).toLocaleString("de-DE") : "Keines"}</AdminMetricValue></li>
           </ul><p className={styles.muted}>Die Wiederholungswarteschlange für Ranking-Aktionen liegt absichtlich lokal im jeweiligen Browser. Zentral sichtbar sind deshalb die offenen Serverpartien und ungewöhnlich lange laufende Synchronisierungen.</p></section>
-          <section className={`${styles.panel} ${styles.imageRankingPanel}`}><AdminSectionTitle icon={ScanSearch}>Top 5 ausgespielte Bilder</AdminSectionTitle>
+          <section className={`${styles.panel} ${styles.imageRankingPanel}`}><AdminSectionTitle icon={ScanSearch}><span className={styles.sectionTitleWithHelp}>Top 5 ausgespielte Bilder<AdminHelp title="Gezählte Bildausspielungen">Hier zählt jede erfolgreich geladene kompakte Spielbild-Anzeige im gewählten Zeitraum. Dazu können anonyme, lokale oder noch nicht abgeschlossene Partien gehören. Der Wert ist deshalb nicht mit den verifizierten Runden der automatischen Schwierigkeit vergleichbar. Automatisierte Responsive-Tests werden ab diesem Stand nicht mehr mitgezählt.</AdminHelp></span></AdminSectionTitle>
             {topImages.length ? <ol className={styles.topList}>{topImages.map(([locationId, value]) => { const location = locationsById.get(locationId); const href = location?.sourceUrl ?? location?.panoramaUrl; return <li key={locationId}><span>{href ? <a className={styles.topListLink} href={href} target="_blank" rel="noreferrer"><strong>{location?.title ?? locationId}</strong><small>{locationId} · Bild öffnen</small></a> : <><strong>{location?.title ?? locationId}</strong><small>{locationId}</small></>}</span><b>{value}×</b></li>; })}</ol> : <p className={styles.muted}>Im gewählten Zeitraum wurden noch keine erfolgreich angezeigten Spielbilder gemessen.</p>}
-            <p className={styles.muted}>Gezählt wird eine erfolgreich geladene Anzeige je Aufgabe; technische Wiederholungen innerhalb derselben Runde werden unterdrückt.</p>
+            <p className={styles.muted}>Gezählt wird eine erfolgreich geladene Anzeige je Aufgabe; technische Wiederholungen innerhalb derselben Runde werden unterdrückt. Derselbe Ort kann in mehreren Partien erneut vorkommen. Diese Auslieferungszahl ist kein Schwierigkeits-Sample.</p>
           </section>
           <section className={`${styles.panel} ${styles.imageDeliveryPanel}`}><AdminSectionTitle icon={ScanSearch}>{`Bildauslieferung · ${periodHeading}`}</AdminSectionTitle><ul className={styles.list}>
             <li><span>Gemessene Bildaufrufe</span><AdminMetricValue tone="neutral" recommendation={imageEvents.length < 20 ? "Die Stichprobe ist noch klein; Prozentwerte und Perzentile vorsichtig interpretieren." : "Die Stichprobe umfasst mindestens 20 Bildaufrufe."}>{imageEvents.length}</AdminMetricValue></li>
