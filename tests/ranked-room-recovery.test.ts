@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { roomFromRankedGame, shouldRevealPendingRankedRound } from "../hooks/useRankedSoloGame";
+import { rankedRoundPromptUrl, roomFromRankedGame, shouldRevealPendingRankedRound } from "../hooks/useRankedSoloGame";
 import type { PublicRankedGame } from "../lib/rankedGame";
 import type { GameSettings } from "../types/game";
 
@@ -83,6 +83,21 @@ test("recovery keeps the resolved round visible while the next round is pending"
   assert.equal(room.guesses.length, 1);
   assert.equal(room.roundStartedAt, null);
   assert.equal(room.roundEndsAt, null);
+  assert.equal(room.location?.panoramaUrl, "/api/v1/ranked-games/ranked-test/rounds/round-1/prompt");
+  assert.equal(room.summaries[0]?.location.panoramaUrl, room.location?.panoramaUrl);
+});
+
+test("resolved replay uses only the opaque protected ranked image endpoint", () => {
+  assert.equal(
+    rankedRoundPromptUrl("ranked/id", "round id"),
+    "/api/v1/ranked-games/ranked%2Fid/rounds/round%20id/prompt"
+  );
+  const room = roomFromRankedGame(rankedGame(null), "Spieler 1", settings);
+  const replayUrl = room.summaries[0]?.location.panoramaUrl ?? "";
+
+  assert.match(replayUrl, /^\/api\/v1\/ranked-games\//);
+  assert.equal(replayUrl.includes("images.example"), false);
+  assert.notEqual(replayUrl, "");
 });
 
 test("explicit next-round action reveals the pending prompt", () => {

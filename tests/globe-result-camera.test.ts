@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import {
   buildResultCameraPlan,
   distanceBetweenCoordinatesKm,
-  routeLineCoordinates
+  RESULT_MAP_MIN_ZOOM,
+  routeLineCoordinates,
+  withResultCameraEndFrame
 } from "../lib/globeResultCamera";
 
 test("result camera keeps exact antipodes finite and drawable", () => {
@@ -38,4 +40,49 @@ test("long result plans keep the globe large and reduce pullback for nearer inte
   assert.ok(Math.min(...fiveThousandKm.keyframes.map((frame) => frame.zoom)) > 2.3);
   assert.ok(Math.min(...fourteenThousandKm.keyframes.map((frame) => frame.zoom)) > 1.8);
   assert.ok(fourteenThousandKm.keyframes.at(-1)!.pitch <= 31);
+});
+
+test("prepared safe-area camera replaces only the final result frame", () => {
+  const plan = buildResultCameraPlan([12.4964, 41.9028], [15.9819, 45.815], { compactViewport: true });
+  const firstFrame = plan.keyframes[0];
+  const transitFrame = plan.keyframes[1];
+  const prepared = withResultCameraEndFrame(plan, {
+    center: [14.2, 43.9],
+    zoom: 5.12,
+    bearing: 4,
+    pitch: 42
+  });
+
+  assert.deepEqual(prepared.keyframes[0], firstFrame);
+  assert.deepEqual(prepared.keyframes[1], transitFrame);
+  assert.deepEqual(prepared.keyframes.at(-1), {
+    at: 1,
+    center: [14.2, 43.9],
+    zoom: 5.12,
+    bearing: 4,
+    pitch: 42
+  });
+  assert.notEqual(prepared, plan);
+});
+
+test("compact long results keep the globe large before layout-driven safe-area correction", () => {
+  const angola = buildResultCameraPlan([45.32, 2.04], [13.23444, -8.83833], { compactViewport: true });
+
+  assert.equal(angola.distanceClass, "long");
+  assert.ok(angola.keyframes.at(-1)!.zoom >= 2.69);
+  assert.ok(Math.min(...angola.keyframes.map((frame) => frame.zoom)) >= 2.3);
+});
+
+test("result camera plans stay above the interactive globe zoom floor", () => {
+  const cases: Array<[[number, number], [number, number]]> = [
+    [[10.8978, 48.3705], [11.5761, 48.1372]],
+    [[6.9603, 50.9375], [11.5761, 48.1372]],
+    [[13.405, 52.52], [139.6917, 35.6895]],
+    [[-70.6693, -33.4489], [121.4737, 31.2304]]
+  ];
+
+  for (const [guess, target] of cases) {
+    const plan = buildResultCameraPlan(guess, target, { compactViewport: true });
+    assert.ok(Math.min(...plan.keyframes.map((frame) => frame.zoom)) >= RESULT_MAP_MIN_ZOOM);
+  }
 });

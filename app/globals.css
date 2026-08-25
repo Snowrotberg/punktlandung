@@ -6979,7 +6979,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 .leaflet-control-zoom {
   overflow: hidden;
   border: 1px solid rgba(71, 85, 105, 0.85) !important;
-  border-radius: 6px !important;
+  border-radius: var(--pl-radius-control, 0.7rem) !important;
   background: #0f172a !important;
   box-shadow: 0 14px 28px rgba(2, 6, 23, 0.2) !important;
 }
@@ -10410,6 +10410,19 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   place-items: center;
 }
 
+.leaflet-control-zoom a:first-child {
+  border-radius: var(--pl-radius-control, 0.7rem) var(--pl-radius-control, 0.7rem) 0 0 !important;
+}
+
+.leaflet-control-zoom a:last-child {
+  border-radius: 0 0 var(--pl-radius-control, 0.7rem) var(--pl-radius-control, 0.7rem) !important;
+}
+
+.punktlandung-image-loader--recovery:not(.punktlandung-image-loader-framed) {
+  height: auto;
+  width: min(22rem, 100%);
+}
+
 .punktlandung-image-loader > * {
   position: relative;
   z-index: 1;
@@ -10426,6 +10439,13 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   background:
     radial-gradient(circle at 47% 48%, rgba(52, 211, 153, 0.095) 0%, rgba(21, 119, 98, 0.052) 36%, transparent 72%),
     linear-gradient(rgba(2, 6, 23, 0.44), rgba(2, 6, 23, 0.76));
+}
+
+/* Licensing stays readable even when image recovery is visible. The loader
+ * itself does not handle pointer events outside its controls, so keeping the
+ * source chip above its backdrop preserves both attribution and access. */
+.punktlandung-source-chip {
+  z-index: 30 !important;
 }
 
 .punktlandung-loader-mark {
@@ -20515,9 +20535,8 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
 }
 
 /* Final phone-portrait rail and rhythm for the active round.
- * The task card, HUD row, image/source stack and map all share one 16 px
- * measure. Keeping the source in its own equally padded strip avoids the
- * uneven gaps that were visible when it was positioned near the image edge. */
+ * The task card, HUD row, image and map all share one 16 px measure. The
+ * source uses the free middle HUD cell so its former strip can enlarge the map. */
 .punktlandung-game-shell {
   --pl-game-inset: 1rem;
 }
@@ -20531,6 +20550,7 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
     --mobile-game-hud-h: calc(var(--pl-game-task-h) + var(--pl-game-rhythm) + var(--mobile-game-meta-size));
     --mobile-game-image-gap: var(--pl-game-rhythm);
     --mobile-game-source-h: calc(var(--pl-game-source-chip-h) + (2 * var(--pl-game-rhythm)));
+    --mobile-game-map-closed-h: clamp(21rem, calc(38svh + var(--mobile-game-source-h)), 25.5rem);
   }
 
   body .punktlandung-game-shell .punktlandung-game-viewer--map-closed,
@@ -20564,14 +20584,69 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
   }
 
   body .punktlandung-game-shell .punktlandung-game-viewer .punktlandung-panorama-viewport img {
-    bottom: var(--mobile-game-source-h) !important;
-    height: calc(100% - var(--mobile-game-source-h)) !important;
+    bottom: 0 !important;
+    height: 100% !important;
   }
 
   body .punktlandung-game-shell .punktlandung-game-viewer .punktlandung-source-chip--compact {
-    bottom: var(--pl-game-rhythm) !important;
+    align-items: center !important;
+    bottom: auto !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    left: calc(var(--pl-game-inset) + (2 * var(--mobile-game-meta-size)) + (2 * var(--pl-game-rhythm))) !important;
+    right: calc(var(--pl-game-inset) + var(--mobile-game-back-w) + var(--pl-game-rhythm)) !important;
+    top: calc(var(--pl-game-safe-top) + var(--pl-game-task-h) + var(--pl-game-rhythm) + ((var(--mobile-game-meta-size) - var(--pl-game-source-chip-h)) / 2)) !important;
     height: var(--pl-game-source-chip-h) !important;
+    justify-content: center !important;
+    max-width: none !important;
     min-height: var(--pl-game-source-chip-h) !important;
+    overflow: hidden !important;
+    padding-inline: 0.35rem !important;
+    position: fixed !important;
+    transform: none !important;
+    width: auto !important;
+    z-index: 45 !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-viewer .punktlandung-source-chip--compact p {
+    flex: 0 0 auto !important;
+    font-size: 0.4rem !important;
+    letter-spacing: 0.12em !important;
+    line-height: 1 !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-viewer .punktlandung-source-chip--compact h1 {
+    font-size: clamp(0.55rem, 2.55vw, 0.68rem) !important;
+    line-height: 1.05 !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-image-load-overlay {
+    padding: var(--pl-game-rhythm) !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-image-loader--recovery {
+    align-content: center;
+    max-height: 100%;
+  }
+
+  body .punktlandung-game-shell .punktlandung-image-loader--recovery .punktlandung-loader-mark {
+    height: 5rem;
+    width: 5rem;
+  }
+
+  body .punktlandung-game-shell .punktlandung-image-loader--recovery p:first-of-type {
+    margin-top: 0.75rem !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-image-loader--recovery p + p {
+    margin-top: 0.4rem !important;
+    line-height: 1.35 !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-image-loader--recovery button {
+    margin-top: 0.75rem !important;
   }
 
   body .punktlandung-game-shell .punktlandung-guess-map-panel--closed,
@@ -20749,5 +20824,72 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
     right: 0.75rem !important;
     top: 0.75rem !important;
     width: auto !important;
+  }
+}
+
+/* Active round on a phone in landscape: keep the task in the right rail,
+ * reclaim the former meta row for the map, and place the two compact status
+ * badges on the image. Portrait, replay and result layouts stay untouched. */
+@media (max-width: 1024px) and (max-height: 520px) and (orientation: landscape) {
+  body .punktlandung-game-shell .punktlandung-game-hud-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: 4.1rem !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-task-slot {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card {
+    container-type: inline-size;
+    min-width: 0 !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card-inline {
+    gap: clamp(0.45rem, 2.4cqi, 0.86rem) !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card-label {
+    font-size: clamp(0.62rem, 3.5cqi, 0.8rem) !important;
+    letter-spacing: clamp(0.08em, 0.7cqi, 0.16em) !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-task-card-title {
+    font-size: clamp(1rem, 8cqi, 1.72rem) !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stats {
+    display: flex !important;
+    gap: 0.45rem !important;
+    left: calc(0.75rem + max(0px, env(safe-area-inset-left))) !important;
+    right: calc(35% + 0.75rem + max(0px, env(safe-area-inset-right))) !important;
+    justify-content: space-between !important;
+    position: fixed !important;
+    top: calc(0.75rem + max(0px, env(safe-area-inset-top))) !important;
+    width: auto !important;
+    z-index: 2 !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-stats .punktlandung-game-stat:nth-child(1),
+  body .punktlandung-game-shell .punktlandung-game-stats .punktlandung-game-stat:nth-child(2) {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-actions,
+  body .punktlandung-game-shell .punktlandung-game-back-button {
+    display: none !important;
+  }
+
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--closed,
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--open {
+    top: calc(5.6rem + max(0px, env(safe-area-inset-top))) !important;
   }
 }

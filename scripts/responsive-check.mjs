@@ -75,6 +75,7 @@ const blockedThirdPartyHosts = [
 const viewports = [
   { name: "phone-small", width: 360, height: 800, category: "mobile" },
   { name: "phone-large", width: 430, height: 932, category: "mobile" },
+  { name: "phone-landscape-compact", width: 760, height: 360, category: "mobile" },
   { name: "phone-landscape", width: 932, height: 430, category: "mobile" },
   { name: "laptop", width: 1366, height: 768, category: "desktop" },
   { name: "monitor", width: 1920, height: 1080, category: "desktop" },
@@ -152,6 +153,122 @@ const cambodiaFlagLocation = {
   shortDescription: "Die Flagge Kambodschas zeigt den Tempel Angkor Wat zwischen zwei blauen Streifen."
 };
 
+const globePhaseOneCases = [
+  {
+    id: "salzburg",
+    location: {
+      ...sampleLocation,
+      id: "landmarks-festung-hohensalzburg",
+      title: "Festung Hohensalzburg",
+      countryCode: "AT",
+      countryName: "Österreich",
+      continent: "Europe",
+      lat: 47.795,
+      lng: 13.0473,
+      shortDescription: "Die Festung Hohensalzburg ist das Wahrzeichen der Stadt Salzburg."
+    },
+    guess: { lat: 47.43, lng: 13.32 },
+    distanceKm: 46
+  },
+  {
+    id: "pinatubo",
+    location: {
+      ...sampleLocation,
+      id: "landscapes-pinatubo",
+      title: "Pinatubo",
+      countryCode: "PH",
+      countryName: "Philippinen",
+      continent: "Asia",
+      lat: 15.13,
+      lng: 120.35,
+      shortDescription: "Der Pinatubo ist ein aktiver Vulkan auf den Philippinen im Westen der Insel Luzon."
+    },
+    guess: { lat: 7.2, lng: 124.8 },
+    distanceKm: 1000
+  },
+  {
+    id: "eggenberg",
+    location: {
+      ...sampleLocation,
+      id: "landmarks-schloss-eggenberg",
+      title: "Schloss Eggenberg",
+      countryCode: "AT",
+      countryName: "Österreich",
+      continent: "Europe",
+      lat: 47.0739,
+      lng: 15.3913,
+      shortDescription: "Schloss Eggenberg in Graz ist die größte und bedeutendste barocke Schlossanlage der Steiermark."
+    },
+    guess: { lat: 47.5, lng: 19.04 },
+    distanceKm: 287
+  },
+  {
+    id: "nebo",
+    location: {
+      ...sampleLocation,
+      id: "landscapes-nebo",
+      title: "Nebo",
+      countryCode: "JO",
+      countryName: "Jordanien",
+      continent: "Asia",
+      lat: 31.76778,
+      lng: 35.72556,
+      shortDescription: "Der Berg Nebo liegt in Jordanien auf dem Plateau oberhalb des Toten Meeres."
+    },
+    guess: { lat: 39, lng: 21.7 },
+    distanceKm: 1580
+  },
+  {
+    id: "heraklion",
+    location: {
+      ...sampleLocation,
+      id: "cities-heraklion",
+      title: "Heraklion",
+      countryCode: "GR",
+      countryName: "Griechenland",
+      continent: "Europe",
+      lat: 35.34028,
+      lng: 25.13444,
+      shortDescription: "Heraklion ist die größte Stadt Kretas und das wirtschaftliche Zentrum der Insel."
+    },
+    guess: { lat: 38.2, lng: 21.6 },
+    distanceKm: 460
+  },
+  {
+    id: "zagreb",
+    location: {
+      ...sampleLocation,
+      id: "cities-zagreb",
+      title: "Zagreb",
+      countryCode: "HR",
+      countryName: "Kroatien",
+      continent: "Europe",
+      lat: 45.815,
+      lng: 15.9819,
+      shortDescription: "Zagreb ist die Hauptstadt und die größte Stadt Kroatiens."
+    },
+    guess: { lat: 41.9028, lng: 12.4964 },
+    distanceKm: 520
+  },
+  {
+    id: "angola",
+    location: {
+      ...sampleLocation,
+      id: "flags-angola",
+      title: "Flagge von Angola",
+      countryCode: "AO",
+      countryName: "Angola",
+      continent: "Africa",
+      lat: -8.83833,
+      lng: 13.23444,
+      category: "flags",
+      shortDescription: "Die Flagge Angolas verbindet zwei horizontale Farbfelder mit einem gelben Emblem."
+    },
+    guess: { lat: 2.04, lng: 45.32 },
+    distanceKm: 4060
+  }
+];
+
 const settings = {
   mode: "classic",
   localMode: "solo",
@@ -197,6 +314,29 @@ const summary = {
   completedAt: Date.now(),
   roundStartedAt: Date.now() - 45000
 };
+
+function globePhaseOneState(testCase) {
+  const guess = {
+    ...summary.results[0].guess,
+    ...testCase.guess,
+    playerId: hostPlayer.id
+  };
+  return {
+    settings: { category: testCase.location.category ?? "landmarks", localMode: "solo", localPlayerCount: 1 },
+    players: [hostPlayer],
+    guesses: [guess],
+    summaries: [{
+      ...summary,
+      location: testCase.location,
+      results: [{
+        ...summary.results[0],
+        playerId: hostPlayer.id,
+        distanceKm: testCase.distanceKm,
+        guess
+      }]
+    }]
+  };
+}
 
 const finalTableSummary = {
   ...summary,
@@ -322,7 +462,34 @@ const targets = [
     note: "echter URL-Pfad mit QA-Online-Raum"
   },
   { name: "spielen", access: "state", path: "/spielen", status: "guessing", readySelector: ".punktlandung-game-shell", readyImageSelector: ".punktlandung-panorama-viewport img", note: "echter URL-Pfad mit QA-Session" },
+  {
+    name: "spielen-landscape-wahrzeichen",
+    access: "state",
+    path: "/spielen",
+    status: "guessing",
+    stateOverrides: {
+      settings: { category: "landmarks" },
+      location: { ...sampleLocation, category: "landmarks" }
+    },
+    expectedText: "Wahrzeichen",
+    readySelector: ".punktlandung-game-shell",
+    readyImageSelector: ".punktlandung-panorama-viewport img",
+    expectLandscapeGameHud: true,
+    note: "Phone-Landscape mit langer Suchkategorie, Bild-Overlay fuer Runde/Zeit, verborgenem Zurueck und hochgezogener Karte"
+  },
   { name: "bild-laden", access: "state", path: "/spielen", status: "guessing", forceImageLoader: true, readySelector: ".punktlandung-image-loader", note: "erster Bildladezustand mit kontinuierlichem Suchscheinwerfer und drei beleuchteten Ellipsensegmenten" },
+  {
+    name: "bild-laden-spaet",
+    access: "state",
+    path: "/spielen",
+    status: "guessing",
+    forceImageLoader: true,
+    imageLoadDelayMs: 22000,
+    readyTimeoutMs: 20000,
+    readySelector: ".punktlandung-image-loader--recovery button",
+    expectImageRecoverySafe: true,
+    note: "spaeter Bildladezustand mit erreichbarer Aktion oberhalb von Karte und Quellenhinweis"
+  },
   {
     name: "tipp-zu-aufloesung",
     access: "state-submit",
@@ -361,6 +528,40 @@ const targets = [
     expectedText: "AUFLÖSUNG",
     readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
     note: "Solo-Auflösung mit echter Globe-Ergebnisanimation"
+  },
+  ...globePhaseOneCases.map((testCase) => ({
+    name: `aufloesung-globe-${testCase.id}`,
+    access: "state",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: globePhaseOneState(testCase),
+    expectedText: testCase.location.title,
+    readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [data-result-composition='ready'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    expectGlobeSafeArea: true,
+    note: `Dynamische Solo-Auflösung für Phase-1-Globe-Fall ${testCase.location.title}`
+  })),
+  {
+    name: "aufloesung-globe-zoomgrenze",
+    access: "state",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: globePhaseOneState(globePhaseOneCases.at(-1)),
+    expectedText: globePhaseOneCases.at(-1).location.title,
+    readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [data-result-composition='ready'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    expectGlobeZoomFloor: true,
+    note: "Ergebnis-Globe begrenzt Minus-Taste und Gesten auf eine harmonische Mindestgröße"
+  },
+  {
+    name: "aufloesung-globe-zielinfo",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: globePhaseOneState(globePhaseOneCases[0]),
+    clickSelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    expectedText: globePhaseOneCases[0].location.shortDescription,
+    readySelector: ".punktlandung-globe-info-overlay, .kartenlabor-result-popup",
+    expectGlobeInfoOverlay: true,
+    note: "Mobile Zielinformation als zentriertes Overlay ohne erneute Kamerabewegung"
   },
   {
     name: "aufloesung-zielinfo",
@@ -468,6 +669,26 @@ const targets = [
     note: "Ergebniszustand der letzten Runde mit erreichbarer Abschlussaktion"
   },
   { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", readySelector: ".punktlandung-image-replay", readyImageSelector: ".punktlandung-panorama-viewport img", note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
+  {
+    name: "nochmal-ansehen-ranked",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: {
+      summaries: [{
+        ...summary,
+        location: {
+          ...summary.location,
+          id: "round-replay-1",
+          panoramaUrl: "/api/v1/ranked-games/ranked-qa/rounds/round-replay-1/prompt"
+        }
+      }]
+    },
+    buttonText: "Bild nochmal ansehen",
+    readySelector: ".punktlandung-image-replay",
+    readyImageSelector: ".punktlandung-panorama-viewport img",
+    note: "Ranked-Bild-Replay ueber den geschuetzten und nicht leeren Prompt-Endpunkt"
+  },
   {
     name: "nochmal-ansehen-globe",
     access: "state-click",
@@ -854,6 +1075,9 @@ async function openTarget(page, target) {
       if (target.clickSelector) {
         const clickTarget = page.locator(target.clickSelector).first();
         await clickTarget.waitFor({ state: "visible", timeout: 15000 });
+        if (target.expectGlobeInfoOverlay) {
+          await page.locator("[data-result-composition='ready']").first().waitFor({ state: "visible", timeout: 15000 });
+        }
         if (target.expectStableMapOnPopup) {
           await page.evaluate(() => {
             const center = (selector) => {
@@ -864,6 +1088,20 @@ async function openTarget(page, target) {
               before: {
                 actual: center(".punktlandung-results-map .punktlandung-map-pin-actual"),
                 player: center(".punktlandung-results-map .punktlandung-map-pin-player")
+              }
+            };
+          });
+        }
+        if (target.expectGlobeInfoOverlay) {
+          await page.evaluate(() => {
+            const center = (selector) => {
+              const rect = document.querySelector(selector)?.getBoundingClientRect();
+              return rect ? { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 } : null;
+            };
+            window.__punktlandungGlobeOverlayProbe = {
+              before: {
+                actual: center("[data-result-marker-kind='target']"),
+                player: center("[data-result-marker-kind='guess']")
               }
             };
           });
@@ -883,6 +1121,20 @@ async function openTarget(page, target) {
             window.__punktlandungPopupMapProbe.after = {
               actual: center(".punktlandung-results-map .punktlandung-map-pin-actual"),
               player: center(".punktlandung-results-map .punktlandung-map-pin-player")
+            };
+          }
+        });
+      }
+      if (target.expectGlobeInfoOverlay) {
+        await page.evaluate(() => {
+          const center = (selector) => {
+            const rect = document.querySelector(selector)?.getBoundingClientRect();
+            return rect ? { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 } : null;
+          };
+          if (window.__punktlandungGlobeOverlayProbe) {
+            window.__punktlandungGlobeOverlayProbe.after = {
+              actual: center("[data-result-marker-kind='target']"),
+              player: center("[data-result-marker-kind='guess']")
             };
           }
         });
@@ -1047,6 +1299,73 @@ async function collectLayoutMetrics(page, readySelector = null) {
     const actualAbovePlayer = actualPinRect && playerPinRect
       ? (actualPinRect.top + actualPinRect.bottom) / 2 < (playerPinRect.top + playerPinRect.bottom) / 2
       : null;
+    const globeFrame = resultMap?.querySelector("[aria-label='Interaktive 3D-Ergebniskarte']") ?? null;
+    const globeFrameRect = globeFrame?.getBoundingClientRect() ?? null;
+    const globeVisualElements = globeFrame
+      ? [...globeFrame.querySelectorAll("[data-visible='true'] svg[class*='markerPin'], [data-visible='true'] svg[class*='markerRings'], [data-visible='true'] [class*='markerLabel'], [data-result-route='connection']")].filter(visible)
+      : [];
+    const globeVisualRects = globeVisualElements.map((element) => element.getBoundingClientRect());
+    const globeVisualBounds = globeVisualElements.map((element, index) => {
+      const rect = globeVisualRects[index];
+      return {
+        element: element.getAttribute("data-result-route") ?? element.className?.baseVal ?? element.className ?? element.tagName,
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom
+      };
+    });
+    const globeRoutes = globeFrame ? [...globeFrame.querySelectorAll("[data-result-route='connection']")].filter(visible) : [];
+    const markerKinds = globeFrame ? [...globeFrame.querySelectorAll("[data-result-marker-kind][data-visible='true']")] : [];
+    const globeControlButtons = globeFrame ? [...globeFrame.querySelectorAll(".maplibregl-ctrl-group button")] : [];
+    const globeControlContainer = globeFrame?.querySelector(".maplibregl-ctrl-top-right") ?? null;
+    const stackingLevel = (element) => {
+      if (!element) return 0;
+      const parsed = Number.parseInt(getComputedStyle(element).zIndex, 10);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+    const globeContentStacking = globeFrame
+      ? Math.max(0, ...[...globeFrame.querySelectorAll("[data-result-marker-kind], [data-result-route='connection']")].map(stackingLevel))
+      : 0;
+    const routeEndpointClearances = (() => {
+      const route = globeRoutes[0];
+      if (!(route instanceof SVGPathElement) || route.getTotalLength() <= 0) return null;
+      const matrix = route.getScreenCTM();
+      if (!matrix) return null;
+      const screenPoint = (point) => new DOMPoint(point.x, point.y).matrixTransform(matrix);
+      const endpoints = [screenPoint(route.getPointAtLength(0)), screenPoint(route.getPointAtLength(route.getTotalLength()))];
+      const rings = ["guess", "target"].map((kind) => globeFrame.querySelector(`[data-result-marker-kind='${kind}'] [class*='markerRings']`));
+      return rings.map((ring, index) => {
+        if (!ring) return Number.NEGATIVE_INFINITY;
+        const rect = ring.getBoundingClientRect();
+        const center = { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 };
+        const vector = { x: endpoints[index].x - center.x, y: endpoints[index].y - center.y };
+        const centerDistance = Math.max(0.001, Math.hypot(vector.x, vector.y));
+        const unit = { x: vector.x / centerDistance, y: vector.y / centerDistance };
+        const radiusX = Math.max(0.5, rect.width / 2);
+        const radiusY = Math.max(0.5, rect.height / 2);
+        const ellipseRadius = 1 / Math.sqrt((unit.x ** 2) / (radiusX ** 2) + (unit.y ** 2) / (radiusY ** 2));
+        return centerDistance - ellipseRadius;
+      });
+    })();
+    const globeInfoOverlay = resultMap?.querySelector(".punktlandung-globe-info-overlay") ?? null;
+    const globeInfoOverlayRect = globeInfoOverlay?.getBoundingClientRect() ?? null;
+    const navigationRect = globeFrame?.querySelector(".maplibregl-ctrl-top-right")?.getBoundingClientRect() ?? null;
+    const attributionRect = globeFrame?.querySelector(".punktlandung-map-attribution")?.getBoundingClientRect() ?? null;
+    const overlaps = (first, second) => Boolean(first && second
+      && Math.min(first.right, second.right) > Math.max(first.left, second.left)
+      && Math.min(first.bottom, second.bottom) > Math.max(first.top, second.top));
+    const recoveryButton = document.querySelector(".punktlandung-image-loader--recovery button");
+    const recoveryButtonRect = recoveryButton?.getBoundingClientRect() ?? null;
+    const recoveryViewerRect = recoveryButton?.closest(".punktlandung-game-viewer")?.getBoundingClientRect() ?? null;
+    const recoverySourceRect = recoveryButton?.closest(".punktlandung-game-viewer")?.querySelector(".punktlandung-source-chip")?.getBoundingClientRect() ?? null;
+    const recoveryMapRect = document.querySelector(".punktlandung-guess-map-panel")?.getBoundingClientRect() ?? null;
+    const recoveryButtonTopElement = recoveryButtonRect
+      ? document.elementFromPoint((recoveryButtonRect.left + recoveryButtonRect.right) / 2, (recoveryButtonRect.top + recoveryButtonRect.bottom) / 2)
+      : null;
+    const recoverySourceTopElement = recoverySourceRect
+      ? document.elementFromPoint((recoverySourceRect.left + recoverySourceRect.right) / 2, (recoverySourceRect.top + recoverySourceRect.bottom) / 2)
+      : null;
 
     return {
       title: document.title,
@@ -1065,6 +1384,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
       onlineRoomState,
       transitionProbe,
       popupMapProbe: window.__punktlandungPopupMapProbe ?? null,
+      globeOverlayProbe: window.__punktlandungGlobeOverlayProbe ?? null,
       visibleElementCount: visibleElements.length,
       overflowingElements,
       textClippingCandidates,
@@ -1116,6 +1436,54 @@ async function collectLayoutMetrics(page, readySelector = null) {
             ? Math.abs(popupTipRect.bottom - actualLabelRect.top) <= 12
             : Math.abs(popupTipRect.top - actualLabelRect.bottom) <= 12
       } : null,
+      globeResultSafety: globeFrameRect ? {
+        frameBounds: {
+          left: globeFrameRect.left,
+          top: globeFrameRect.top,
+          right: globeFrameRect.right,
+          bottom: globeFrameRect.bottom
+        },
+        visualCount: globeVisualRects.length,
+        visualBounds: globeVisualBounds,
+        markerCount: markerKinds.length,
+        routeCount: globeRoutes.length,
+        routeSubpaths: globeRoutes[0]?.getAttribute("d")?.match(/M/g)?.length ?? 0,
+        allInside: globeVisualRects.length >= 7 && globeVisualRects.every((rect) =>
+          rect.left >= globeFrameRect.left + 16 - 0.25
+          && rect.right <= globeFrameRect.right - 66 + 0.25
+          && rect.top >= globeFrameRect.top + 16 - 0.25
+          && rect.bottom <= globeFrameRect.bottom - 16 + 0.25
+        ),
+        routeEndpointClearances,
+        controlsGerman: globeControlButtons.length === 3 && globeControlButtons.every((button) =>
+          ["Karte vergrößern", "Karte verkleinern", "Karte drehen; Norden zurücksetzen"].includes(button.getAttribute("aria-label"))
+          && !button.hasAttribute("title")
+        ),
+        controlStacking: {
+          controls: stackingLevel(globeControlContainer),
+          content: globeContentStacking,
+          controlsAboveContent: stackingLevel(globeControlContainer) > globeContentStacking
+        }
+      } : null,
+      globeInfoOverlaySafety: globeInfoOverlayRect && globeFrameRect ? {
+        inside: globeInfoOverlayRect.left >= globeFrameRect.left + 12
+          && globeInfoOverlayRect.right <= globeFrameRect.right - 66
+          && globeInfoOverlayRect.top >= globeFrameRect.top + 12
+          && globeInfoOverlayRect.bottom <= globeFrameRect.bottom - 12,
+        avoidsNavigation: !overlaps(globeInfoOverlayRect, navigationRect),
+        avoidsAttribution: !overlaps(globeInfoOverlayRect, attributionRect)
+      } : null,
+      imageRecoverySafety: recoveryButtonRect && recoveryViewerRect ? {
+        insideViewer: recoveryButtonRect.left >= recoveryViewerRect.left
+          && recoveryButtonRect.right <= recoveryViewerRect.right
+          && recoveryButtonRect.top >= recoveryViewerRect.top
+          && recoveryButtonRect.bottom <= recoveryViewerRect.bottom,
+        avoidsSource: !overlaps(recoveryButtonRect, recoverySourceRect),
+        avoidsMap: !overlaps(recoveryButtonRect, recoveryMapRect),
+        receivesPointer: recoveryButtonTopElement === recoveryButton || recoveryButton?.contains(recoveryButtonTopElement),
+        sourceAboveBackdrop: !recoverySourceRect
+          || recoverySourceTopElement?.closest?.(".punktlandung-source-chip") === recoveryButton?.closest(".punktlandung-game-viewer")?.querySelector(".punktlandung-source-chip")
+      } : null,
       fontStatus: document.fonts?.status ?? "unsupported",
       readyElementFullyVisible: readyRect
         ? readyRect.top >= -2 && readyRect.left >= -2 && readyRect.right <= viewportWidth + 2 && readyRect.bottom <= viewportHeight + 2
@@ -1162,6 +1530,7 @@ function normalizeConsoleMessages(messages) {
       /Image "circle-11" could not be loaded.*map\.addImage/i.test(compact) ||
       /calculateFogMatrix is not supported on globe projection/i.test(compact) ||
       /performance warning: READ-usage buffer was written, then fenced/i.test(compact) ||
+      /Failed to load resource: the server responded with a status of 404/i.test(compact) ||
       /^error:\s*Event$/i.test(compact)
     ) {
       ignored.push(compact.slice(0, 500));
@@ -1171,6 +1540,15 @@ function normalizeConsoleMessages(messages) {
   }
 
   return { relevant, ignored };
+}
+
+function normalizeHttpErrors(messages) {
+  const unique = [...new Set(messages)];
+  const missingTerrainTile = (message) => /^404 https:\/\/tiles\.mapterhorn\.com\/\d+\/\d+\/\d+\.webp$/i.test(message);
+  return {
+    ignored: unique.filter(missingTerrainTile),
+    relevant: unique.filter((message) => !missingTerrainTile(message))
+  };
 }
 
 async function blockResponsiveThirdParties(context, target) {
@@ -1187,10 +1565,15 @@ async function blockResponsiveThirdParties(context, target) {
 
     const isGameplayImage = parsedUrl?.pathname === "/api/image" || hostname.endsWith("wikimedia.org");
     if (target.forceImageLoader && isGameplayImage) {
-      await new Promise((resolve) => setTimeout(resolve, 8000));
+      await new Promise((resolve) => setTimeout(resolve, target.imageLoadDelayMs ?? 8000));
     }
 
     if (parsedUrl?.pathname === "/api/image") {
+      await route.fulfill({ path: qaPanoramaPath, contentType: "image/jpeg" });
+      return;
+    }
+
+    if (/^\/api\/v1\/ranked-games\/[^/]+\/rounds\/[^/]+\/prompt$/.test(parsedUrl?.pathname ?? "")) {
       await route.fulfill({ path: qaPanoramaPath, contentType: "image/jpeg" });
       return;
     }
@@ -1256,6 +1639,7 @@ async function runTargetViewport(browser, target, viewport) {
   let responseStatus = null;
   let homeMapStability = null;
   let mapScrollStability = null;
+  let globeCompositionStability = null;
 
   try {
     const response = await openTarget(page, target);
@@ -1263,7 +1647,8 @@ async function runTargetViewport(browser, target, viewport) {
     if (responseStatus === 404) problems.push(`Route meldet 404: ${target.path}`);
 
     if (target.readySelector) {
-      await page.locator(target.readySelector).first().waitFor({ state: "visible", timeout: 15000 });
+      const readyTimeoutMs = target.readyTimeoutMs ?? 15000;
+      await page.locator(target.readySelector).first().waitFor({ state: "visible", timeout: readyTimeoutMs });
       await page.waitForFunction(
         (selector) => {
           const element = document.querySelector(selector);
@@ -1272,7 +1657,7 @@ async function runTargetViewport(browser, target, viewport) {
           return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
         },
         target.readySelector,
-        { timeout: 15000 }
+        { timeout: readyTimeoutMs }
       );
       await page.waitForTimeout(250);
     }
@@ -1491,7 +1876,7 @@ async function runTargetViewport(browser, target, viewport) {
       homeMapStability.intendedMotion = intendedMotion;
     }
 
-    if (target.name === "spielen" || target.name === "nochmal-ansehen") {
+    if (target.name.startsWith("spielen") || target.name === "nochmal-ansehen") {
       const mapPanel = page.locator(".punktlandung-guess-map-panel").first();
       await mapPanel.waitFor({ state: "visible", timeout: 10000 });
       await page.waitForTimeout(400);
@@ -1514,7 +1899,7 @@ async function runTargetViewport(browser, target, viewport) {
       }
     }
 
-    if (target.name === "spielen") {
+    if (target.name.startsWith("spielen")) {
       const readHudGeometry = () => page.evaluate(() => {
         const timeValue = document.querySelector(".punktlandung-game-stat-value-time");
         const timeBox = timeValue?.closest(".punktlandung-game-stat");
@@ -1541,12 +1926,82 @@ async function runTargetViewport(browser, target, viewport) {
       }
     }
 
+    if (target.expectLandscapeGameHud && viewport.width > viewport.height) {
+      const landscapeHud = await page.evaluate(() => {
+        const box = (selector) => {
+          const element = document.querySelector(selector);
+          const rect = element?.getBoundingClientRect();
+          return rect ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height } : null;
+        };
+        const stats = [...document.querySelectorAll(".punktlandung-game-stat")].map((element) => {
+          const rect = element.getBoundingClientRect();
+          return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+        });
+        const back = document.querySelector(".punktlandung-game-back-button");
+        return {
+          title: box(".punktlandung-task-card-title"),
+          task: box(".punktlandung-task-card"),
+          viewer: box(".punktlandung-game-viewer"),
+          mapPanel: box(".punktlandung-guess-map-panel"),
+          stats,
+          backDisplay: back ? getComputedStyle(back).display : "missing"
+        };
+      });
+      const inside = (inner, outer, tolerance = 1) => inner && outer
+        && inner.left >= outer.left - tolerance && inner.top >= outer.top - tolerance
+        && inner.right <= outer.right + tolerance && inner.bottom <= outer.bottom + tolerance;
+      if (!inside(landscapeHud.title, landscapeHud.task)) {
+        problems.push(`Die Landscape-Suchkategorie liegt nicht vollstaendig im Aufgabenrahmen (${JSON.stringify(landscapeHud)}).`);
+      }
+      if (!landscapeHud.stats.length || landscapeHud.stats.some((stat) => !inside(stat, landscapeHud.viewer))) {
+        problems.push(`Runde/Zeit liegen im Landscape nicht vollstaendig auf dem Bild (${JSON.stringify(landscapeHud)}).`);
+      }
+      if (landscapeHud.backDisplay !== "none") {
+        problems.push(`Der Zurueck-Button ist im Phone-Landscape noch sichtbar (${landscapeHud.backDisplay}).`);
+      }
+      if (!landscapeHud.mapPanel || !landscapeHud.task || landscapeHud.mapPanel.top > landscapeHud.task.bottom + 14) {
+        problems.push(`Die Landscape-Karte nutzt die freigewordene Meta-Zeile nicht (${JSON.stringify(landscapeHud)}).`);
+      }
+    }
+
+    if (target.expectGlobeZoomFloor) {
+      const zoomOut = page.locator("[aria-label='Interaktive 3D-Ergebniskarte'] .maplibregl-ctrl-zoom-out").first();
+      await zoomOut.waitFor({ state: "visible", timeout: 10000 });
+      await zoomOut.evaluate((button) => {
+        for (let index = 0; index < 16; index += 1) button.click();
+      });
+      await page.waitForTimeout(700);
+      const zoomFloor = await page.locator("[aria-label='Interaktive 3D-Ergebniskarte'] [data-min-zoom]").first().evaluate((frame) => ({
+        current: Number(frame.getAttribute("data-current-zoom")),
+        minimum: Number(frame.getAttribute("data-min-zoom"))
+      }));
+      if (!Number.isFinite(zoomFloor.current) || !Number.isFinite(zoomFloor.minimum) || zoomFloor.current < zoomFloor.minimum - 0.02) {
+        problems.push(`Der Ergebnis-Globe unterschreitet seine Zoom-Untergrenze (${JSON.stringify(zoomFloor)}).`);
+      }
+    }
+
     await page.evaluate(async () => {
       if (document.fonts) await document.fonts.ready;
     }).catch(() => {});
+    if (target.expectGlobeSafeArea) {
+      const readMarkerCenters = () => page.evaluate(() => Object.fromEntries(
+        [...document.querySelectorAll("[data-result-marker-kind]")].map((marker) => {
+          const rect = marker.getBoundingClientRect();
+          return [marker.getAttribute("data-result-marker-kind"), { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 }];
+        })
+      ));
+      const before = await readMarkerCenters();
+      await page.waitForTimeout(700);
+      const after = await readMarkerCenters();
+      const deltas = Object.keys(before).flatMap((kind) => after[kind]
+        ? [Math.abs(before[kind].x - after[kind].x), Math.abs(before[kind].y - after[kind].y)]
+        : [Number.POSITIVE_INFINITY]);
+      globeCompositionStability = { markerCount: Object.keys(after).length, maxMovementPx: deltas.length ? Math.max(...deltas) : Number.POSITIVE_INFINITY };
+    }
     const metrics = await collectLayoutMetricsStable(page, target.readySelector ?? null);
     if (homeMapStability) metrics.homeMapStability = homeMapStability;
     if (mapScrollStability) metrics.mapScrollStability = mapScrollStability;
+    if (globeCompositionStability) metrics.globeCompositionStability = globeCompositionStability;
     if (metrics.applicationError) problems.push("Die Ansicht zeigt einen Application error.");
     if (metrics.bodyTextLength === 0 || metrics.visibleElementCount === 0) problems.push("Der Body hat keinen sichtbaren Inhalt.");
     if (target.expectedText && !metrics.bodyText.includes(target.expectedText)) {
@@ -1665,6 +2120,44 @@ async function runTargetViewport(browser, target, viewport) {
     )) {
       problems.push("Zielinfo, beide Pins und beide Labels liegen nicht vollständig und richtungsrichtig innerhalb der Auflösungskarte.");
     }
+    if (target.expectGlobeSafeArea && (
+      !metrics.globeResultSafety
+      || metrics.globeResultSafety.markerCount !== 2
+      || metrics.globeResultSafety.routeCount !== 1
+      || !metrics.globeResultSafety.allInside
+      || !metrics.globeResultSafety.controlsGerman
+      || !metrics.globeResultSafety.controlStacking?.controlsAboveContent
+      || !metrics.globeResultSafety.routeEndpointClearances?.every((clearance) => clearance >= 4)
+      || !metrics.globeCompositionStability
+      || metrics.globeCompositionStability.markerCount !== 2
+      || metrics.globeCompositionStability.maxMovementPx > 1
+    )) {
+      problems.push(`Globe-Ergebnis verletzt Safe Area, eindeutige Linienzeichnung, Ellipsenabstand oder deutsche Steuerungslogik (${JSON.stringify(metrics.globeResultSafety)}).`);
+    }
+    if (target.expectGlobeInfoOverlay && (viewport.width <= 879 || viewport.height <= 500)) {
+      const before = metrics.globeOverlayProbe?.before;
+      const after = metrics.globeOverlayProbe?.after;
+      const mapMovement = before?.player && after?.player
+        ? Math.max(Math.abs(before.player.x - after.player.x), Math.abs(before.player.y - after.player.y))
+        : Number.POSITIVE_INFINITY;
+      if (
+        !metrics.globeInfoOverlaySafety?.inside
+        || !metrics.globeInfoOverlaySafety.avoidsNavigation
+        || !metrics.globeInfoOverlaySafety.avoidsAttribution
+        || mapMovement > 1
+      ) {
+        problems.push(`Mobile Globe-Zielinfo ist nicht sicher zentriert oder bewegt die Karte (${JSON.stringify({ safety: metrics.globeInfoOverlaySafety, mapMovement })}).`);
+      }
+    }
+    if (target.expectImageRecoverySafe && (
+      !metrics.imageRecoverySafety?.insideViewer
+      || !metrics.imageRecoverySafety.avoidsSource
+      || !metrics.imageRecoverySafety.avoidsMap
+      || !metrics.imageRecoverySafety.receivesPointer
+      || !metrics.imageRecoverySafety.sourceAboveBackdrop
+    )) {
+      problems.push(`Die spaete Bildladeaktion ist auf dem Mobilgeraet nicht sicher erreichbar (${JSON.stringify(metrics.imageRecoverySafety)}).`);
+    }
     if (target.expectStableMapOnPopup && viewport.width >= 900 && viewport.height >= 480) {
       const before = metrics.popupMapProbe?.before;
       const after = metrics.popupMapProbe?.after;
@@ -1698,7 +2191,8 @@ async function runTargetViewport(browser, target, viewport) {
     screenshot = await saveViewportScreenshot(page, screenshot);
 
     const normalizedConsole = normalizeConsoleMessages(consoleErrors);
-    for (const responseError of [...new Set(httpErrors)]) problems.push(`HTTP-Fehler: ${responseError}`);
+    const normalizedHttp = normalizeHttpErrors(httpErrors);
+    for (const responseError of normalizedHttp.relevant) problems.push(`HTTP-Fehler: ${responseError}`);
     for (const consoleError of normalizedConsole.relevant) problems.push(`Browserfehler: ${consoleError}`);
     return {
       target: target.name,
@@ -1710,7 +2204,8 @@ async function runTargetViewport(browser, target, viewport) {
       metrics,
       problems,
       warnings,
-      httpErrors: [...new Set(httpErrors)],
+      httpErrors: normalizedHttp.relevant,
+      ignoredHttpErrors: normalizedHttp.ignored,
       consoleErrors: normalizedConsole.relevant,
       ignoredConsoleErrors: normalizedConsole.ignored
     };
@@ -1721,6 +2216,7 @@ async function runTargetViewport(browser, target, viewport) {
       // Keep the original test failure visible even when the artifact cannot be written.
     }
     const normalizedConsole = normalizeConsoleMessages(consoleErrors);
+    const normalizedHttp = normalizeHttpErrors(httpErrors);
     return {
       target: target.name,
       viewport: viewport.name,
@@ -1731,7 +2227,8 @@ async function runTargetViewport(browser, target, viewport) {
       metrics: null,
       problems: [error instanceof Error ? error.message : String(error)],
       warnings,
-      httpErrors: [...new Set(httpErrors)],
+      httpErrors: normalizedHttp.relevant,
+      ignoredHttpErrors: normalizedHttp.ignored,
       consoleErrors: normalizedConsole.relevant,
       ignoredConsoleErrors: normalizedConsole.ignored
     };

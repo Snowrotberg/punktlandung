@@ -33,7 +33,6 @@ const imageLoadTimeoutMs: Record<GeoLocation["category"], number> = {
 const slowLoadHintMs = 12000;
 const manualSkipHintMs = 15000;
 const locationLoadDeadlineMs = 20000;
-const rankedAutomaticRecoveryMs = 4000;
 const replayLoadOverlayDelayMs = 450;
 const loaderOrbitDurationMs = 3200;
 const defaultProxyWidth = 1400;
@@ -444,7 +443,10 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
   };
 
   useEffect(() => {
-    if (imageLoaded) return;
+    // A ranked prompt is already a bounded same-origin request. Do not treat
+    // an ordinary mobile response time as a failed candidate: its onError
+    // retry and the overall 20 s deadline own recovery instead.
+    if (imageLoaded || rankedPromptImage) return;
     const canUseFallback = Boolean(fallbackImageUrl) && !preferredImageUrl;
     const effectiveType = (navigator as Navigator & { connection?: { effectiveType?: string } }).connection?.effectiveType;
     const delayMs = canUseFallback
@@ -465,7 +467,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
     return () => {
       window.clearTimeout(timer);
     };
-  }, [displayedImageUrl, fallbackImageUrl, imageIndex, imageLoaded, imageUrls.length, location.category, location.id, preferredImageUrl]);
+  }, [displayedImageUrl, fallbackImageUrl, imageIndex, imageLoaded, imageUrls.length, location.category, location.id, preferredImageUrl, rankedPromptImage]);
 
   useEffect(() => {
     if (imageLoaded) return;
@@ -512,23 +514,19 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
   };
 
   useEffect(() => {
-    if (!rankedPromptImage || !isHost || imageLoaded || skipPending) return;
-    const timer = window.setTimeout(() => {
-      if (loadedImageUrlRef.current) return;
-      if (rankedAutomaticRecoveryCountRef.current < 1) {
-        rankedAutomaticRecoveryCountRef.current += 1;
-        void skipCurrentLocation();
-        return;
-      }
-      // After one transparent automatic recovery, keep control with the
-      // player. The action appears promptly instead of after the old 15–20 s
-      // dead wait, while the current image request may still complete.
-      setShowLoadOverlay(true);
-      setShowSlowLoadHint(true);
-      setShowManualSkip(true);
-    }, rankedAutomaticRecoveryMs);
-    return () => window.clearTimeout(timer);
-  }, [imageLoaded, isHost, location.id, rankedPromptImage, skipPending]);
+    if (!rankedPromptImage || !isHost || !imageFailed || imageLoaded || skipPending) return;
+    if (rankedAutomaticRecoveryCountRef.current < 1) {
+      rankedAutomaticRecoveryCountRef.current += 1;
+      void skipCurrentLocation();
+      return;
+    }
+    // After one transparent automatic recovery, keep control with the player.
+    // Crucially, this state now follows an actual failed/retried request or the
+    // overall deadline instead of racing a request that is merely still busy.
+    setShowLoadOverlay(true);
+    setShowSlowLoadHint(true);
+    setShowManualSkip(true);
+  }, [imageFailed, imageLoaded, isHost, location.id, rankedPromptImage, skipPending]);
 
   const scale = zoom / 100;
   const canPanImage = !settings.noPan && zoom > 100;
@@ -843,7 +841,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
       {!imageLoaded && (showLoadOverlay || imageFailed) && (
         <div className={`punktlandung-image-load-overlay pointer-events-none absolute inset-0 z-20 grid place-items-center p-6 text-center backdrop-blur-[2px] ${previewLoaded ? "has-preview" : "without-preview"}`}>
           <div
-            className="punktlandung-image-loader pointer-events-auto h-56 w-56 bg-transparent p-0 shadow-none ring-0"
+            className={`punktlandung-image-loader pointer-events-auto w-56 bg-transparent p-0 shadow-none ring-0 ${showSlowLoadHint || showManualSkip ? "punktlandung-image-loader--recovery" : ""}`}
           >
             <div ref={loaderMarkRef} className="punktlandung-loader-mark mx-auto">
               <svg className="punktlandung-loader-ellipses" viewBox="0 0 128 96" aria-hidden="true">

@@ -208,9 +208,84 @@
   to { stroke-dashoffset: -15; }
 }
 
+.mapFrame :global(.maplibregl-ctrl-top-right) {
+  z-index: 10;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.mapFrame :global(.maplibregl-ctrl-group) {
+  overflow: visible;
+  border: 1px solid rgba(71, 85, 105, 0.82);
+  border-radius: 0.75rem;
+  background: rgba(8, 18, 34, 0.94);
+  box-shadow: 0 0.8rem 2rem rgba(2, 6, 23, 0.4);
+  backdrop-filter: blur(12px);
+}
+
 .mapFrame :global(.maplibregl-ctrl-group button) {
+  position: relative;
   width: 2.5rem;
   height: 2.5rem;
+  border-color: rgba(71, 85, 105, 0.7);
+  background-color: transparent;
+  color: #e2e8f0;
+  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.mapFrame :global(.maplibregl-ctrl-group button:hover),
+.mapFrame :global(.maplibregl-ctrl-group button:focus-visible) {
+  background-color: rgba(30, 41, 59, 0.96);
+  color: #a7f3d0;
+}
+
+.mapFrame :global(.maplibregl-ctrl-group button:focus-visible) {
+  outline: 2px solid rgba(94, 231, 189, 0.92);
+  outline-offset: 2px;
+}
+
+.mapFrame :global(.maplibregl-ctrl-icon) {
+  filter: invert(92%) sepia(8%) saturate(318%) hue-rotate(176deg) brightness(102%) contrast(90%);
+}
+
+.mapFrame :global(.maplibregl-ctrl-group button[data-tooltip]::after) {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 12;
+  right: calc(100% + 0.55rem);
+  top: 50%;
+  width: max-content;
+  max-width: min(15rem, calc(100vw - 6rem));
+  border: 1px solid rgba(110, 231, 183, 0.55);
+  border-radius: 0.45rem;
+  background: rgba(8, 18, 34, 0.97);
+  padding: 0.42rem 0.58rem;
+  color: #e2e8f0;
+  box-shadow: 0 0.75rem 2rem rgba(2, 6, 23, 0.42);
+  font-family: var(--font-inter), "Segoe UI", sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.25;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(0.2rem);
+  transition: opacity 120ms ease, transform 120ms ease;
+  visibility: hidden;
+  white-space: normal;
+}
+
+.mapFrame :global(.maplibregl-ctrl-group button[data-tooltip]:focus-visible::after) {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+  visibility: visible;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mapFrame :global(.maplibregl-ctrl-group button[data-tooltip]:hover::after) {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+    visibility: visible;
+  }
 }
 
 .mapFrame :global(button[aria-label="Kartenquellen anzeigen"]) {
@@ -414,7 +489,8 @@
   left: 50%;
   top: auto;
   right: auto;
-  white-space: nowrap;
+  max-width: min(15rem, calc(100vw - 7rem));
+  white-space: normal;
   border: 1px solid #334155 !important;
   border-radius: 0.7rem !important;
   background: rgb(10 16 28 / 0.94) !important;
@@ -426,6 +502,8 @@
   opacity: 0;
   transform: translateX(-50%) translateY(0.35rem) scale(0.94);
   transition: opacity 180ms ease 80ms, transform 260ms ease 80ms;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .markerLabel::before {
@@ -444,7 +522,7 @@
 }
 
 .targetMarker .markerLabel::after {
-  content: "?";
+  content: "i";
   position: absolute;
   right: 0.35rem;
   top: 50%;
@@ -552,6 +630,84 @@
   line-height: 1.4;
 }
 
+.targetMarker[data-visible="true"] .markerLabel::after {
+  opacity: 0.64;
+  transform: translateY(-50%) scale(0.9);
+}
+
+.mobileInfoLayer {
+  position: absolute;
+  z-index: 7;
+  inset: 1rem 4.75rem 1rem 1rem;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.mobileInfoDialog {
+  position: relative;
+  display: grid;
+  width: min(24rem, 100%);
+  max-height: 100%;
+  gap: 0.35rem;
+  overflow: auto;
+  border: 1px solid rgba(94, 231, 189, 0.62);
+  border-radius: 0.9rem;
+  background: rgba(7, 15, 35, 0.97);
+  padding: 0.85rem 3rem 0.85rem 0.9rem;
+  color: #e8fff7;
+  box-shadow: 0 1.4rem 3.5rem rgba(2, 6, 23, 0.58);
+  pointer-events: auto;
+  backdrop-filter: blur(14px);
+}
+
+.mobileInfoDialog:focus-visible {
+  outline: 2px solid rgba(94, 231, 189, 0.94);
+  outline-offset: 3px;
+}
+
+.mobileInfoDialog strong {
+  color: #6ee7b7;
+  font-size: 0.95rem;
+}
+
+.mobileInfoDialog > span {
+  color: #d3deee;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.mobileInfoDialog .mobileInfoClose {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  display: grid;
+  width: 2.25rem;
+  min-height: 2.25rem;
+  place-items: center;
+  border: 1px solid rgba(94, 231, 189, 0.66);
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.9);
+  padding: 0;
+  color: #e8fff7;
+  font-size: 1.35rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.mobileInfoDialog .mobileInfoClose:hover,
+.mobileInfoDialog .mobileInfoClose:focus-visible {
+  background: rgba(16, 185, 129, 0.2);
+  outline: 2px solid rgba(94, 231, 189, 0.9);
+  outline-offset: 2px;
+}
+
+.mobileInfoDialog .mobileInfoClose span {
+  color: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
 @media (max-width: 1050px) {
   .controlPanel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -605,6 +761,20 @@
     bottom: 0.7rem;
     max-width: calc(100% - 4.6rem);
     font-size: 0.62rem;
+  }
+
+  .markerLabel {
+    max-width: min(10.5rem, calc(100vw - 7rem));
+    font-size: 12px !important;
+  }
+
+  .mobileInfoLayer {
+    inset: 0.75rem 4.5rem 0.75rem 0.75rem;
+  }
+
+  .mobileInfoDialog {
+    gap: 0.3rem;
+    padding: 0.72rem 2.8rem 0.72rem 0.75rem;
   }
 
 }

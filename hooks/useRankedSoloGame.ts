@@ -163,13 +163,23 @@ function roundIdFromPromptLocationId(locationId: string): string {
   return locationId.split("@", 1)[0];
 }
 
-function resolvedLocation(round: PublicResolvedRankedRound): GeoLocation {
-  return { ...round.location, id: round.roundId, panoramaUrl: "", attribution: "Wikimedia Commons", source: "wikimedia" };
+export function rankedRoundPromptUrl(gameId: string, roundId: string): string {
+  return `/api/v1/ranked-games/${encodeURIComponent(gameId)}/rounds/${encodeURIComponent(roundId)}/prompt`;
 }
 
-function summaryFor(round: PublicResolvedRankedRound, guess: Guess | null): RoundSummary {
+function resolvedLocation(round: PublicResolvedRankedRound, gameId: string): GeoLocation {
+  return {
+    ...round.location,
+    id: round.roundId,
+    panoramaUrl: rankedRoundPromptUrl(gameId, round.roundId),
+    attribution: "Wikimedia Commons",
+    source: "wikimedia"
+  };
+}
+
+function summaryFor(round: PublicResolvedRankedRound, guess: Guess | null, gameId: string): RoundSummary {
   const result = { ...round.result, playerId };
-  return { roundNumber: round.roundNumber, location: resolvedLocation(round), results: [result], crewGuess: null, crewDistanceKm: null, duel: [], completedAt: round.resolvedAt, roundStartedAt: guess?.createdAt ? guess.createdAt - (guess.responseTimeMs ?? 0) : undefined };
+  return { roundNumber: round.roundNumber, location: resolvedLocation(round, gameId), results: [result], crewGuess: null, crewDistanceKm: null, duel: [], completedAt: round.resolvedAt, roundStartedAt: guess?.createdAt ? guess.createdAt - (guess.responseTimeMs ?? 0) : undefined };
 }
 
 function resolvedGuess(round: PublicResolvedRankedRound): Guess | null {
@@ -182,7 +192,7 @@ export function roomFromRankedGame(
   storedSettings: GameSettings,
   revealPendingRound = false
 ): RoomState {
-  const summaries = next.resolvedRounds.map((round) => summaryFor(round, resolvedGuess(round)));
+  const summaries = next.resolvedRounds.map((round) => summaryFor(round, resolvedGuess(round), next.gameId));
   const latestResolved = next.resolvedRounds.at(-1) ?? null;
   const activeLocation = promptLocation(next);
   const totalRounds = next.activeRound?.totalRounds ?? Math.max(storedSettings.rounds, next.resolvedRounds.length);
@@ -209,7 +219,7 @@ export function roomFromRankedGame(
     status: finished ? "finished" : showingResults ? "results" : "guessing",
     players: [makePlayer(name, next.score)],
     currentRound: showingResolvedRound ? latestResolved?.roundNumber ?? 0 : next.activeRound?.roundNumber ?? latestResolved?.roundNumber ?? 0,
-    location: showingResolvedRound && latestResolved ? resolvedLocation(latestResolved) : activeLocation ?? (latestResolved ? resolvedLocation(latestResolved) : null),
+    location: showingResolvedRound && latestResolved ? resolvedLocation(latestResolved, next.gameId) : activeLocation ?? (latestResolved ? resolvedLocation(latestResolved, next.gameId) : null),
     guesses: showingResolvedRound && latestGuess ? [latestGuess] : [],
     timedOutPlayerIds: showingResolvedRound && latestResolved && !latestGuess ? [playerId] : [],
     roundStartedAt: showingResolvedRound ? null : next.activeRound?.startedAt ?? null,
@@ -487,9 +497,9 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
       if (!value || !resolved) return value;
       const summaries = value.summaries.some((summary) => summary.roundNumber === resolved.roundNumber)
         ? value.summaries
-        : [...value.summaries, summaryFor(resolved, guess)];
+        : [...value.summaries, summaryFor(resolved, guess, next.gameId)];
       const nextPlayer = makePlayer(value.players[0]?.name ?? "Spieler 1", next.score);
-      return { ...value, status: next.status === "completed" ? "finished" : "results", players: [nextPlayer], location: resolvedLocation(resolved), guesses: guess ? [guess] : [], timedOutPlayerIds: timedOut ? [playerId] : [], summaries, currentRound: resolved.roundNumber, roundEndsAt: null, roundStartedAt: null };
+      return { ...value, status: next.status === "completed" ? "finished" : "results", players: [nextPlayer], location: resolvedLocation(resolved, next.gameId), guesses: guess ? [guess] : [], timedOutPlayerIds: timedOut ? [playerId] : [], summaries, currentRound: resolved.roundNumber, roundEndsAt: null, roundStartedAt: null };
     });
   }, []);
 

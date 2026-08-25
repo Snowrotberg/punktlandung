@@ -31,6 +31,8 @@ export type ResultCameraPlan = {
   keyframes: CameraKeyframe[];
 };
 
+export type ResultCameraSnapshot = Omit<CameraKeyframe, "at">;
+
 export const RESULT_CAMERA_CONFIG = {
   distanceThresholdKm: {
     short: 90,
@@ -48,6 +50,8 @@ export const RESULT_CAMERA_CONFIG = {
   },
   terrainExaggeration: 1.5
 } as const;
+
+export const RESULT_MAP_MIN_ZOOM = 1.15;
 
 export const RESULT_CAMERA_SCENARIOS: ResultCameraScenario[] = [
   {
@@ -212,15 +216,8 @@ export function buildResultCameraPlan(
   const distanceClass = classifyResultDistance(distanceKm);
   // Compact result maps need additional breathing room for the two badges
   // and the target information card, not just for the geographic points.
-  const compactLongAdjustment = distanceKm < 6_000
-    ? -1.8
-    : distanceKm < 9_000
-      ? -2.3
-      : distanceKm < 12_500
-        ? -2
-        : -1.8;
   const compactAdjustment = options.compactViewport
-    ? distanceClass === "short" ? -0.3 : distanceClass === "medium" ? -0.55 : compactLongAdjustment
+    ? distanceClass === "short" ? -0.3 : distanceClass === "medium" ? -0.55 : -0.35
     : 0;
   const direction = initialBearing(guess, target);
   const endBearing = clamp(direction - 18, -24, 24);
@@ -342,6 +339,18 @@ export function buildResultCameraPlan(
       : profile.targetRevealProgress,
     terrainRampProgress: profile.terrainRampProgress,
     keyframes
+  };
+}
+
+export function withResultCameraEndFrame(
+  plan: ResultCameraPlan,
+  endCamera: ResultCameraSnapshot
+): ResultCameraPlan {
+  return {
+    ...plan,
+    keyframes: plan.keyframes.map((frame, index) => index === plan.keyframes.length - 1
+      ? { ...frame, ...endCamera, at: 1 }
+      : frame)
   };
 }
 
