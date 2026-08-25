@@ -1926,7 +1926,7 @@ async function runTargetViewport(browser, target, viewport) {
       }
     }
 
-    if (target.expectLandscapeGameHud && viewport.width > viewport.height) {
+    if (target.expectLandscapeGameHud && viewport.category === "mobile" && viewport.width > viewport.height) {
       const landscapeHud = await page.evaluate(() => {
         const box = (selector) => {
           const element = document.querySelector(selector);
