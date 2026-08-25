@@ -25,6 +25,7 @@
 .panelHead h2 { font-size:1.35rem; margin:0; }.panelHead span { color:#5ee7bd; font-size:.8rem; font-weight:800; }
 .empty { color:#94a3b8; padding:3rem 1rem; text-align:center; }.empty strong { color:#f7fafc; display:block; font-size:1.1rem; }.empty p { margin:.5rem auto 0; max-width:34rem; }
 .ownSummary { display:flex; justify-content:space-between; gap:1rem; align-items:center; margin:1rem 0 .5rem; border:1px solid #5ee7bd; border-radius:.7rem; background:rgb(18 56 47 / .58); padding:.7rem .9rem; }.ownSummary strong { color:#f8fafc; }.ownSummary span { color:#b8f3df; font-size:.78rem; }
+.exampleNote { color:#a8b4c5; font-size:.76rem; line-height:1.45; margin:.9rem 0 -.15rem; }
 .list { display:grid; gap:.5rem; list-style:none; margin:1rem 0 0; padding:0; }.rowWrap { display:grid; gap:.5rem; }.list li { align-items:center; background:#02061788; border:1px solid #26354a; border-radius:.7rem; display:grid; gap:.8rem; grid-template-columns:3rem minmax(0,1fr) auto; padding:.8rem 1rem; }.list li[data-own=true] { border-color:#5ee7bd; background:rgb(18 56 47 / .58); }.list b { color:#5ee7bd; }.list li span { font-weight:800; }.list li span small { display:block; color:#94a3b8; font-size:.72rem; font-weight:600; margin-top:.15rem; }.gap { display:block; color:#64748b; text-align:center; padding:.05rem; }.list strong { color:#5ee7bd; }
 .listLegend { display:flex; flex-wrap:wrap; gap:1rem; color:#94a3b8; font-size:.75rem; margin-top:.75rem; padding-right:2rem; }
 .panel > .rankingHelp { bottom:.75rem; margin:0; position:absolute; right:.8rem; }

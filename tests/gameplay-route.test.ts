@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { gameplayRouteForStatus, gameplayStatusForRoute } from "../lib/gameplayRoute";
+import { gameplayRouteForStatus, gameplayStatusForRoute, shouldShowGameplayStateGuard } from "../lib/gameplayRoute";
 
 test("every active game status has one canonical route", () => {
   assert.equal(gameplayRouteForStatus("guessing"), "/spielen");
@@ -21,4 +21,16 @@ test("gameplay routes map back to their required state", () => {
   assert.equal(gameplayStatusForRoute("/aufloesung"), "results");
   assert.equal(gameplayStatusForRoute("/endergebnis"), "finished");
   assert.equal(gameplayStatusForRoute("/solo-modus"), null);
+});
+
+test("intentional final-screen exits never expose the state guard between route and lobby", () => {
+  const base = {
+    requiredStatus: "finished" as const,
+    currentStatus: "lobby" as const,
+    restorationPending: false,
+    gameplayRouteMismatch: false
+  };
+
+  assert.equal(shouldShowGameplayStateGuard({ ...base, intentionalExitPending: false }), true);
+  assert.equal(shouldShowGameplayStateGuard({ ...base, intentionalExitPending: true }), false);
 });

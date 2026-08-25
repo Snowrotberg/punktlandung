@@ -20723,3 +20723,31 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
   }
 
 }
+
+/* The active-round category is one component on every phone. Keep its surface
+ * tokens identical in portrait and landscape instead of relying on the
+ * breakpoint-specific cascade to arrive at a similar result. */
+@media (max-width: 879px) and (orientation: portrait),
+       (max-width: 1024px) and (max-height: 520px) and (orientation: landscape) {
+  body .punktlandung-game-shell .punktlandung-task-card {
+    background: rgb(12 22 38 / 0.84) !important;
+    border: 1px solid rgb(38 53 74 / 0.92) !important;
+    box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.28) !important;
+    backdrop-filter: blur(14px) !important;
+  }
+}
+
+/* The shared mobile full-map rule above uses portrait HUD variables. Android
+ * landscape does not have that vertical HUD stack; applying its calculated
+ * top inset collapses the map to the height of the action row. Restore the
+ * immersive landscape bounds explicitly after the shared rule. */
+@media (max-width: 1024px) and (max-height: 520px) and (orientation: landscape) {
+  body .punktlandung-game-shell .punktlandung-guess-map-panel--full {
+    bottom: 0.75rem !important;
+    height: auto !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    top: 0.75rem !important;
+    width: auto !important;
+  }
+}

@@ -14,3 +14,19 @@ export function gameplayStatusForRoute(pathname: string): Exclude<RoundStatus, "
   if (pathname === "/endergebnis") return "finished";
   return null;
 }
+
+export function shouldShowGameplayStateGuard(input: {
+  requiredStatus: Exclude<RoundStatus, "lobby"> | null | undefined;
+  currentStatus?: RoundStatus;
+  restorationPending: boolean;
+  gameplayRouteMismatch: boolean;
+  intentionalExitPending: boolean;
+}): boolean {
+  return Boolean(
+    input.requiredStatus
+      && input.currentStatus !== input.requiredStatus
+      && !input.restorationPending
+      && !input.gameplayRouteMismatch
+      && !input.intentionalExitPending
+  );
+}
