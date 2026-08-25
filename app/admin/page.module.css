@@ -17,6 +17,7 @@
 .stat > svg { position: absolute; top: .85rem; right: .9rem; width: 1.15rem; height: 1.15rem; color: color-mix(in srgb, var(--pl-mint) 72%, #718198); }
 .stat strong { display: block; padding-right: 1.75rem; font-size: 1.65rem; }
 .stat span, .muted { color: #94a3b8; font-size: .75rem; line-height: 1.45; }
+.statLabelWithHelp { display: flex; align-items: center; justify-content: space-between; gap: .35rem; width: 100%; }
 .grid { display: grid; gap: .8rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: .8rem; }
 .grid > .panel { order: 50; }
 .analyticsPriorityPanel { order: 1 !important; }
@@ -60,6 +61,7 @@
 .panel h2 { font-size: 1rem; margin: 0 0 .75rem; }
 .sectionTitle { display: flex; align-items: center; gap: .5rem; }
 .sectionTitle > svg { width: 1.05rem; height: 1.05rem; flex: 0 0 auto; color: var(--pl-mint); }
+.sectionTitleWithHelp { display: inline-flex; align-items: center; gap: .4rem; }
 .panelHeading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
 .panelHeading h2, .panelHeading p { margin: 0; }
 .panelHeading a { flex: 0 0 auto; color: var(--pl-mint); font-size: .75rem; font-weight: 800; text-decoration: none; }

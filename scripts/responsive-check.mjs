@@ -1195,6 +1195,13 @@ async function blockResponsiveThirdParties(context, target) {
       return;
     }
 
+    // Responsive QA exercises real gameplay states with deterministic fixture
+    // locations. Those synthetic views must never pollute admin usage metrics.
+    if (parsedUrl?.pathname === "/api/usage") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+      return;
+    }
+
     // Local production QA intentionally runs without the separate WebSocket
     // process. A report-only CSP event is expected there and must not flood
     // the report endpoint until its rate limit masks real layout results.
@@ -1219,6 +1226,17 @@ async function runTargetViewport(browser, target, viewport) {
     deviceScaleFactor: 1,
     locale: "de-DE",
     colorScheme: "dark"
+  });
+  await context.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      const requestUrl = typeof input === "string" ? input : input instanceof Request ? input.url : String(input);
+      const parsedUrl = new URL(requestUrl, window.location.href);
+      if (parsedUrl.pathname === "/api/usage") {
+        return Promise.resolve(new Response('{"ok":true}', { status: 200, headers: { "content-type": "application/json" } }));
+      }
+      return nativeFetch(input, init);
+    };
   });
   await blockResponsiveThirdParties(context, target);
   const page = await context.newPage();

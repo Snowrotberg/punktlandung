@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildUsageTimeline, earliestUsageTimestamp } from "../lib/adminUsageTimeline";
+import { buildUsageTimeline, earliestUsageTimestamp, PUBLIC_BETA_STARTED_AT } from "../lib/adminUsageTimeline";
 import type { UsageEvent } from "../lib/usageMetrics.server";
 
 function event(at: string, name: UsageEvent["event"], details: Partial<UsageEvent> = {}): UsageEvent {
   return { version: 1, at, event: name, ...details };
 }
 
-test("Gesamt starts with the first measurable event and ends today", () => {
+test("Gesamt starts with the public beta and keeps pre-measurement buckets empty", () => {
   const events = [
     event("2026-08-22T10:00:00.000Z", "page_view"),
     event("2026-08-23T10:00:00.000Z", "visit_start")
@@ -16,7 +16,10 @@ test("Gesamt starts with the first measurable event and ends today", () => {
   const timeline = buildUsageTimeline(events, "all", undefined, new Date("2026-08-23T18:00:00.000Z"), start);
 
   assert.equal(start, Date.parse("2026-08-22T10:00:00.000Z"));
-  assert.equal(timeline[0].axisLabel, "22.08.");
+  assert.equal(PUBLIC_BETA_STARTED_AT, Date.parse("2026-07-26T00:00:00+02:00"));
+  assert.equal(timeline[0].axisLabel, "26.07.");
+  assert.equal(timeline[0].pageViews, null);
+  assert.equal(timeline[0].visits, null);
   assert.equal(timeline.at(-1)?.axisLabel, "23.08.");
   assert.equal(timeline.reduce((sum, bucket) => sum + (bucket.pageViews ?? 0), 0), 1);
   assert.equal(timeline.reduce((sum, bucket) => sum + (bucket.visits ?? 0), 0), 1);

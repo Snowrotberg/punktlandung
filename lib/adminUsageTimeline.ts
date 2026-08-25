@@ -13,6 +13,8 @@ export type UsageTimelineBucket = {
   activeMinutes: number | null;
 };
 
+export const PUBLIC_BETA_STARTED_AT = Date.parse("2026-07-26T00:00:00+02:00");
+
 const dayMs = 24 * 60 * 60 * 1_000;
 const dateFormatter = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", timeZone: "Europe/Berlin" });
 const yearFormatter = new Intl.DateTimeFormat("de-DE", { month: "short", year: "2-digit", timeZone: "Europe/Berlin" });
@@ -41,7 +43,7 @@ export function buildUsageTimeline(
   const fallbackStart = nowMs - 30 * dayMs;
   const requestedStart = periodKey === "today"
     ? nowMs - dayMs
-    : since?.getTime() ?? measurementStart ?? fallbackStart;
+    : since?.getTime() ?? (periodKey === "all" ? PUBLIC_BETA_STARTED_AT : measurementStart) ?? fallbackStart;
   const startMs = Math.min(requestedStart, nowMs - 1);
   const bucketTargets: Record<Exclude<UsageTimelinePeriodKey, "all">, number> = { today: 1, "7d": 7, "30d": 15, "3m": 13, "6m": 13 };
   const bucketCount = periodKey === "all"
