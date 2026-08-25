@@ -27,15 +27,19 @@ export type ResultCameraPlan = {
   durationMs: number;
   revealProgress: number;
   targetRevealProgress: number;
-  targetLabelRevealProgress: number;
   terrainRampProgress: number | null;
   keyframes: CameraKeyframe[];
 };
 
 export const RESULT_CAMERA_CONFIG = {
   distanceThresholdKm: {
-    short: 15,
+    short: 90,
     medium: 2_500
+  },
+  durationMs: {
+    short: 1_300,
+    medium: 1_900,
+    long: 2_700
   },
   endPitch: {
     short: 48,
@@ -44,47 +48,6 @@ export const RESULT_CAMERA_CONFIG = {
   },
   terrainExaggeration: 1.5
 } as const;
-
-type DistanceAnchor = readonly [distanceKm: number, value: number];
-
-const END_ZOOM_BY_DISTANCE: readonly DistanceAnchor[] = [
-  [0.1, 15.4],
-  [2, 12.45],
-  [10, 10.75],
-  [100, 7.95],
-  [1_000, 5.1],
-  [2_500, 3.7],
-  [5_000, 3.05],
-  [9_000, 2.68],
-  [12_500, 2.42],
-  [20_050, 2.24]
-] as const;
-
-const DURATION_BY_DISTANCE: readonly DistanceAnchor[] = [
-  [0.1, 800],
-  [2, 1_000],
-  [10, 1_150],
-  [100, 1_450],
-  [1_000, 1_900],
-  [5_000, 2_350],
-  [10_000, 2_600],
-  [20_050, 2_800]
-] as const;
-
-function interpolateDistanceAnchors(distanceKm: number, anchors: readonly DistanceAnchor[]): number {
-  const safeDistance = Math.max(0.001, distanceKm);
-  if (safeDistance <= anchors[0][0]) return anchors[0][1];
-  for (let index = 1; index < anchors.length; index += 1) {
-    const [nextDistance, nextValue] = anchors[index];
-    if (safeDistance <= nextDistance) {
-      const [previousDistance, previousValue] = anchors[index - 1];
-      const progress = (Math.log(safeDistance) - Math.log(previousDistance))
-        / (Math.log(nextDistance) - Math.log(previousDistance));
-      return previousValue + (nextValue - previousValue) * progress;
-    }
-  }
-  return anchors.at(-1)![1];
-}
 
 export const RESULT_CAMERA_SCENARIOS: ResultCameraScenario[] = [
   {
@@ -247,91 +210,71 @@ export function buildResultCameraPlan(
 ): ResultCameraPlan {
   const distanceKm = distanceBetweenCoordinatesKm(guess, target);
   const distanceClass = classifyResultDistance(distanceKm);
-  // The final mobile framing is refined against the real on-screen marker and
-  // label rectangles by GlobeMapLab. Keep this geographic baseline close
-  // enough that the globe still fills the result card instead of becoming a
-  // small ball surrounded by empty space.
-  const compactLongAdjustment = -interpolateDistanceAnchors(distanceKm, [
-    [2_500, 0.18],
-    [9_000, 0.24],
-    [12_500, 0.28],
-    [20_050, 0.32]
-  ]);
+  // Compact result maps need additional breathing room for the two badges
+  // and the target information card, not just for the geographic points.
+  const compactLongAdjustment = distanceKm < 6_000
+    ? -1.8
+    : distanceKm < 9_000
+      ? -2.3
+      : distanceKm < 12_500
+        ? -2
+        : -1.8;
   const compactAdjustment = options.compactViewport
-    ? distanceClass === "short" ? -0.18 : distanceClass === "medium" ? -0.2 : compactLongAdjustment
+    ? distanceClass === "short" ? -0.3 : distanceClass === "medium" ? -0.55 : compactLongAdjustment
     : 0;
   const direction = initialBearing(guess, target);
-  const movementIntensity = clamp((Math.log10(Math.max(distanceKm, 0.1)) + 1) / 4, 0.18, 1);
-  const viewportMotionScale = options.compactViewport ? 0.72 : 1;
-  const endBearing = clamp(direction - 18, -24, 24) * movementIntensity * viewportMotionScale;
+  const endBearing = clamp(direction - 18, -24, 24);
   const midpoint = relationshipCenter(guess, target);
   const durationScale = clamp(options.durationScale ?? 1, 0.65, 1.5);
-  const viewportDurationScale = options.compactViewport ? 0.86 : 1;
-  const endZoom = interpolateDistanceAnchors(distanceKm, END_ZOOM_BY_DISTANCE);
-  const pullback = distanceClass === "short"
-    ? interpolateDistanceAnchors(distanceKm, [[0.1, 0.14], [2, 0.24], [15, 0.42]])
-    : distanceClass === "medium"
-      ? interpolateDistanceAnchors(distanceKm, [[15, 0.42], [100, 0.55], [1_000, 0.64], [2_500, 0.58]])
-      : interpolateDistanceAnchors(distanceKm, [[2_500, 0.42], [9_000, 0.32], [20_050, 0.26]]);
-  const startLead = distanceClass === "short"
-    ? interpolateDistanceAnchors(distanceKm, [[0.1, 0.38], [2, 0.55], [15, 0.72]])
-    : distanceClass === "medium"
-      ? interpolateDistanceAnchors(distanceKm, [[15, 0.8], [100, 1.15], [1_000, 1.9], [2_500, 2]])
-      : 1.8;
-  // Once two points approach opposite sides of the globe, a strongly pitched
-  // final camera pushes one endpoint behind the horizon even though the
-  // geographic midpoint is correct. Preserve the spatial pitch for ordinary
-  // intercontinental results, but progressively level the camera for the
-  // extreme cases so both pins remain on the visible hemisphere.
-  let endPitch = interpolateDistanceAnchors(distanceKm, [
-    [0.1, 46],
-    [2, 48],
-    [10, 48],
-    [100, 46],
-    [1_000, 43],
-    [5_000, 40],
-    [10_000, 34],
-    [12_500, 26],
-    [20_050, options.compactViewport ? 10 : 18]
-  ]);
-  if (options.compactViewport) {
-    endPitch *= distanceClass === "long" ? 0.9 : 0.94;
-    if (distanceClass === "long" && distanceKm >= 12_500) endPitch = Math.min(endPitch, 10);
-  }
+
+  const longEndZoom = distanceKm < 6_000
+    ? 3.05
+    : distanceKm < 9_000
+      ? 2.68
+      : distanceKm < 12_500
+        ? 2.42
+        : 2.24;
+  const longTransitZoom = longEndZoom - (distanceKm < 9_000 ? 0.32 : 0.26);
+  const longEndPitch = distanceKm < 6_000 ? 40 : distanceKm < 10_000 ? 36 : 31;
 
   const profiles = {
     short: {
-      startZoom: Math.min(16.2, endZoom + startLead),
-      transitZoom: endZoom - pullback,
+      startZoom: 10.25,
+      transitZoom: 9.05,
+      endZoom: 9.62,
       startPitch: 43,
       transitPitch: 48,
-      curve: interpolateDistanceAnchors(distanceKm, [[0.1, 0.01], [15, 0.12]]),
+      curve: 0.08,
       revealProgress: 0,
-      targetRevealProgress: 0.5,
+      targetRevealProgress: 0.84,
       terrainRampProgress: 0.12
     },
     medium: {
-      startZoom: Math.min(11.4, endZoom + startLead),
-      transitZoom: endZoom - pullback,
+      startZoom: 7.1,
+      transitZoom: 6.02,
+      endZoom: 6.32,
       startPitch: 38,
       transitPitch: 30,
-      curve: interpolateDistanceAnchors(distanceKm, [[15, 0.18], [100, 0.4], [1_000, 0.85], [2_500, 1.2]]),
+      curve: 0.48,
       revealProgress: 0,
-      targetRevealProgress: 0.52,
+      targetRevealProgress: 0.84,
       terrainRampProgress: 0.66
     },
     long: {
-      startZoom: Math.max(5, endZoom + startLead),
-      transitZoom: endZoom - pullback,
+      startZoom: 5.0,
+      transitZoom: longTransitZoom,
+      endZoom: longEndZoom,
       startPitch: 34,
       transitPitch: 8,
       curve: 5.5,
       revealProgress: 0,
-      targetRevealProgress: 0.46,
+      targetRevealProgress: 0.82,
       terrainRampProgress: null
     }
   } as const;
   const profile = profiles[distanceClass];
+  const endPitch = distanceClass === "long" ? longEndPitch : RESULT_CAMERA_CONFIG.endPitch[distanceClass];
+
   const startFrame: CameraKeyframe = {
     at: 0,
     center: guess,
@@ -342,7 +285,7 @@ export function buildResultCameraPlan(
   const endFrame: CameraKeyframe = {
     at: 1,
     center: midpoint,
-    zoom: endZoom + compactAdjustment,
+    zoom: profile.endZoom + compactAdjustment,
     bearing: endBearing,
     pitch: endPitch
   };
@@ -392,14 +335,11 @@ export function buildResultCameraPlan(
   return {
     distanceClass,
     distanceKm,
-    durationMs: Math.round(interpolateDistanceAnchors(distanceKm, DURATION_BY_DISTANCE) * durationScale * viewportDurationScale),
+    durationMs: Math.round(RESULT_CAMERA_CONFIG.durationMs[distanceClass] * durationScale),
     revealProgress: profile.revealProgress,
     targetRevealProgress: options.compactViewport
-      ? Math.min(profile.targetRevealProgress, distanceClass === "long" ? 0.36 : 0.44)
+      ? Math.min(profile.targetRevealProgress, distanceClass === "long" ? 0.48 : 0.58)
       : profile.targetRevealProgress,
-    targetLabelRevealProgress: options.compactViewport
-      ? Math.min(profile.targetRevealProgress + 0.1, distanceClass === "long" ? 0.48 : 0.56)
-      : profile.targetRevealProgress + 0.12,
     terrainRampProgress: profile.terrainRampProgress,
     keyframes
   };

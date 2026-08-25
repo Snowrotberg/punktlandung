@@ -208,62 +208,9 @@
   to { stroke-dashoffset: -15; }
 }
 
-.mapFrame :global(.maplibregl-ctrl-group) {
-  overflow: visible;
-  border: 1px solid rgba(71, 85, 105, 0.8);
-  border-radius: 0.8rem;
-  background: rgba(7, 17, 34, 0.94);
-  box-shadow: 0 0.7rem 1.8rem rgba(2, 6, 23, 0.38);
-  backdrop-filter: blur(12px);
-}
-
 .mapFrame :global(.maplibregl-ctrl-group button) {
-  position: relative;
   width: 2.5rem;
   height: 2.5rem;
-  border: 0;
-  background-color: transparent;
-  color: #e2e8f0;
-}
-
-.mapFrame :global(.maplibregl-ctrl-group button + button) {
-  border-top: 1px solid rgba(71, 85, 105, 0.58);
-}
-
-.mapFrame :global(.maplibregl-ctrl-group button:hover),
-.mapFrame :global(.maplibregl-ctrl-group button:focus-visible) {
-  background-color: rgba(30, 45, 69, 0.96);
-}
-
-.mapFrame :global(.maplibregl-ctrl-group .maplibregl-ctrl-icon) {
-  filter: invert(94%) sepia(9%) saturate(269%) hue-rotate(182deg) brightness(101%) contrast(91%);
-}
-
-.mapFrame :global(.maplibregl-ctrl-group button[data-tooltip]::after) {
-  position: absolute;
-  z-index: 8;
-  top: 50%;
-  right: calc(100% + 0.55rem);
-  width: max-content;
-  max-width: min(17rem, calc(100vw - 6rem));
-  transform: translateY(-50%) translateX(0.2rem);
-  border: 1px solid rgba(71, 85, 105, 0.86);
-  border-radius: 0.55rem;
-  background: rgba(7, 17, 34, 0.98);
-  padding: 0.42rem 0.6rem;
-  color: #f8fafc;
-  box-shadow: 0 0.55rem 1.3rem rgba(2, 6, 23, 0.42);
-  content: attr(data-tooltip);
-  font: 700 0.7rem/1.25 var(--font-geist-sans), system-ui, sans-serif;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 120ms ease, transform 120ms ease;
-}
-
-.mapFrame :global(.maplibregl-ctrl-group button[data-tooltip]:hover::after),
-.mapFrame :global(.maplibregl-ctrl-group button[data-tooltip]:focus-visible::after) {
-  transform: translateY(-50%) translateX(0);
-  opacity: 1;
 }
 
 .mapFrame :global(button[aria-label="Kartenquellen anzeigen"]) {
@@ -535,11 +482,6 @@
   transform: translateX(-50%) translateY(0) scale(1);
 }
 
-.targetMarker[data-label-visible="false"] .markerLabel {
-  pointer-events: none;
-  opacity: 0;
-}
-
 .resultMarker[data-label-edge="right"] .markerLabel {
   left: 0;
   transform: translateX(0) translateY(0.35rem) scale(0.94);
@@ -565,30 +507,6 @@
 
 .resultMarker[data-label-vertical="below"] .markerLabel {
   top: calc(100% + 1.25rem);
-}
-
-.resultMarker[data-label-vertical="side"][data-label-edge="right"] .markerLabel {
-  top: 50%;
-  left: calc(100% + 0.75rem);
-  right: auto;
-  bottom: auto;
-  transform: translateY(-50%) scale(0.94);
-}
-
-.resultMarker[data-visible="true"][data-label-vertical="side"][data-label-edge="right"] .markerLabel {
-  transform: translateY(-50%) scale(1);
-}
-
-.resultMarker[data-label-vertical="side"][data-label-edge="left"] .markerLabel {
-  top: 50%;
-  right: calc(100% + 0.75rem);
-  left: auto;
-  bottom: auto;
-  transform: translateY(-50%) scale(0.94);
-}
-
-.resultMarker[data-visible="true"][data-label-vertical="side"][data-label-edge="left"] .markerLabel {
-  transform: translateY(-50%) scale(1);
 }
 
 .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-content) {
@@ -689,39 +607,6 @@
     font-size: 0.62rem;
   }
 
-  .mapFrame .resultMarker .markerLabel {
-    max-width: min(13rem, calc(100vw - 5.5rem)) !important;
-    font-size: 11px !important;
-  }
-
-  .mapFrame :global(.kartenlabor-result-popup) {
-    top: 50% !important;
-    left: 50% !important;
-    max-width: min(18rem, calc(100% - 7rem)) !important;
-    transform: translate(-50%, -50%) !important;
-  }
-
-  .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-tip) {
-    display: none;
-  }
-
-  .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-content) {
-    min-width: min(15rem, calc(100vw - 8rem));
-  }
-
-}
-
-@media (max-height: 520px) {
-  .mapFrame :global(.kartenlabor-result-popup) {
-    top: 50% !important;
-    left: 50% !important;
-    max-width: min(19rem, calc(100% - 7rem)) !important;
-    transform: translate(-50%, -50%) !important;
-  }
-
-  .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-tip) {
-    display: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
