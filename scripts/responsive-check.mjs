@@ -1534,6 +1534,26 @@ async function runTargetViewport(browser, target, viewport) {
     if (target.expectedText && !metrics.bodyText.includes(target.expectedText)) {
       problems.push(`Erwarteter Ansichtstext fehlt: "${target.expectedText}".`);
     }
+    if (target.name.startsWith("endergebnis") && viewport.category === "mobile") {
+      const finalOrder = await page.evaluate(() => {
+        const top = (selector) => document.querySelector(selector)?.getBoundingClientRect().top ?? null;
+        return {
+          hero: top(".punktlandung-final-hero"),
+          table: top(".punktlandung-final-table-heading"),
+          highlights: top(".punktlandung-final-highlights-panel"),
+          controls: top(".punktlandung-final-topbar")
+        };
+      });
+      if (
+        Object.values(finalOrder).some((value) => value == null)
+        || !(finalOrder.hero < finalOrder.table && finalOrder.table < finalOrder.highlights && finalOrder.highlights < finalOrder.controls)
+      ) {
+        problems.push(`Mobile Endstand-Reihenfolge ist nicht Partie abgeschlossen, Finaltabelle, Partie in Zahlen, Speichern/Buttons (${JSON.stringify(finalOrder)}).`);
+      }
+    }
+    if (target.name === "rankings" && /\bTeilnehmer(?:n)?\b|\bTeilnehmenden\b/i.test(metrics.bodyText)) {
+      problems.push("Die Ranking-Ansicht zeigt weiterhin die Gesamtzahl der Teilnehmenden.");
+    }
     if (target.expectedRoom) {
       if (!metrics.roomState) {
         problems.push("Erwarteter Spielzustand fehlt im Browser-State.");

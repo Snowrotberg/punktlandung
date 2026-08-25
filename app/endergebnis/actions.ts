@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getSupabaseAccountContext } from "@/lib/supabase/auth.server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin.server";
 import type { Json } from "@/lib/supabase/database.types";
+import { findDailyRankedGamePlacement, type RankedGamePlacement } from "@/lib/rankedPlacement";
+import { toLeaderboardGameResult, toLeaderboardGameResults, verifiedRankedResultsSelect } from "@/lib/verifiedRankedResults";
 
 export type SaveCompletedGameInput = {
   saveKey: string;
@@ -40,6 +42,10 @@ export type SaveCompletedGameResult =
   | { ok: true; alreadySaved: boolean }
   | { ok: false; code: "auth_required" | "invalid" | "save_failed" };
 
+export type LoadRankedGamePlacementResult =
+  | { ok: true; placement: RankedGamePlacement }
+  | { ok: false; code: "auth_required" | "invalid" | "not_ranked" | "unavailable" };
+
 const categories = new Set(["mixed", "landmarks", "cities", "landscapes", "flags", "capitals", "streetview"]);
 
 function validTimestamp(value: number): boolean {
@@ -50,6 +56,56 @@ function normalizedCountryCode(value: string | undefined): string | null {
   if (!value) return null;
   const code = value.trim().toUpperCase();
   return /^[A-Z]{2}$/.test(code) ? code : null;
+}
+
+export async function loadRankedGamePlacement(gameId: string): Promise<LoadRankedGamePlacementResult> {
+  const context = await getSupabaseAccountContext();
+  if (!context) return { ok: false, code: "auth_required" };
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(gameId)) return { ok: false, code: "invalid" };
+
+  try {
+    const accountId = context.identity.account.accountId;
+    const admin = createSupabaseAdminClient();
+    const targetResult = await admin
+      .from("verified_ranked_results")
+      .select(verifiedRankedResultsSelect)
+      .eq("game_id", gameId)
+      .eq("account_id", accountId)
+      .maybeSingle();
+    if (targetResult.error) {
+      console.error("[loadRankedGamePlacement] target lookup failed", { code: targetResult.error.code });
+      return { ok: false, code: "unavailable" };
+    }
+    if (!targetResult.data) return { ok: false, code: "not_ranked" };
+
+    const targetGame = toLeaderboardGameResult(targetResult.data);
+    if (!targetGame) return { ok: false, code: "not_ranked" };
+    const dayWindowMs = 36 * 60 * 60 * 1000;
+    const leaderboardResult = await admin
+      .from("verified_ranked_results")
+      .select(verifiedRankedResultsSelect)
+      .eq("category", targetGame.category)
+      .eq("ruleset_id", targetGame.rulesetId)
+      .eq("ruleset_version", targetGame.rulesetVersion)
+      .eq("scoring_version", targetGame.scoringVersion)
+      .gte("completed_at", new Date(targetGame.completedAt - dayWindowMs).toISOString())
+      .lte("completed_at", new Date(targetGame.completedAt + dayWindowMs).toISOString())
+      .limit(5000);
+    if (leaderboardResult.error) {
+      console.error("[loadRankedGamePlacement] leaderboard lookup failed", { code: leaderboardResult.error.code });
+      return { ok: false, code: "unavailable" };
+    }
+
+    const placement = findDailyRankedGamePlacement(
+      toLeaderboardGameResults(leaderboardResult.data ?? []),
+      gameId,
+      accountId
+    );
+    return placement ? { ok: true, placement } : { ok: false, code: "not_ranked" };
+  } catch (error) {
+    console.error("[loadRankedGamePlacement] unavailable", error instanceof Error ? error.message : "unknown error");
+    return { ok: false, code: "unavailable" };
+  }
 }
 
 export async function saveCompletedGame(input: SaveCompletedGameInput): Promise<SaveCompletedGameResult> {

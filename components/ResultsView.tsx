@@ -29,7 +29,8 @@ import { PanoramaViewer } from "./PanoramaViewer";
 import { TriangleIcon } from "./TriangleIcon";
 import { useSound } from "./SoundProvider";
 import redesignStyles from "./redesign/RedesignResultsView.module.css";
-import { saveCompletedGame, type SaveCompletedGameInput } from "@/app/endergebnis/actions";
+import { loadRankedGamePlacement, saveCompletedGame, type SaveCompletedGameInput } from "@/app/endergebnis/actions";
+import type { RankedGamePlacement } from "@/lib/rankedPlacement";
 import { enqueueCompletedGameSave, flushCompletedGameSaves } from "@/lib/completedGameSaveQueue.client";
 import type { RankedSyncStatus } from "@/hooks/useRankedSoloGame";
 import { enqueueRankedGameClaim } from "@/lib/rankedGameClaimQueue.client";
@@ -419,6 +420,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const [advancingRound, setAdvancingRound] = useState(false);
   const [globeUnavailable, setGlobeUnavailable] = useState(false);
   const [resultAnimationComplete, setResultAnimationComplete] = useState(false);
+  const [rankedPlacement, setRankedPlacement] = useState<RankedGamePlacement | null>(null);
 
   useEffect(() => {
     if (!room.nextRoundPreviewUrl) return;
@@ -436,6 +438,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const [isReplayMobilePortrait, setIsReplayMobilePortrait] = useState(false);
   const [isReplayMobileLandscape, setIsReplayMobileLandscape] = useState(false);
   const savePromiseRef = useRef<Promise<boolean> | null>(null);
+  const placementRequestRef = useRef<string | null>(null);
   const replayMapCloseTimer = useRef<number | null>(null);
   const summary = room.summaries?.[room.summaries.length - 1] ?? null;
   const location = summary?.location ?? null;
@@ -551,6 +554,22 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
     if (serverRanked || !finished || !accountAuthenticated || saveState === "saved" || saveState === "saving") return;
     void saveGame();
   }, [accountAuthenticated, finished, saveState, serverRanked, summary?.completedAt]);
+  useEffect(() => {
+    if (!serverRanked || !finished || !accountAuthenticated || rankedSyncStatus !== "verified" || !rankedGameId) {
+      setRankedPlacement(null);
+      placementRequestRef.current = null;
+      return;
+    }
+    if (placementRequestRef.current === rankedGameId) return;
+    placementRequestRef.current = rankedGameId;
+    let active = true;
+    void loadRankedGamePlacement(rankedGameId).then((result) => {
+      if (active) setRankedPlacement(result.ok ? result.placement : null);
+    });
+    return () => {
+      active = false;
+    };
+  }, [accountAuthenticated, finished, rankedGameId, rankedSyncStatus, serverRanked]);
   const handleBackToLobby = async () => {
     if (finished && accountAuthenticated && saveState !== "saved") await saveGame();
     onBackToLobby();
@@ -1014,6 +1033,13 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                   </p>
                   <h1 className="mt-2 text-3xl font-black leading-none text-white md:text-4xl">Partie abgeschlossen</h1>
                 </div>
+                {rankedPlacement ? (
+                  <div className="punktlandung-final-ranking-placement rounded-md border border-emerald-300/45 bg-emerald-400/10 px-4 py-3 text-right" aria-label={`Platz ${rankedPlacement.rank} im Tagesranking`}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300">Tagesranking</p>
+                    <strong className="mt-1 block text-2xl font-black leading-none text-white">Platz #{rankedPlacement.rank}</strong>
+                    <small className="mt-1 block text-[11px] font-semibold text-emerald-100">{categoryLabels[rankedPlacement.category]} · {rankedPlacement.comparisonValue.toLocaleString("de-DE")} Punkte/Runde</small>
+                  </div>
+                ) : null}
               </div>
 
               <div className="relative z-10 mt-4 grid gap-3 lg:grid-cols-[minmax(0,1.04fr)_minmax(15rem,0.96fr)]">
@@ -1121,7 +1147,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                         <p className="text-sm font-semibold text-slate-200">Melde dich an oder erstelle ein Konto, um deine Partie zu speichern und ins Ranking aufzunehmen. Das Spielen bleibt kostenlos.</p>
                         <div className="flex flex-wrap gap-2">
                           <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis" onNavigate={prepareSaveAndOpenLogin}>Spielstand speichern</ButtonLink>
-                          <Button tone="ghost" className="min-h-11 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
+                          <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
                         </div>
                       </div>
                     )
@@ -1141,7 +1167,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                     <p className="text-sm font-semibold text-slate-200">Möchtest du diese Partie dauerhaft speichern? Das Spiel bleibt auch ohne Konto kostenlos.</p>
                     <div className="flex flex-wrap gap-2">
                       <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis" onNavigate={prepareSaveAndOpenLogin}>Spielstand speichern</ButtonLink>
-                      <Button tone="ghost" className="min-h-9 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
+                      <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
                     </div>
                   </div>
                 ) : (

@@ -10,7 +10,7 @@ import { saveCompletedGame } from "@/app/endergebnis/actions";
 import { flushCompletedGameSaves } from "@/lib/completedGameSaveQueue.client";
 import { useLocalGame } from "@/hooks/useLocalGame";
 import { clearSetupResumeRequest, clearVisibleResumeSetup, markResumeSetupVisible, requestSetupResume, setupResumeUrl, shouldDiscardResumeOnHistoryExit } from "@/lib/gameResume.client";
-import { gameplayRouteForStatus, gameplayStatusForRoute } from "@/lib/gameplayRoute";
+import { gameplayRouteForStatus, gameplayStatusForRoute, shouldShowGameplayStateGuard } from "@/lib/gameplayRoute";
 import { punktlandungMapStyleUrl } from "@/lib/mapStyle";
 import { useRankedSoloGame } from "@/hooks/useRankedSoloGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
@@ -337,6 +337,10 @@ export function GameApp({
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [pendingOnlineSettings, setPendingOnlineSettings] = useState<GameSettings | null>(null);
   const [startingRound, setStartingRound] = useState(false);
+  const [pendingGameplayExit, setPendingGameplayExit] = useState<{
+    target: string;
+    action: "cancel" | "restart" | "leave";
+  } | null>(null);
   const initialModeHandledRef = useRef(false);
   const initialSetupSettingsHandledRef = useRef(false);
   const pendingDirectStartRef = useRef(false);
@@ -391,6 +395,7 @@ export function GameApp({
   }, [room?.location?.id, room?.players.length, room?.status]);
 
   useEffect(() => {
+    if (pendingGameplayExit) return;
     if (restorationPending || !gameplayRoute || pathname === gameplayRoute) {
       if (pathname === gameplayRoute) requestedGameplayRouteRef.current = null;
       return;
@@ -400,7 +405,7 @@ export function GameApp({
     // All three routes share the persistent gameplay layout, so this URL
     // change no longer remounts GameApp or exposes an empty transition frame.
     router.replace(gameplayRoute);
-  }, [gameplayRoute, pathname, restorationPending, router]);
+  }, [gameplayRoute, pathname, pendingGameplayExit, restorationPending, router]);
 
   useEffect(() => {
     if (!room || room.status === "lobby" || resumePending || restorationPending || pathname !== gameplayRoute) return;
@@ -717,7 +722,7 @@ export function GameApp({
     // screen therefore opens a clean setup instead of advertising "Fortsetzen".
     if (room?.status === "finished") {
       clearSetupResumeRequest();
-      cancelRound();
+      setPendingGameplayExit({ target: setupRouteTarget, action: "cancel" });
       router.replace(setupRouteTarget);
       return;
     }
@@ -756,6 +761,16 @@ export function GameApp({
       router.replace("/solo-modus");
     }
   };
+  const handleRestart = () => {
+    const setupRouteTarget = room?.kind === "online"
+      ? "/online-modus"
+      : room?.settings.localMode === "couch"
+        ? "/party-modus"
+        : "/solo-modus";
+    clearSetupResumeRequest();
+    setPendingGameplayExit({ target: setupRouteTarget, action: "restart" });
+    router.replace(setupRouteTarget);
+  };
   const discardSessionForNavigation = () => {
     leaveRoom();
     try {
@@ -780,10 +795,21 @@ export function GameApp({
   const handleLeaveToHome = () => {
     initialModeHandledRef.current = true;
     setPendingJoinCode(null);
-    discardSessionForNavigation();
-    // Keep the current screen mounted until Next has committed the homepage.
+    setPendingGameplayExit({ target: "/", action: "leave" });
     router.push("/");
   };
+
+  useEffect(() => {
+    if (!pendingGameplayExit || pathname !== pendingGameplayExit.target) return;
+    if (pendingGameplayExit.action === "restart") {
+      restart();
+    } else if (pendingGameplayExit.action === "leave") {
+      discardSessionForNavigation();
+    } else {
+      cancelRound();
+    }
+    setPendingGameplayExit(null);
+  }, [cancelRound, pathname, pendingGameplayExit, restart]);
 
   useEffect(() => {
     if (!resumePending || !room) return;
@@ -835,7 +861,13 @@ export function GameApp({
     return <main className="min-h-dvh bg-slate-950" />;
   }
 
-  if (routeRequiredStatus && room?.status !== routeRequiredStatus && !restorationPending && !gameplayRouteMismatch) {
+  if (routeRequiredStatus && shouldShowGameplayStateGuard({
+    requiredStatus: routeRequiredStatus,
+    currentStatus: room?.status,
+    restorationPending,
+    gameplayRouteMismatch,
+    intentionalExitPending: Boolean(pendingGameplayExit)
+  })) {
     return <GameStateGuard requiredStatus={routeRequiredStatus} currentStatus={room?.status} />;
   }
 
@@ -905,7 +937,7 @@ export function GameApp({
         onNext={handleStartRound}
         onReadyNextRound={readyNextRound}
         onBackToLobby={handleCancelRound}
-        onRestart={restart}
+        onRestart={handleRestart}
         onLeave={handleLeaveToHome}
         onDiscardSession={discardSessionForNavigation}
         redesign={redesignHomeEnabled}

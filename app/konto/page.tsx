@@ -144,7 +144,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
                 <article className={`${styles.dashboardCard} ${styles.rankingSpotlight}`}>
                   <span className={styles.cardEyebrow}>Deine Rankings</span>
                   <strong>{stats.dailyRanking ? <>Heute Platz <b>#{stats.dailyRanking.rank}</b></> : "Heute noch ohne Platzierung"}</strong>
-                  <div className={styles.rankingPreview}><span>{stats.dailyRanking ? <>von {stats.dailyRanking.participants} Teilnehmenden</> : <>Starte deine erste gewertete Partie.</>}</span><span>{stats.weeklyRanking ? <>Diese Woche <b>#{stats.weeklyRanking.rank}</b> von {stats.weeklyRanking.participants}</> : <>Diese Woche noch ohne Platzierung</>}</span></div>
+                  <div className={styles.rankingPreview}><span>{stats.dailyRanking ? <>{stats.dailyRanking.comparisonValue.toLocaleString("de-DE")} gewichtete Punkte/Runde</> : <>Starte deine erste gewertete Partie.</>}</span><span>{stats.weeklyRanking ? <>Diese Woche Platz <b>#{stats.weeklyRanking.rank}</b></> : <>Diese Woche noch ohne Platzierung</>}</span></div>
                 </article>
 
                 <article className={`${styles.dashboardCard} ${styles.playerInsight}`}>

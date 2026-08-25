@@ -201,6 +201,52 @@
   text-align: center;
 }
 
+@media (min-width: 52.01rem) and (max-width: 64rem) {
+  .redesign :global(.punktlandung-final-standings-grid) {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  .redesign :global(.punktlandung-final-left),
+  .redesign :global(.punktlandung-final-table) {
+    display: contents !important;
+  }
+
+  .redesign :global(.punktlandung-final-hero) { order: 1; }
+  .redesign :global(.punktlandung-final-table-heading) {
+    order: 2;
+    margin: 0 !important;
+    padding: 1rem 1rem .55rem;
+    border: 1px solid var(--pl-result-line);
+    border-bottom: 0;
+    border-radius: 1rem 1rem 0 0;
+    background: var(--pl-result-surface);
+  }
+  .redesign :global(.punktlandung-final-table-list) {
+    order: 3;
+    margin: 0 !important;
+    padding: .45rem 1rem 1rem;
+    border: 1px solid var(--pl-result-line);
+    border-top: 0;
+    border-radius: 0 0 1rem 1rem;
+    background: var(--pl-result-surface);
+  }
+  .redesign :global(.punktlandung-final-highlights-panel) { order: 4; }
+  .redesign :global(.punktlandung-final-topbar) {
+    order: 5;
+    margin: 0 !important;
+    padding: 1rem !important;
+    border: 1px solid var(--pl-result-line) !important;
+    border-radius: 1rem;
+    background: var(--pl-result-surface);
+  }
+  .redesign :global(.punktlandung-final-footer) {
+    order: 6;
+    margin-top: 0 !important;
+    padding-top: .75rem;
+  }
+}
+
 .redesign :global(.punktlandung-image-replay .punktlandung-replay-top-actions button) {
   height: 3.35rem !important;
   min-height: 3.35rem !important;
@@ -400,14 +446,17 @@
 
 .redesign :global(.punktlandung-final-actions .punktlandung-back-control-content) {
   display: inline-grid !important;
-  grid-template-columns: 1rem max-content 1rem !important;
+  align-items: center !important;
+  column-gap: 0.45rem !important;
+  grid-template-columns: max-content max-content !important;
+  justify-content: center !important;
+  transform: none !important;
   width: max-content !important;
 }
 
 .redesign :global(.punktlandung-final-actions .punktlandung-back-control-content)::after {
-  display: block;
-  width: 1rem;
-  content: "";
+  display: none;
+  content: none;
 }
 
 .redesign :global(.punktlandung-final-topbar) {
@@ -949,23 +998,55 @@
     white-space: normal;
   }
 
-  .redesign :global(.punktlandung-final-table) {
-    display: flex;
+  .redesign :global(.punktlandung-final-standings-grid) {
+    display: flex !important;
     flex-direction: column;
   }
 
-  .redesign :global(.punktlandung-final-table-heading) { order: 1; }
-  .redesign :global(.punktlandung-final-table-list) { order: 2; }
-  .redesign :global(.punktlandung-final-topbar) {
-    order: 3;
-    margin-top: 1rem;
-    margin-bottom: 0 !important;
-    padding-top: 1rem;
-    padding-bottom: 0 !important;
-    border-top: 1px solid var(--pl-result-line);
-    border-bottom: 0 !important;
+  .redesign :global(.punktlandung-final-left),
+  .redesign :global(.punktlandung-final-table) {
+    display: contents !important;
   }
-  .redesign :global(.punktlandung-final-footer) { order: 4; }
+
+  .redesign :global(.punktlandung-final-hero) { order: 1; }
+  .redesign :global(.punktlandung-final-table-heading) {
+    order: 2;
+    margin: 0 !important;
+    padding: 1rem 1rem .55rem;
+    border: 1px solid var(--pl-result-line);
+    border-bottom: 0;
+    border-radius: 1rem 1rem 0 0;
+    background: var(--pl-result-surface);
+  }
+  .redesign :global(.punktlandung-final-table-list) {
+    order: 3;
+    margin: 0 !important;
+    padding: .45rem 1rem 1rem;
+    border: 1px solid var(--pl-result-line);
+    border-top: 0;
+    border-radius: 0 0 1rem 1rem;
+    background: var(--pl-result-surface);
+  }
+  .redesign :global(.punktlandung-final-highlights-panel) { order: 4; }
+  .redesign :global(.punktlandung-final-topbar) {
+    order: 5;
+    margin-top: 0;
+    margin-bottom: 0 !important;
+    padding: 1rem !important;
+    border: 1px solid var(--pl-result-line) !important;
+    border-radius: 1rem;
+    background: var(--pl-result-surface);
+  }
+  .redesign :global(.punktlandung-final-footer) {
+    order: 6;
+    margin-top: 0 !important;
+    padding-top: .75rem;
+  }
+
+  .redesign :global(.punktlandung-final-ranking-placement) {
+    width: 100%;
+    text-align: left;
+  }
 
   .redesign :global(.punktlandung-image-replay .punktlandung-map-panel-actions) {
     display: grid !important;
