@@ -28,7 +28,7 @@ export default function PartyspielGeografiePage() {
       title="Punktlandung als Geografie-Partyspiel"
       intro="Im Party-Modus spielen zwei bis zehn Personen an einem Gerät. Jede Aufgabe ist für alle gleich, die Tipps werden reihum abgegeben und anschließend gemeinsam aufgelöst."
     >
-      <p className="text-sm text-slate-400">Inhaltlich geprüft: 9. August 2026</p>
+      <p className="text-sm text-slate-400">Inhaltlich geprüft: 26. August 2026</p>
 
       <section className="mt-6">
         <h2 className="text-[22px] leading-tight text-white">So bereitet ihr eine Partie vor</h2>
@@ -44,23 +44,37 @@ export default function PartyspielGeografiePage() {
       </section>
 
       <section className="mt-8">
+        <h2 className="text-[22px] leading-tight text-white">Party-Modus oder Online-Raum?</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <article className="punktlandung-info-static-card rounded-xl p-5">
+            <h3 className="text-lg font-bold text-white">Party-Modus: gemeinsam an einem Gerät</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              Ideal für Sofa, Unterricht oder Spieleabend. Ihr gebt ein Handy, Tablet oder Notebook weiter und löst jede Aufgabe anschließend gemeinsam auf.
+            </p>
+          </article>
+          <article className="punktlandung-info-static-card rounded-xl p-5">
+            <h3 className="text-lg font-bold text-white">Online-Raum: gemeinsam auf mehreren Geräten</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              Wenn ihr getrennt sitzt oder jede Person am eigenen Gerät spielen soll, verbindet euch ein Raumcode mit derselben laufenden Partie.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section className="mt-8">
         <h2 className="text-[22px] leading-tight text-white">Welche Einstellungen passen zu welcher Runde?</h2>
-        <div className="punktlandung-info-table mt-4 overflow-x-auto">
-          <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-slate-900 text-slate-200">
-              <tr>
-                <th className="px-4 py-3 font-bold">Situation</th>
-                <th className="px-4 py-3 font-bold">Runden</th>
-                <th className="px-4 py-3 font-bold">Zeit</th>
-                <th className="px-4 py-3 font-bold">Empfehlung</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800 text-slate-300">
-              <tr><td className="px-4 py-3 font-bold text-white">Kurze Pause</td><td className="px-4 py-3">5</td><td className="px-4 py-3">30 Sekunden</td><td className="px-4 py-3">Gemischt, leicht oder mittel</td></tr>
-              <tr><td className="px-4 py-3 font-bold text-white">Spieleabend</td><td className="px-4 py-3">10–15</td><td className="px-4 py-3">60 Sekunden</td><td className="px-4 py-3">Gemischt oder eine gemeinsame Lieblingskategorie</td></tr>
-              <tr><td className="px-4 py-3 font-bold text-white">Geografie-Fans</td><td className="px-4 py-3">15</td><td className="px-4 py-3">30 oder 60 Sekunden</td><td className="px-4 py-3">Mittel oder schwer, ohne Diskussion vor dem Tipp</td></tr>
-            </tbody>
-          </table>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          {[
+            ["Kurze Runde", "5 Runden · 30 Sekunden", "Gemischt auf leicht oder mittel – gut zum Kennenlernen und für eine kurze Pause."],
+            ["Spieleabend", "10–15 Runden · 60 Sekunden", "Gemischt oder eine gemeinsame Lieblingskategorie mit genug Zeit zum Überlegen."],
+            ["Geografie-Fans", "15 Runden · 30 oder 60 Sekunden", "Mittel oder schwer – auf Wunsch ohne Zurufe, bevor ein Tipp bestätigt wurde."]
+          ].map(([title, settings, body]) => (
+            <article key={title} className="punktlandung-info-static-card rounded-xl p-5">
+              <h3 className="text-lg font-bold text-white">{title}</h3>
+              <p className="mt-2 font-bold text-emerald-300">{settings}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
+            </article>
+          ))}
         </div>
         <p className="mt-3 text-sm leading-6 text-slate-400">
           Die Vorschläge sind keine Sonderregeln. Rundenzahl, Zeit und Schwierigkeit können vor jeder Partie frei

@@ -1,5 +1,17 @@
 import type { Metadata } from "next";
-import { BookOpenCheck, CircleHelp, Gamepad2, Globe2, Images, Megaphone, ShieldCheck, Users } from "lucide-react";
+import {
+  BookOpenCheck,
+  CircleHelp,
+  Gamepad2,
+  Globe2,
+  Images,
+  MapPinned,
+  Megaphone,
+  ShieldCheck,
+  SlidersHorizontal,
+  UserRoundCheck,
+  Users
+} from "lucide-react";
 import Link from "next/link";
 import { ContributionPaths } from "@/components/ContributionPaths";
 import { InfoPageShell } from "@/components/InfoPageShell";
@@ -34,7 +46,7 @@ export default function InfosPage() {
       title="Was ist Punktlandung?"
       intro="Punktlandung ist ein eigenständig entwickeltes Geografie-Spiel für den Browser. Hier erklären wir, was das Projekt anbietet, wie die Inhalte gepflegt werden und wie die Web-Version weiterentwickelt wird."
     >
-      <p className="text-sm text-slate-400">Zuletzt aktualisiert: 9. August 2026</p>
+      <p className="text-sm text-slate-400">Zuletzt aktualisiert: 26. August 2026</p>
 
       <section className="mt-6 grid gap-4 md:grid-cols-2">
         <article className="punktlandung-info-static-card rounded-xl p-5">
@@ -51,6 +63,37 @@ export default function InfosPage() {
             Punktlandung richtet sich an Einzelspieler, Familien, Freundesgruppen und alle, die Orte lieber auf einer
             Karte einordnen als Vokabeln abzufragen. Gastpartien funktionieren ohne Konto. Solo-, Party- und
             Online-Raum verwenden dasselbe nachvollziehbare Punktesystem.
+          </p>
+        </article>
+      </section>
+
+      <section className="mt-8 grid gap-4 md:grid-cols-2" aria-label="Was Punktlandung besonders macht">
+        <article className="punktlandung-info-static-card rounded-xl p-5">
+          <IconHeading Icon={MapPinned}>Pin statt Multiple Choice</IconHeading>
+          <p className="mt-3 leading-7 text-slate-300">
+            Du wählst keine Antwort aus, sondern entscheidest selbst, wo das gesuchte Ziel auf der Weltkarte liegt.
+            Dadurch zählt nicht nur Wissen, sondern auch dein geografisches Gefühl.
+          </p>
+        </article>
+        <article className="punktlandung-info-static-card rounded-xl p-5">
+          <IconHeading Icon={Images}>Abwechslungsreiche Aufgaben</IconHeading>
+          <p className="mt-3 leading-7 text-slate-300">
+            Je nach Kategorie erkennst du Städte, Hauptstädte, Wahrzeichen, Landschaften oder Flaggen. Im gemischten
+            Modus wechseln die Aufgabentypen innerhalb einer Partie.
+          </p>
+        </article>
+        <article className="punktlandung-info-static-card rounded-xl p-5">
+          <IconHeading Icon={SlidersHorizontal}>Deine Partie, deine Regeln</IconHeading>
+          <p className="mt-3 leading-7 text-slate-300">
+            Du bestimmst Kategorie, Rundenzahl, Zeitlimit und Schwierigkeit selbst. So passt eine Partie sowohl in
+            eine kurze Pause als auch in einen längeren Spieleabend.
+          </p>
+        </article>
+        <article className="punktlandung-info-static-card rounded-xl p-5">
+          <IconHeading Icon={UserRoundCheck}>Sofort spielen, später speichern</IconHeading>
+          <p className="mt-3 leading-7 text-slate-300">
+            Zum Ausprobieren brauchst du kein Konto. Eine Anmeldung wird erst wichtig, wenn du abgeschlossene
+            Partien dauerhaft speichern und dich in öffentlichen Rankings vergleichen möchtest.
           </p>
         </article>
       </section>

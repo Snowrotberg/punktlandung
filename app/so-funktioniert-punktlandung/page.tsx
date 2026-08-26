@@ -70,7 +70,7 @@ export default function SoFunktioniertPunktlandungPage() {
         title="Wie funktioniert Punktlandung?"
         intro="Punktlandung zeigt dir einen Ort, ein Wahrzeichen, eine Landschaft, eine Stadt oder eine Flagge. Du setzt deinen Tipp auf der Weltkarte. Je kleiner die Entfernung zum Ziel, desto mehr der maximal 5.000 Punkte erhältst du."
       >
-      <p className="text-sm text-slate-400">Inhaltlich geprüft: 28. Juli 2026</p>
+      <p className="text-sm text-slate-400">Inhaltlich geprüft: 26. August 2026</p>
 
       <section className="mt-6">
         <h2 className="text-[22px] font-black leading-tight text-white">Eine Runde in vier Schritten</h2>
@@ -121,42 +121,60 @@ export default function SoFunktioniertPunktlandungPage() {
           Sonderfall Flaggen: Wird das richtige Land getroffen, vergibt Punktlandung 5.000 Punkte. Die angezeigten
           Beispiele sind direkt aus der im Spiel verwendeten Bewertungsfunktion berechnet.
         </p>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <article className="punktlandung-info-static-card rounded-xl p-5">
+            <h3 className="text-lg font-black text-white">Ein konkretes Beispiel</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              Ein Tipp in 500 Kilometern Entfernung bringt 3.816 Punkte. Zehn gleich gute Runden ergeben zusammen
+              38.160 Punkte.
+            </p>
+          </article>
+          <article className="punktlandung-info-static-card rounded-xl p-5">
+            <h3 className="text-lg font-black text-white">Faire Vergleiche</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              Rankings vergleichen Punkte pro Runde. So bleiben Partien mit unterschiedlicher Rundenzahl
+              vergleichbar; Kategorie und Einstellungen werden bei jeder Platzierung sichtbar ausgewiesen.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-[22px] font-black leading-tight text-white">Welche Einstellungen kannst du wählen?</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {[
+            ["Kategorie", "Spiele gemischt oder konzentriere dich auf Städte, Hauptstädte, Wahrzeichen, Landschaften oder Flaggen."],
+            ["Rundenzahl", "Kurze Partien eignen sich zum Kennenlernen. Mehr Runden machen das Gesamtergebnis aussagekräftiger."],
+            ["Zeit", "Ein festes Zeitlimit belohnt schnelle Entscheidungen. Mit freier Zeit kannst du Bild und Karte in Ruhe prüfen."],
+            ["Schwierigkeit", "Leichte Aufgaben sind oft klarer erkennbar; schwere Motive verlangen genaueres Hinsehen und mehr Ortswissen."]
+          ].map(([title, body]) => (
+            <article key={title} className="punktlandung-info-static-card rounded-xl p-5">
+              <h3 className="text-lg font-black text-white">{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="mt-8">
         <h2 className="text-[22px] font-black leading-tight text-white">Welche Spielmodi gibt es?</h2>
-        <div className="punktlandung-info-table mt-4 overflow-x-auto">
-          <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-slate-900 text-slate-200">
-              <tr>
-                <th className="px-4 py-3 font-black">Modus</th>
-                <th className="px-4 py-3 font-black">Personen</th>
-                <th className="px-4 py-3 font-black">Ablauf</th>
-                <th className="px-4 py-3 font-black">Anmeldung</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800 text-slate-300">
-              <tr>
-                <td className="px-4 py-3 font-bold text-white">Solo</td>
-                <td className="px-4 py-3">1</td>
-                <td className="px-4 py-3">Alle Tipps selbst setzen</td>
-                <td className="px-4 py-3">nicht erforderlich</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 font-bold text-white">Party</td>
-                <td className="px-4 py-3">2–10</td>
-                <td className="px-4 py-3">Reihum am selben Bildschirm</td>
-                <td className="px-4 py-3">nicht erforderlich</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 font-bold text-white">Online-Raum</td>
-                <td className="px-4 py-3">bis zu 10</td>
-                <td className="px-4 py-3">Gemeinsamer Raum über einen Raumcode</td>
-                <td className="px-4 py-3">nicht erforderlich</td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          {[
+            ["Solo", "Du spielst allein und setzt alle Tipps selbst. Ideal zum Üben und für persönliche Bestwerte."],
+            ["Party", "Zwei bis zehn Personen spielen reihum am selben Gerät und vergleichen jede Auflösung gemeinsam."],
+            ["Online-Raum", "Bis zu zehn Personen treten über einen gemeinsamen Raumcode auf ihren eigenen Geräten an."]
+          ].map(([title, body]) => (
+            <article key={title} className="punktlandung-info-static-card rounded-xl p-5">
+              <h3 className="text-lg font-black text-white">{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
+            </article>
+          ))}
         </div>
+        <p className="mt-3 text-sm leading-6 text-slate-400">
+          Alle Modi lassen sich ohne Anmeldung ausprobieren. Ein Konto brauchst du erst für einen dauerhaften
+          persönlichen Verlauf und öffentliche Rankings.
+        </p>
       </section>
 
       <section className="punktlandung-info-static-card mt-8 p-5">

@@ -4,7 +4,6 @@ import { InfoPageShell } from "@/components/InfoPageShell";
 import { JsonLd } from "@/components/StructuredData";
 import { builtInLocations, catalogInventoryLocations } from "@/data/locations";
 import { buildCatalogStatistics, catalogCategoryLabels, catalogCategoryOrder } from "@/lib/catalogStatistics";
-import { MINIMUM_DIFFICULTY_SAMPLES, STABLE_DIFFICULTY_SAMPLES } from "@/lib/locationDifficulty";
 import { absoluteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -26,7 +25,7 @@ const catalogStructuredData = {
   url: absoluteUrl("/ortskatalog"),
   description: `Übersicht über ${builtInLocations.length.toLocaleString("de-DE")} spielbare Orts- und Flaggenaufgaben in fünf Kategorien.`,
   inLanguage: "de-DE",
-  dateModified: "2026-08-22",
+  dateModified: "2026-08-26",
   isPartOf: {
     "@id": `${absoluteUrl("/")}#website`
   },
@@ -80,6 +79,24 @@ export default function OrtskatalogPage() {
       </section>
 
       <section className="mt-8">
+        <h2 className="text-[22px] font-black leading-tight text-white">Was erwartet dich in den Kategorien?</h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[
+            ["Städte", "Stadtbilder aus aller Welt: von bekannten Metropolen bis zu Orten, die du erst über Architektur, Lage und Umgebung einordnest."],
+            ["Hauptstädte", "Politische und kulturelle Zentren, bei denen du das gezeigte Land auf der Weltkarte finden musst."],
+            ["Wahrzeichen", "Markante Bauwerke, Denkmäler und Orte, deren Standort du möglichst genau bestimmst."],
+            ["Landschaften", "Berge, Küsten, Seen und andere Naturräume, bei denen Gelände, Klima und Vegetation wichtige Hinweise liefern."],
+            ["Flaggen", "Erkenne die Flagge und markiere das zugehörige Land. Hier zählt der richtige Ländertreffer." ]
+          ].map(([title, body]) => (
+            <article key={title} className="punktlandung-info-static-card rounded-md p-5">
+              <h3 className="text-lg font-black text-white">{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-8">
         <h2 className="text-[22px] font-black leading-tight text-white">Verteilung auf die Kategorien</h2>
         <div className="punktlandung-info-table mt-4 overflow-x-auto">
           <table className="w-full border-collapse text-left text-sm">
@@ -112,13 +129,22 @@ export default function OrtskatalogPage() {
         </div>
       </section>
 
-      <section className="punktlandung-info-static-card mt-8 p-5">
+      <section className="mt-8">
         <h2 className="text-[22px] font-black leading-tight text-white">Wie verändert sich die Schwierigkeit?</h2>
-        <p className="mt-2 leading-7 text-slate-300">
-          Die Tabelle zeigt die Startverteilung des aktiven Katalogs. Sobald ein Motiv mindestens {MINIMUM_DIFFICULTY_SAMPLES} vergleichbare,
-          serververifizierte Runden gesammelt hat, kann seine Einstufung anhand von Punktzahl, Ländertreffern und
-          relativer Antwortzeit automatisch angepasst werden. Ab {STABLE_DIFFICULTY_SAMPLES} Runden gilt die Einstufung als stabil. Die
-          Auswertung wird einmal täglich aktualisiert, sofern der Datenbank-Zeitplan aktiv ist.
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          {[
+            ["Leicht", "Bekannte oder besonders eindeutige Motive eignen sich zum Einstieg und für entspannte Runden."],
+            ["Mittel", "Vertraute Hinweise helfen weiter, der genaue Ort ist aber nicht immer sofort erkennbar."],
+            ["Schwer", "Weniger offensichtliche Perspektiven und anspruchsvollere Orte fordern genaues Hinsehen und geografisches Wissen."]
+          ].map(([title, body]) => (
+            <article key={title} className="punktlandung-info-static-card rounded-md p-5">
+              <h3 className="text-lg font-black text-white">{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
+            </article>
+          ))}
+        </div>
+        <p className="mt-3 text-sm leading-6 text-slate-400">
+          Die Einordnung wird anhand echter Spielergebnisse weiter verbessert, damit die Auswahl langfristig zur gewählten Stufe passt.
         </p>
       </section>
 
@@ -128,8 +154,8 @@ export default function OrtskatalogPage() {
           {[
             ["1. Quelle und Lizenz", "Die aktiven Bildaufgaben verwenden Wikimedia-Commons-Motive. Quellen und Lizenzangaben werden im Projektkatalog mitgeführt."],
             ["2. Eindeutiger Ort", "Jeder Eintrag enthält Koordinaten sowie Angaben zu Land, Kontinent und Kategorie, damit Tipp und Ziel vergleichbar sind."],
-            ["3. Motiv und Aktualität", "Aktiv bleiben nur eindeutig passende Fotografien ab Aufnahmejahr 2010. Zeichnungen, Karten, Montagen, Satellitenbilder, Innenräume und irreführende Motive werden ausgeschlossen."],
-            ["4. Technische Prüfung", "Die Quelldatei muss mindestens 2.560 × 1.440 Pixel und ein geeignetes Querformat besitzen. So nutzt das Spiel auf Handy, Laptop und TV dasselbe hochwertige Masterbild mit einer passenden Wikimedia-Ableitung."]
+            ["3. Erkennbares und faires Motiv", "Aktiv bleiben Fotografien, die zur Aufgabe passen und einen fairen geografischen Tipp ermöglichen. Irreführende oder künstlich zusammengesetzte Motive werden ausgeschlossen."],
+            ["4. Technische Qualität", "Bilder werden auf Schärfe, Format und eine verlässliche Darstellung geprüft, damit dieselbe Aufgabe auf Handy, Laptop und großen Bildschirmen funktioniert."]
           ].map(([title, body]) => (
             <article key={title} className="punktlandung-info-static-card rounded-md p-5">
               <h3 className="text-lg font-black text-white">{title}</h3>
