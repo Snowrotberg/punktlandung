@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEven
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { directImageFallbackDelayMs, gameplayImageWidth, normalizeEffectiveConnectionType } from "@/lib/imageDelivery";
 import { isPreparedImageUrl } from "@/lib/imagePreload.client";
+import { imageLicenseHref } from "@/lib/imageLicenseLink";
 import type { GeoLocation, GameSettings } from "@/types/game";
 
 type PanoramaViewerProps = {
@@ -100,13 +101,6 @@ function wikimediaSizedImageUrl(rawUrl: string, width: number) {
   const thumbnailUrl = new URL(`https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(fileTitle)}`);
   thumbnailUrl.searchParams.set("width", String(width));
   return thumbnailUrl.toString();
-}
-
-function wikimediaFilePageUrl(rawUrl: string) {
-  const fileTitle = extractWikimediaFileTitle(rawUrl);
-  if (!fileTitle) return rawUrl;
-
-  return `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(fileTitle).replace(/%20/g, "_")}`;
 }
 
 function estimateResponsiveImageWidth(element?: HTMLElement | null) {
@@ -268,7 +262,9 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
   }, [location.panoramaUrl, location.panoramaUrls]);
 
   const currentImageUrl = imageUrls[imageIndex] ?? location.panoramaUrl;
-  const sourceHref = location.sourceUrl ?? (location.source === "wikimedia" ? wikimediaFilePageUrl(currentImageUrl) : currentImageUrl);
+  const sourceHref = location.source === "wikimedia"
+    ? imageLicenseHref(location.imageFile)
+    : location.sourceUrl ?? currentImageUrl;
   const sourceName = location.source === "wikimedia" ? "Wikimedia Commons" : location.attribution || location.source;
   const requestImageWidth = proxyWidth;
   const directImageUrl = imageIndex === 0 && location.deliveryUrl
@@ -893,13 +889,11 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
         <a
           className="punktlandung-source-chip punktlandung-source-chip--detail absolute bottom-3 left-1/2 z-10 w-fit max-w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-slate-950/68 px-3.5 py-2.5 text-center shadow-[0_18px_44px_rgba(0,0,0,0.30)] ring-1 ring-indigo-300/35 backdrop-blur sm:bottom-4"
           href={sourceHref}
-          target="_blank"
-          rel="noreferrer"
           onClick={(event) => event.stopPropagation()}
         >
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-200">Quelle</p>
           <h1 className="mt-0.5 text-sm font-black leading-tight text-white">{sourceName}</h1>
-          <p className="mt-1 text-[10px] font-semibold leading-tight text-slate-300">Lizenz und Urheberinfos auf der Commons-Dateiseite</p>
+          <p className="mt-1 text-[10px] font-semibold leading-tight text-slate-300">Lizenz und Urheberinfos im Bildnachweis</p>
         </a>
       )}
 

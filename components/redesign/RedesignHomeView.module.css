@@ -48,17 +48,6 @@
   border-color: var(--player-color, #ff4775) !important;
 }
 
-/* Keep the home preview in the same visual language as the resolution map:
-   the target marker has a subtle, continuous landing bounce. */
-.app :global(.punktlandung-home-map-preview.is-map-ready .punktlandung-map-pin-actual) {
-  animation: homeTargetBounce 1.8s ease-in-out infinite;
-}
-
-@keyframes homeTargetBounce {
-  0%, 100% { transform: scale(1.12) translateY(0); }
-  50% { transform: scale(1.12) translateY(-0.35rem); }
-}
-
 .app :global(.punktlandung-home-map-preview .punktlandung-map-label::before) {
   display: none !important;
 }

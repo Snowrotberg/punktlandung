@@ -271,11 +271,11 @@
   left: 50%;
   max-width: min(15rem, 80vw);
   padding: 0.45rem 0.65rem;
-  border: 1px solid var(--pl-line);
-  border-radius: 0.55rem;
-  color: var(--pl-text);
-  background: rgb(10 16 28 / 0.97);
-  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.34);
+  border: 1px solid var(--punktlandung-tooltip-border);
+  border-radius: var(--punktlandung-tooltip-radius);
+  color: var(--punktlandung-tooltip-color);
+  background: var(--punktlandung-tooltip-background);
+  box-shadow: var(--punktlandung-tooltip-shadow);
   content: attr(data-tooltip);
   font-size: 0.7rem;
   font-weight: 650;

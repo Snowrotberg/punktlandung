@@ -51,7 +51,7 @@ export const RESULT_CAMERA_CONFIG = {
   terrainExaggeration: 1.5
 } as const;
 
-export const RESULT_MAP_MIN_ZOOM = 1.15;
+export const RESULT_MAP_MIN_ZOOM = 1.35;
 
 export const RESULT_CAMERA_SCENARIOS: ResultCameraScenario[] = [
   {
@@ -220,7 +220,15 @@ export function buildResultCameraPlan(
     ? distanceClass === "short" ? -0.3 : distanceClass === "medium" ? -0.55 : -0.35
     : 0;
   const direction = initialBearing(guess, target);
-  const endBearing = clamp(direction - 18, -24, 24);
+  const eastWestDelta = shortestLongitudeDelta(guess[0], target[0]);
+  // Tilt against the east/west relationship of the two points. This keeps a
+  // naturally diagonal pair diagonal instead of rotating it into an almost
+  // vertical stack. Exact north/south pairs receive a stable gentle tilt.
+  const endBearing = Math.abs(eastWestDelta) < 0.001
+    ? (Math.cos(toRadians(direction)) >= 0 ? 22 : -22)
+    : (eastWestDelta > 0 ? -22 : 22);
+  const startBearing = endBearing * (distanceClass === "long" ? 0.45 : 0.65);
+  const transitBearing = endBearing * 0.82;
   const midpoint = relationshipCenter(guess, target);
   const durationScale = clamp(options.durationScale ?? 1, 0.65, 1.5);
 
@@ -234,11 +242,24 @@ export function buildResultCameraPlan(
   const longTransitZoom = longEndZoom - (distanceKm < 9_000 ? 0.32 : 0.26);
   const longEndPitch = distanceKm < 6_000 ? 40 : distanceKm < 10_000 ? 36 : 31;
 
+  // "Kurz" covers everything from a street-level miss to almost 90 km. A
+  // single zoom for that complete range made very close results (including
+  // the home-page demo) pull back to a city-wide view. Interpolate on a
+  // logarithmic distance scale so nearby pins stay legible and separated,
+  // while the established regional composition near the 90 km boundary is
+  // preserved.
+  const shortDistanceProgress = clamp(
+    Math.log2(Math.max(distanceKm, 2) / 2) / Math.log2(RESULT_CAMERA_CONFIG.distanceThresholdKm.short / 2),
+    0,
+    1
+  );
+  const shortEndZoom = 12.35 + (9.62 - 12.35) * shortDistanceProgress;
+
   const profiles = {
     short: {
-      startZoom: 10.25,
-      transitZoom: 9.05,
-      endZoom: 9.62,
+      startZoom: Math.min(13.1, shortEndZoom + 0.75),
+      transitZoom: shortEndZoom - 0.35,
+      endZoom: shortEndZoom,
       startPitch: 43,
       transitPitch: 48,
       curve: 0.08,
@@ -276,7 +297,7 @@ export function buildResultCameraPlan(
     at: 0,
     center: guess,
     zoom: profile.startZoom + compactAdjustment,
-    bearing: endBearing - (distanceClass === "long" ? 14 : 8),
+    bearing: startBearing,
     pitch: profile.startPitch
   };
   const endFrame: CameraKeyframe = {
@@ -293,7 +314,7 @@ export function buildResultCameraPlan(
           at: 0.44,
           center: interpolateGreatCircle(guess, target, 0.3),
           zoom: profile.transitZoom + compactAdjustment,
-          bearing: endBearing - 4,
+          bearing: transitBearing,
           pitch: 45
         },
         endFrame
@@ -305,7 +326,7 @@ export function buildResultCameraPlan(
             at: 0.55,
             center: curvedRoutePoint(guess, target, 0.32, profile.curve),
             zoom: profile.transitZoom + compactAdjustment,
-            bearing: endBearing - 4,
+            bearing: transitBearing,
             pitch: 40
           },
           endFrame
@@ -316,14 +337,14 @@ export function buildResultCameraPlan(
             at: 0.34,
             center: curvedRoutePoint(guess, target, 0.2, profile.curve),
             zoom: profile.transitZoom + compactAdjustment,
-            bearing: endBearing - 9,
+            bearing: startBearing,
             pitch: profile.transitPitch
           },
           {
             at: 0.7,
             center: curvedRoutePoint(guess, target, 0.4, profile.curve),
             zoom: profile.transitZoom + 0.1 + compactAdjustment,
-            bearing: endBearing - 4,
+            bearing: transitBearing,
             pitch: 18
           },
           endFrame

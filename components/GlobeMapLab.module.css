@@ -190,10 +190,10 @@
 }
 
 .routeShadow {
-  stroke: rgba(2, 6, 23, 0.42);
-  stroke-width: 3;
+  stroke: rgba(2, 6, 23, 0.18);
+  stroke-width: 2.4;
   stroke-linecap: round;
-  filter: blur(1px);
+  filter: blur(0.6px);
 }
 
 .routeLine {
@@ -256,16 +256,16 @@
   top: 50%;
   width: max-content;
   max-width: min(15rem, calc(100vw - 6rem));
-  border: 1px solid rgba(110, 231, 183, 0.55);
-  border-radius: 0.45rem;
-  background: rgba(8, 18, 34, 0.97);
-  padding: 0.42rem 0.58rem;
-  color: #e2e8f0;
-  box-shadow: 0 0.75rem 2rem rgba(2, 6, 23, 0.42);
+  border: 1px solid var(--punktlandung-tooltip-border);
+  border-radius: var(--punktlandung-tooltip-radius);
+  background: var(--punktlandung-tooltip-background);
+  padding: 0.45rem 0.65rem;
+  color: var(--punktlandung-tooltip-color);
+  box-shadow: var(--punktlandung-tooltip-shadow);
   font-family: var(--font-inter), "Segoe UI", sans-serif;
   font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1.25;
+  font-weight: 650;
+  line-height: 1.2;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-50%) translateX(0.2rem);
@@ -368,8 +368,8 @@
 
 .targetMarker[data-visible="true"][data-focus="true"] .markerPin {
   animation:
-    targetDrop 620ms cubic-bezier(0.16, 1, 0.3, 1) 1 both,
-    targetIdleBounce 2.25s cubic-bezier(0.45, 0, 0.25, 1) 760ms infinite;
+    targetArrival 4.2s cubic-bezier(0.22, 0.74, 0.2, 1) 1 both,
+    targetIdleBounce 4.8s ease-in-out 4.2s infinite;
 }
 
 .targetMarker[data-visible="true"][data-focus="true"] .markerRingInner {
@@ -384,11 +384,15 @@
   animation: targetRipple 580ms cubic-bezier(0.16, 1, 0.3, 1) 440ms 1 both;
 }
 
-@keyframes targetDrop {
+@keyframes targetArrival {
   0% { opacity: 0; transform: translateX(-50%) translateY(-3.5rem) scale(1.12); }
-  68% { opacity: 1; transform: translateX(-50%) translateY(0.28rem) scale(1.12); }
-  84% { transform: translateX(-50%) translateY(-0.12rem) scale(1.12); }
-  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  16% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  27% { opacity: 1; transform: translateX(-50%) translateY(-0.78rem) scale(1.12); }
+  41% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  53% { opacity: 1; transform: translateX(-50%) translateY(-0.42rem) scale(1.12); }
+  67% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  77% { opacity: 1; transform: translateX(-50%) translateY(-0.2rem) scale(1.12); }
+  89%, 100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
 }
 
 @keyframes targetRipple {
@@ -399,8 +403,7 @@
 
 @keyframes targetIdleBounce {
   0%, 100% { transform: translateX(-50%) translateY(0) scale(1.12); }
-  48% { transform: translateX(-50%) translateY(-5px) scale(1.12); }
-  68% { transform: translateX(-50%) translateY(0) scale(1.12); }
+  50% { transform: translateX(-50%) translateY(-0.18rem) scale(1.12); }
 }
 
 .markerPin {
@@ -518,13 +521,13 @@
   border-color: #5ee7bd !important;
   background: #5ee7bd !important;
   color: #06231c !important;
-  padding-right: 1.65rem !important;
+  padding-right: 2.1rem !important;
 }
 
 .targetMarker .markerLabel::after {
-  content: "i";
+  content: attr(data-info-indicator);
   position: absolute;
-  right: 0.35rem;
+  right: 0.55rem;
   top: 50%;
   display: grid;
   width: 0.9rem;

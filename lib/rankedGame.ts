@@ -75,6 +75,7 @@ export type PublicResolvedRankedRound = {
     lat: number;
     lng: number;
     category: LocationCategory;
+    imageFile?: string;
     shortDescription?: string;
     descriptionSourceUrl?: string;
   };
@@ -395,6 +396,7 @@ export function toPublicRankedGame(game: RankedGame): PublicRankedGame {
         lat: round.location.lat,
         lng: round.location.lng,
         category: round.location.category,
+        imageFile: round.location.imageFile,
         shortDescription: round.location.shortDescription,
         descriptionSourceUrl: round.location.descriptionSourceUrl
       },

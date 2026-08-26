@@ -8,7 +8,8 @@ export const metadata: Metadata = {
   alternates: { canonical: absoluteUrl("/lizenzen") }
 };
 
-export default function LizenzenPage() {
+export default async function LizenzenPage({ searchParams }: { searchParams: Promise<{ bild?: string }> }) {
+  const { bild } = await searchParams;
   return (
     <InfoPageShell
       contentClassName="punktlandung-legal-panel"
@@ -78,7 +79,7 @@ export default function LizenzenPage() {
             </a>
           </section>
 
-          <ImageLicenseCatalog />
+          <ImageLicenseCatalog selectedFile={bild} />
       </div>
     </InfoPageShell>
   );

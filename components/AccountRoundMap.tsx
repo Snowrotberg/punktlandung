@@ -1,8 +1,8 @@
 "use client";
 
-import { GuessMap } from "@/components/GuessMap";
-import type { GeoLocation, Guess, Player, RoundResult } from "@/types/game";
-import { playerColorAt } from "@/lib/playerPalette";
+import { GlobeResultMap } from "@/components/GlobeMapLab";
+import type { ResultCameraScenario } from "@/lib/globeResultCamera";
+import type { GeoLocation, RoundResult } from "@/types/game";
 import { useEffect, useState } from "react";
 import styles from "./AccountRoundVisual.module.css";
 
@@ -25,37 +25,29 @@ export function AccountRoundMap({ location, result, resolvedAt, playerName }: Ac
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [maximized]);
   const guess = result.guess;
-  const summary = {
-    roundNumber: 1,
-    location,
-    results: [result],
-    crewGuess: null,
-    crewDistanceKm: null,
-    duel: [],
-    completedAt: resolvedAt ?? Date.now()
-  };
-  const players: Player[] = [{
-    id: result.playerId,
-    name: playerName,
-    color: playerColorAt(0),
-    score: result.points,
-    connected: false,
-    isHost: true,
-    team: "aurora",
-    status: "active",
-    cosmetic: "none"
-  }];
+  const scenario: ResultCameraScenario | null = guess ? {
+    id: `account-${location.id}-${resolvedAt ?? "open"}-${result.playerId}`,
+    label: `${playerName} → ${location.title}`,
+    description: "Gespeicherte Tipp- und Zielkoordinaten dieser Runde",
+    playerName: `#1 ${playerName}`,
+    targetName: location.title,
+    targetDescription: location.shortDescription ?? `${location.countryName} · ${location.continent}`,
+    guess: [guess.lng, guess.lat],
+    target: [location.lng, location.lat]
+  } : null;
 
   return (
     <>
       <section className={`account-round-map ${styles.resultMapTheme}`}>
         <div className={styles.visualHeader}><span>Karte dieser Runde</span><button type="button" onClick={() => setMaximized(true)}>Maximieren</button></div>
-        <GuessMap mode="results" summary={summary} guesses={guess ? [guess as Guess] : []} players={players} showLabels resultPaddingScale={0.8} resultZoomScale={0.68} resultLabelLayout="account-history" resultControlInset noPan={false} noZoom={false} />
+        <div className={styles.mapSurface}>
+          {scenario ? <GlobeResultMap scenario={scenario} animate={false} targetInfoIndicator="i" /> : <p className={styles.mapUnavailable}>Für diese Runde wurde kein Tipp gespeichert.</p>}
+        </div>
       </section>
       {maximized && <div className={styles.modal} role="dialog" aria-modal="true" aria-label={`Karte zu ${location.title}`} onMouseDown={(event) => event.target === event.currentTarget && setMaximized(false)}>
         <div className={styles.modalPanel}>
           <div className={styles.modalHeader}><strong>{location.title} · Karte</strong><button type="button" onClick={() => setMaximized(false)} aria-label="Karte schließen">×</button></div>
-          <div className={`${styles.modalMap} ${styles.resultMapTheme}`}><GuessMap mode="results" summary={summary} guesses={guess ? [guess as Guess] : []} players={players} showLabels resultPaddingScale={1} resultZoomScale={1} resultLabelInset noPan={false} noZoom={false} /></div>
+          <div className={styles.modalMap}>{scenario ? <GlobeResultMap scenario={scenario} animate={false} targetInfoIndicator="i" /> : <p className={styles.mapUnavailable}>Für diese Runde wurde kein Tipp gespeichert.</p>}</div>
         </div>
       </div>}
     </>

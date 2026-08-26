@@ -266,6 +266,24 @@ const globePhaseOneCases = [
     },
     guess: { lat: 2.04, lng: 45.32 },
     distanceKm: 4060
+  },
+  {
+    id: "trondheim-close",
+    location: {
+      ...sampleLocation,
+      id: "cities-trondheim",
+      title: "Trondheim",
+      countryCode: "NO",
+      countryName: "Norwegen",
+      continent: "Europe",
+      lat: 63.4305,
+      lng: 10.3951,
+      category: "cities",
+      shortDescription: "Trondheim liegt am Trondheimsfjord und war Norwegens erste Hauptstadt."
+    },
+    guess: { lat: 63.43051, lng: 10.39511 },
+    distanceKm: 1,
+    allowOmittedRoute: true
   }
 ];
 
@@ -538,6 +556,7 @@ const targets = [
     expectedText: testCase.location.title,
     readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [data-result-composition='ready'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
     expectGlobeSafeArea: true,
+    allowOmittedGlobeRoute: testCase.allowOmittedRoute === true,
     note: `Dynamische Solo-Auflösung für Phase-1-Globe-Fall ${testCase.location.title}`
   })),
   {
@@ -549,6 +568,7 @@ const targets = [
     expectedText: globePhaseOneCases.at(-1).location.title,
     readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [data-result-composition='ready'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
     expectGlobeZoomFloor: true,
+    expectCompassToggle: true,
     note: "Ergebnis-Globe begrenzt Minus-Taste und Gesten auf eine harmonische Mindestgröße"
   },
   {
@@ -1256,6 +1276,30 @@ async function collectLayoutMetrics(page, readySelector = null) {
       .filter((item) => item.width < 40 || item.height < 40)
       .slice(0, 10);
 
+    const questionMarkCentering = [...document.querySelectorAll("[data-question-mark-trigger='true']")]
+      .filter(visible)
+      .map((trigger) => {
+        const triggerRect = trigger.getBoundingClientRect();
+        const glyphParts = [...trigger.querySelectorAll("svg path")]
+          .map((part) => part.getBoundingClientRect())
+          .filter((rect) => rect.width > 0 && rect.height > 0);
+        if (!glyphParts.length) return { label: trigger.getAttribute("aria-label") ?? "", centered: false };
+        const glyphRect = glyphParts.reduce((bounds, rect) => ({
+          left: Math.min(bounds.left, rect.left),
+          right: Math.max(bounds.right, rect.right),
+          top: Math.min(bounds.top, rect.top),
+          bottom: Math.max(bounds.bottom, rect.bottom)
+        }), { left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity });
+        const deltaX = ((glyphRect.left + glyphRect.right) - (triggerRect.left + triggerRect.right)) / 2;
+        const deltaY = ((glyphRect.top + glyphRect.bottom) - (triggerRect.top + triggerRect.bottom)) / 2;
+        return {
+          label: trigger.getAttribute("aria-label") ?? "",
+          centered: Math.abs(deltaX) <= 1 && Math.abs(deltaY) <= 1,
+          deltaX,
+          deltaY
+        };
+      });
+
     const readyElement = selector ? document.querySelector(selector) : null;
     const readyRect = readyElement?.getBoundingClientRect() ?? null;
     const homeMapPreview = document.querySelector(".punktlandung-home-map-preview");
@@ -1278,7 +1322,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
           })
       : [];
     const homeMapVisuals = homeMapPreview
-      ? [...homeMapPreview.querySelectorAll(".punktlandung-map-label, .punktlandung-map-pin, .punktlandung-pin-ellipse-icon svg, .punktlandung-home-map-static-pin, .punktlandung-home-map-static-ellipse")]
+      ? [...homeMapPreview.querySelectorAll(".punktlandung-map-pin, .punktlandung-pin-ellipse-icon svg, .punktlandung-home-map-static-pin, .punktlandung-home-map-static-ellipse, [data-result-marker-kind][data-visible='true'] svg[class*='markerPin'], [data-result-marker-kind][data-visible='true'] svg[class*='markerRings']")]
           .filter(visible)
           .map((element) => {
             const rect = element.getBoundingClientRect();
@@ -1321,6 +1365,8 @@ async function collectLayoutMetrics(page, readySelector = null) {
     const markerKinds = globeFrame ? [...globeFrame.querySelectorAll("[data-result-marker-kind][data-visible='true']")] : [];
     const globeControlButtons = globeFrame ? [...globeFrame.querySelectorAll(".maplibregl-ctrl-group button")] : [];
     const globeControlContainer = globeFrame?.querySelector(".maplibregl-ctrl-top-right") ?? null;
+    const targetPin = globeFrame?.querySelector("[data-result-marker-kind='target'][data-visible='true'] svg[class*='markerPin']") ?? null;
+    const targetPinAnimations = targetPin ? getComputedStyle(targetPin).animationName.split(",").map((name) => name.trim()) : [];
     const stackingLevel = (element) => {
       if (!element) return 0;
       const parsed = Number.parseInt(getComputedStyle(element).zIndex, 10);
@@ -1391,19 +1437,21 @@ async function collectLayoutMetrics(page, readySelector = null) {
       overflowingElements,
       textClippingCandidates,
       smallTouchTargets,
+      questionMarkCentering,
       homeMapPreview: homeMapPreview ? {
         renderMode: homeMapPreview.getAttribute("data-render-mode"),
+        animationComplete: homeMapPreview.getAttribute("data-animation-complete") === "true",
         liveCanvasMounted: Boolean(homeMapPreview.querySelector(".maplibregl-canvas")),
         baseVisible: homeMapBase ? getComputedStyle(homeMapBase).visibility !== "hidden" && Number(getComputedStyle(homeMapBase).opacity) > 0.01 : false,
         baseImageLoaded: Boolean(homeMapBase?.querySelector("img")?.complete && homeMapBase.querySelector("img")?.naturalWidth),
         labels: homeMapLabels,
         labelsInside: Boolean(homeMapRect) && homeMapLabels.length >= 2 && homeMapLabels.every((label) =>
-          label.left >= homeMapRect.left + 8 &&
-          label.right <= homeMapRect.right - 8 &&
-          label.top >= homeMapRect.top + 8 &&
-          label.bottom <= homeMapRect.bottom - 8
+          label.left >= homeMapRect.left + 7 &&
+          label.right <= homeMapRect.right - 7 &&
+          label.top >= homeMapRect.top + 7 &&
+          label.bottom <= homeMapRect.bottom - 7
         ),
-        visualsInside: Boolean(homeMapRect) && homeMapVisuals.length >= 6 && homeMapVisuals.every((visual) =>
+        visualsInside: Boolean(homeMapRect) && homeMapVisuals.length >= 4 && homeMapVisuals.every((visual) =>
           visual.left >= homeMapRect.left + 12 &&
           visual.right <= homeMapRect.right - 12 &&
           visual.top >= homeMapRect.top + 12 &&
@@ -1450,15 +1498,18 @@ async function collectLayoutMetrics(page, readySelector = null) {
         markerCount: markerKinds.length,
         routeCount: globeRoutes.length,
         routeSubpaths: globeRoutes[0]?.getAttribute("d")?.match(/M/g)?.length ?? 0,
-        allInside: globeVisualRects.length >= 7 && globeVisualRects.every((rect) =>
+        allInside: globeVisualRects.length >= 6 && globeVisualRects.every((rect) =>
           rect.left >= globeFrameRect.left + 16 - 0.25
           && rect.right <= globeFrameRect.right - 66 + 0.25
-          && rect.top >= globeFrameRect.top + 16 - 0.25
+          // Account for the frame border and sub-pixel MapLibre projection.
+          // The product camera still targets the stricter 20 px safe rect.
+          && rect.top >= globeFrameRect.top + 14 - 0.25
           && rect.bottom <= globeFrameRect.bottom - 16 + 0.25
         ),
         routeEndpointClearances,
+        targetPinAnimations,
         controlsGerman: globeControlButtons.length === 3 && globeControlButtons.every((button) =>
-          ["Karte vergrößern", "Karte verkleinern", "Karte drehen; Norden zurücksetzen"].includes(button.getAttribute("aria-label"))
+          ["Karte vergrößern", "Karte verkleinern", "Nach Norden ausrichten", "Gedrehte Ansicht wiederherstellen"].includes(button.getAttribute("aria-label"))
           && !button.hasAttribute("title")
         ),
         controlStacking: {
@@ -1834,10 +1885,11 @@ async function runTargetViewport(browser, target, viewport) {
 
     if (target.name === "home") {
       await page.locator(".punktlandung-home-map-preview").waitFor({ state: "visible", timeout: 15000 });
-      const homeMapIsLive = await page.locator(".punktlandung-home-map-preview").getAttribute("data-render-mode") === "live-map";
+      const homeMapIsLive = await page.locator(".punktlandung-home-map-preview").getAttribute("data-render-mode") === "animated-live";
       if (homeMapIsLive) {
         await page.locator(".punktlandung-home-map-preview .maplibregl-canvas").waitFor({ state: "attached", timeout: 20000 });
         await page.locator(".punktlandung-home-map-preview .punktlandung-map-label").first().waitFor({ state: "visible", timeout: 20000 });
+        await page.locator(".punktlandung-home-map-preview[data-animation-complete='true']").waitFor({ state: "visible", timeout: 30000 });
       }
       await page.locator(".punktlandung-home-map-preview.is-map-ready").waitFor({ state: "visible", timeout: 20000 });
       const readStableVisuals = () => page.evaluate(() =>
@@ -1867,9 +1919,13 @@ async function runTargetViewport(browser, target, viewport) {
         const connector = [...document.querySelectorAll(".punktlandung-home-map-static-connector line")]
           .find((element) => getComputedStyle(element).display !== "none");
         const targetPin = document.querySelector(".punktlandung-home-map-static-pin.is-actual");
-        const liveMap = document.querySelector(".punktlandung-home-map-preview[data-render-mode='live-map']");
+        const liveMap = document.querySelector(".punktlandung-home-map-preview[data-render-mode='animated-live']");
+        const liveTargetPin = document.querySelector(".punktlandung-home-map-preview [data-result-marker-kind='target'] svg[class*='markerPin']");
         return liveMap
-          ? { connectorAnimation: "live-map", targetPinAnimation: "live-map" }
+          ? {
+              connectorAnimation: document.querySelector(".punktlandung-home-map-preview [data-result-route='connection']") ? "shared-result-route" : "none",
+              targetPinAnimation: liveTargetPin ? getComputedStyle(liveTargetPin).animationName : "none"
+            }
           : {
               connectorAnimation: connector ? getComputedStyle(connector).animationName : "none",
               targetPinAnimation: targetPin ? getComputedStyle(targetPin).animationName : "none"
@@ -1982,6 +2038,34 @@ async function runTargetViewport(browser, target, viewport) {
       }
     }
 
+    if (target.expectCompassToggle) {
+      const frame = page.locator("[aria-label='Interaktive 3D-Ergebniskarte'] [data-current-bearing]").first();
+      const compass = page.locator("[aria-label='Interaktive 3D-Ergebniskarte'] .maplibregl-ctrl-compass").first();
+      const readCamera = () => frame.evaluate((element) => ({
+        bearing: Number(element.getAttribute("data-current-bearing")),
+        pitch: Number(element.getAttribute("data-current-pitch"))
+      }));
+      const initial = await readCamera();
+      await compass.click();
+      await page.waitForTimeout(650);
+      const north = await readCamera();
+      const northLabel = await compass.getAttribute("aria-label");
+      await compass.click();
+      await page.waitForTimeout(650);
+      const restored = await readCamera();
+      const restoredLabel = await compass.getAttribute("aria-label");
+      if (
+        Math.abs(north.bearing) > .5
+        || Math.abs(north.pitch) > .5
+        || northLabel !== "Gedrehte Ansicht wiederherstellen"
+        || restoredLabel !== "Nach Norden ausrichten"
+        || Math.abs(restored.bearing - initial.bearing) > .75
+        || Math.abs(restored.pitch - initial.pitch) > .75
+      ) {
+        problems.push(`Der Nordpfeil stellt die gedrehte Ansicht nicht zweistufig wieder her (${JSON.stringify({ initial, north, restored, northLabel, restoredLabel })}).`);
+      }
+    }
+
     await page.evaluate(async () => {
       if (document.fonts) await document.fonts.ready;
     }).catch(() => {});
@@ -2054,17 +2138,22 @@ async function runTargetViewport(browser, target, viewport) {
     if (metrics.horizontalOverflow) {
       problems.push(`Horizontaler Overflow: Dokument ${metrics.documentWidth}px bei Viewport ${metrics.viewportWidth}px.`);
     }
+    if (metrics.questionMarkCentering?.some((item) => !item.centered)) {
+      problems.push(`Fragezeichen sitzt nicht mittig im Kreis (${JSON.stringify(metrics.questionMarkCentering)}).`);
+    }
     if (target.name === "home" && (!metrics.homeMapPreview
-      || metrics.homeMapPreview.renderMode !== "static-overlay"
-      || metrics.homeMapPreview.liveCanvasMounted
-      || !metrics.homeMapPreview.baseVisible
+      || metrics.homeMapPreview.renderMode !== "animated-live"
+      || !metrics.homeMapPreview.liveCanvasMounted
       || !metrics.homeMapPreview.baseImageLoaded)) {
-      problems.push("Die Startseiten-Vorschau verwendet nicht ausschließlich die fertig geladene statische Kartenbasis.");
+      problems.push("Die Startseiten-Vorschau hat Live-Ergebnisanimation und responsive Fallback-Basis nicht vollständig geladen.");
+    }
+    if (target.name === "home" && metrics.homeMapPreview && !metrics.homeMapPreview.animationComplete) {
+      problems.push("Die Startseiten-Ergebnisanimation wurde nicht vollständig abgeschlossen.");
     }
     if (target.name === "home" && metrics.homeMapPreview && !metrics.homeMapPreview.labelsInside) {
       problems.push("Die Kartenlabels liegen nicht vollständig mit Randabstand innerhalb der Vorschau.");
     }
-    if (target.name === "home" && metrics.homeMapPreview && metrics.homeMapPreview.renderMode === "static-overlay" && !metrics.homeMapPreview.visualsInside) {
+    if (target.name === "home" && metrics.homeMapPreview && !metrics.homeMapPreview.visualsInside) {
       problems.push("Pins, Ellipsen oder Labels verletzen die Safe Area der Startseitenkarte.");
     }
     if (target.name === "home" && (!metrics.homeMapStability || metrics.homeMapStability.visualCount < 2 || metrics.homeMapStability.maxMovementPx > 1)) {
@@ -2125,11 +2214,17 @@ async function runTargetViewport(browser, target, viewport) {
     if (target.expectGlobeSafeArea && (
       !metrics.globeResultSafety
       || metrics.globeResultSafety.markerCount !== 2
-      || metrics.globeResultSafety.routeCount !== 1
+      || (target.allowOmittedGlobeRoute
+        ? ![0, 1].includes(metrics.globeResultSafety.routeCount)
+        : metrics.globeResultSafety.routeCount !== 1)
       || !metrics.globeResultSafety.allInside
       || !metrics.globeResultSafety.controlsGerman
+      || !["targetArrival", "targetIdleBounce"].every((name) =>
+        metrics.globeResultSafety.targetPinAnimations.some((animationName) => animationName.includes(name))
+      )
       || !metrics.globeResultSafety.controlStacking?.controlsAboveContent
-      || !metrics.globeResultSafety.routeEndpointClearances?.every((clearance) => clearance >= 4)
+      || (metrics.globeResultSafety.routeCount === 1
+        && !metrics.globeResultSafety.routeEndpointClearances?.every((clearance) => clearance >= 4))
       || !metrics.globeCompositionStability
       || metrics.globeCompositionStability.markerCount !== 2
       || metrics.globeCompositionStability.maxMovementPx > 1

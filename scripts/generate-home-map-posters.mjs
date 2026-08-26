@@ -13,6 +13,7 @@ const profiles = [
 ];
 const requestedProfile = process.env.HOME_POSTER_PROFILE;
 const baseOnly = process.env.HOME_POSTER_BASE_ONLY === "1";
+const assetVariant = (process.env.HOME_POSTER_VARIANT ?? "").trim().replace(/[^a-z0-9-]/gi, "");
 const requestedScale = Number(process.env.HOME_POSTER_SCALE ?? "2");
 const captureScale = Number.isFinite(requestedScale) && requestedScale >= 1 && requestedScale <= 3
   ? requestedScale
@@ -123,7 +124,8 @@ try {
     const box = await preview.boundingBox();
     if (!box) throw new Error(`Home map preview missing for ${profile.name}`);
     const png = await preview.screenshot({ type: "png", animations: "disabled", scale: "device" });
-    const output = `public/home-map-${baseOnly ? "base" : "preview"}-${profile.name}${pixelSuffix}${layoutMode === "ads" ? "-with-ads" : ""}.webp`;
+    const variantSuffix = assetVariant ? `-${assetVariant}` : "";
+    const output = `public/home-map-${baseOnly ? "base" : "preview"}${variantSuffix}-${profile.name}${pixelSuffix}${layoutMode === "ads" ? "-with-ads" : ""}.webp`;
     await sharp(png).webp({ quality: baseOnly ? 94 : 92, smartSubsample: true, effort: 6 }).toFile(output);
     const alignment = await page.evaluate(() => {
       const map = document.querySelector(".punktlandung-home-map-preview")?.getBoundingClientRect();

@@ -4,6 +4,7 @@ import { AdSenseScript } from "@/components/AdSenseScript";
 import { AdBlockRecoveryScript } from "@/components/AdBlockRecoveryScript";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { StructuredData } from "@/components/StructuredData";
+import { UnifiedTooltipLayer } from "@/components/UnifiedTooltipLayer";
 import { adConfig } from "@/lib/ads";
 import { absoluteUrl, defaultDescription, ogImage, siteName, siteUrl } from "@/lib/seo";
 import { mobileAppleWebApp, mobileViewport } from "@/lib/mobileMetadata";
@@ -113,6 +114,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
         <GoogleAnalytics />
         <StructuredData />
+        <UnifiedTooltipLayer />
         {children}
       </body>
     </html>

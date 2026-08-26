@@ -41,14 +41,14 @@
 .scoreStripTitle { padding: .55rem 1rem; }
 .scoreStripTitle > div, .compactStat > div { align-content: center; display: grid; min-width: 0; }
 .scoreStripTitle span { color: #f8fafc; font-size: .85rem; font-weight: 800; }
-.scoreStripTitle small { color: #718198; font-size: .62rem; line-height: 1.35; margin-top: .18rem; }
+.scoreStripTitle small { color: #718198; font-size: .68rem; line-height: 1.35; margin-top: .18rem; }
 .compactStat { padding: .55rem .8rem; position: relative; }
 .compactStat::before { background: rgba(148, 163, 184, .15); bottom: .72rem; content: ""; left: 0; position: absolute; top: .72rem; width: 1px; }
 .compactStat > div > strong { color: #f8fafc; font-size: 1.45rem; line-height: 1; }
-.compactStat > div > span { color: #8fa0b8; font-size: .66rem; line-height: 1.3; margin-top: .28rem; }
+.compactStat > div > span { color: #8fa0b8; font-size: .7rem; line-height: 1.3; margin-top: .28rem; }
 .statSecondary { border-top: 1px solid rgba(148, 163, 184, .13); margin-inline: .18rem; }
 .statSecondary > b { color: #dffcf1; font-size: 1.45rem; line-height: 1; }
-.statSecondary > em { color: #718198; font-size: .66rem; font-style: normal; line-height: 1.3; margin-top: .28rem; }
+.statSecondary > em { color: #718198; font-size: .7rem; font-style: normal; line-height: 1.3; margin-top: .28rem; }
 .compactStat > .statSecondary > .rankingInfo { bottom: .38rem; margin: 0; position: absolute; right: .32rem; }
 .overviewNavigation { display: grid; gap: .75rem; grid-column: 1 / -1; grid-row: 3; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .statsGrid { display: grid; gap: .65rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }

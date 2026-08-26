@@ -30,10 +30,10 @@ export function MapAttributionBadge({ locationInfoSourceUrl }: { locationInfoSou
             <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">
               © OpenMapTiles
             </a>
+            <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">
+              OpenFreeMap
+            </a>
           </div>
-          <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">
-            OpenFreeMap
-          </a>
           <a href="https://mapterhorn.com/attribution" target="_blank" rel="noopener noreferrer">
             © Mapterhorn
           </a>

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   expandResultRect,
   RESULT_MAP_CONTROL_LABELS,
+  resultMarkerCollisionOffsets,
   resultFitAdjustment,
   resultSafeRect,
   trimProjectedRoute,
@@ -30,6 +31,15 @@ test("route trimming omits a connector when two ellipse gaps consume the complet
   assert.deepEqual(trimProjectedRoute([{ x: 0, y: 0 }, { x: 8, y: 0 }], 5, 4), []);
 });
 
+test("nearby result markers separate symmetrically while distant markers keep their coordinates", () => {
+  const close = resultMarkerCollisionOffsets({ x: 100, y: 100 }, { x: 100, y: 100 });
+  const distant = resultMarkerCollisionOffsets({ x: 10, y: 10 }, { x: 110, y: 10 });
+
+  assert.equal(close.active, true);
+  assert.equal(Math.hypot(close.target.x - close.guess.x, close.target.y - close.guess.y), 76);
+  assert.deepEqual(distant, { guess: { x: 0, y: 0 }, target: { x: 0, y: 0 }, active: false });
+});
+
 test("safe-area fitting zooms only when visual bounds cannot fit and otherwise returns a pan correction", () => {
   const safe = resultSafeRect(360, 300);
   const oversized = resultFitAdjustment({ left: 0, top: 0, right: 340, bottom: 280 }, safe);
@@ -38,7 +48,7 @@ test("safe-area fitting zooms only when visual bounds cannot fit and otherwise r
   assert.ok(oversized.zoomDelta < 0);
   assert.equal(oversized.shiftX, 0);
   assert.equal(shifted.zoomDelta, 0);
-  assert.equal(shifted.shiftX, 14);
+  assert.equal(shifted.shiftX, 18);
 });
 
 test("visual unions include labels, pins, ellipses and the route", () => {
@@ -59,7 +69,8 @@ test("all MapLibre result controls expose German labels", () => {
   assert.deepEqual(Object.values(RESULT_MAP_CONTROL_LABELS), [
     "Karte vergrößern",
     "Karte verkleinern",
-    "Karte drehen; Norden zurücksetzen"
+    "Nach Norden ausrichten",
+    "Gedrehte Ansicht wiederherstellen"
   ]);
   assert.ok(Object.values(RESULT_MAP_CONTROL_LABELS).every((label) => !/zoom|drag|click|north/i.test(label)));
 });

@@ -4,6 +4,7 @@
   --pl-game-muted: #a9b5c7;
   --pl-game-mint: #5ee7bd;
   --pl-game-violet: #938cff;
+  --pl-game-meta-radius: 0.9rem;
   --pl-game-panel-background: rgb(12 22 38 / 0.84);
   --pl-game-map-panel-background:
     linear-gradient(135deg, rgb(94 231 189 / 0.08), transparent 48%, rgb(147 140 255 / 0.08)),
@@ -12,13 +13,24 @@
 }
 
 .redesign :global(.punktlandung-game-stat),
-.redesign :global(.punktlandung-task-card),
 .redesign :global(.punktlandung-game-back-button) {
+  border: 1px solid var(--pl-game-line) !important;
+  border-radius: var(--pl-game-meta-radius) !important;
+  background: var(--pl-game-panel-background) !important;
+  box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.28) !important;
+  backdrop-filter: blur(14px);
+}
+
+.redesign :global(.punktlandung-task-card) {
   border: 1px solid var(--pl-game-line) !important;
   border-radius: 0.7rem !important;
   background: var(--pl-game-panel-background) !important;
   box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.28) !important;
   backdrop-filter: blur(14px);
+}
+
+.redesign :global(.punktlandung-game-viewer .punktlandung-source-chip--compact) {
+  border-radius: var(--pl-game-meta-radius) !important;
 }
 
 .redesign :global(.punktlandung-game-back-button) {
@@ -31,6 +43,19 @@
 .redesign :global(.punktlandung-map-panel-title) {
   color: var(--pl-game-mint) !important;
   font-weight: 650 !important;
+}
+
+/* Runde und Zeit sind bewusst die violette Sekundärinformation. Diese
+   spezifischere Regel muss nach der gemeinsamen Mint-Regel stehen. */
+.redesign :global(.punktlandung-game-stat) {
+  border-color: color-mix(in srgb, var(--pl-game-violet) 62%, var(--pl-game-line)) !important;
+  background:
+    linear-gradient(145deg, rgb(147 140 255 / 0.14), transparent 72%),
+    var(--pl-game-panel-background) !important;
+}
+
+.redesign :global(.punktlandung-game-stat p:first-child) {
+  color: var(--pl-game-violet) !important;
 }
 
 .redesign :global(.punktlandung-game-stat-value),

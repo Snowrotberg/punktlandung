@@ -10,10 +10,11 @@ export type ResultScreenRect = {
 export const RESULT_MAP_CONTROL_LABELS = {
   zoomIn: "Karte vergrößern",
   zoomOut: "Karte verkleinern",
-  compass: "Karte drehen; Norden zurücksetzen"
+  compassNorth: "Nach Norden ausrichten",
+  compassRestore: "Gedrehte Ansicht wiederherstellen"
 } as const;
 
-const RESULT_EDGE_INSET_PX = 16;
+const RESULT_EDGE_INSET_PX = 20;
 const RESULT_CONTROL_RAIL_PX = 72;
 
 export function resultSafeRect(width: number, height: number): ResultScreenRect {
@@ -31,6 +32,39 @@ export function usesCenteredResultInfoOverlay(width: number, height: number): bo
 
 function distance(from: ResultScreenPoint, to: ResultScreenPoint): number {
   return Math.hypot(to.x - from.x, to.y - from.y);
+}
+
+export type ResultMarkerOffsets = {
+  guess: ResultScreenPoint;
+  target: ResultScreenPoint;
+  active: boolean;
+};
+
+/**
+ * Separates result markers only when their projected visuals would cover one
+ * another. The displacement follows their real screen-space relationship; an
+ * exactly shared point uses a stable vertical split. This is a presentation
+ * rule, not a location-specific camera exception.
+ */
+export function resultMarkerCollisionOffsets(
+  guess: ResultScreenPoint,
+  target: ResultScreenPoint,
+  minimumSeparation = 76
+): ResultMarkerOffsets {
+  const projectedDistance = distance(guess, target);
+  if (projectedDistance >= minimumSeparation) {
+    return { guess: { x: 0, y: 0 }, target: { x: 0, y: 0 }, active: false };
+  }
+
+  const unit = projectedDistance > 0.5
+    ? { x: (target.x - guess.x) / projectedDistance, y: (target.y - guess.y) / projectedDistance }
+    : { x: 0, y: -1 };
+  const shift = (minimumSeparation - projectedDistance) / 2;
+  return {
+    guess: { x: -unit.x * shift, y: -unit.y * shift },
+    target: { x: unit.x * shift, y: unit.y * shift },
+    active: true
+  };
 }
 
 function pointBetween(from: ResultScreenPoint, to: ResultScreenPoint, progress: number): ResultScreenPoint {

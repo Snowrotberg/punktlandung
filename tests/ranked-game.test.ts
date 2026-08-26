@@ -17,6 +17,7 @@ function location(id: string, lat: number, lng: number): GeoLocation {
     attribution: "Test",
     source: "ugc",
     category: "landmarks",
+    imageFile: `${id}.jpg`,
     shortDescription: `Kurzinfo ${id}`
   };
 }
@@ -82,6 +83,7 @@ test("server scoring resolves a guess and leaves the next round waiting for its 
   assert.equal(updated.rounds[1].startedAt, null);
   assert.equal(updated.totalResponseTimeMs, 10_000);
   assert.equal(toPublicRankedGame(updated).resolvedRounds[0]?.location.shortDescription, "Kurzinfo loc-1");
+  assert.equal(toPublicRankedGame(updated).resolvedRounds[0]?.location.imageFile, "loc-1.jpg");
 });
 
 test("repeating the same guess request is idempotent", () => {

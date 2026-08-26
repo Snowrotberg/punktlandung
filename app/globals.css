@@ -6,6 +6,44 @@
 
 :root {
   color-scheme: dark;
+  --punktlandung-tooltip-background: rgb(10 16 28 / 0.97);
+  --punktlandung-tooltip-border: var(--pl-line, #26354a);
+  --punktlandung-tooltip-color: var(--pl-text, #f7fafc);
+  --punktlandung-tooltip-radius: 0.55rem;
+  --punktlandung-tooltip-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.34);
+}
+
+/* One shared presentation for every explanatory hover/focus label. The client
+   layer also converts legacy native title attributes before the browser can
+   display its unstyled white rectangle. */
+.punktlandung-unified-tooltip {
+  position: fixed;
+  z-index: 10000;
+  width: max-content;
+  max-width: min(20rem, calc(100vw - 1.5rem));
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--punktlandung-tooltip-border);
+  border-radius: var(--punktlandung-tooltip-radius);
+  color: var(--punktlandung-tooltip-color);
+  background: var(--punktlandung-tooltip-background);
+  box-shadow: var(--punktlandung-tooltip-shadow);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.2;
+  pointer-events: none;
+  text-align: center;
+  text-transform: none;
+  transform: translateX(-50%);
+  white-space: normal;
+}
+
+.punktlandung-unified-tooltip[data-placement="top"] {
+  transform: translate(-50%, -100%);
+}
+
+html[data-unified-tooltips="true"] [data-tooltip]::after {
+  display: none !important;
 }
 
 /* Final hard lock: one visual rule block for Solo, Party and Online setup pages. */
@@ -6528,10 +6566,46 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 .punktlandung-home-map-preview {
+  --home-map-actual-x: 30.303%;
+  --home-map-actual-y: 63.683%;
+  --home-map-player-x: 69.697%;
+  --home-map-player-y: 47.5%;
+  --player-color: var(--player-color-0, #ff4775);
   position: relative;
   width: 100%;
   height: 100%;
   background: #0f172a;
+  isolation: isolate;
+}
+
+.punktlandung-home-map-static-layer,
+.punktlandung-home-map-live-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.punktlandung-home-map-static-layer {
+  z-index: 2;
+  opacity: 1;
+  transition: opacity 220ms ease, visibility 0s linear 0s;
+}
+
+.punktlandung-home-map-static-layer.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 220ms ease, visibility 0s linear 220ms;
+  pointer-events: none;
+}
+
+.punktlandung-home-map-live-layer {
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.punktlandung-home-map-live-layer.is-ready {
+  z-index: 3;
+  opacity: 1;
 }
 
 .punktlandung-home-map-poster {
@@ -6611,9 +6685,8 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   }
 }
 
-/* The home preview is deliberately a static map base with a lightweight
-   vector overlay. It never swaps to a live map, so physical devices cannot
-   expose a different camera fit or a visible zoom-settling sequence. */
+/* The responsive static layer is painted immediately, then the shared live
+   result map takes over only after its first complete surface is ready. */
 .punktlandung-home-map-preview[data-render-mode="static-overlay"] {
   --home-map-actual-x: 30.303%;
   --home-map-actual-y: 63.683%;
@@ -6621,6 +6694,16 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   --home-map-player-y: 47.5%;
   --player-color: var(--player-color-0, #ff4775);
   isolation: isolate;
+}
+
+/* The regular fallback mirrors the fixed Tiergarten-to-Brandenburg-gate
+   preview. ?homeMap=legacy retains the former east-Berlin composition for
+   direct visual comparison and instant rollback during review. */
+.punktlandung-home-map-preview.uses-tiergarten-fallback:not(.uses-legacy-fallback) {
+  --home-map-actual-x: 62.374%;
+  --home-map-actual-y: 54.998%;
+  --home-map-player-x: 37.879%;
+  --home-map-player-y: 59.167%;
 }
 
 .punktlandung-home-map-base {
@@ -6685,7 +6768,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   --home-map-pin-scale: 1.12;
   left: var(--home-map-actual-x);
   top: var(--home-map-actual-y);
-  animation: punktlandung-home-pin-bounce 1.8s cubic-bezier(.45, 0, .55, 1) infinite;
+  animation: punktlandung-home-pin-bounce 4.8s ease-in-out infinite;
 }
 
 .punktlandung-home-map-static-pin.is-player {
@@ -6696,7 +6779,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 
 @keyframes punktlandung-home-pin-bounce {
   0%, 100% { transform: translate(-50%, -100%) scale(var(--home-map-pin-scale)); }
-  50% { transform: translate(-50%, calc(-100% - 4px)) scale(var(--home-map-pin-scale)); }
+  50% { transform: translate(-50%, calc(-100% - 3px)) scale(var(--home-map-pin-scale)); }
 }
 
 .punktlandung-home-map-static-pin svg {
@@ -6752,7 +6835,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 .punktlandung-home-map-static-label.is-player {
-  top: 16px;
+  top: 24px;
   right: 16px;
 }
 
@@ -6761,26 +6844,42 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   left: 16px;
 }
 
-.punktlandung-home-map-preview[data-render-mode="static-overlay"] > .punktlandung-map-attribution {
+.punktlandung-home-map-static-layer > .punktlandung-map-attribution {
   z-index: 2000 !important;
 }
 
 @media (max-width: 400px) {
-  .punktlandung-home-map-preview[data-render-mode="static-overlay"] {
+  .punktlandung-home-map-preview[data-render-mode="static-overlay"],
+  .punktlandung-home-map-preview.uses-legacy-fallback {
     --home-map-actual-x: 36.196%;
     --home-map-actual-y: 60.409%;
     --home-map-player-x: 63.804%;
     --home-map-player-y: 51.25%;
   }
 
+  .punktlandung-home-map-preview.uses-tiergarten-fallback:not(.uses-legacy-fallback) {
+    --home-map-actual-x: 65.031%;
+    --home-map-actual-y: 54.774%;
+    --home-map-player-x: 35.276%;
+    --home-map-player-y: 59.167%;
+  }
+
 }
 
 @media (orientation: landscape) and (min-width: 640px) and (max-width: 1279px) and (max-height: 640px) {
-  .punktlandung-home-map-preview[data-render-mode="static-overlay"] {
+  .punktlandung-home-map-preview[data-render-mode="static-overlay"],
+  .punktlandung-home-map-preview.uses-legacy-fallback {
     --home-map-actual-x: 35.184%;
     --home-map-actual-y: 63.783%;
     --home-map-player-x: 65.061%;
     --home-map-player-y: 47.881%;
+  }
+
+  .punktlandung-home-map-preview.uses-tiergarten-fallback:not(.uses-legacy-fallback) {
+    --home-map-actual-x: 69.189%;
+    --home-map-actual-y: 53.388%;
+    --home-map-player-x: 31.057%;
+    --home-map-player-y: 61.441%;
   }
 
 }
@@ -6802,39 +6901,69 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 @media (min-width: 1200px) {
-  .punktlandung-home-map-preview[data-render-mode="static-overlay"] {
+  .punktlandung-home-map-preview[data-render-mode="static-overlay"],
+  .punktlandung-home-map-preview.uses-legacy-fallback {
     --home-map-actual-x: 37.849%;
     --home-map-actual-y: 64.685%;
     --home-map-player-x: 62.705%;
     --home-map-player-y: 45.363%;
   }
 
+  .punktlandung-home-map-preview.uses-tiergarten-fallback:not(.uses-legacy-fallback) {
+    --home-map-actual-x: 63.694%;
+    --home-map-actual-y: 51.244%;
+    --home-map-player-x: 36.295%;
+    --home-map-player-y: 59.224%;
+  }
+
 }
 
 @media (min-width: 1800px) {
-  .punktlandung-home-map-preview[data-render-mode="static-overlay"] {
+  .punktlandung-home-map-preview[data-render-mode="static-overlay"],
+  .punktlandung-home-map-preview.uses-legacy-fallback {
     --home-map-actual-x: 29.768%;
     --home-map-actual-y: 69.164%;
     --home-map-player-x: 70.925%;
     --home-map-player-y: 40.034%;
   }
 
+  .punktlandung-home-map-preview.uses-tiergarten-fallback:not(.uses-legacy-fallback) {
+    --home-map-actual-x: 69.326%;
+    --home-map-actual-y: 49.293%;
+    --home-map-player-x: 30.767%;
+    --home-map-player-y: 59.643%;
+  }
+
 }
 
 @media (min-width: 1800px) and (max-width: 2999px) and (min-aspect-ratio: 19/10) {
-  .punktlandung-home-map-preview[data-render-mode="static-overlay"] {
+  .punktlandung-home-map-preview[data-render-mode="static-overlay"],
+  .punktlandung-home-map-preview.uses-legacy-fallback {
     --home-map-actual-y: 71%;
     --home-map-player-y: 38.835%;
+  }
+
+  .punktlandung-home-map-preview.uses-tiergarten-fallback:not(.uses-legacy-fallback) {
+    --home-map-actual-y: 49.367%;
+    --home-map-player-y: 60.812%;
   }
 
 }
 
 @media (min-width: 3000px) {
-  .punktlandung-home-map-preview[data-render-mode="static-overlay"] {
+  .punktlandung-home-map-preview[data-render-mode="static-overlay"],
+  .punktlandung-home-map-preview.uses-legacy-fallback {
     --home-map-actual-x: 29.649%;
     --home-map-actual-y: 66.131%;
     --home-map-player-x: 70.647%;
     --home-map-player-y: 38.281%;
+  }
+
+  .punktlandung-home-map-preview.uses-tiergarten-fallback:not(.uses-legacy-fallback) {
+    --home-map-actual-x: 88.546%;
+    --home-map-actual-y: 42.577%;
+    --home-map-player-x: 11.449%;
+    --home-map-player-y: 61.849%;
   }
 
   .punktlandung-home-map-static-pin.is-actual {
@@ -8460,11 +8589,11 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
    detached rectangular tooltip and cannot be styled consistently. */
 .punktlandung-map-action-tooltip.leaflet-tooltip {
   padding: 0.45rem 0.65rem;
-  border: 1px solid var(--pl-line);
-  border-radius: 0.55rem;
-  color: var(--pl-text);
-  background: rgb(10 16 28 / 0.97);
-  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 0.34);
+  border: 1px solid var(--punktlandung-tooltip-border);
+  border-radius: var(--punktlandung-tooltip-radius);
+  color: var(--punktlandung-tooltip-color);
+  background: var(--punktlandung-tooltip-background);
+  box-shadow: var(--punktlandung-tooltip-shadow);
   font-family: var(--font-inter), "Segoe UI", sans-serif;
   font-size: 0.7rem;
   font-weight: 650;
@@ -19468,19 +19597,19 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
 }
 
 body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route-tooltip)[data-tooltip]::after {
-  background: rgba(8, 18, 34, 0.96);
-  border: 1px solid rgba(110, 231, 183, 0.55);
-  border-radius: 0.4rem;
-  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.38);
-  color: rgb(226 232 240);
+  background: var(--punktlandung-tooltip-background);
+  border: 1px solid var(--punktlandung-tooltip-border);
+  border-radius: var(--punktlandung-tooltip-radius);
+  box-shadow: var(--punktlandung-tooltip-shadow);
+  color: var(--punktlandung-tooltip-color);
   content: attr(data-tooltip);
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 650;
   left: 50%;
-  line-height: 1.25;
+  line-height: 1.2;
   max-width: min(18rem, calc(100vw - 1.5rem));
   opacity: 0;
-  padding: 0.42rem 0.58rem;
+  padding: 0.45rem 0.65rem;
   pointer-events: none;
   position: absolute;
   text-transform: none;
@@ -20546,19 +20675,24 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
     --pl-game-rhythm: var(--pl-game-inset);
     --pl-game-safe-top: max(var(--pl-game-inset), env(safe-area-inset-top));
     --pl-game-task-h: clamp(3.8rem, 8.2dvh, 4.1rem);
-    --pl-game-source-chip-h: 1.55rem;
+    --pl-game-source-chip-h: var(--mobile-game-meta-size);
+    --pl-game-reclaimed-source-h: calc(1.55rem + (2 * var(--pl-game-rhythm)));
     --mobile-game-hud-h: calc(var(--pl-game-task-h) + var(--pl-game-rhythm) + var(--mobile-game-meta-size));
     --mobile-game-image-gap: var(--pl-game-rhythm);
     --mobile-game-source-h: calc(var(--pl-game-source-chip-h) + (2 * var(--pl-game-rhythm)));
-    --mobile-game-map-closed-h: clamp(21rem, calc(38svh + var(--mobile-game-source-h)), 25.5rem);
+    --mobile-game-map-closed-h: clamp(21rem, calc(38svh + var(--pl-game-reclaimed-source-h)), 25.5rem);
+  }
+
+  body .punktlandung-game-shell .punktlandung-game-hud {
+    left: var(--pl-game-inset) !important;
+    right: var(--pl-game-inset) !important;
   }
 
   body .punktlandung-game-shell .punktlandung-game-viewer--map-closed,
   body .punktlandung-game-shell .punktlandung-game-viewer--map-open,
-  body .punktlandung-game-shell .punktlandung-game-viewer--map-full,
-  body .punktlandung-game-shell .punktlandung-game-hud {
-    left: var(--pl-game-inset) !important;
-    right: var(--pl-game-inset) !important;
+  body .punktlandung-game-shell .punktlandung-game-viewer--map-full {
+    left: 0 !important;
+    right: 0 !important;
   }
 
   body .punktlandung-game-shell .punktlandung-game-hud {
@@ -20619,7 +20753,9 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
     font-size: clamp(0.55rem, 2.55vw, 0.68rem) !important;
     line-height: 1.05 !important;
     min-width: 0 !important;
-    white-space: nowrap !important;
+    overflow-wrap: anywhere !important;
+    text-align: center !important;
+    white-space: normal !important;
   }
 
   body .punktlandung-game-shell .punktlandung-image-load-overlay {
@@ -20651,6 +20787,7 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
 
   body .punktlandung-game-shell .punktlandung-guess-map-panel--closed,
   body .punktlandung-game-shell .punktlandung-guess-map-panel--open {
+    bottom: 0 !important;
     left: var(--pl-game-inset) !important;
     right: var(--pl-game-inset) !important;
   }
@@ -20825,6 +20962,16 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
     top: 0.75rem !important;
     width: auto !important;
   }
+}
+
+.punktlandung-license-entry {
+  scroll-margin-top: 7rem;
+}
+
+.punktlandung-license-entry[data-highlighted="true"] {
+  background: rgb(16 44 54 / 0.72) !important;
+  border-color: rgb(94 231 189 / 0.82) !important;
+  box-shadow: 0 0 0 2px rgb(94 231 189 / 0.12), 0 0.8rem 2rem rgb(2 6 23 / 0.34);
 }
 
 /* Active round on a phone in landscape: keep the task in the right rail,

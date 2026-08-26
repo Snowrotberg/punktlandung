@@ -57,7 +57,7 @@
 
 .redesign :global(.punktlandung-results-map .punktlandung-map-pin-actual),
 .redesign :global(.punktlandung-image-replay .punktlandung-map-pin-actual) {
-  animation: resultTargetPinLift 2.25s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  animation: resultTargetPinLift 4.4s ease-in-out infinite;
 }
 
 @keyframes resultTargetPinLift {
@@ -66,12 +66,8 @@
     transform: translateY(0) scale(1.12);
   }
 
-  48% {
-    transform: translateY(-5px) scale(1.12);
-  }
-
-  68% {
-    transform: translateY(0) scale(1.12);
+  50% {
+    transform: translateY(-3px) scale(1.12);
   }
 }
 
@@ -347,6 +343,7 @@
 .redesign :global(.punktlandung-map-label-distance) {
   color: var(--pl-result-muted);
   font-weight: 500 !important;
+  margin-left: 0.25rem;
 }
 
 .redesign :global(.punktlandung-hit-chip) {

@@ -42,6 +42,35 @@ test("long result plans keep the globe large and reduce pullback for nearer inte
   assert.ok(fourteenThousandKm.keyframes.at(-1)!.pitch <= 31);
 });
 
+test("short result plans retain a close city view for very near pins", () => {
+  const twoKm = buildResultCameraPlan([13.3501, 52.5147], [13.3777, 52.5163]);
+  const sixtyKm = buildResultCameraPlan([10.8978, 48.3705], [11.5761, 48.1372]);
+
+  assert.equal(twoKm.distanceClass, "short");
+  assert.equal(sixtyKm.distanceClass, "short");
+  assert.ok(twoKm.keyframes.at(-1)!.zoom > sixtyKm.keyframes.at(-1)!.zoom + 2);
+  assert.ok(twoKm.keyframes.at(-1)!.zoom >= 12.2);
+  assert.ok(twoKm.keyframes.at(-1)!.zoom - Math.min(...twoKm.keyframes.map((frame) => frame.zoom)) <= 0.4);
+});
+
+test("compact near results keep their distance-aware framing", () => {
+  const regular = buildResultCameraPlan([13.3501, 52.5147], [13.3777, 52.5163]);
+  const compact = buildResultCameraPlan([13.3501, 52.5147], [13.3777, 52.5163], { compactViewport: true });
+
+  assert.ok(compact.keyframes.at(-1)!.zoom >= 11.9);
+  assert.ok(Math.abs(regular.keyframes.at(-1)!.zoom - compact.keyframes.at(-1)!.zoom - 0.3) < 0.001);
+});
+
+test("result orientation tilts against the east-west relation instead of stacking pins", () => {
+  const targetNorthWest = buildResultCameraPlan([1.45, 45.15], [0.34, 46.58]);
+  const targetNorthEast = buildResultCameraPlan([-1.45, 45.15], [-0.34, 46.58]);
+
+  assert.ok(targetNorthWest.keyframes.at(-1)!.bearing > 0);
+  assert.ok(targetNorthEast.keyframes.at(-1)!.bearing < 0);
+  assert.ok(Math.abs(targetNorthWest.keyframes.at(-1)!.bearing) <= 24);
+  assert.ok(Math.abs(targetNorthEast.keyframes.at(-1)!.bearing) <= 24);
+});
+
 test("prepared safe-area camera replaces only the final result frame", () => {
   const plan = buildResultCameraPlan([12.4964, 41.9028], [15.9819, 45.815], { compactViewport: true });
   const firstFrame = plan.keyframes[0];

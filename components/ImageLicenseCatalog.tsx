@@ -1,5 +1,6 @@
 import licenseCatalog from "@/data/generated/image-licenses.generated.json";
 import { builtInLocations } from "@/data/locations";
+import { imageLicenseEntryId, normalizeImageLicenseFileName } from "@/lib/imageLicenseLink";
 
 type LicenseEntry = {
   fileName: string;
@@ -9,18 +10,14 @@ type LicenseEntry = {
   sourceUrl: string;
 };
 
-function normalizedFileName(value: string) {
-  return value.replaceAll("_", " ").normalize("NFC").trim().toLocaleLowerCase();
-}
-
 const activeImageFiles = new Set(
   builtInLocations
     .map((location) => location.imageFile)
     .filter((fileName): fileName is string => Boolean(fileName))
-    .map(normalizedFileName)
+    .map(normalizeImageLicenseFileName)
 );
 const entries = (licenseCatalog.entries as LicenseEntry[]).filter((entry) =>
-  activeImageFiles.has(normalizedFileName(entry.fileName))
+  activeImageFiles.has(normalizeImageLicenseFileName(entry.fileName))
 );
 
 function groupLabel(fileName: string) {
@@ -36,24 +33,40 @@ const groupedEntries = entries.reduce<Map<string, LicenseEntry[]>>((groups, entr
   return groups;
 }, new Map());
 
-export function ImageLicenseCatalog() {
+export function ImageLicenseCatalog({ selectedFile }: { selectedFile?: string }) {
+  const normalizedSelectedFile = selectedFile ? normalizeImageLicenseFileName(selectedFile) : null;
+  const selectedEntryAvailable = normalizedSelectedFile !== null && entries.some((entry) =>
+    normalizeImageLicenseFileName(entry.fileName) === normalizedSelectedFile
+  );
   return (
-    <section>
+    <section id="bildnachweise">
       <h2 className="text-[22px] font-black leading-tight text-white">Einzelnachweise der Ratebilder</h2>
       <p className="mt-2">
         Der Katalog enthält {entries.length.toLocaleString("de-DE")} derzeit im Spiel verwendete Wikimedia-Dateien. Öffne einen
         Buchstaben und anschließend eine Datei, um Urheber, Lizenz und Originalseite aufzurufen.
       </p>
 
+      {selectedFile && !selectedEntryAvailable && (
+        <p
+          id={imageLicenseEntryId(selectedFile)}
+          data-highlighted="true"
+          className="punktlandung-license-entry mt-4 rounded border border-slate-800 bg-slate-950/60 px-3 py-2"
+        >
+          Für <strong>{selectedFile}</strong> ist im aktuellen Katalog noch kein Einzelnachweis hinterlegt.
+        </p>
+      )}
+
       <div className="mt-4 space-y-2">
-        {[...groupedEntries.entries()].map(([label, group]) => (
-          <details key={label} className="punktlandung-license-disclosure rounded-md border border-slate-700/80 bg-slate-950/45">
+        {[...groupedEntries.entries()].map(([label, group]) => {
+          const selectedGroup = normalizedSelectedFile !== null && group.some((entry) => normalizeImageLicenseFileName(entry.fileName) === normalizedSelectedFile);
+          return <details key={label} open={selectedGroup} className="punktlandung-license-disclosure rounded-md border border-slate-700/80 bg-slate-950/45">
             <summary className="cursor-pointer px-4 py-3 font-black text-white marker:text-emerald-300">
               {label} <span className="ml-1 text-xs text-slate-400">({group.length})</span>
             </summary>
             <div className="space-y-2 border-t border-slate-700/70 p-3">
-              {group.map((entry, entryIndex) => (
-                <details key={`${entry.fileName}-${entry.sourceUrl}-${entryIndex}`} className="punktlandung-license-entry rounded border border-slate-800 bg-slate-950/60 px-3 py-2">
+              {group.map((entry, entryIndex) => {
+                const selected = normalizeImageLicenseFileName(entry.fileName) === normalizedSelectedFile;
+                return <details key={`${entry.fileName}-${entry.sourceUrl}-${entryIndex}`} id={imageLicenseEntryId(entry.fileName)} open={selected} data-highlighted={selected ? "true" : undefined} className="punktlandung-license-entry rounded border border-slate-800 bg-slate-950/60 px-3 py-2">
                   <summary className="cursor-pointer break-words font-bold text-slate-200 marker:text-emerald-300">
                     {entry.fileName} <span className="text-xs font-semibold text-emerald-300">· {entry.license}</span>
                   </summary>
@@ -85,11 +98,11 @@ export function ImageLicenseCatalog() {
                       Originaldatei und vollständige Angaben bei Wikimedia Commons
                     </a>
                   </div>
-                </details>
-              ))}
+                </details>;
+              })}
             </div>
-          </details>
-        ))}
+          </details>;
+        })}
       </div>
     </section>
   );

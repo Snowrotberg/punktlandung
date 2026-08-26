@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { CircleHelp, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import styles from "./InlineInfoPopover.module.css";
@@ -44,9 +44,10 @@ export function InlineInfoPopover({ ariaLabel, className, align = "center", titl
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-controls={panelId}
+        data-question-mark-trigger="true"
         onClick={() => setOpen((current) => !current)}
       >
-        <span aria-hidden="true">?</span>
+        <CircleHelp className={styles.questionMark} aria-hidden="true" focusable="false" />
       </button>
       {open && (
         <span className={styles.panel} id={panelId} role="dialog" aria-label={title}>

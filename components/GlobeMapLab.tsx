@@ -20,6 +20,7 @@ import {
 import {
   expandResultRect,
   RESULT_MAP_CONTROL_LABELS,
+  resultMarkerCollisionOffsets,
   resultFitAdjustment,
   resultSafeRect,
   trimProjectedRoute,
@@ -39,6 +40,10 @@ type GlobeMapLabProps = {
   embedded?: boolean;
   autoPlay?: boolean;
   revealImmediately?: boolean;
+  previewMode?: boolean;
+  targetInfoIndicator?: "i" | "?";
+  animateTargetMarker?: boolean;
+  onSurfaceReady?: () => void;
   onAnimationComplete?: () => void;
   onUnavailable?: () => void;
 };
@@ -72,7 +77,7 @@ function formatDistance(distanceKm: number): string {
   return distanceKm < 100 ? `${Math.round(distanceKm)} km` : `${Math.round(distanceKm / 10) * 10} km`;
 }
 
-function createResultMarker(kind: "guess" | "target", label: string): HTMLDivElement {
+function createResultMarker(kind: "guess" | "target", label: string, targetInfoIndicator: "i" | "?" = "i"): HTMLDivElement {
   const ringWidth = kind === "target" ? 58 : 46;
   const ringHeight = kind === "target" ? 18 : 14;
   const ringRadiusX = ringWidth / 2 - 1.25;
@@ -101,7 +106,7 @@ function createResultMarker(kind: "guess" | "target", label: string): HTMLDivEle
         <ellipse class="${styles.markerRingInner}" cx="${ringWidth / 2}" cy="${ringHeight / 2}" rx="${ringRadiusX * 0.38}" ry="${Math.max(ringRadiusY * 0.38, 0.9)}"/>
       </svg>
     </span>
-    <span class="${styles.markerLabel} punktlandung-map-label ${kind === "guess" ? "punktlandung-map-label-player punktlandung-player-color-0" : "punktlandung-map-label-actual"}" data-marker-label>${label}</span>`;
+    <span class="${styles.markerLabel} punktlandung-map-label ${kind === "guess" ? "punktlandung-map-label-player punktlandung-player-color-0" : "punktlandung-map-label-actual"}"${kind === "target" ? ` data-info-indicator="${targetInfoIndicator}"` : ""} data-marker-label>${label}</span>`;
   return marker;
 }
 
@@ -113,11 +118,27 @@ function formatTimelineMetrics(metrics: TimelineMetrics): string {
   return `Frame-Lücke max. ${Math.round(metrics.maxFrameGapMs)} ms · lange Frames ${metrics.slowFrames} · Tiles offen ${metrics.pendingTileSamples}/${metrics.tileSamples}`;
 }
 
+function activeResultSafeRect(width: number, height: number, previewMode: boolean): ResultScreenRect {
+  const safeRect = resultSafeRect(width, height);
+  if (!previewMode) return safeRect;
+
+  return {
+    ...safeRect,
+    // The homepage card has no result header above the map. Give its floating
+    // player label a little more breathing room without changing gameplay maps.
+    top: Math.max(safeRect.top, Math.min(44, height * 0.15))
+  };
+}
+
 export function GlobeMapLab({
   resultScenario,
   embedded = false,
   autoPlay = false,
   revealImmediately = false,
+  previewMode = false,
+  targetInfoIndicator = "i",
+  animateTargetMarker = true,
+  onSurfaceReady,
   onAnimationComplete,
   onUnavailable
 }: GlobeMapLabProps = {}) {
@@ -149,9 +170,11 @@ export function GlobeMapLab({
   const reducedMotionRef = useRef(false);
   const lowPowerDeviceRef = useRef(false);
   const autoPlayKeyRef = useRef<string | null>(null);
+  const onSurfaceReadyRef = useRef(onSurfaceReady);
   const onAnimationCompleteRef = useRef(onAnimationComplete);
   const onUnavailableRef = useRef(onUnavailable);
   const mobileInfoDialogRef = useRef<HTMLDivElement | null>(null);
+  const restoredViewRef = useRef<{ bearing: number; pitch: number } | null>(null);
   const [camera, setCamera] = useState<CameraSnapshot>(INITIAL_CAMERA);
   const [mapReady, setMapReady] = useState(false);
   const [journeyRunning, setJourneyRunning] = useState(false);
@@ -169,9 +192,10 @@ export function GlobeMapLab({
   const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
 
   useEffect(() => {
+    onSurfaceReadyRef.current = onSurfaceReady;
     onAnimationCompleteRef.current = onAnimationComplete;
     onUnavailableRef.current = onUnavailable;
-  }, [onAnimationComplete, onUnavailable]);
+  }, [onAnimationComplete, onSurfaceReady, onUnavailable]);
 
   useEffect(() => {
     if (!mobileInfoOpen) return;
@@ -195,10 +219,32 @@ export function GlobeMapLab({
     if (!map || !overlay || !route || !shadow || !clip || !gradient) return;
     const scenario = activeScenarioRef.current;
     const coordinates = routeLineCoordinates(scenario.guess, scenario.target);
-    const points = coordinates.map((coordinate) => map.project(coordinate));
+    let points: Array<{ x: number; y: number }> = coordinates.map((coordinate) => {
+      const point = map.project(coordinate);
+      return { x: point.x, y: point.y };
+    });
     if (points.length < 2 || points.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y))) return;
-    const startCenter = map.project(scenario.guess);
-    const endCenter = map.project(scenario.target);
+    const rawProjectedGuess = map.project(scenario.guess);
+    const rawProjectedTarget = map.project(scenario.target);
+    const projectedGuess = { x: rawProjectedGuess.x, y: rawProjectedGuess.y };
+    const projectedTarget = { x: rawProjectedTarget.x, y: rawProjectedTarget.y };
+    const markerOffsets = resultMarkerCollisionOffsets(projectedGuess, projectedTarget);
+    guessMarkerRef.current?.setOffset([markerOffsets.guess.x, markerOffsets.guess.y]);
+    targetMarkerRef.current?.setOffset([markerOffsets.target.x, markerOffsets.target.y]);
+    const startCenter = {
+      x: projectedGuess.x + markerOffsets.guess.x,
+      y: projectedGuess.y + markerOffsets.guess.y
+    };
+    const endCenter = {
+      x: projectedTarget.x + markerOffsets.target.x,
+      y: projectedTarget.y + markerOffsets.target.y
+    };
+    if (markerOffsets.active) {
+      points = [startCenter, endCenter];
+    } else {
+      points[0] = startCenter;
+      points[points.length - 1] = endCenter;
+    }
     const startDirection = { x: points[1].x - startCenter.x, y: points[1].y - startCenter.y };
     const endDirection = { x: endCenter.x - points.at(-2)!.x, y: endCenter.y - points.at(-2)!.y };
     const normalize = (direction: { x: number; y: number }) => {
@@ -209,15 +255,15 @@ export function GlobeMapLab({
     const endUnit = normalize(endDirection);
     const ellipseRadius = (unit: { x: number; y: number }, width: number, height: number) =>
       1 / Math.sqrt((unit.x ** 2) / ((width / 2) ** 2) + (unit.y ** 2) / ((height / 2) ** 2));
-    const startGap = ellipseRadius(startUnit, 46, 14) + 10;
+    const startGap = ellipseRadius(startUnit, 46, 14) + 12;
     const targetRing = targetMarkerRef.current?.getElement().querySelector<SVGElement>(`.${styles.markerRings}`);
     const targetRingRect = targetRing?.getBoundingClientRect();
     const targetWidth = targetRingRect?.width || 58;
     const targetHeight = targetRingRect?.height || 18;
-    const endGap = ellipseRadius(endUnit, targetWidth, targetHeight) + 6;
-    const visibility = coordinates.map((coordinate) => !map.transform.isLocationOccluded(
-      new maplibregl.LngLat(coordinate[0], coordinate[1])
-    ));
+    const endGap = ellipseRadius(endUnit, targetWidth, targetHeight) + 12;
+    const visibility = markerOffsets.active
+      ? [scenario.guess, scenario.target].map((coordinate) => !map.transform.isLocationOccluded(new maplibregl.LngLat(coordinate[0], coordinate[1])))
+      : coordinates.map((coordinate) => !map.transform.isLocationOccluded(new maplibregl.LngLat(coordinate[0], coordinate[1])));
     const visibleSegments: Array<{ points: { x: number; y: number }[]; startsAtRouteStart: boolean; endsAtRouteEnd: boolean }> = [];
     let currentSegment: { x: number; y: number }[] = [];
     let segmentStartIndex = 0;
@@ -269,7 +315,7 @@ export function GlobeMapLab({
     overlay.dataset.visible = routeVisibleRef.current ? "true" : "false";
     const mapContainer = map.getContainer();
     const mapRect = mapContainer.getBoundingClientRect();
-    const safeRect = resultSafeRect(mapContainer.clientWidth, mapContainer.clientHeight);
+    const safeRect = activeResultSafeRect(mapContainer.clientWidth, mapContainer.clientHeight, previewMode);
     const placeLabelAtEdge = (marker: maplibregl.Marker | null, centerX: number) => {
       const element = marker?.getElement();
       const label = element?.querySelector<HTMLElement>(`.${styles.markerLabel}`);
@@ -285,56 +331,11 @@ export function GlobeMapLab({
     if (!guessElement || !targetElement) return;
     const preferredGuess = startCenter.y <= endCenter.y ? "above" : "below";
     const preferredTarget = preferredGuess === "above" ? "below" : "above";
-    const combinations = [
-      [preferredGuess, preferredTarget],
-      [preferredGuess, preferredGuess],
-      [preferredTarget, preferredTarget],
-      [preferredTarget, preferredGuess]
-    ] as const;
-    const relativeRect = (element: Element): ResultScreenRect => {
-      const rect = element.getBoundingClientRect();
-      return {
-        left: rect.left - mapRect.left,
-        top: rect.top - mapRect.top,
-        right: rect.right - mapRect.left,
-        bottom: rect.bottom - mapRect.top
-      };
-    };
-    const overflowPenalty = (rect: ResultScreenRect) =>
-      Math.max(0, safeRect.left - rect.left) ** 2
-      + Math.max(0, rect.right - safeRect.right) ** 2
-      + Math.max(0, safeRect.top - rect.top) ** 2
-      + Math.max(0, rect.bottom - safeRect.bottom) ** 2;
-    const overlapArea = (first: ResultScreenRect, second: ResultScreenRect) =>
-      Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left))
-      * Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
-    let bestCombination = combinations[0];
-    let bestPenalty = Number.POSITIVE_INFINITY;
-    for (const combination of combinations) {
-      guessElement.dataset.labelVertical = combination[0];
-      targetElement.dataset.labelVertical = combination[1];
-      const guessLabelRect = relativeRect(guessElement.querySelector<HTMLElement>(`.${styles.markerLabel}`)!);
-      const targetLabelRect = relativeRect(targetElement.querySelector<HTMLElement>(`.${styles.markerLabel}`)!);
-      const markerVisualRect = (element: HTMLElement) => unionResultRects([
-        relativeRect(element.querySelector<SVGElement>(`.${styles.markerPin}`)!),
-        relativeRect(element.querySelector<SVGElement>(`.${styles.markerRings}`)!)
-      ])!;
-      const guessVisualRect = markerVisualRect(guessElement);
-      const targetVisualRect = markerVisualRect(targetElement);
-      const penalty = overflowPenalty(guessLabelRect) + overflowPenalty(targetLabelRect)
-        + overlapArea(guessLabelRect, targetLabelRect) * 8
-        + overlapArea(guessLabelRect, targetVisualRect) * 5
-        + overlapArea(targetLabelRect, guessVisualRect) * 5;
-      if (penalty < bestPenalty) {
-        bestPenalty = penalty;
-        bestCombination = combination;
-      }
-    }
-    guessElement.dataset.labelVertical = bestCombination[0];
-    targetElement.dataset.labelVertical = bestCombination[1];
-  }, []);
+    guessElement.dataset.labelVertical = preferredGuess;
+    targetElement.dataset.labelVertical = preferredTarget;
+  }, [previewMode]);
 
-  const stabilizeResultComposition = useCallback(async () => {
+  const stabilizeResultComposition = useCallback(async (maxAttempts = 12) => {
     const map = mapRef.current;
     const container = map?.getContainer();
     if (!map || !container) return;
@@ -342,7 +343,7 @@ export function GlobeMapLab({
     const run = compositionRunRef.current + 1;
     compositionRunRef.current = run;
     const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    for (let attempt = 0; attempt < 12; attempt += 1) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       if (run !== compositionRunRef.current || !mapRef.current) return;
       updateRouteOverlay();
       await nextFrame();
@@ -376,7 +377,10 @@ export function GlobeMapLab({
         .filter((rect) => rect.right > rect.left && rect.bottom > rect.top);
       const bounds = unionResultRects(visualRects);
       if (!bounds) return;
-      const adjustment = resultFitAdjustment(bounds, resultSafeRect(container.clientWidth, container.clientHeight));
+      const adjustment = resultFitAdjustment(
+        bounds,
+        activeResultSafeRect(container.clientWidth, container.clientHeight, previewMode)
+      );
       if (adjustment.fits) break;
       if (adjustment.zoomDelta < 0) {
         map.jumpTo({ zoom: Math.max(map.getMinZoom(), map.getZoom() + adjustment.zoomDelta) });
@@ -393,7 +397,7 @@ export function GlobeMapLab({
     }
     updateRouteOverlay();
     container.dataset.resultComposition = "ready";
-  }, [updateRouteOverlay]);
+  }, [previewMode, updateRouteOverlay]);
 
   const targetFitsResultSafeArea = useCallback(() => {
     const map = mapRef.current;
@@ -416,8 +420,11 @@ export function GlobeMapLab({
       };
     });
     const bounds = unionResultRects(visualRects);
-    return Boolean(bounds && resultFitAdjustment(bounds, resultSafeRect(container.clientWidth, container.clientHeight)).fits);
-  }, [updateRouteOverlay]);
+    return Boolean(bounds && resultFitAdjustment(
+      bounds,
+      activeResultSafeRect(container.clientWidth, container.clientHeight, previewMode)
+    ).fits);
+  }, [previewMode, updateRouteOverlay]);
 
   const setRouteDrawProgress = useCallback((progress: number) => {
     const nextProgress = Math.min(1, Math.max(0, progress));
@@ -428,8 +435,8 @@ export function GlobeMapLab({
   const setMarkerVisibility = useCallback((kind: "guess" | "target", visible: boolean) => {
     const marker = kind === "guess" ? guessMarkerRef.current : targetMarkerRef.current;
     marker?.getElement().setAttribute("data-visible", visible ? "true" : "false");
-    if (kind === "target") marker?.getElement().setAttribute("data-focus", visible ? "true" : "false");
-  }, []);
+    if (kind === "target") marker?.getElement().setAttribute("data-focus", visible && animateTargetMarker ? "true" : "false");
+  }, [animateTargetMarker]);
 
   const setRouteVisibility = useCallback((visible: boolean) => {
     routeVisibleRef.current = visible;
@@ -465,7 +472,7 @@ export function GlobeMapLab({
       guessLabel.textContent = scenario.playerName;
       const distance = document.createElement("span");
       distance.className = "punktlandung-map-label-distance";
-      distance.textContent = ` · ${distanceLabel}`;
+      distance.textContent = `· ${distanceLabel}`;
       guessLabel.append(distance);
     }
     if (targetLabel) targetLabel.textContent = scenario.targetName;
@@ -522,7 +529,7 @@ export function GlobeMapLab({
     return ready;
   }, [embedded, setTerrainLevel]);
 
-  const preloadCameraViews = useCallback(async (plan: ResultCameraPlan, run: number): Promise<ResultCameraPlan | null> => {
+  const preloadCameraViews = useCallback(async (plan: ResultCameraPlan, run: number, fast = false): Promise<ResultCameraPlan | null> => {
     const map = mapRef.current;
     const scenario = activeScenarioRef.current;
     if (!map || run !== journeyRunRef.current) return null;
@@ -546,12 +553,12 @@ export function GlobeMapLab({
     });
     const transit = plan.keyframes.reduce((lowest, frame) => frame.zoom < lowest.zoom ? frame : lowest);
     const end = plan.keyframes.at(-1)!;
-    const preparationFrames = embedded ? [end] : [transit, end];
+    const preparationFrames = fast ? [end] : embedded ? [end] : [transit, end];
     const transitTimeout = embedded ? (plan.distanceClass === "long" ? 700 : 500) : 1_200;
     for (const frame of preparationFrames) {
       if (run !== journeyRunRef.current) return null;
       map.jumpTo(frame);
-      await waitForTiles(transitTimeout);
+      if (!fast) await waitForTiles(transitTimeout);
     }
     const guessWasVisible = guessMarkerRef.current?.getElement().dataset.visible === "true";
     const targetWasVisible = targetMarkerRef.current?.getElement().dataset.visible === "true";
@@ -562,7 +569,7 @@ export function GlobeMapLab({
     setMarkerVisibility("target", true);
     setRouteVisibility(true);
     setRouteDrawProgress(1);
-    await stabilizeResultComposition();
+    await stabilizeResultComposition(fast ? 6 : 12);
     if (compositionState === undefined) delete container.dataset.resultComposition;
     else container.dataset.resultComposition = compositionState;
     if (run !== journeyRunRef.current) return null;
@@ -581,7 +588,7 @@ export function GlobeMapLab({
     if (routeWasVisible) setRouteDrawProgress(routeProgress);
     const start = plan.keyframes[0];
     map.jumpTo(start);
-    await waitForTiles(embedded ? 350 : 800);
+    if (!fast) await waitForTiles(embedded ? 350 : 800);
     const ready = run === journeyRunRef.current;
     if (ready) { cameraPreparedRef.current = key; setCameraPreparing(false); }
     return ready ? preparedPlan : null;
@@ -624,16 +631,27 @@ export function GlobeMapLab({
       return;
     }
     mapRef.current = map;
-    map.dragRotate.enable();
-    map.touchPitch.enable();
-    map.scrollZoom.enable();
+    if (previewMode) {
+      map.dragPan.disable();
+      map.dragRotate.disable();
+      map.touchZoomRotate.disable();
+      map.touchPitch.disable();
+      map.scrollZoom.disable();
+      map.doubleClickZoom.disable();
+      map.keyboard.disable();
+    } else {
+      map.dragRotate.enable();
+      map.touchPitch.enable();
+      map.scrollZoom.enable();
+    }
     map.boxZoom.disable();
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+    if (!previewMode) map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+    let compassButton: HTMLButtonElement | null = null;
+    let toggleCompass: ((event: MouseEvent) => void) | null = null;
     const decorateNavigationControl = () => {
       const controls = [
         [".maplibregl-ctrl-zoom-in", RESULT_MAP_CONTROL_LABELS.zoomIn],
-        [".maplibregl-ctrl-zoom-out", RESULT_MAP_CONTROL_LABELS.zoomOut],
-        [".maplibregl-ctrl-compass", RESULT_MAP_CONTROL_LABELS.compass]
+        [".maplibregl-ctrl-zoom-out", RESULT_MAP_CONTROL_LABELS.zoomOut]
       ] as const;
       for (const [selector, label] of controls) {
         const button = container.querySelector<HTMLButtonElement>(selector);
@@ -641,6 +659,32 @@ export function GlobeMapLab({
         button.setAttribute("aria-label", label);
         button.removeAttribute("title");
         button.dataset.tooltip = label;
+      }
+      compassButton = container.querySelector<HTMLButtonElement>(".maplibregl-ctrl-compass");
+      if (compassButton) {
+        const updateCompassLabel = () => {
+          const atNorth = Math.abs(map.getBearing()) < 0.5 && Math.abs(map.getPitch()) < 0.5;
+          const label = atNorth && restoredViewRef.current
+            ? RESULT_MAP_CONTROL_LABELS.compassRestore
+            : RESULT_MAP_CONTROL_LABELS.compassNorth;
+          compassButton?.setAttribute("aria-label", label);
+          compassButton?.setAttribute("data-tooltip", label);
+          compassButton?.removeAttribute("title");
+        };
+        toggleCompass = (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          const atNorth = Math.abs(map.getBearing()) < 0.5 && Math.abs(map.getPitch()) < 0.5;
+          if (atNorth && restoredViewRef.current) {
+            map.easeTo({ ...restoredViewRef.current, duration: 520, essential: true });
+          } else {
+            restoredViewRef.current = { bearing: map.getBearing(), pitch: map.getPitch() };
+            map.easeTo({ bearing: 0, pitch: 0, duration: 520, essential: true });
+          }
+          window.setTimeout(updateCompassLabel, 560);
+        };
+        compassButton.addEventListener("click", toggleCompass, { capture: true });
+        updateCompassLabel();
       }
     };
     decorateNavigationControl();
@@ -653,6 +697,7 @@ export function GlobeMapLab({
       shiftGesture = null;
     };
     const beginShiftGesture = (event: PointerEvent) => {
+      if (previewMode) return;
       if (event.button !== 0 || !event.shiftKey) return;
       event.preventDefault();
       map.stop();
@@ -712,14 +757,14 @@ export function GlobeMapLab({
     let activateTargetInformationByKeyboard: ((event: KeyboardEvent) => void) | null = null;
     const addResultOverlays = () => {
       guessMarkerRef.current = new maplibregl.Marker({
-        element: createResultMarker("guess", "Dein Tipp"),
+        element: createResultMarker("guess", "Dein Tipp", targetInfoIndicator),
         anchor: "bottom",
         opacityWhenCovered: 0,
         subpixelPositioning: true
       })
         .setLngLat(initialScenario.guess).addTo(map);
       targetMarkerRef.current = new maplibregl.Marker({
-        element: createResultMarker("target", "Ziel"),
+        element: createResultMarker("target", "Ziel", targetInfoIndicator),
         anchor: "bottom",
         opacityWhenCovered: 0,
         subpixelPositioning: true
@@ -774,10 +819,14 @@ export function GlobeMapLab({
       const plan = initialPlan;
       const preparationRun = journeyRunRef.current;
       void (async () => {
-        await preloadTerrain(plan, preparationRun);
+        // The home-page preview is a fixed, lightweight demonstration. Its end
+        // composition is measured behind the poster without waiting for tile
+        // idles, then the real start frame is revealed. This keeps the first
+        // frame quick while preventing a visible end-of-flight correction.
+        if (!previewMode) await preloadTerrain(plan, preparationRun);
         // A static replay is constructed at its final camera already. Repeating
         // the animated end-view warm-up only delays the visible replay map.
-        const preparedPlan = !revealImmediately ? await preloadCameraViews(plan, preparationRun) : plan;
+        const preparedPlan = !revealImmediately ? await preloadCameraViews(plan, preparationRun, previewMode) : plan;
         if (!mapRef.current || preparationRun !== journeyRunRef.current) return;
         if (!preparedPlan) return;
         map.jumpTo(revealImmediately ? preparedPlan.keyframes.at(-1)! : preparedPlan.keyframes[0]);
@@ -788,6 +837,7 @@ export function GlobeMapLab({
         if (revealImmediately) await stabilizeResultComposition();
         setSurfaceReady(true);
         setMapReady(true);
+        onSurfaceReadyRef.current?.();
         setStatus(`${scenario.label} vorbereitet · Tipp sichtbar · ${formatDistance(plan.distanceKm)}`);
         if (revealImmediately) onAnimationCompleteRef.current?.();
       })();
@@ -813,6 +863,7 @@ export function GlobeMapLab({
       window.removeEventListener("pointermove", updateShiftGesture, { capture: true });
       window.removeEventListener("pointerup", endShiftGesture, { capture: true });
       window.removeEventListener("pointercancel", endShiftGesture, { capture: true });
+      if (compassButton && toggleCompass) compassButton.removeEventListener("click", toggleCompass, { capture: true });
       resizeObserver.disconnect();
       map.off("style.load", configureGlobe); map.off("load", reportReady); map.off("move", updateCamera); map.off("error", reportError);
       if (activateTargetInformation) targetMarkerRef.current?.getElement().removeEventListener("click", activateTargetInformation);
@@ -820,7 +871,7 @@ export function GlobeMapLab({
       targetPopupRef.current?.remove();
       guessMarkerRef.current?.remove(); targetMarkerRef.current?.remove(); map.remove(); mapRef.current = null;
     };
-  }, [initialScenario, preloadCameraViews, preloadTerrain, revealImmediately, setMarkerVisibility, setResultMarkerContent, setRouteDrawProgress, setRouteVisibility, stabilizeResultComposition, updateRouteOverlay]);
+  }, [initialScenario, preloadCameraViews, preloadTerrain, previewMode, revealImmediately, setMarkerVisibility, setResultMarkerContent, setRouteDrawProgress, setRouteVisibility, stabilizeResultComposition, targetInfoIndicator, updateRouteOverlay]);
 
   const runTimeline = useCallback((keyframes: CameraKeyframe[], duration: number, run: number, onProgress?: (progress: number) => void): Promise<TimelineMetrics> => {
     const map = mapRef.current;
@@ -934,8 +985,8 @@ export function GlobeMapLab({
     map.getContainer().dataset.resultComposition = "pending";
     setJourneyRunning(true); updateResultGeometry(scenario); map.jumpTo(plan.keyframes[0]);
     setMarkerVisibility("guess", true); setMarkerVisibility("target", false); setRouteVisibility(false);
-    await preloadTerrain(plan, run);
-    const preparedPlan = await preloadCameraViews(plan, run);
+    if (!previewMode) await preloadTerrain(plan, run);
+    const preparedPlan = await preloadCameraViews(plan, run, previewMode);
     if (run !== journeyRunRef.current || !preparedPlan) return;
     plan = preparedPlan;
     map.getContainer().dataset.resultComposition = "pending";
@@ -969,7 +1020,7 @@ export function GlobeMapLab({
         onAnimationCompleteRef.current?.();
       }
     } finally { if (run === journeyRunRef.current) setJourneyRunning(false); }
-  }, [mapReady, preloadCameraViews, preloadTerrain, resultScenario, runTimeline, selectedScenarioId, setMarkerVisibility, setRouteDrawProgress, setRouteVisibility, stopCurrentJourney, targetFitsResultSafeArea, updateResultGeometry]);
+  }, [mapReady, preloadCameraViews, preloadTerrain, previewMode, resultScenario, runTimeline, selectedScenarioId, setMarkerVisibility, setRouteDrawProgress, setRouteVisibility, stopCurrentJourney, targetFitsResultSafeArea, updateResultGeometry]);
 
   useEffect(() => {
     if (!autoPlay || !mapReady || journeyRunning || terrainPreparing || cameraPreparing) return;
@@ -1051,6 +1102,8 @@ export function GlobeMapLab({
       <div
         className={styles.mapFrame}
         data-current-zoom={camera.zoom.toFixed(2)}
+        data-current-bearing={camera.bearing.toFixed(2)}
+        data-current-pitch={camera.pitch.toFixed(2)}
         data-min-zoom={embedded ? RESULT_MAP_MIN_ZOOM.toFixed(2) : undefined}
         data-surface-ready={surfaceReady ? "true" : "false"}
       >
@@ -1112,17 +1165,32 @@ export function GlobeMapLab({
 type GlobeResultMapProps = {
   scenario: ResultCameraScenario;
   animate?: boolean;
+  previewMode?: boolean;
+  targetInfoIndicator?: "i" | "?";
+  onSurfaceReady?: () => void;
   onAnimationComplete?: () => void;
   onUnavailable?: () => void;
 };
 
-export function GlobeResultMap({ scenario, animate = true, onAnimationComplete, onUnavailable }: GlobeResultMapProps) {
+export function GlobeResultMap({
+  scenario,
+  animate = true,
+  previewMode = false,
+  targetInfoIndicator = "i",
+  onSurfaceReady,
+  onAnimationComplete,
+  onUnavailable
+}: GlobeResultMapProps) {
   return (
     <GlobeMapLab
       resultScenario={scenario}
       embedded
       autoPlay={animate}
       revealImmediately={!animate}
+      previewMode={previewMode}
+      targetInfoIndicator={targetInfoIndicator}
+      animateTargetMarker={animate}
+      onSurfaceReady={onSurfaceReady}
       onAnimationComplete={onAnimationComplete}
       onUnavailable={onUnavailable}
     />

@@ -1,14 +1,31 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import type { Guess, RoundSummary } from "@/types/game";
+import type { ResultCameraScenario } from "@/lib/globeResultCamera";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { playerColorAt } from "@/lib/playerPalette";
 import { GuessMap } from "./GuessMap";
 import { MapAttributionBadge } from "./MapAttributionBadge";
 import { HomeMapPoster } from "./HomeMapPoster";
 
+const HomeGlobeResultMap = dynamic(
+  () => import("./GlobeMapLab").then((module) => module.GlobeResultMap),
+  { ssr: false, loading: () => null }
+);
+
 const previewDistanceKm = 2;
-const previewGuess: Guess = { lat: 52.5163, lng: 13.4105, playerId: "home-preview-player", createdAt: 0 };
+const previewGuess: Guess = { lat: 52.5147, lng: 13.3501, playerId: "home-preview-player", createdAt: 0 };
+const homeResultScenario: ResultCameraScenario = {
+  id: "home-tiergarten-brandenburger-tor",
+  label: "Startseite · Tiergarten → Brandenburger Tor",
+  description: "Kurze Vorschau der Punktlandung-Ergebnisanimation",
+  playerName: "#1 Dein Tipp",
+  targetName: "Brandenburger Tor",
+  targetDescription: "Das Brandenburger Tor ist eines der bekanntesten Wahrzeichen Berlins.",
+  guess: [previewGuess.lng, previewGuess.lat],
+  target: [13.3777, 52.5163]
+};
 const previewSummary: RoundSummary = {
   roundNumber: 1,
   location: {
@@ -72,16 +89,19 @@ function PreviewEllipse({ actual = false }: { actual?: boolean }) {
   );
 }
 
-function PreviewMapBase() {
+function PreviewMapBase({ legacy = false }: { legacy?: boolean }) {
+  const assetVariant = legacy ? "" : "-tiergarten";
+  const assetVersion = legacy ? "20260818" : "20260826";
+  const asset = (profile: string, density: string) => `/home-map-base${assetVariant}-${profile}-${density}.webp?v=${assetVersion}`;
   return (
     <picture className="punktlandung-home-map-base" aria-hidden="true">
-      <source media="(min-width: 3000px)" srcSet="/home-map-base-tv-4k-2x.webp?v=20260818" />
-      <source media="(min-width: 1800px) and (max-width: 2999px) and (min-aspect-ratio: 19/10)" srcSet="/home-map-base-monitor-short-2x.webp?v=20260818" />
-      <source media="(min-width: 1800px)" srcSet="/home-map-base-monitor-2x.webp?v=20260818" />
-      <source media="(min-width: 1200px)" srcSet="/home-map-base-laptop-2x.webp?v=20260818" />
-      <source media="(orientation: landscape) and (min-width: 640px) and (max-width: 1279px) and (max-height: 640px)" srcSet="/home-map-base-phone-landscape-3x.webp?v=20260818" />
-      <source media="(max-width: 400px)" srcSet="/home-map-base-phone-small-3x.webp?v=20260818" />
-      <img src="/home-map-base-phone-large-3x.webp?v=20260818" alt="" loading="eager" decoding="sync" fetchPriority="high" />
+      <source media="(min-width: 3000px)" srcSet={asset("tv-4k", "2x")} />
+      <source media="(min-width: 1800px) and (max-width: 2999px) and (min-aspect-ratio: 19/10)" srcSet={asset("monitor-short", "2x")} />
+      <source media="(min-width: 1800px)" srcSet={asset("monitor", "2x")} />
+      <source media="(min-width: 1200px)" srcSet={asset("laptop", "2x")} />
+      <source media="(orientation: landscape) and (min-width: 640px) and (max-width: 1279px) and (max-height: 640px)" srcSet={asset("phone-landscape", legacy ? "3x" : "2x")} />
+      <source media="(max-width: 400px)" srcSet={asset("phone-small", legacy ? "3x" : "2x")} />
+      <img src={asset("phone-large", legacy ? "3x" : "2x")} alt="" loading="eager" decoding="sync" fetchPriority="high" />
     </picture>
   );
 }
@@ -123,10 +143,17 @@ function HomeMapSourcePreview() {
 export function HomeMapPreview() {
   const previewRef = useRef<HTMLDivElement>(null);
   const connectorRef = useRef<SVGLineElement>(null);
-  const [renderSource, setRenderSource] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"animated" | "static" | "legacy" | "source">("animated");
+  const [liveReady, setLiveReady] = useState(false);
+  const [liveUnavailable, setLiveUnavailable] = useState(false);
+  const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
-    setRenderSource(new URLSearchParams(window.location.search).get("renderHomeMapSource") === "1");
+    const parameters = new URLSearchParams(window.location.search);
+    if (parameters.get("renderHomeMapSource") === "1") setPreviewMode("source");
+    else if (parameters.get("homeMap") === "legacy") setPreviewMode("legacy");
+    else if (parameters.get("homeMap") === "static") setPreviewMode("static");
+    else setPreviewMode("animated");
   }, []);
 
   useLayoutEffect(() => {
@@ -173,28 +200,52 @@ export function HomeMapPreview() {
     return () => observer.disconnect();
   }, []);
 
-  if (renderSource) return <HomeMapSourcePreview />;
+  if (previewMode === "source") return <HomeMapSourcePreview />;
+
+  const liveActive = previewMode === "animated" && !liveUnavailable;
+  const showCompleteFallback = !liveActive;
+  const previewReady = !liveActive || liveReady;
+  const renderMode = liveActive ? "animated-live" : previewMode === "legacy" ? "legacy-static" : "static-overlay";
 
   return (
     <div
       ref={previewRef}
-      className="punktlandung-home-map-preview is-map-ready"
-      data-render-mode="static-overlay"
+      className={`punktlandung-home-map-preview uses-tiergarten-fallback${previewMode === "legacy" ? " uses-legacy-fallback" : ""}${previewReady ? " is-map-ready" : ""}`}
+      data-render-mode={renderMode}
+      data-animation-complete={animationComplete ? "true" : "false"}
       aria-label="Kartenvorschau: Dein Tipp liegt zwei Kilometer vom Brandenburger Tor entfernt."
     >
-      <PreviewMapBase />
-      <svg className="punktlandung-home-map-static-connector" aria-hidden="true">
-        <line ref={connectorRef} className="punktlandung-result-connector is-flowing" />
-      </svg>
-      <PreviewEllipse actual />
-      <PreviewEllipse />
-      <PreviewPin actual />
-      <PreviewPin />
-      <span className="punktlandung-map-label punktlandung-map-label-player punktlandung-home-map-static-label is-player">
-        #1 Dein Tipp<span className="punktlandung-map-label-distance"> · {previewDistanceKm} km</span>
-      </span>
-      <span className="punktlandung-map-label punktlandung-map-label-actual punktlandung-home-map-static-label is-actual">Brandenburger Tor</span>
-      <MapAttributionBadge />
+      <div className={`punktlandung-home-map-static-layer${liveReady ? " is-hidden" : ""}`} data-home-map-fallback="true">
+        <PreviewMapBase legacy={previewMode === "legacy"} />
+        {showCompleteFallback ? (
+          <svg className="punktlandung-home-map-static-connector" aria-hidden="true">
+            <line ref={connectorRef} className="punktlandung-result-connector is-flowing" />
+          </svg>
+        ) : null}
+        {showCompleteFallback ? <PreviewEllipse actual /> : null}
+        <PreviewEllipse />
+        {showCompleteFallback ? <PreviewPin actual /> : null}
+        <PreviewPin />
+        <span className="punktlandung-map-label punktlandung-map-label-player punktlandung-home-map-static-label is-player">
+          #1 Dein Tipp<span className="punktlandung-map-label-distance"> · {previewDistanceKm} km</span>
+        </span>
+        {showCompleteFallback ? (
+          <span className="punktlandung-map-label punktlandung-map-label-actual punktlandung-home-map-static-label is-actual">Brandenburger Tor</span>
+        ) : null}
+        <MapAttributionBadge />
+      </div>
+      {liveActive ? (
+        <div className={`punktlandung-home-map-live-layer${liveReady ? " is-ready" : ""}`}>
+          <HomeGlobeResultMap
+            scenario={homeResultScenario}
+            previewMode
+            targetInfoIndicator="?"
+            onSurfaceReady={() => setLiveReady(true)}
+            onAnimationComplete={() => setAnimationComplete(true)}
+            onUnavailable={() => setLiveUnavailable(true)}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
