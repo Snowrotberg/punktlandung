@@ -10,6 +10,10 @@ const difficultyMigration = await readFile(
   new URL("../supabase/migrations/20260806130000_location_difficulty_maintenance.sql", import.meta.url),
   "utf8"
 );
+const difficultyThresholdMigration = await readFile(
+  new URL("../supabase/migrations/20260826072430_lower_location_difficulty_thresholds.sql", import.meta.url),
+  "utf8"
+);
 const communityMigration = await readFile(
   new URL("../supabase/migrations/20260812113846_community_roadmap.sql", import.meta.url),
   "utf8"
@@ -64,6 +68,13 @@ assert.match(difficultyMigration, /revoke all on table public\.location_difficul
 assert.match(difficultyMigration, /create or replace function private\.refresh_location_difficulty_metrics/i);
 assert.match(difficultyMigration, /game_row\.time_limit_sec \* 1000/i, "Difficulty response times must be normalized by the selected time limit");
 assert.match(difficultyMigration, /cron\.schedule/i, "Difficulty maintenance must be schedulable when pg_cron is enabled");
+assert.match(difficultyThresholdMigration, /when verified_rounds < 10 then 'insufficient'/i, "Difficulty must become provisional at 10 verified rounds");
+assert.match(difficultyThresholdMigration, /when verified_rounds >= 25 then 'stable'/i, "Difficulty must become stable at 25 verified rounds");
+assert.match(difficultyThresholdMigration, /location_snapshot->>'category'/i, "Mixed games must classify each round by its actual location category");
+assert.match(difficultyThresholdMigration, /when category = 'flags' then case when country_correct then 1 else 0 end/i, "Flag difficulty must use exact country correctness");
+assert.match(difficultyThresholdMigration, /when distance_km < 750 then 1/i, "Map-motif difficulty must use the existing 750 km solved threshold");
+assert.match(difficultyThresholdMigration, /select private\.refresh_location_difficulty_metrics\(\)/i, "Existing metrics must be recalculated after lowering thresholds");
+assert.doesNotMatch(difficultyThresholdMigration, /(?:insert|update)\s+(?:into\s+)?cron\.job/i, "Cron jobs must only be managed through pg_cron functions");
 
 for (const table of ["community_suggestions", "community_votes"]) {
   assert.match(communityMigration, new RegExp(`create table public\\.${table}\\s*\\(`, "i"));

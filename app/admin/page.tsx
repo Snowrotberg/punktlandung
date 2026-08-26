@@ -29,8 +29,12 @@ import { buildUsageTimeline, earliestUsageTimestamp, PUBLIC_BETA_STARTED_AT } fr
 import { buildCatalogStatistics, catalogCategoryLabels } from "@/lib/catalogStatistics";
 import {
   applyLocationDifficultyOverrides,
+  EASY_DIFFICULTY_SCORE_MAX,
+  HARD_DIFFICULTY_SCORE_MIN,
   MINIMUM_DIFFICULTY_SAMPLES,
+  SOLVED_DISTANCE_KM_MAX,
   STABLE_DIFFICULTY_SAMPLES,
+  summarizeLocationDifficultyMovements,
   type LocationDifficultyOverride
 } from "@/lib/locationDifficulty";
 import { readUsageEvents, type UsageEvent } from "@/lib/usageMetrics.server";
@@ -317,6 +321,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const insufficientMetrics = activeMetricRows.filter((row) => row.confidence === "insufficient").length;
   const provisionalMetrics = activeMetricRows.filter((row) => row.confidence === "provisional").length;
   const stableMetrics = activeMetricRows.filter((row) => row.confidence === "stable").length;
+  const highestVerifiedRoundCount = activeMetricRows.reduce((highest, row) => Math.max(highest, row.verified_rounds), 0);
+  const difficultyMovements = summarizeLocationDifficultyMovements(builtInLocations, overrides);
   const latestDifficultyUpdate = activeMetricRows.reduce<string | null>((latest, row) =>
     !latest || row.calculated_at > latest ? row.calculated_at : latest, null);
   let community: CommunityReadResult = { available: false, suggestions: [] };
@@ -428,14 +434,27 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               <li><span>Ø automatischer Bildscore</span><AdminMetricValue tone="neutral" recommendation="Für diesen projektspezifischen Score ist noch kein verbindlicher Qualitätsgrenzwert definiert. Er dient vorerst nur dem Vergleich.">{catalogStatistics.averageImageQualityScore?.toLocaleString("de-DE") ?? "Noch ohne Wert"}</AdminMetricValue></li>
             </ul></details>
           </section>
-          <section className={`${styles.panel} ${styles.difficultyPanel}`}><AdminSectionTitle icon={Gauge}><span className={styles.sectionTitleWithHelp}>Automatische Schwierigkeit<AdminHelp title="Automatische Schwierigkeit">Die vier Werte zählen Aufgaben, nicht Bildausspielungen. Einbezogen werden nur aufgelöste Runden aus vollständig abgeschlossenen, verifizierten Konto-Partien mit 15, 30 oder 60 Sekunden. Ab {MINIMUM_DIFFICULTY_SAMPLES} geeigneten Runden ist eine Einstufung vorläufig, ab {STABLE_DIFFICULTY_SAMPLES} stabil.</AdminHelp></span></AdminSectionTitle><ul className={styles.list}>
-            <li><span>Noch unter {MINIMUM_DIFFICULTY_SAMPLES} verifizierten Runden</span><AdminMetricValue tone={insufficientMetrics > 0 ? "warning" : "good"} recommendation={insufficientMetrics > 0 ? "Beobachten: Diese Aufgaben behalten ihre Starteinstufung, bis genügend verifizierte Runden vorliegen." : "Unauffällig: Keine Aufgabe liegt unter der Mindestzahl verifizierter Runden."}>{insufficientMetrics}</AdminMetricValue></li>
-            <li><span>Vorläufig · {MINIMUM_DIFFICULTY_SAMPLES} bis {STABLE_DIFFICULTY_SAMPLES - 1} Runden</span><AdminMetricValue tone={provisionalMetrics > 0 ? "warning" : "good"} recommendation={provisionalMetrics > 0 ? "Beobachten: Diese Einstufungen sind bereits datenbasiert, können sich mit weiteren Runden aber noch ändern." : "Unauffällig: Keine Einstufung befindet sich im vorläufigen Bereich."}>{provisionalMetrics}</AdminMetricValue></li>
-            <li><span>Stabil · ab {STABLE_DIFFICULTY_SAMPLES} Runden</span><AdminMetricValue tone={stableMetrics > 0 ? "good" : "warning"} recommendation={stableMetrics > 0 ? "Unauffällig: Für diese Aufgaben liegt eine belastbare automatische Einstufung vor." : "Beobachten: Noch keine Aufgabe hat genügend Daten für eine stabile Einstufung."}>{stableMetrics}</AdminMetricValue></li>
-            <li><span>Noch ohne Messdaten</span><AdminMetricValue tone={Math.max(0, catalogStatistics.totalTasks - activeMetricRows.length) > 0 ? "warning" : "good"} recommendation="Diese Aufgaben benötigen verifizierte Spielrunden, bevor ihre Schwierigkeit automatisch bewertet werden kann.">{Math.max(0, catalogStatistics.totalTasks - activeMetricRows.length)}</AdminMetricValue></li>
-            <li><span>Auswertungsplan</span><AdminMetricValue tone="neutral">Täglich · 03:15 UTC</AdminMetricValue></li>
-            <li><span>Zuletzt erfolgreich aktualisiert</span><AdminMetricValue tone={latestDifficultyUpdate ? "good" : "critical"} recommendation={latestDifficultyUpdate ? "Die automatische Auswertung hat bereits erfolgreich Daten geschrieben." : "Kritisch: Noch keine erfolgreiche Auswertung vorhanden. Zeitplan und Auswertungsjob prüfen."}>{latestDifficultyUpdate ? new Date(latestDifficultyUpdate).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "medium" }) : "Noch keine erfolgreiche Auswertung"}</AdminMetricValue></li>
-          </ul><p className={styles.muted}>Die Anzeige wird bei jedem Aufruf des Adminbereichs live aus Supabase geladen. Nur abgeschlossene, verifizierte Account-Partien mit 15, 30 oder 60 Sekunden fließen ein. Bei weniger als {MINIMUM_DIFFICULTY_SAMPLES} Runden bleibt die Starteinstufung erhalten.</p></section>
+          <section className={`${styles.panel} ${styles.difficultyPanel}`}><AdminSectionTitle icon={Gauge}><span className={styles.sectionTitleWithHelp}>Automatische Schwierigkeit<AdminHelp title="Automatische Schwierigkeit">Einbezogen werden nur aufgelöste Runden aus vollständig abgeschlossenen, verifizierten Konto-Partien mit 15, 30 oder 60 Sekunden. Der Schwierigkeitswert besteht zu 55 % aus dem Punktverlust, zu 30 % aus nicht gelösten Runden und zu 15 % aus der relativ zum Zeitlimit benötigten Antwortzeit. Als gelöst gilt bei Flaggen das richtige Land, bei allen Kartenmotiven ein Tipp unter {SOLVED_DISTANCE_KM_MAX.toLocaleString("de-DE")} km. Bis einschließlich {Math.round(EASY_DIFFICULTY_SCORE_MAX * 100)} % gilt eine Aufgabe als leicht, ab {Math.round(HARD_DIFFICULTY_SCORE_MIN * 100)} % als schwer, dazwischen als mittel. Ab {MINIMUM_DIFFICULTY_SAMPLES} Runden greift die Einstufung vorläufig, ab {STABLE_DIFFICULTY_SAMPLES} stabil. Stabil bedeutet belastbar, nicht eingefroren.</AdminHelp></span></AdminSectionTitle><div className={styles.difficultyOverview}>
+            <div><h3>Reifegrad</h3><ul className={styles.list}>
+              <li><span>Noch unter {MINIMUM_DIFFICULTY_SAMPLES} verifizierten Runden</span><AdminMetricValue tone={insufficientMetrics > 0 ? "warning" : "good"} recommendation={insufficientMetrics > 0 ? "Beobachten: Diese Aufgaben behalten ihre Starteinstufung, bis genügend verifizierte Runden vorliegen." : "Unauffällig: Keine Aufgabe liegt unter der Mindestzahl verifizierter Runden."}>{insufficientMetrics}</AdminMetricValue></li>
+              <li><span>Vorläufig · {MINIMUM_DIFFICULTY_SAMPLES} bis {STABLE_DIFFICULTY_SAMPLES - 1} Runden</span><AdminMetricValue tone={provisionalMetrics > 0 ? "warning" : "good"} recommendation={provisionalMetrics > 0 ? "Beobachten: Diese Einstufungen sind bereits datenbasiert, können sich mit weiteren Runden aber noch ändern." : "Unauffällig: Keine Einstufung befindet sich im vorläufigen Bereich."}>{provisionalMetrics}</AdminMetricValue></li>
+              <li><span>Stabil · ab {STABLE_DIFFICULTY_SAMPLES} Runden</span><AdminMetricValue tone={stableMetrics > 0 ? "good" : "warning"} recommendation={stableMetrics > 0 ? "Unauffällig: Für diese Aufgaben liegt eine belastbare automatische Einstufung vor. Weitere Daten können sie dennoch verändern." : "Beobachten: Noch keine Aufgabe hat genügend Daten für eine stabile Einstufung."}>{stableMetrics}</AdminMetricValue></li>
+              <li><span>Höchster Datenstand</span><AdminMetricValue tone={highestVerifiedRoundCount >= MINIMUM_DIFFICULTY_SAMPLES ? "good" : "warning"} recommendation={highestVerifiedRoundCount >= MINIMUM_DIFFICULTY_SAMPLES ? "Mindestens eine Aufgabe wird bereits automatisch eingestuft." : `Dem am häufigsten verifizierten Motiv fehlen noch ${MINIMUM_DIFFICULTY_SAMPLES - highestVerifiedRoundCount} Runden bis zur ersten vorläufigen Einstufung.`}>{highestVerifiedRoundCount} / {MINIMUM_DIFFICULTY_SAMPLES}</AdminMetricValue></li>
+              <li><span>Noch ohne Messdaten</span><AdminMetricValue tone={Math.max(0, catalogStatistics.totalTasks - activeMetricRows.length) > 0 ? "warning" : "good"} recommendation="Diese Aufgaben benötigen verifizierte Spielrunden, bevor ihre Schwierigkeit automatisch bewertet werden kann.">{Math.max(0, catalogStatistics.totalTasks - activeMetricRows.length)}</AdminMetricValue></li>
+            </ul></div>
+            <div><h3>Datenbasierte Einstufung</h3><ul className={styles.list}>
+              <li><span>Leicht</span><AdminMetricValue tone="neutral">{difficultyMovements.byDifficulty.easy}</AdminMetricValue></li>
+              <li><span>Mittel</span><AdminMetricValue tone="neutral">{difficultyMovements.byDifficulty.medium}</AdminMetricValue></li>
+              <li><span>Schwer</span><AdminMetricValue tone="neutral">{difficultyMovements.byDifficulty.hard}</AdminMetricValue></li>
+              <li><span>Automatisch wirksam</span><AdminMetricValue tone={difficultyMovements.dataBasedTotal > 0 ? "good" : "warning"}>{difficultyMovements.dataBasedTotal}</AdminMetricValue></li>
+            </ul></div>
+            <div><h3>Bewegung gegenüber Start</h3><ul className={styles.list}>
+              <li><span>In Richtung leichter</span><AdminMetricValue tone="neutral">{difficultyMovements.movement.easier}</AdminMetricValue></li>
+              <li><span>Unverändert</span><AdminMetricValue tone="neutral">{difficultyMovements.movement.unchanged}</AdminMetricValue></li>
+              <li><span>In Richtung schwerer</span><AdminMetricValue tone="neutral">{difficultyMovements.movement.harder}</AdminMetricValue></li>
+              <li><span>Letzte Auswertung</span><AdminMetricValue tone={latestDifficultyUpdate ? "good" : "critical"}>{latestDifficultyUpdate ? new Date(latestDifficultyUpdate).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) : "Noch keine"}</AdminMetricValue></li>
+            </ul></div>
+          </div><p className={styles.muted}>Live aus Supabase · Auswertung täglich um 03:15 UTC. Die Bewegungswerte vergleichen die aktuell wirksame automatische Einstufung mit der ursprünglichen Katalogeinstufung. Weil alle verifizierten Runden kumuliert einfließen, werden spätere Einzelrunden mit wachsender Datenmenge weniger ausschlaggebend.</p></section>
           <section className={`${styles.panel} ${styles.progressPanel} ${styles.accountProgressPanel}`}><AdminSectionTitle icon={Trophy}>Fortschritt der Spielerkonten</AdminSectionTitle><div className={styles.progressColumns}>
             <div><h3>Gespielte Partien</h3><ul className={styles.list}>{accountProgress.gameBands.map((band) => <li key={band.label}><span>{band.label}</span><strong>{band.count} · {accountProgress.accountCount ? Math.round((band.count / accountProgress.accountCount) * 100) : 0} %</strong></li>)}</ul></div>
             <div><h3>Gesammelte Ranking-Punkte</h3><ul className={styles.list}>{accountProgress.pointBands.map((band) => <li key={band.label}><span>{band.label}</span><strong>{band.count} · {accountProgress.accountCount ? Math.round((band.count / accountProgress.accountCount) * 100) : 0} %</strong></li>)}</ul></div>

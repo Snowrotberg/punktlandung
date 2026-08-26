@@ -30,7 +30,10 @@
 .scopeDivider p { max-width: 52rem; margin: 0; color: #718198; font-size: .7rem; line-height: 1.45; }
 .realtimeStats { order: 9; grid-column: 1 / -1; }
 .catalogOverviewPanel { order: 10 !important; }
-.difficultyPanel { order: 11 !important; }
+.difficultyPanel { grid-column: 1 / -1; order: 11 !important; }
+.difficultyOverview { display: grid; gap: 1rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.difficultyOverview > div { min-width: 0; }
+.difficultyOverview h3 { color: #f8fafc; font-size: .78rem; margin: 0 0 .65rem; }
 .accountProgressPanel { order: 12 !important; }
 .communityPanel { order: 20 !important; }
 .roadmapPanel { order: 21 !important; }
@@ -164,7 +167,7 @@
 .chartReadout strong { color: var(--pl-mint); }
 .chartEmpty { display: grid; place-items: center; min-height: 11rem; color: #718198; font-size: .72rem; text-align: center; }
 @media (min-width: 100rem) { .content { max-width: none; margin-inline: 0; } }
-@media (max-width: 55rem) { .content, .grid, .panel, .analyticsPanel, .chartCard { min-width: 0; max-width: 100%; } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid, .progressColumns, .chartGrid { grid-template-columns: minmax(0, 1fr); } .communityItem { grid-template-columns: minmax(0, 1fr); } .catalogQualityList { grid-template-columns: repeat(2, minmax(0, 1fr)); } .roadmapItem > summary { grid-template-columns: auto minmax(0, 1fr) auto; } .roadmapSummaryMeta { grid-column: 2 / -1; } .tableWrap { max-width: 100%; overflow: visible; } }
+@media (max-width: 55rem) { .content, .grid, .panel, .analyticsPanel, .chartCard { min-width: 0; max-width: 100%; } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid, .progressColumns, .chartGrid, .difficultyOverview { grid-template-columns: minmax(0, 1fr); } .communityItem { grid-template-columns: minmax(0, 1fr); } .catalogQualityList { grid-template-columns: repeat(2, minmax(0, 1fr)); } .roadmapItem > summary { grid-template-columns: auto minmax(0, 1fr) auto; } .roadmapSummaryMeta { grid-column: 2 / -1; } .tableWrap { max-width: 100%; overflow: visible; } }
 @media (max-width: 36rem) {
   .heading, .panelHeading { align-items: start; flex-direction: column; }
   .periodFilter { grid-template-columns: minmax(0, 1fr); }

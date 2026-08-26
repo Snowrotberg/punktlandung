@@ -121,10 +121,12 @@ export type LocationDifficultyDecision = {
 /** A single server-verified round used by the automatic catalog evaluator. */
 export type VerifiedLocationRoundObservation = {
   locationId: string;
+  category: GeoLocation["category"];
   points: number;
+  distanceKm: number;
+  countryCorrect: boolean;
   responseTimeMs: number;
   timeLimitSec: 15 | 30 | 60;
-  successful: boolean;
 };
 
 /**
@@ -145,10 +147,12 @@ export function buildLocationDifficultyMetrics(
       || !Number.isFinite(observation.points)
       || observation.points < 0
       || observation.points > 5000
+      || !Number.isFinite(observation.distanceKm)
+      || observation.distanceKm < 0
+      || typeof observation.countryCorrect !== "boolean"
       || !Number.isFinite(observation.responseTimeMs)
       || observation.responseTimeMs < 0
-      || ![15, 30, 60].includes(observation.timeLimitSec)
-      || typeof observation.successful !== "boolean") {
+      || ![15, 30, 60].includes(observation.timeLimitSec)) {
       throw new Error("Verified location round observation is invalid.");
     }
 
@@ -175,7 +179,7 @@ export function buildLocationDifficultyMetrics(
       verifiedRounds: locationObservations.length,
       averagePoints: locationObservations.reduce((sum, observation) => sum + observation.points, 0)
         / locationObservations.length,
-      successRate: locationObservations.filter((observation) => observation.successful).length
+      successRate: locationObservations.filter((observation) => isSolvedObservation(observation)).length
         / locationObservations.length,
       medianResponseRatio
     });
@@ -184,8 +188,62 @@ export function buildLocationDifficultyMetrics(
   return result;
 }
 
-export const MINIMUM_DIFFICULTY_SAMPLES = 15;
-export const STABLE_DIFFICULTY_SAMPLES = 50;
+export const MINIMUM_DIFFICULTY_SAMPLES = 10;
+export const STABLE_DIFFICULTY_SAMPLES = 25;
+export const SOLVED_DISTANCE_KM_MAX = 750;
+export const EASY_DIFFICULTY_SCORE_MAX = 0.34;
+export const HARD_DIFFICULTY_SCORE_MIN = 0.62;
+
+function isSolvedObservation(observation: VerifiedLocationRoundObservation): boolean {
+  return observation.category === "flags"
+    ? observation.countryCorrect
+    : observation.distanceKm < SOLVED_DISTANCE_KM_MAX;
+}
+
+export type LocationDifficultyMovementSummary = {
+  dataBasedTotal: number;
+  byDifficulty: Record<LocationDifficulty, number>;
+  movement: {
+    easier: number;
+    unchanged: number;
+    harder: number;
+  };
+};
+
+/**
+ * Compares effective, data-based classifications with the catalog starting
+ * bands. This deliberately describes the current net movement rather than a
+ * fabricated history: persisted classifications below the sample threshold
+ * still retain their catalog fallback and therefore do not count yet.
+ */
+export function summarizeLocationDifficultyMovements(
+  locations: GeoLocation[],
+  overrides: LocationDifficultyOverride[]
+): LocationDifficultyMovementSummary {
+  const startingDifficulty = locationDifficultyMap(locations);
+  const effectiveOverrides = new Map(
+    overrides
+      .filter((override) => override.confidence !== "insufficient")
+      .filter((override) => startingDifficulty.has(override.locationId))
+      .map((override) => [override.locationId, override.suggestedDifficulty])
+  );
+  const rank: Record<LocationDifficulty, number> = { easy: 0, medium: 1, hard: 2 };
+  const summary: LocationDifficultyMovementSummary = {
+    dataBasedTotal: effectiveOverrides.size,
+    byDifficulty: { easy: 0, medium: 0, hard: 0 },
+    movement: { easier: 0, unchanged: 0, harder: 0 }
+  };
+
+  for (const [locationId, difficulty] of effectiveOverrides) {
+    const initial = startingDifficulty.get(locationId) ?? "medium";
+    summary.byDifficulty[difficulty] += 1;
+    if (rank[difficulty] < rank[initial]) summary.movement.easier += 1;
+    else if (rank[difficulty] > rank[initial]) summary.movement.harder += 1;
+    else summary.movement.unchanged += 1;
+  }
+
+  return summary;
+}
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
@@ -226,7 +284,9 @@ export function classifyLocationDifficulty(
   const missScore = 1 - metrics.successRate;
   const timeScore = clamp(metrics.medianResponseRatio, 0, 1);
   const difficultyScore = 0.55 * errorScore + 0.3 * missScore + 0.15 * timeScore;
-  const difficulty = difficultyScore >= 0.62 ? "hard" : difficultyScore <= 0.34 ? "easy" : "medium";
+  const difficulty = difficultyScore >= HARD_DIFFICULTY_SCORE_MIN
+    ? "hard"
+    : difficultyScore <= EASY_DIFFICULTY_SCORE_MAX ? "easy" : "medium";
 
   return {
     difficulty,

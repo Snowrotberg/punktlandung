@@ -5,7 +5,8 @@ import {
   applyLocationDifficultyOverrides,
   buildLocationDifficultyMetrics,
   classifyLocationDifficulty,
-  playableLocationsForDifficulty
+  playableLocationsForDifficulty,
+  summarizeLocationDifficultyMovements
 } from "../lib/locationDifficulty";
 
 test("initial catalog bands keep every category playable at every difficulty", () => {
@@ -27,9 +28,9 @@ test("initial catalog bands keep every category playable at every difficulty", (
 
 test("location difficulty metrics aggregate verified rounds per location", () => {
   const metrics = buildLocationDifficultyMetrics([
-    { locationId: "alpha", points: 4000, responseTimeMs: 5_000, timeLimitSec: 15, successful: true },
-    { locationId: "alpha", points: 2000, responseTimeMs: 15_000, timeLimitSec: 30, successful: false },
-    { locationId: "beta", points: 5000, responseTimeMs: 12_000, timeLimitSec: 60, successful: true }
+    { locationId: "alpha", category: "cities", points: 4000, distanceKm: 100, countryCorrect: false, responseTimeMs: 5_000, timeLimitSec: 15 },
+    { locationId: "alpha", category: "cities", points: 2000, distanceKm: 800, countryCorrect: true, responseTimeMs: 15_000, timeLimitSec: 30 },
+    { locationId: "beta", category: "flags", points: 5000, distanceKm: 2_000, countryCorrect: true, responseTimeMs: 12_000, timeLimitSec: 60 }
   ]);
 
   assert.deepEqual(metrics.get("alpha"), {
@@ -48,29 +49,62 @@ test("location difficulty metrics aggregate verified rounds per location", () =>
 
 test("location difficulty metrics reject untrusted observations", () => {
   assert.throws(() => buildLocationDifficultyMetrics([
-    { locationId: "alpha", points: 5001, responseTimeMs: 1000, timeLimitSec: 15, successful: true }
+    { locationId: "alpha", category: "cities", points: 5001, distanceKm: 10, countryCorrect: false, responseTimeMs: 1000, timeLimitSec: 15 }
   ]));
+});
+
+test("solved rounds use exact countries for flags and distance for map motifs", () => {
+  const metrics = buildLocationDifficultyMetrics([
+    { locationId: "flag", category: "flags", points: 4900, distanceKm: 10, countryCorrect: false, responseTimeMs: 1000, timeLimitSec: 15 },
+    { locationId: "flag", category: "flags", points: 1000, distanceKm: 2_000, countryCorrect: true, responseTimeMs: 1000, timeLimitSec: 15 },
+    { locationId: "city", category: "cities", points: 3000, distanceKm: 749.9, countryCorrect: false, responseTimeMs: 1000, timeLimitSec: 15 },
+    { locationId: "city", category: "cities", points: 3000, distanceKm: 750, countryCorrect: true, responseTimeMs: 1000, timeLimitSec: 15 }
+  ]);
+
+  assert.equal(metrics.get("flag")?.successRate, 0.5);
+  assert.equal(metrics.get("city")?.successRate, 0.5);
 });
 
 test("location difficulty keeps the fallback with insufficient verified data", () => {
   assert.deepEqual(classifyLocationDifficulty({
-    verifiedRounds: 14,
+    verifiedRounds: 9,
     averagePoints: 100,
     successRate: 0,
     medianResponseRatio: 1
-  }), { difficulty: "medium", confidence: "insufficient", sampleSize: 14 });
+  }), { difficulty: "medium", confidence: "insufficient", sampleSize: 9 });
 });
 
-test("location difficulty becomes provisional at 15 and stable at 50 verified rounds", () => {
+test("location difficulty becomes provisional at 10 and stable at 25 verified rounds", () => {
   const metrics = {
     averagePoints: 4400,
     successRate: 0.9,
     medianResponseRatio: 0.25
   };
 
-  assert.equal(classifyLocationDifficulty({ ...metrics, verifiedRounds: 15 }).confidence, "provisional");
-  assert.equal(classifyLocationDifficulty({ ...metrics, verifiedRounds: 49 }).confidence, "provisional");
-  assert.equal(classifyLocationDifficulty({ ...metrics, verifiedRounds: 50 }).confidence, "stable");
+  assert.equal(classifyLocationDifficulty({ ...metrics, verifiedRounds: 10 }).confidence, "provisional");
+  assert.equal(classifyLocationDifficulty({ ...metrics, verifiedRounds: 24 }).confidence, "provisional");
+  assert.equal(classifyLocationDifficulty({ ...metrics, verifiedRounds: 25 }).confidence, "stable");
+});
+
+test("difficulty movement summary compares data-based results with catalog starting bands", () => {
+  const locations = [
+    { id: "easy-to-medium", difficulty: "easy" },
+    { id: "medium-to-easy", difficulty: "medium" },
+    { id: "hard-unchanged", difficulty: "hard" },
+    { id: "insufficient", difficulty: "easy" }
+  ] as unknown as import("../types/game").GeoLocation[];
+
+  assert.deepEqual(summarizeLocationDifficultyMovements(locations, [
+    { locationId: "easy-to-medium", suggestedDifficulty: "medium", confidence: "provisional" },
+    { locationId: "medium-to-easy", suggestedDifficulty: "easy", confidence: "stable" },
+    { locationId: "hard-unchanged", suggestedDifficulty: "hard", confidence: "stable" },
+    { locationId: "insufficient", suggestedDifficulty: "hard", confidence: "insufficient" },
+    { locationId: "not-in-catalog", suggestedDifficulty: "easy", confidence: "stable" }
+  ]), {
+    dataBasedTotal: 3,
+    byDifficulty: { easy: 1, medium: 1, hard: 1 },
+    movement: { easier: 1, unchanged: 1, harder: 1 }
+  });
 });
 
 test("location difficulty uses normalized verified metrics", () => {
@@ -87,6 +121,13 @@ test("location difficulty uses normalized verified metrics", () => {
     successRate: 0.2,
     medianResponseRatio: 0.9
   }).difficulty, "hard");
+
+  assert.equal(classifyLocationDifficulty({
+    verifiedRounds: 25,
+    averagePoints: 3000,
+    successRate: 0.65,
+    medianResponseRatio: 0.55
+  }).difficulty, "medium");
 });
 
 test("location difficulty rejects invalid metrics", () => {
