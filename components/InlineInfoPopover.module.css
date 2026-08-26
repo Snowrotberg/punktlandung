@@ -33,7 +33,7 @@
   position: absolute;
   stroke-width: 2.65;
   top: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, calc(-50% + 1px));
   width: .82rem;
 }
 

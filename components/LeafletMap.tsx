@@ -1193,6 +1193,7 @@ function ResultMarker({
   const estimatedPopupHeight = compactPortraitPopup ? 172 : 132;
   const popupAboveAdjustment = compactPortraitPopup ? 7 : compactLandscapePopup ? 30 : 56;
   const popupBelowAdjustment = compactLandscapePopup ? 1 : -14;
+  const popupTranslateRef = useRef(0);
   const popupVerticalOffset = openBelowLabel
     ? placement.offset[1] + placement.size.height / 2 + popupBelowAdjustment + estimatedPopupHeight
     : placement.offset[1] - placement.size.height / 2 + popupAboveAdjustment;
@@ -1204,6 +1205,20 @@ function ResultMarker({
       if (!pinnedRef.current) return;
       const container = map.getContainer();
       const containerRect = container.getBoundingClientRect();
+      const popupElement = container.querySelector<HTMLElement>(".punktlandung-location-info-popup");
+      const popupTipElement = popupElement?.querySelector<HTMLElement>(".leaflet-popup-tip");
+      const targetLabelElement = markerRef.current?.getElement()?.querySelector<HTMLElement>(".punktlandung-map-label-actual");
+      if (popupElement && popupTipElement && targetLabelElement) {
+        const popupTipRect = popupTipElement.getBoundingClientRect();
+        const targetLabelRect = targetLabelElement.getBoundingClientRect();
+        const alignmentDelta = openBelowLabel
+          ? targetLabelRect.bottom - popupTipRect.top
+          : targetLabelRect.top - popupTipRect.bottom;
+        if (Math.abs(alignmentDelta) > 0.5) {
+          popupTranslateRef.current += alignmentDelta;
+          popupElement.style.translate = `0 ${popupTranslateRef.current}px`;
+        }
+      }
       const visuals = [
         ...container.querySelectorAll<HTMLElement>(".punktlandung-map-label"),
         ...container.querySelectorAll<HTMLElement>(".punktlandung-map-pin"),
@@ -1302,9 +1317,11 @@ function ResultMarker({
     pinnedRef.current = !pinnedRef.current;
     setPopupPinned(pinnedRef.current);
     if (!pinnedRef.current) {
+      popupTranslateRef.current = 0;
       markerRef.current?.closePopup();
       return;
     }
+    popupTranslateRef.current = 0;
     markerRef.current?.openPopup();
     fitPinnedPopup();
   };
