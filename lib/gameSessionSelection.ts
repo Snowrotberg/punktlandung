@@ -35,3 +35,16 @@ export function shouldRestoreRankedSoloSession(
 ): boolean {
   return Boolean(requiredStatus) || explicitResume;
 }
+
+/**
+ * Ranked provenance belongs to the room, not to the currently selected hook.
+ * During route restoration the hook selection can change for a render. A
+ * ranked result must still never be persisted as an unverified local game.
+ */
+export function isServerRankedSoloRoom(room: {
+  code: string;
+  kind: string;
+  settings: { localMode: string };
+} | null | undefined): boolean {
+  return room?.code === "RANKED" && room.kind === "solo" && room.settings.localMode === "solo";
+}

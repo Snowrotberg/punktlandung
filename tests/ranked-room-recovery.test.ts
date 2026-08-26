@@ -26,6 +26,7 @@ function rankedGame(activeRoundStartedAt: number | null): PublicRankedGame {
     rulesetId: "daily-five",
     rulesetVersion: 1,
     scoringVersion: "distance-v1",
+    category: "mixed",
     score: 4_200,
     totalResponseTimeMs: 8_000,
     activeRound: {
@@ -85,6 +86,7 @@ test("recovery keeps the resolved round visible while the next round is pending"
   assert.equal(room.roundEndsAt, null);
   assert.equal(room.location?.panoramaUrl, "/api/v1/ranked-games/ranked-test/rounds/round-1/prompt");
   assert.equal(room.summaries[0]?.location.panoramaUrl, room.location?.panoramaUrl);
+  assert.equal(room.settings.category, "mixed");
 });
 
 test("resolved replay uses only the opaque protected ranked image endpoint", () => {

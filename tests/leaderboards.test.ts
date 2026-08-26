@@ -79,6 +79,20 @@ test("query separates categories and incompatible versions", () => {
   assert.deepEqual(calculateLeaderboard(games, baseQuery).map((entry) => entry.gameIds), [["valid"]]);
 });
 
+test("overall ranking keeps each account once with its best game across categories", () => {
+  const games = [
+    result({ gameId: "a-city", score: 20_000 }),
+    result({ gameId: "a-flag", category: "flags", score: 24_000 }),
+    result({ gameId: "b-landmark", accountId: "account-2", publicHandle: "Kompass", category: "landmarks", score: 22_000 })
+  ];
+  const leaderboard = calculateLeaderboard(games, { ...baseQuery, category: "all" });
+  assert.deepEqual(leaderboard.map((entry) => [entry.accountId, entry.score, entry.gamesCount]), [
+    ["account-1", 24_000, 2],
+    ["account-2", 22_000, 1]
+  ]);
+  assert.deepEqual(leaderboard[0].gameIds, ["a-flag"]);
+});
+
 test("score ties use response time and then completion time", () => {
   const games = [
     result({ gameId: "slow", accountId: "slow", publicHandle: "Slow", totalResponseTimeMs: 60_000 }),

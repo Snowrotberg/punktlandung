@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { preferLocalRequiredSession, shouldRestoreRankedSoloSession, shouldUseRankedSoloSession } from "../lib/gameSessionSelection";
+import { isServerRankedSoloRoom, preferLocalRequiredSession, shouldRestoreRankedSoloSession, shouldUseRankedSoloSession } from "../lib/gameSessionSelection";
 
 test("authenticated result route waits for browser-local guest restoration", () => {
   assert.equal(preferLocalRequiredSession("finished", true, undefined), true);
@@ -54,4 +54,10 @@ test("party routes and explicit legacy-local recovery keep local ownership", () 
     localSessionHasPriority: true,
     onSoloFlow: true
   }), false);
+});
+
+test("ranked room provenance survives a transient hook-selection change", () => {
+  assert.equal(isServerRankedSoloRoom({ code: "RANKED", kind: "solo", settings: { localMode: "solo" } }), true);
+  assert.equal(isServerRankedSoloRoom({ code: "LOKAL", kind: "solo", settings: { localMode: "solo" } }), false);
+  assert.equal(isServerRankedSoloRoom({ code: "RANKED", kind: "party", settings: { localMode: "couch" } }), false);
 });

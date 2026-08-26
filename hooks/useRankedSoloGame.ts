@@ -201,7 +201,10 @@ export function roomFromRankedGame(
     localMode: "solo",
     localPlayerCount: 1,
     rounds: totalRounds,
-    category: next.activeRound?.category ?? latestResolved?.location.category ?? storedSettings.category,
+    // Older recovery snapshots predate the explicit game category. Prefer the
+    // server-owned value, but keep those snapshots resumable without silently
+    // relabelling a mixed game as the category of its last round.
+    category: next.category ?? storedSettings.category ?? next.activeRound?.category ?? latestResolved?.location.category ?? "mixed",
     timeLimitSec: next.timeLimitSec ?? storedSettings.timeLimitSec,
     difficulty: next.difficulty ?? storedSettings.difficulty,
     noZoom: next.noZoom ?? storedSettings.noZoom

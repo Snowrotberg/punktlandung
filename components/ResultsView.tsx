@@ -570,8 +570,8 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
       active = false;
     };
   }, [accountAuthenticated, finished, rankedGameId, rankedSyncStatus, serverRanked]);
-  const handleBackToLobby = async () => {
-    if (finished && accountAuthenticated && saveState !== "saved") await saveGame();
+  const handleBackToLobby = () => {
+    if (finished && accountAuthenticated && saveState !== "saved") void saveGame();
     onBackToLobby();
   };
   const prepareSaveAndOpenLogin = () => {

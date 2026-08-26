@@ -15,6 +15,21 @@ export function gameplayStatusForRoute(pathname: string): Exclude<RoundStatus, "
   return null;
 }
 
+export function shouldSynchronizeGameplayRoute(input: {
+  pathname: string;
+  targetRoute: string | null;
+  restorationPending: boolean;
+  intentionalExitPending: boolean;
+}): boolean {
+  return Boolean(
+    gameplayStatusForRoute(input.pathname)
+      && input.targetRoute
+      && input.pathname !== input.targetRoute
+      && !input.restorationPending
+      && !input.intentionalExitPending
+  );
+}
+
 export function shouldShowGameplayStateGuard(input: {
   requiredStatus: Exclude<RoundStatus, "lobby"> | null | undefined;
   currentStatus?: RoundStatus;

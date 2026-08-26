@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { gameplayRouteForStatus, gameplayStatusForRoute, shouldShowGameplayStateGuard } from "../lib/gameplayRoute";
+import {
+  gameplayRouteForStatus,
+  gameplayStatusForRoute,
+  shouldShowGameplayStateGuard,
+  shouldSynchronizeGameplayRoute
+} from "../lib/gameplayRoute";
 
 test("every active game status has one canonical route", () => {
   assert.equal(gameplayRouteForStatus("guessing"), "/spielen");
@@ -33,4 +38,19 @@ test("intentional final-screen exits never expose the state guard between route 
 
   assert.equal(shouldShowGameplayStateGuard({ ...base, intentionalExitPending: false }), true);
   assert.equal(shouldShowGameplayStateGuard({ ...base, intentionalExitPending: true }), false);
+});
+
+test("route synchronization only repairs transitions within gameplay", () => {
+  const base = {
+    targetRoute: "/endergebnis",
+    restorationPending: false,
+    intentionalExitPending: false
+  };
+
+  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/aufloesung" }), true);
+  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/solo-modus" }), false);
+  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/" }), false);
+  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/endergebnis" }), false);
+  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/aufloesung", restorationPending: true }), false);
+  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/aufloesung", intentionalExitPending: true }), false);
 });

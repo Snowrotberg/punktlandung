@@ -98,6 +98,7 @@ export class RankedGameService {
       createRequestId: command.createRequestId,
       guestIdHash: command.guestIdHash,
       locations: selectedLocations,
+      category,
       roundIds: selectedLocations.map((_, index) => this.ids.roundId(index + 1)),
       now: command.now,
       roundDurationMs: durationMs,

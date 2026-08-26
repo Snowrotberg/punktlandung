@@ -5,6 +5,7 @@ import type { AccountStatus, ProfileVisibility } from "./accountProfile";
 export const leaderboardTimeZone = "Europe/Berlin";
 
 export type LeaderboardPeriod = "daily" | "weekly" | "monthly" | "yearly";
+export type LeaderboardCategory = LocationCategory | "all";
 
 export type LeaderboardGameResult = {
   gameId: string;
@@ -32,7 +33,7 @@ export type LeaderboardGameResult = {
 export type LeaderboardQuery = {
   period: LeaderboardPeriod;
   periodKey: string;
-  category: LocationCategory;
+  category: LeaderboardCategory;
   rulesetId: string;
   rulesetVersion: number;
   scoringVersion: string;
@@ -147,7 +148,7 @@ function eligible(game: LeaderboardGameResult, query: LeaderboardQuery): game is
     game.profileVisibility === "public" &&
     game.integrityStatus === "verified" &&
     game.timeLimitSec !== 0 &&
-    game.category === query.category &&
+    (query.category === "all" || game.category === query.category) &&
     game.rulesetId === query.rulesetId &&
     game.rulesetVersion === query.rulesetVersion &&
     game.scoringVersion === query.scoringVersion &&

@@ -44,11 +44,29 @@ test("public state hides the active answer and uses an opaque prompt endpoint", 
   assert.deepEqual(publicState.resolvedRounds, []);
   assert.equal(publicState.activeRound?.roundId, "round-1");
   assert.equal(publicState.activeRound?.assetUrl, "/api/v1/ranked-games/game-1/rounds/round-1/prompt?v=0");
+  assert.equal(publicState.category, "landmarks");
   const serialized = JSON.stringify(publicState);
   assert.equal(serialized.includes("Secret loc-1"), false);
   assert.equal(serialized.includes("48"), false);
   assert.equal(serialized.includes("loc-1"), false);
   assert.equal(serialized.includes("Kurzinfo"), false);
+});
+
+test("public state preserves the selected ranking category independently of drawn rounds", () => {
+  const locations = [location("loc-1", 48, 9), location("loc-2", 49, 10)];
+  const internal = createRankedGame({
+    gameId: "game-mixed",
+    createRequestId: "request-mixed",
+    guestIdHash: "guest-hash",
+    locations,
+    category: "mixed",
+    roundIds: ["round-1", "round-2"],
+    now: 1_000,
+    roundDurationMs: 60_000
+  });
+
+  assert.equal(internal.category, "mixed");
+  assert.equal(toPublicRankedGame(internal).category, "mixed");
 });
 
 test("server scoring resolves a guess and leaves the next round waiting for its image", () => {

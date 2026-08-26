@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildLeaderboardDisplayEntries } from "../lib/leaderboardDisplay";
-import { leaderboardPeriodKey, type LeaderboardGameResult, type PublicLeaderboardEntry } from "../lib/leaderboards";
+import { leaderboardPeriodKey, type LeaderboardCategory, type LeaderboardGameResult, type PublicLeaderboardEntry } from "../lib/leaderboards";
 import { findDailyRankedGamePlacement } from "../lib/rankedPlacement";
 import { toLeaderboardGameResult, type VerifiedRankedResultRow } from "../lib/verifiedRankedResults";
 
@@ -48,7 +48,7 @@ function game(overrides: Partial<LeaderboardGameResult> = {}): LeaderboardGameRe
 }
 
 const now = Date.parse("2026-08-24T12:00:00Z");
-function displayContext(category: LeaderboardGameResult["category"] = "mixed", period: "daily" | "weekly" | "monthly" | "yearly" = "yearly") {
+function displayContext(category: LeaderboardCategory = "mixed", period: "daily" | "weekly" | "monthly" | "yearly" = "yearly") {
   return { category, period, periodKey: leaderboardPeriodKey(now, period), now };
 }
 
@@ -92,6 +92,13 @@ test("period fields build up consistently from today to the year", () => {
   assert.equal(buildLeaderboardDisplayEntries([], displayContext("mixed", "weekly")).length, 6);
   assert.equal(buildLeaderboardDisplayEntries([], displayContext("mixed", "monthly")).length, 11);
   assert.equal(buildLeaderboardDisplayEntries([], displayContext("mixed", "yearly")).length, 15);
+});
+
+test("overall ranking gets one useful starter field across all categories", () => {
+  const displayed = buildLeaderboardDisplayEntries([], displayContext("all", "yearly"));
+  assert.equal(displayed.length, 15);
+  assert.equal(new Set(displayed.map((entry) => entry.publicHandle)).size, displayed.length);
+  assert.deepEqual(displayed.map((entry) => entry.comparisonValue), [...displayed.map((entry) => entry.comparisonValue)].sort((left, right) => (right ?? 0) - (left ?? 0)));
 });
 
 test("every category has a useful weekly and monthly field", () => {

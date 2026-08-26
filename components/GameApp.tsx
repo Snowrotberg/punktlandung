@@ -5,12 +5,17 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { categoryOptions } from "@/lib/categories";
 import { trackAnalyticsEvent } from "@/lib/analytics";
-import { preferLocalRequiredSession, shouldRestoreRankedSoloSession, shouldUseRankedSoloSession } from "@/lib/gameSessionSelection";
+import { isServerRankedSoloRoom, preferLocalRequiredSession, shouldRestoreRankedSoloSession, shouldUseRankedSoloSession } from "@/lib/gameSessionSelection";
 import { saveCompletedGame } from "@/app/endergebnis/actions";
 import { flushCompletedGameSaves } from "@/lib/completedGameSaveQueue.client";
 import { useLocalGame } from "@/hooks/useLocalGame";
 import { clearSetupResumeRequest, clearVisibleResumeSetup, markResumeSetupVisible, requestSetupResume, setupResumeUrl, shouldDiscardResumeOnHistoryExit } from "@/lib/gameResume.client";
-import { gameplayRouteForStatus, gameplayStatusForRoute, shouldShowGameplayStateGuard } from "@/lib/gameplayRoute";
+import {
+  gameplayRouteForStatus,
+  gameplayStatusForRoute,
+  shouldShowGameplayStateGuard,
+  shouldSynchronizeGameplayRoute
+} from "@/lib/gameplayRoute";
 import { punktlandungMapStyleUrl } from "@/lib/mapStyle";
 import { useRankedSoloGame } from "@/hooks/useRankedSoloGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
@@ -375,14 +380,17 @@ export function GameApp({
   const resumePending = "resumePending" in activeGame && activeGame.resumePending;
   const resumeRound = "resumeRound" in activeGame ? activeGame.resumeRound : undefined;
   const discardResume = "discardResume" in activeGame ? activeGame.discardResume : undefined;
+  const serverRankedRoom = isServerRankedSoloRoom(room);
+  const activeRankedGameId = serverRankedRoom ? rankedSoloGame.gameId : undefined;
   const restorationPending = isOnlineFlow
     ? onlineGame.restoring
     : rankedSoloContext
       ? rankedRestoring
       : localGame.restoring;
   const gameplayRoute = gameplayRouteForStatus(room?.status, Boolean(resumePending));
-  const gameplayRouteMismatch = Boolean(gameplayRoute && pathname !== gameplayRoute);
-  const routeRequiredStatus = gameplayStatusForRoute(pathname ?? "") ?? requiredStatus;
+  const pathnameGameplayStatus = gameplayStatusForRoute(pathname ?? "");
+  const gameplayRouteMismatch = Boolean(pathnameGameplayStatus && gameplayRoute && pathname !== gameplayRoute);
+  const routeRequiredStatus = pathname ? pathnameGameplayStatus : requiredStatus;
   const requestedGameplayRouteRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -395,11 +403,16 @@ export function GameApp({
   }, [room?.location?.id, room?.players.length, room?.status]);
 
   useEffect(() => {
-    if (pendingGameplayExit) return;
-    if (restorationPending || !gameplayRoute || pathname === gameplayRoute) {
-      if (pathname === gameplayRoute) requestedGameplayRouteRef.current = null;
+    if (pathname === gameplayRoute) {
+      requestedGameplayRouteRef.current = null;
       return;
     }
+    if (!gameplayRoute || !shouldSynchronizeGameplayRoute({
+      pathname: pathname ?? "",
+      targetRoute: gameplayRoute,
+      restorationPending,
+      intentionalExitPending: Boolean(pendingGameplayExit)
+    })) return;
     if (requestedGameplayRouteRef.current === gameplayRoute) return;
     requestedGameplayRouteRef.current = gameplayRoute;
     // All three routes share the persistent gameplay layout, so this URL
@@ -943,10 +956,10 @@ export function GameApp({
         redesign={redesignHomeEnabled}
         accountsEnabled={accountsEnabled}
         accountAuthenticated={accountAuthenticated}
-        serverRanked={rankedSoloContext && room.kind === "solo" && room.settings.localMode === "solo"}
-        rankedGameId={rankedSoloContext ? rankedSoloGame.gameId : undefined}
-        rankedSyncStatus={rankedSoloContext ? rankedSoloGame.syncStatus : undefined}
-        pendingUploadCount={rankedSoloContext ? rankedSoloGame.pendingUploadCount : 0}
+        serverRanked={serverRankedRoom}
+        rankedGameId={activeRankedGameId}
+        rankedSyncStatus={serverRankedRoom ? rankedSoloGame.syncStatus : undefined}
+        pendingUploadCount={serverRankedRoom ? rankedSoloGame.pendingUploadCount : 0}
       />
     );
   }

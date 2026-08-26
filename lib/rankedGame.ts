@@ -41,6 +41,7 @@ export type RankedGame = {
   rulesetId: typeof rankedRulesetId;
   rulesetVersion: typeof rankedRulesetVersion;
   scoringVersion: typeof rankedScoringVersion;
+  category: LocationCategory;
   roundDurationMs: number;
   timeLimitSec?: 0 | 15 | 30 | 60;
   difficulty?: "easy" | "medium" | "hard";
@@ -88,6 +89,7 @@ export type PublicRankedGame = {
   rulesetId: string;
   rulesetVersion: number;
   scoringVersion: string;
+  category: LocationCategory;
   score: number;
   totalResponseTimeMs: number;
   activeRound: PublicRankedRoundPrompt | null;
@@ -122,6 +124,7 @@ export type CreateRankedGameInput = {
   createRequestId: string;
   guestIdHash: string;
   locations: GeoLocation[];
+  category?: LocationCategory;
   roundIds: string[];
   now: number;
   roundDurationMs: number;
@@ -164,6 +167,8 @@ export function createRankedGame(input: CreateRankedGameInput): RankedGame {
   const timeLimitSec = input.timeLimitSec ?? (Math.round(input.roundDurationMs / 1000) as 0 | 15 | 30 | 60);
   const difficulty = input.difficulty ?? "medium";
   const noZoom = input.noZoom ?? false;
+  const categories = new Set(input.locations.map((location) => location.category));
+  const category = input.category ?? (categories.size === 1 ? [...categories][0] : "mixed");
   const rounds = input.locations.map((location, index): RankedRound => ({
     roundId: input.roundIds[index],
     roundNumber: index + 1,
@@ -190,6 +195,7 @@ export function createRankedGame(input: CreateRankedGameInput): RankedGame {
     rulesetId: rankedRulesetId,
     rulesetVersion: rankedRulesetVersion,
     scoringVersion: rankedScoringVersion,
+    category,
     roundDurationMs: input.roundDurationMs,
     timeLimitSec,
     difficulty,
@@ -404,6 +410,7 @@ export function toPublicRankedGame(game: RankedGame): PublicRankedGame {
     rulesetId: game.rulesetId,
     rulesetVersion: game.rulesetVersion,
     scoringVersion: game.scoringVersion,
+    category: game.category,
     score: game.score,
     totalResponseTimeMs: game.totalResponseTimeMs,
     activeRound: activeRound ? {

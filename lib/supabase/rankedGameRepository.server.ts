@@ -71,6 +71,7 @@ function mapGame(game: GameRow, rounds: RoundRow[], guesses: GuessRow[]): Ranked
     rulesetId: game.ruleset_id as RankedGame["rulesetId"],
     rulesetVersion: game.ruleset_version as RankedGame["rulesetVersion"],
     scoringVersion: game.scoring_version as RankedGame["scoringVersion"],
+    category: game.category as RankedGame["category"],
     roundDurationMs: game.round_duration_ms,
     timeLimitSec: game.time_limit_sec as RankedGame["timeLimitSec"],
     difficulty: game.difficulty as RankedGame["difficulty"],
@@ -88,7 +89,6 @@ function iso(value: number | null): string | null {
 }
 
 function statePayload(game: RankedGame) {
-  const categories = new Set(game.rounds.map((round) => round.location.category));
   const gamePayload = {
     game_id: game.gameId,
     create_request_id: game.createRequestId,
@@ -100,7 +100,7 @@ function statePayload(game: RankedGame) {
     ruleset_id: game.rulesetId,
     ruleset_version: game.rulesetVersion,
     scoring_version: game.scoringVersion,
-    category: categories.size === 1 ? [...categories][0] : "mixed",
+    category: game.category,
     round_duration_ms: game.roundDurationMs,
     time_limit_sec: game.timeLimitSec,
     difficulty: game.difficulty,

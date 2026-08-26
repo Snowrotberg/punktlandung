@@ -8,7 +8,7 @@ import { CircleUserRound, ListChecks, Target, Trophy } from "lucide-react";
 export const metadata: Metadata = {
   title: "Punktlandung FAQ - Fragen zum kostenlosen Geo-Quiz",
   description:
-    "Antworten zu Punktlandung: kostenlos spielen, ohne Anmeldung starten, Kategorien waehlen und als Geo-Quiz oder Partyspiel nutzen.",
+    "Antworten zu Punktlandung: kostenlos spielen, ohne Anmeldung starten, Kategorien wählen und als Geo-Quiz oder Partyspiel nutzen.",
   alternates: {
     canonical: absoluteUrl("/faq")
   }
@@ -29,7 +29,7 @@ export default function FaqPage() {
         plainContent
         eyebrow="Punktlandung spielen"
         title="Häufige Fragen zu Punktlandung"
-        intro="Kurze Antworten zum kostenlosen Geo-Quiz, zu Kategorien, Party-Modus und Einstieg ohne Anmeldung."
+        intro="Schnelle Hilfe zu Spielablauf, Punkten, Konten und Rankings – ohne lange nach der passenden Antwort zu suchen."
       >
         <div className="grid gap-3 md:grid-cols-2">
           {faqLinks.map(([href, title, text, Icon]) => (
@@ -40,6 +40,15 @@ export default function FaqPage() {
             </Link>
           ))}
         </div>
+        <section className="punktlandung-static-card rounded-xl border p-4">
+          <h2 className="text-lg font-black text-white">Du möchtest Punktlandung erst kennenlernen?</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-300">
+            Unter Infos findest du das Spielprinzip, den Aufgabenkatalog und ausführliche Erklärungen zu Solo-, Party- und Online-Partien.
+          </p>
+          <Link href="/infos" className="mt-3 inline-block text-sm font-bold text-emerald-300 underline underline-offset-4">
+            Zu den Infos über Punktlandung
+          </Link>
+        </section>
         <ContributionPaths mode="both" />
       </InfoPageShell>
   );

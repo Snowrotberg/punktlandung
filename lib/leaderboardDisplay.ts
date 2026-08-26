@@ -1,4 +1,4 @@
-import type { LeaderboardPeriod, PublicLeaderboardEntry } from "@/lib/leaderboards";
+import type { LeaderboardCategory, LeaderboardPeriod, PublicLeaderboardEntry } from "@/lib/leaderboards";
 import type { LocationCategory } from "@/types/game";
 
 export type LeaderboardDisplayEntry = PublicLeaderboardEntry & {
@@ -15,7 +15,7 @@ type StarterProfile = {
 };
 
 export type LeaderboardDisplayContext = {
-  category: LocationCategory;
+  category: LeaderboardCategory;
   period: LeaderboardPeriod;
   periodKey: string;
   now: number;
@@ -43,7 +43,12 @@ const starterTargets: Record<Exclude<LocationCategory, "streetview">, Record<Lea
   capitals: { daily: 2, weekly: 5, monthly: 9, yearly: 13 }
 };
 
-function starterProfiles(category: LocationCategory): StarterProfile[] {
+function starterProfiles(category: LeaderboardCategory): StarterProfile[] {
+  if (category === "all") {
+    return (Object.keys(starterFields) as Array<Exclude<LocationCategory, "streetview">>)
+      .flatMap((rankedCategory) => starterProfiles(rankedCategory))
+      .sort((left, right) => right.comparisonValue - left.comparisonValue || left.handle.localeCompare(right.handle, "de-DE"));
+  }
   if (category === "streetview") return [];
   const field = starterFields[category];
   const spread = Math.max(1, field.handles.length - 1);
@@ -60,7 +65,8 @@ function starterProfiles(category: LocationCategory): StarterProfile[] {
 
 function profilesForPeriod(context: LeaderboardDisplayContext): StarterProfile[] {
   if (context.category === "streetview") return [];
-  return starterProfiles(context.category).slice(0, starterTargets[context.category][context.period]);
+  const targetCategory = context.category === "all" ? "mixed" : context.category;
+  return starterProfiles(context.category).slice(0, starterTargets[targetCategory][context.period]);
 }
 
 export function leaderboardDisplayTarget(context: LeaderboardDisplayContext): number {

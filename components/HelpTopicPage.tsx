@@ -1,6 +1,6 @@
 import { InfoPageShell } from "@/components/InfoPageShell";
 import { RedesignButtonLink } from "@/components/redesign";
-import { CircleUserRound, Clock3, Eye, Flag, Gauge, History, LockKeyhole, MapPin, Settings2, ShieldCheck, Sigma, Target, Trophy, type LucideIcon } from "lucide-react";
+import { CircleUserRound, Clock3, Eye, Flag, Gauge, History, LockKeyhole, MapPin, RefreshCw, Settings2, ShieldCheck, Sigma, Target, Trophy, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 
 export type HelpTopic = "spielablauf" | "punkte" | "konten" | "rankings";
@@ -14,12 +14,14 @@ const topicContent: Record<HelpTopic, {
   spielablauf: {
     eyebrow: "Hilfe · Spielablauf",
     title: "So läuft eine Partie ab",
-    intro: "Vom Spielmodus bis zur Auflösung – kompakt in vier Schritten.",
+    intro: "Schnelle Hilfe für den Start, laufende Runden und das Fortsetzen einer Partie.",
     sections: [
       { title: "1. Partie einstellen", text: "Wähle Solo, Party oder Online-Raum sowie Kategorie, Rundenzahl, Zeit und Schwierigkeit.", Icon: Settings2 },
       { title: "2. Aufgabe ansehen", text: "Erkenne den gezeigten Ort, die Stadt, Flagge, Landschaft oder das Wahrzeichen.", Icon: Eye },
       { title: "3. Tipp setzen", text: "Öffne die Karte, setze deinen Pin und bestätige deinen Tipp innerhalb der gewählten Zeit.", Icon: MapPin },
-      { title: "4. Auflösung", text: "Nach jeder Runde siehst du Ziel, Entfernung und Punkte. Am Ende folgt die Gesamtwertung.", Icon: Flag, href: "/so-funktioniert-punktlandung", hrefLabel: "Ausführliche Spielregeln ansehen" }
+      { title: "4. Auflösung", text: "Nach jeder Runde siehst du Ziel, Entfernung und Punkte. Am Ende folgt die Gesamtwertung.", Icon: Flag, href: "/so-funktioniert-punktlandung", hrefLabel: "Ausführliche Spielregeln ansehen" },
+      { title: "Zurück, Reload oder Bildschirm aus?", text: "Solange im selben Browser noch eine gültige Partie vorliegt, kannst du sie über „Spiel fortsetzen“ wieder öffnen. Die Rundenzeit läuft dabei bis zum ursprünglichen Endzeitpunkt weiter und wird nicht pausiert.", Icon: History },
+      { title: "Aufgabe lädt ungewöhnlich lange?", text: "Prüfe zuerst deine Internetverbindung. Erscheint „Anderen Ort nehmen“, kannst du die aktuelle Aufgabe ersetzen, ohne die gesamte Partie neu zu beginnen.", Icon: RefreshCw }
     ]
   },
   punkte: {
@@ -28,8 +30,9 @@ const topicContent: Record<HelpTopic, {
     intro: "Die Entfernung zum gesuchten Ziel entscheidet über deine Rundenwertung.",
     sections: [
       { title: "Bis zu 5.000 Punkte", text: "Je näher dein Pin am Ziel liegt, desto höher ist die Wertung. Ein Volltreffer bringt 5.000 Punkte.", Icon: Target },
+      { title: "Flaggen werden nach Ländern gewertet", text: "Bei Flaggen zählt das richtig getroffene Land. Ein Tipp innerhalb des gesuchten Landes bringt die volle Rundenzahl von 5.000 Punkten.", Icon: Flag },
       { title: "Gesamtpunktzahl", text: "Die Punkte aller abgeschlossenen Runden werden zur Gesamtpunktzahl der Partie addiert.", Icon: Sigma },
-      { title: "Tippzeit bei Punktgleichheit", text: "Bei gleicher Punktzahl kann die benötigte Tippzeit über die Reihenfolge entscheiden.", Icon: Clock3 }
+      { title: "Tippzeit bei Punktgleichheit", text: "Bei gleicher Punktzahl kann die benötigte Tippzeit über die Reihenfolge entscheiden.", Icon: Clock3, href: "/so-funktioniert-punktlandung", hrefLabel: "Formel und Entfernungsbeispiele ansehen" }
     ]
   },
   konten: {
@@ -39,7 +42,8 @@ const topicContent: Record<HelpTopic, {
     sections: [
       { title: "Ohne Anmeldung spielen", text: "Alle können direkt loslegen. Ohne Konto bleibt das Ergebnis nur in der laufenden Sitzung verfügbar.", Icon: CircleUserRound },
       { title: "Automatisch speichern", text: "Bist du angemeldet, wird eine abgeschlossene Partie automatisch deinem persönlichen Spielverlauf zugeordnet.", Icon: History },
-      { title: "Nach der Partie entscheiden", text: "Gäste können sich auf der Endkarte anmelden oder registrieren, wenn sie ihr Ergebnis dauerhaft übernehmen möchten.", Icon: LockKeyhole }
+      { title: "Nach der Partie entscheiden", text: "Gäste können sich auf der Endkarte anmelden oder registrieren, wenn sie ihr Ergebnis dauerhaft übernehmen möchten.", Icon: LockKeyhole },
+      { title: "Spielverlauf und Rankings sind getrennt", text: "Dein Spielverlauf enthält deine gespeicherten Partien. Öffentlich erscheint ein Ergebnis erst, wenn zusätzlich alle Rankingbedingungen erfüllt sind.", Icon: ShieldCheck, href: "/faq/rankings", hrefLabel: "Rankingbedingungen ansehen" }
     ]
   },
   rankings: {
@@ -49,8 +53,9 @@ const topicContent: Record<HelpTopic, {
     sections: [
       { title: "Persönlicher Spielverlauf", text: "Jede vollständig abgeschlossene Partie eines angemeldeten Spielers wird automatisch privat gespeichert.", Icon: History },
       { title: "Welche Partien öffentlich zählen", text: "Für öffentliche Rankings zählen vollständig abgeschlossene und technisch geprüfte Partien mit festem Zeitlimit von 15, 30 oder 60 Sekunden. Partien mit freiem Zeitlimit werden nicht öffentlich gewertet. Auffällige Ergebnisse können geprüft und nachträglich aus Rankings entfernt werden.", Icon: ShieldCheck },
-      { title: "Kategorien und Einstellungen", text: "Alle angebotenen Kategorien und Schwierigkeitsstufen sowie die Einschränkung „Kein Bildzoom“ werden unterstützt. Öffentlich sichtbar wird eine Platzierung nur mit aktivem, öffentlichem Profil und öffentlichem Namen.", Icon: Gauge },
-      { title: "Zeiträume und Kategorien", text: "Rankings lassen sich nach Tag, Woche, Monat, Jahr und nach verfügbaren Kategorien filtern.", Icon: Trophy }
+      { title: "Warum fehlt eine gespeicherte Partie?", text: "Eine Partie kann im persönlichen Verlauf stehen, ohne für Rankings freigegeben zu sein – etwa bei freier Rundenzeit, unvollständigem Abschluss oder ausstehender technischer Prüfung.", Icon: Gauge },
+      { title: "Dein Bestwert je Kategorie", text: "Für jede Kategorie zählt dein bestes gültiges Ergebnis im gewählten Zeitraum. Du kannst deshalb gleichzeitig in mehreren Kategorie-Rankings erscheinen.", Icon: Target },
+      { title: "Zeiträume und Kategorien", text: "Rankings lassen sich nach Tag, Woche, Monat, Jahr und nach verfügbaren Kategorien filtern. Öffentlich sichtbar ist eine Platzierung nur mit aktivem, öffentlichem Profil und öffentlichem Namen.", Icon: Trophy }
     ]
   }
 };

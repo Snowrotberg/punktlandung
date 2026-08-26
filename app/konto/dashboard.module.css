@@ -120,6 +120,14 @@
 .empty { color: #94a3b8; font-size: .9rem; line-height: 1.55; margin: 0; }
 .historyListPanel { padding-bottom: 1rem; }
 .historyListPanel .panelMeta { margin: -.35rem 0 .8rem; }
+.historyControls { display: grid; gap: .75rem; grid-template-columns: minmax(0, 1.6fr) minmax(15rem, 1fr); margin: 0 0 .85rem; }
+.historyControlGroup { display: grid; gap: .38rem; min-width: 0; }
+.historyControlLabel { color: #94a3b8; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.historyFilterLinks { display: flex; flex-wrap: wrap; gap: .4rem; }
+.historyFilterLinks a { align-items: center; background: #162236; border: 1px solid #26354a; border-radius: .62rem; color: #cbd5e1; display: inline-flex; font-size: .72rem; font-weight: 800; min-height: 2.75rem; padding: .45rem .68rem; text-decoration: none; transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease; }
+.historyFilterLinks a[data-active="true"], .historyFilterLinks a:hover { background: #12382f; border-color: var(--pl-mint); color: #f7fafc; }
+.historyFilterLinks a:focus-visible { outline: 2px solid var(--pl-mint); outline-offset: 3px; }
+.historyResultMeta { color: #718198; font-size: .68rem; margin: 0 0 .45rem; }
 .gameList { display: grid; gap: .45rem; list-style: none; margin: 0; padding: 0; }
 .game { background: rgba(2, 6, 23, .45); border: 1px solid transparent; border-radius: .65rem; transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease; }
 .game:hover { background: color-mix(in srgb, rgba(2, 6, 23, .72) 88%, var(--pl-mint) 12%); border-color: color-mix(in srgb, var(--pl-mint) 70%, transparent); transform: translateY(-2px); }
@@ -213,6 +221,7 @@
   .historyStats .stat:nth-child(3)::before { display: none; }
   .historyStats .stat:nth-child(n + 3) { border-top: 1px solid rgba(148, 163, 184, .15); }
   .categoryBestPanel .insightList { grid-template-columns: 1fr; }
+  .historyControls { grid-template-columns: 1fr; }
   .overviewDashboard, .overviewNavigation { grid-template-columns: 1fr; grid-template-rows: auto; }
   .dashboardCard.overviewMilestones, .scoreStrip, .overviewNavigation { grid-column: 1; grid-row: auto; }
   .scoreStrip { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .8rem; }
