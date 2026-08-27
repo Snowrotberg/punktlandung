@@ -22,9 +22,10 @@
 .grid > .panel { order: 50; }
 .analyticsPriorityPanel { order: 1 !important; }
 .insightsPanel { order: 2 !important; }
-.usagePanel { order: 3 !important; }
-.imageRankingPanel { order: 4 !important; }
-.imageDeliveryPanel { order: 5 !important; }
+.gameplayPanel { order: 3 !important; }
+.usagePanel { order: 4 !important; }
+.imageRankingPanel { order: 5 !important; }
+.imageDeliveryPanel { order: 6 !important; }
 .scopeDivider { order: 8; grid-column: 1 / -1; display: grid; gap: .25rem; margin-top: .45rem; padding: 1rem 0 .15rem; border-top: 1px solid rgba(148,163,184,.22); }
 .scopeDivider span { color: #f8fafc; font-size: .9rem; font-weight: 850; }
 .scopeDivider p { max-width: 52rem; margin: 0; color: #718198; font-size: .7rem; line-height: 1.45; }
@@ -108,6 +109,10 @@
 .list li { align-items: center; border-bottom: 1px solid rgba(148,163,184,.13); display: flex; justify-content: space-between; gap: 1rem; padding-bottom: .5rem; }
 .list li:last-child { border-bottom: 0; padding-bottom: 0; }
 .list span { color: #cbd5e1; font-size: .78rem; }
+.gameplayList li { align-items: center; }
+.gameplayMetric { display: grid; justify-items: end; gap: .08rem; }
+.gameplayMetric strong { color: var(--pl-mint); font-size: 1rem; }
+.gameplayMetric small { color: #718198; font-size: .65rem; font-weight: 650; }
 .list strong { font-size: .82rem; }
 .topList { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; counter-reset: top-items; }
 .topList li { counter-increment: top-items; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .75rem; min-height: 3rem; padding: .5rem 0; border-bottom: 1px solid rgba(148,163,184,.13); }

@@ -2,18 +2,17 @@ import type { Metadata } from "next";
 import {
   BookOpenCheck,
   CircleHelp,
-  Gamepad2,
   Globe2,
   Images,
-  MapPinned,
   Megaphone,
   ShieldCheck,
-  SlidersHorizontal,
-  UserRoundCheck,
   Users
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ContributionPaths } from "@/components/ContributionPaths";
+import { ModesAndContentDiagram } from "@/components/EditorialExplainers";
 import { InfoPageShell } from "@/components/InfoPageShell";
 import { absoluteUrl } from "@/lib/seo";
 
@@ -33,7 +32,7 @@ const infoLinks = [
   ["/faq", "Hilfe und häufige Fragen", "Antworten zu Spielablauf, Konten, gespeicherten Partien und Rankings.", CircleHelp]
 ] as const;
 
-function IconHeading({ Icon, children }: { Icon: typeof Gamepad2; children: React.ReactNode }) {
+function IconHeading({ Icon, children }: { Icon: LucideIcon; children: ReactNode }) {
   return <h2 className="flex items-center gap-3 text-[22px] leading-tight text-white"><Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />{children}</h2>;
 }
 
@@ -46,56 +45,16 @@ export default function InfosPage() {
       title="Was ist Punktlandung?"
       intro="Punktlandung ist ein eigenständig entwickeltes Geografie-Spiel für den Browser. Hier erklären wir, was das Projekt anbietet, wie die Inhalte gepflegt werden und wie die Web-Version weiterentwickelt wird."
     >
-      <p className="text-sm text-slate-400">Zuletzt aktualisiert: 26. August 2026</p>
+      <p className="text-sm text-slate-400">Zuletzt aktualisiert: 27. August 2026</p>
 
-      <section className="mt-6 grid gap-4 md:grid-cols-2">
-        <article className="punktlandung-info-static-card rounded-xl p-5">
-          <IconHeading Icon={Gamepad2}>Die Spielidee</IconHeading>
-          <p className="mt-3 leading-7 text-slate-300">
-            Statt aus vorgegebenen Antworten auszuwählen, setzt du selbst einen Pin auf die Weltkarte. Bilder,
-            Flaggen, Städte, Hauptstädte, Landschaften und Wahrzeichen verlangen dabei unterschiedliche Arten von
-            geografischem Wissen. Die Entfernung zum Ziel wird nach jeder Runde sichtbar und in Punkte übersetzt.
-          </p>
-        </article>
-        <article className="punktlandung-info-static-card rounded-xl p-5">
-          <IconHeading Icon={Users}>Für wen ist das Spiel gedacht?</IconHeading>
-          <p className="mt-3 leading-7 text-slate-300">
-            Punktlandung richtet sich an Einzelspieler, Familien, Freundesgruppen und alle, die Orte lieber auf einer
-            Karte einordnen als Vokabeln abzufragen. Gastpartien funktionieren ohne Konto. Solo-, Party- und
-            Online-Raum verwenden dasselbe nachvollziehbare Punktesystem.
-          </p>
-        </article>
-      </section>
-
-      <section className="mt-8 grid gap-4 md:grid-cols-2" aria-label="Was Punktlandung besonders macht">
-        <article className="punktlandung-info-static-card rounded-xl p-5">
-          <IconHeading Icon={MapPinned}>Pin statt Multiple Choice</IconHeading>
-          <p className="mt-3 leading-7 text-slate-300">
-            Du wählst keine Antwort aus, sondern entscheidest selbst, wo das gesuchte Ziel auf der Weltkarte liegt.
-            Dadurch zählt nicht nur Wissen, sondern auch dein geografisches Gefühl.
-          </p>
-        </article>
-        <article className="punktlandung-info-static-card rounded-xl p-5">
-          <IconHeading Icon={Images}>Abwechslungsreiche Aufgaben</IconHeading>
-          <p className="mt-3 leading-7 text-slate-300">
-            Je nach Kategorie erkennst du Städte, Hauptstädte, Wahrzeichen, Landschaften oder Flaggen. Im gemischten
-            Modus wechseln die Aufgabentypen innerhalb einer Partie.
-          </p>
-        </article>
-        <article className="punktlandung-info-static-card rounded-xl p-5">
-          <IconHeading Icon={SlidersHorizontal}>Deine Partie, deine Regeln</IconHeading>
-          <p className="mt-3 leading-7 text-slate-300">
-            Du bestimmst Kategorie, Rundenzahl, Zeitlimit und Schwierigkeit selbst. So passt eine Partie sowohl in
-            eine kurze Pause als auch in einen längeren Spieleabend.
-          </p>
-        </article>
-        <article className="punktlandung-info-static-card rounded-xl p-5">
-          <IconHeading Icon={UserRoundCheck}>Sofort spielen, später speichern</IconHeading>
-          <p className="mt-3 leading-7 text-slate-300">
-            Zum Ausprobieren brauchst du kein Konto. Eine Anmeldung wird erst wichtig, wenn du abgeschlossene
-            Partien dauerhaft speichern und dich in öffentlichen Rankings vergleichen möchtest.
-          </p>
-        </article>
+      <section className="mt-6">
+        <h2 className="text-[22px] leading-tight text-white">Spielidee und Spielarten</h2>
+        <p className="mt-3 max-w-4xl leading-7 text-slate-300">
+          Statt eine vorgegebene Antwort auszuwählen, setzt du selbst einen Pin auf die Weltkarte. Bilder, Flaggen,
+          Städte, Hauptstädte, Landschaften und Wahrzeichen verlangen unterschiedliche Arten von geografischem
+          Wissen. Punktlandung eignet sich für Einzelspieler, Familien und Freundesgruppen; Gastpartien starten ohne Konto.
+        </p>
+        <ModesAndContentDiagram />
       </section>
 
       <section className="mt-8">

@@ -13,7 +13,6 @@ import type { GameSettings } from "@/types/game";
 
 const activeSessionStorageKey = "punktlandung-active-session-v1";
 const rankedSessionStorageKey = "punktlandung-ranked-active-game-v1";
-const directPlayHref = "/solo-modus/direct?rounds=15&time=60&difficulty=medium&category=mixed";
 const directPlaySettings: GameSettings = {
   mode: "classic",
   localMode: "solo",
@@ -58,6 +57,8 @@ export function HomeApp({
   const router = useRouter();
   const { enabled: soundEnabled, toggle: toggleSound, playSelect } = useSound();
   const [playerName, setPlayerName] = useState(accountDisplayName || "Spieler 1");
+  const [directStartError, setDirectStartError] = useState<string | null>(null);
+  const [directStartPending, setDirectStartPending] = useState(false);
   const directStartInFlightRef = useRef(false);
 
   useEffect(() => {
@@ -98,11 +99,16 @@ export function HomeApp({
   };
 
   const startDirectPlay = async (event: MouseEvent<HTMLAnchorElement>) => {
-    prepareNavigation();
-    if (!rankedGamesEnabled) return;
+    if (!rankedGamesEnabled) {
+      prepareNavigation();
+      return;
+    }
     event.preventDefault();
     if (directStartInFlightRef.current) return;
+    prepareNavigation();
     directStartInFlightRef.current = true;
+    setDirectStartError(null);
+    setDirectStartPending(true);
     try {
       const response = await fetch("/api/v1/ranked-games", {
         method: "POST",
@@ -113,7 +119,7 @@ export function HomeApp({
         },
         credentials: "same-origin",
         cache: "no-store",
-        signal: AbortSignal.timeout(8_000),
+        signal: AbortSignal.timeout(20_000),
         body: JSON.stringify({
           requestId: browserUuid(),
           rulesetId: "daily-five",
@@ -128,10 +134,15 @@ export function HomeApp({
       if (!response.ok || !payload.data) throw new Error("Direct game start failed");
       queueDirectRankedStart({ game: payload.data, name: playerName, settings: directPlaySettings });
       router.push("/spielen");
-    } catch {
-      router.push(directPlayHref);
+    } catch (cause) {
+      setDirectStartError(
+        cause instanceof DOMException && cause.name === "TimeoutError"
+          ? "Der Spielserver braucht beim Start zu lange. Bitte prüfe die Verbindung und versuche es erneut."
+          : "Die Partie konnte nicht gestartet werden. Bitte prüfe die Verbindung und versuche es erneut."
+      );
     } finally {
       directStartInFlightRef.current = false;
+      setDirectStartPending(false);
     }
   };
 
@@ -142,6 +153,8 @@ export function HomeApp({
       soundEnabled={soundEnabled}
       accountHref={accountsEnabled ? "/konto" : undefined}
       accountAuthenticated={accountAuthenticated}
+      directStartError={directStartError}
+      directStartPending={directStartPending}
       mapPreview={<div className="absolute inset-0 overflow-hidden bg-slate-950"><HomeMapPreview /></div>}
       modes={homeModes}
       onDirectPlay={startDirectPlay}

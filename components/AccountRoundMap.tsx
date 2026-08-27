@@ -1,9 +1,14 @@
 "use client";
 
-import { GlobeResultMap } from "@/components/GlobeMapLab";
-import type { ResultCameraScenario } from "@/lib/globeResultCamera";
+import { GuessMap } from "@/components/GuessMap";
+import {
+  ACCOUNT_ROUND_MAP_ROOT_MARGIN,
+  accountRoundMapMounts,
+  buildAccountRoundReplayMap,
+  type AccountRoundReplayMap
+} from "@/lib/accountRoundReplayMap";
 import type { GeoLocation, RoundResult } from "@/types/game";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./AccountRoundVisual.module.css";
 
 type AccountRoundMapProps = {
@@ -15,6 +20,30 @@ type AccountRoundMapProps = {
 
 export function AccountRoundMap({ location, result, resolvedAt, playerName }: AccountRoundMapProps) {
   const [maximized, setMaximized] = useState(false);
+  const [nearViewport, setNearViewport] = useState(false);
+  const sectionRef = useRef<HTMLElement | null>(null);
+
+  const replayMap = useMemo(
+    () => buildAccountRoundReplayMap({ location, result, resolvedAt, playerName }),
+    [location, playerName, resolvedAt, result]
+  );
+  const mounts = accountRoundMapMounts({ nearViewport, maximized });
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+    if (!("IntersectionObserver" in window)) {
+      setNearViewport(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setNearViewport(entry?.isIntersecting ?? false),
+      { rootMargin: ACCOUNT_ROUND_MAP_ROOT_MARGIN }
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!maximized) return;
@@ -24,32 +53,53 @@ export function AccountRoundMap({ location, result, resolvedAt, playerName }: Ac
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [maximized]);
-  const guess = result.guess;
-  const scenario: ResultCameraScenario | null = guess ? {
-    id: `account-${location.id}-${resolvedAt ?? "open"}-${result.playerId}`,
-    label: `${playerName} → ${location.title}`,
-    description: "Gespeicherte Tipp- und Zielkoordinaten dieser Runde",
-    playerName: `#1 ${playerName}`,
-    targetName: location.title,
-    targetDescription: location.shortDescription ?? `${location.countryName} · ${location.continent}`,
-    guess: [guess.lng, guess.lat],
-    target: [location.lng, location.lat]
-  } : null;
 
   return (
     <>
-      <section className={`account-round-map ${styles.resultMapTheme}`}>
+      <section
+        ref={sectionRef}
+        className={`account-round-map ${styles.resultMapTheme}`}
+        data-account-round-map={replayMap.kind}
+        data-map-mounted={mounts.embedded ? "true" : "false"}
+      >
         <div className={styles.visualHeader}><span>Karte dieser Runde</span><button type="button" onClick={() => setMaximized(true)}>Maximieren</button></div>
         <div className={styles.mapSurface}>
-          {scenario ? <GlobeResultMap scenario={scenario} animate={false} targetInfoIndicator="i" /> : <p className={styles.mapUnavailable}>Für diese Runde wurde kein Tipp gespeichert.</p>}
+          {mounts.embedded
+            ? <ReplayMap replayMap={replayMap} />
+            : <div className={styles.mapDeferred} aria-hidden="true" />}
         </div>
       </section>
       {maximized && <div className={styles.modal} role="dialog" aria-modal="true" aria-label={`Karte zu ${location.title}`} onMouseDown={(event) => event.target === event.currentTarget && setMaximized(false)}>
         <div className={styles.modalPanel}>
           <div className={styles.modalHeader}><strong>{location.title} · Karte</strong><button type="button" onClick={() => setMaximized(false)} aria-label="Karte schließen">×</button></div>
-          <div className={styles.modalMap}>{scenario ? <GlobeResultMap scenario={scenario} animate={false} targetInfoIndicator="i" /> : <p className={styles.mapUnavailable}>Für diese Runde wurde kein Tipp gespeichert.</p>}</div>
+          <div className={styles.modalMap}>
+            {mounts.modal && <ReplayMap replayMap={replayMap} />}
+          </div>
         </div>
       </div>}
     </>
+  );
+}
+
+function ReplayMap({
+  replayMap
+}: {
+  replayMap: AccountRoundReplayMap;
+}) {
+  const [mapReadyVersion, setMapReadyVersion] = useState(0);
+
+  return (
+    <GuessMap
+      mode="results"
+      summary={replayMap.summary}
+      players={replayMap.players}
+      noPan
+      noZoom={false}
+      resultControlInset
+      resultLabelLayout="account-history"
+      animateResultConnector
+      resizeSignal={mapReadyVersion}
+      onBaseMapReady={() => setMapReadyVersion((version) => version + 1)}
+    />
   );
 }

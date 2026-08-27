@@ -1,7 +1,9 @@
 import { InfoPageShell } from "@/components/InfoPageShell";
+import { AccountFlowDiagram, GameFlowDiagram, RankingScopeDiagram, ScoreDiagram } from "@/components/EditorialExplainers";
 import { RedesignButtonLink } from "@/components/redesign";
 import { CircleUserRound, Clock3, Eye, Flag, Gauge, History, LockKeyhole, MapPin, RefreshCw, Settings2, ShieldCheck, Sigma, Target, Trophy, type LucideIcon } from "lucide-react";
 import Link from "next/link";
+import styles from "./HelpTopicPage.module.css";
 
 export type HelpTopic = "spielablauf" | "punkte" | "konten" | "rankings";
 
@@ -62,17 +64,28 @@ const topicContent: Record<HelpTopic, {
 
 export function HelpTopicPage({ topic }: { topic: HelpTopic }) {
   const content = topicContent[topic];
+  const Diagram = topic === "spielablauf"
+    ? GameFlowDiagram
+    : topic === "punkte"
+      ? ScoreDiagram
+      : topic === "konten"
+        ? AccountFlowDiagram
+        : RankingScopeDiagram;
   return (
     <InfoPageShell compact fillDesktop plainContent eyebrow={content.eyebrow} title={content.title} intro={content.intro}>
-      <div className="grid gap-3 md:grid-cols-2">
-        {content.sections.map((section) => (
-          <section key={section.title} className="punktlandung-static-card rounded-xl border p-4">
-            <h2 className="flex items-center gap-3 text-lg font-black text-white"><section.Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />{section.title}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-300">{section.text}</p>
-            {section.href && section.hrefLabel && <Link href={section.href} className="mt-3 inline-block text-sm font-bold text-emerald-300 underline underline-offset-4">{section.hrefLabel}</Link>}
-          </section>
-        ))}
-        <div className="flex justify-end md:col-span-2">
+      <div className={styles.content}>
+        <Link href="/faq" className={styles.backLink}>← Zurück zur Hilfe-Übersicht</Link>
+        <Diagram />
+        <div className={styles.cards}>
+          {content.sections.map((section) => (
+            <section key={section.title} className="punktlandung-static-card rounded-xl border p-4">
+              <h2 className="flex items-center gap-3 text-lg font-black text-white"><section.Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />{section.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{section.text}</p>
+              {section.href && section.hrefLabel && <Link href={section.href} className="mt-3 inline-block text-sm font-bold text-emerald-300 underline underline-offset-4">{section.hrefLabel}</Link>}
+            </section>
+          ))}
+        </div>
+        <div className="flex justify-end">
           <RedesignButtonLink href="/solo-modus" tone="primary" style={{ width: "fit-content" }}>Spielen</RedesignButtonLink>
         </div>
       </div>

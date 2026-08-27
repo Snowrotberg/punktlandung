@@ -12,6 +12,7 @@ import { formatDistance, rankResults } from "@/lib/geo";
 import { PLAYER_PALETTE, playerColorAt, playerColorForId } from "@/lib/playerPalette";
 import { MapLibreBaseLayer } from "@/components/MapLibreBaseLayer";
 import { MapAttributionBadge } from "@/components/MapAttributionBadge";
+import { resultWorldMinimumZoom } from "@/lib/resultMapViewport";
 
 type LeafletMapProps = {
   mode: "guess" | "results";
@@ -264,7 +265,7 @@ function MapInteractionState({ noPan, noZoom }: { noPan?: boolean; noZoom?: bool
   return noZoom ? null : <ZoomControl position="topright" />;
 }
 
-function ResultWorldLimits() {
+function ResultWorldLimits({ accountHistory = false }: { accountHistory?: boolean }) {
   const map = useMap();
 
   useEffect(() => {
@@ -276,7 +277,7 @@ function ResultWorldLimits() {
         // At zoom 0 Leaflet's projected world is 256 CSS pixels wide. Keep
         // one world at least as wide as the result map so zooming out never
         // reveals repeated copies or empty space beside it.
-        const minZoom = Math.max(1, Math.ceil(Math.log2(width / 256)));
+        const minZoom = resultWorldMinimumZoom(width, accountHistory);
         map.setMinZoom(minZoom);
         if (map.getZoom() < minZoom) map.setZoom(minZoom, { animate: false });
       } catch {
@@ -297,7 +298,7 @@ function ResultWorldLimits() {
       observer.disconnect();
       if (frame !== null) window.cancelAnimationFrame(frame);
     };
-  }, [map]);
+  }, [accountHistory, map]);
 
   return null;
 }
@@ -1844,7 +1845,7 @@ export function LeafletMap({
       {...(initialBounds
         ? { bounds: initialBounds, boundsOptions: { padding: [56, 56], maxZoom } }
         : { center: mapCenter, zoom: mode === "results" ? 10 : guessOverviewZoom })}
-      minZoom={1}
+      minZoom={mode === "results" && resultLabelLayout === "account-history" ? 0 : 1}
       maxZoom={maxZoom}
       zoomControl={false}
       attributionControl={false}
@@ -1861,7 +1862,7 @@ export function LeafletMap({
       {mode === "guess" && <GuessViewportReset center={center} zoom={guessOverviewZoom} resetSignal={resetSignal} />}
       {mode === "results" && (
         <>
-          <ResultWorldLimits />
+          <ResultWorldLimits accountHistory={resultLabelLayout === "account-history"} />
           <ResultBounds
             summary={summary}
             players={players}

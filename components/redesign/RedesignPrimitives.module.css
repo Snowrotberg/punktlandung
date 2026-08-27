@@ -770,17 +770,21 @@
   }
 }
 
-@media (max-width: 30rem) {
+@media (max-width: 52rem) {
   .shell > .header {
     min-height: 4rem;
-    padding: .65rem 1rem;
+    padding-block: .65rem;
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
   }
 }
 
 @media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
   .shell > .header {
     min-height: 4rem;
-    padding: .65rem 1rem;
+    padding-block: .65rem;
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
   }
 }
 

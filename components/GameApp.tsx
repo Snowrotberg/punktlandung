@@ -5,7 +5,14 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { categoryOptions } from "@/lib/categories";
 import { trackAnalyticsEvent } from "@/lib/analytics";
-import { isServerRankedSoloRoom, preferLocalRequiredSession, shouldRestoreRankedSoloSession, shouldUseRankedSoloSession } from "@/lib/gameSessionSelection";
+import {
+  isServerRankedSoloRoom,
+  preferLocalRequiredSession,
+  shouldOfferSetupResume,
+  shouldRestoreLocalSession,
+  shouldRestoreRankedSoloSession,
+  shouldUseRankedSoloSession
+} from "@/lib/gameSessionSelection";
 import { saveCompletedGame } from "@/app/endergebnis/actions";
 import { flushCompletedGameSaves } from "@/lib/completedGameSaveQueue.client";
 import { useLocalGame } from "@/hooks/useLocalGame";
@@ -299,7 +306,7 @@ export function GameApp({
   const router = useRouter();
   const pathname = usePathname();
   const routeInitialMode: InitialLocalGameMode | undefined = initialMode === "home" ? undefined : initialMode;
-  const localGame = useLocalGame(routeInitialMode, Boolean(requiredStatus));
+  const localGame = useLocalGame(routeInitialMode, shouldRestoreLocalSession(requiredStatus, Boolean(directStart)));
   // An explicit signed guest resume link must use the server-backed ranked
   // game even when no player account is signed in. Falling back to useLocalGame
   // here can silently replace the requested game with an unrelated browser
@@ -741,7 +748,7 @@ export function GameApp({
     }
     // Leaving an active round must not cancel it. The setup route can restore
     // the same room, while its absolute deadline keeps running in the background.
-    if (room && room.status !== "lobby" && (requiredStatus || onSetupRoute)) {
+    if (room && room.status !== "lobby" && shouldOfferSetupResume(requiredStatus, onSetupRoute, Boolean(directStart))) {
       requestSetupResume(rankedSoloContext && room.kind === "solo" ? "ranked" : "local");
       const resumeQuery = room.kind === "solo"
         ? rankedSoloContext
@@ -749,7 +756,7 @@ export function GameApp({
           : "?resume=1"
         : "";
       const resumeUrl = `${resultRouteTarget ?? setupRouteTarget}${resumeQuery}`;
-      if (onSetupRoute) {
+      if (onSetupRoute || directStart) {
         window.location.assign(resumeUrl);
       } else {
         router.replace(resumeUrl);

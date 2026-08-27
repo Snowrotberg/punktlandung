@@ -257,58 +257,43 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
   const recoveryStartedRef = useRef(false);
   const claimInFlightRef = useRef<string | null>(null);
 
-  const request = useCallback(async (url: string, init?: RequestInit) => {
-    const retryDelays = [0, 250, 650];
-    let lastStatus = 0;
-    const timeoutSignal = AbortSignal.timeout(8_000);
-
-    for (let attempt = 0; attempt < retryDelays.length; attempt += 1) {
-      if (retryDelays[attempt] > 0) {
-        await new Promise((resolve) => window.setTimeout(resolve, retryDelays[attempt]));
+  const request = useCallback(async (url: string, init?: RequestInit, timeoutMs = 8_000) => {
+    const timeoutSignal = AbortSignal.timeout(timeoutMs);
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...init,
+        headers: { accept: "application/json", ...init?.headers },
+        credentials: "same-origin",
+        cache: "no-store",
+        signal: init?.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal
+      });
+    } catch (cause) {
+      if (timeoutSignal.aborted) {
+        throw new RankedRequestError("Der Spielserver antwortet gerade nicht. Bitte versuche es noch einmal.", 504);
       }
-
-      try {
-        const response = await fetch(url, {
-          ...init,
-          headers: { accept: "application/json", ...init?.headers },
-          credentials: "same-origin",
-          cache: "no-store",
-          signal: init?.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal
-        });
-        lastStatus = response.status;
-        const rawPayload = await response.text();
-        let payload: ApiPayload | null = null;
-        try {
-          payload = rawPayload ? JSON.parse(rawPayload) as ApiPayload : null;
-        } catch {
-          // The Next.js development server can briefly answer with its HTML
-          // fallback while a newly visited API route is being compiled.
-        }
-
-        if (payload && response.ok && payload.data) return payload.data;
-        if (payload && (!response.ok || payload.error)) {
-          throw new RankedRequestError(
-            payload.error?.message ?? `Die Serverprüfung ist momentan nicht verfügbar (${response.status}).`,
-            response.status
-          );
-        }
-
-        const transientHtmlResponse = !payload && (response.status === 404 || response.status >= 500 || rawPayload.trimStart().startsWith("<!DOCTYPE"));
-        if (!transientHtmlResponse || attempt === retryDelays.length - 1) {
-          throw new RankedRequestError(
-            "Der Spielserver hat vorübergehend keine gültige Antwort geliefert. Bitte versuche es noch einmal.",
-            response.status
-          );
-        }
-      } catch (cause) {
-        if (timeoutSignal.aborted) {
-          throw new RankedRequestError("Der Spielserver antwortet gerade nicht. Bitte versuche es noch einmal.", 504);
-        }
-        if (cause instanceof RankedRequestError || attempt === retryDelays.length - 1) throw cause;
-      }
+      throw cause;
     }
 
-    throw new RankedRequestError("Der Spielserver ist momentan nicht erreichbar.", lastStatus || 503);
+    const rawPayload = await response.text();
+    let payload: ApiPayload | null = null;
+    try {
+      payload = rawPayload ? JSON.parse(rawPayload) as ApiPayload : null;
+    } catch {
+      // An HTML fallback or malformed payload is surfaced as an explicit error.
+    }
+
+    if (payload && response.ok && payload.data) return payload.data;
+    if (payload && (!response.ok || payload.error)) {
+      throw new RankedRequestError(
+        payload.error?.message ?? `Die Serverprüfung ist momentan nicht verfügbar (${response.status}).`,
+        response.status
+      );
+    }
+    throw new RankedRequestError(
+      "Der Spielserver hat keine gültige Antwort geliefert. Bitte versuche es noch einmal.",
+      response.status
+    );
   }, []);
 
   useEffect(() => {
@@ -590,7 +575,7 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
       setError(null);
       const timeLimitSec = ([0, 15, 30, 60] as number[]).includes(current.settings.timeLimitSec) ? current.settings.timeLimitSec : 60;
       const difficulty = current.settings.difficulty === "easy" || current.settings.difficulty === "hard" ? current.settings.difficulty : "medium";
-      const next = await request("/api/v1/ranked-games", { method: "POST", headers: { "content-type": "application/json", "x-ranked-defer-start": "true" }, body: JSON.stringify({ requestId: browserUuid(), rulesetId: "daily-five", rounds: current.settings.rounds, timeLimitSec, category: current.settings.category, difficulty, noZoom: current.settings.noZoom }) });
+      const next = await request("/api/v1/ranked-games", { method: "POST", headers: { "content-type": "application/json", "x-ranked-defer-start": "true" }, body: JSON.stringify({ requestId: browserUuid(), rulesetId: "daily-five", rounds: current.settings.rounds, timeLimitSec, category: current.settings.category, difficulty, noZoom: current.settings.noZoom }) }, 20_000);
       activeGameIdRef.current = next.gameId;
       setGame(next);
       setRoom(roomFromRankedGame(next, current.players[0]?.name ?? "Spieler 1", current.settings));

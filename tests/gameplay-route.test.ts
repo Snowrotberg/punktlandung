@@ -40,7 +40,7 @@ test("intentional final-screen exits never expose the state guard between route 
   assert.equal(shouldShowGameplayStateGuard({ ...base, intentionalExitPending: true }), false);
 });
 
-test("route synchronization only repairs transitions within gameplay", () => {
+test("route synchronization enters gameplay from setup and repairs later transitions", () => {
   const base = {
     targetRoute: "/endergebnis",
     restorationPending: false,
@@ -48,7 +48,11 @@ test("route synchronization only repairs transitions within gameplay", () => {
   };
 
   assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/aufloesung" }), true);
-  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/solo-modus" }), false);
+  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/solo-modus" }), true);
+  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/solo-modus/direct" }), true);
+  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/party-modus" }), true);
+  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/online-modus" }), true);
+  assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/warteraum" }), true);
   assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/" }), false);
   assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/endergebnis" }), false);
   assert.equal(shouldSynchronizeGameplayRoute({ ...base, pathname: "/aufloesung", restorationPending: true }), false);

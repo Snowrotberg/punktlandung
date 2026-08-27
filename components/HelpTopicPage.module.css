@@ -1,0 +1,6 @@
+.content { display: grid; gap: 1rem; }
+.backLink { display: inline-flex; width: fit-content; min-height: 2.75rem; align-items: center; color: var(--pl-mint); font-size: .78rem; font-weight: 800; text-decoration: none; }
+.backLink:hover { text-decoration: underline; text-underline-offset: .25rem; }
+.backLink:focus-visible { border-radius: .35rem; outline: 2px solid var(--pl-mint); outline-offset: .2rem; }
+.cards { display: grid; gap: .75rem; }
+@media (min-width: 48rem) { .cards { grid-template-columns: repeat(2,minmax(0,1fr)); } }

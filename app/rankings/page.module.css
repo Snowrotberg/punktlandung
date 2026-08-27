@@ -16,10 +16,18 @@
 .explainer strong { color:#f8fafc; font-size:.82rem; }
 .explainer span { color:#94a3b8; font-size:.72rem; line-height:1.4; }
 .rankedCta { display:inline-flex; margin:0 0 1.2rem; }
-.filters,.categories { display:flex; flex-wrap:wrap; gap:.55rem; margin-bottom:.7rem; }
-.filters a,.categories a { background:#162236; border:1px solid #26354a; border-radius:.7rem; color:#cbd5e1; cursor:pointer; font-size:.82rem; font-weight:800; padding:.65rem .85rem; text-decoration:none; transition:border-color 160ms ease,background-color 160ms ease,color 160ms ease; }
-.filters a[data-active=true],.categories a[data-active=true],.filters a:hover,.categories a:hover { border-color:#5ee7bd; background:#12382f; color:#f7fafc; }
-.filters a:focus-visible,.categories a:focus-visible { outline:2px solid #5ee7bd; outline-offset:3px; }
+.filterPanel { display:grid; gap:.75rem; margin-bottom:1rem; padding:.8rem; border:1px solid #26354a; border-radius:1rem; background:rgb(2 6 23 / .24); }
+.mobileFilterPanel { display:none; }
+.filterGroup { display:grid; grid-template-columns:10rem minmax(0,1fr); align-items:center; gap:.8rem; min-width:0; }
+.filterGroup + .filterGroup { padding-top:.75rem; border-top:1px solid rgb(38 53 74 / .72); }
+.filterHeading { display:grid; gap:.12rem; }
+.filterHeading strong { color:#f8fafc; font-size:.78rem; }
+.filterHeading span { color:#718198; font-size:.68rem; line-height:1.35; }
+.filterOptions { display:flex; min-width:0; gap:.45rem; overflow-x:auto; padding:.12rem .12rem .3rem; scrollbar-width:thin; scrollbar-color:#334155 transparent; }
+.filterOptions a { flex:0 0 auto; min-height:2.55rem; display:inline-flex; align-items:center; justify-content:center; padding:.58rem .78rem; border:1px solid #26354a; border-radius:.72rem; color:#cbd5e1; background:#162236; font-size:.78rem; font-weight:800; text-decoration:none; white-space:nowrap; transition:border-color 160ms ease,background-color 160ms ease,color 160ms ease; }
+.filterOptions a[aria-current="page"],.filterOptions a:hover { border-color:#5ee7bd; color:#f7fafc; background:#12382f; }
+.filterOptions a[aria-current="page"]::before { width:.38rem; height:.38rem; margin-right:.42rem; border-radius:50%; background:#5ee7bd; content:""; box-shadow:0 0 .6rem rgb(94 231 189 / .45); }
+.filterOptions a:focus-visible { outline:2px solid #5ee7bd; outline-offset:2px; }
 .panel { background:rgb(14 21 39 / .58); border:1px solid #26354a; border-radius:1rem; margin-top:1rem; padding:clamp(1rem,2.5vw,1.5rem); position:relative; }
 .panelHead { align-items:end; display:flex; justify-content:space-between; gap:1rem; }
 .panelHead h2 { font-size:1.35rem; margin:0; }.panelHead span { color:#5ee7bd; font-size:.8rem; font-weight:800; }
@@ -32,7 +40,9 @@
 @media (min-width:80rem) { .shell { max-width:none; width:100%; } }
 @media (min-width:100rem) { .content { max-width:none; margin-inline:0; } }
 @media (max-width:52rem) { .shell{padding-inline:1rem} }
+@media (max-width:52rem) { .filterPanel{display:none}.mobileFilterPanel{display:grid;grid-template-columns:minmax(0,1fr);gap:.5rem;margin-bottom:1rem} }
+@media (max-height:31.25rem) and (min-width:42.01rem) { .filterPanel{display:none}.mobileFilterPanel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin-bottom:.75rem} }
 @media (max-width:42rem) { .ownSummary { align-items:flex-start; flex-direction:column; gap:.15rem; } }
 @media (max-width:42rem) { .explainer{grid-template-columns:1fr} }
 @media (min-width:80rem) and (max-height:55rem) { .shell{padding-block:.8rem}.content h1{font-size:2.8rem}.intro{margin-bottom:.75rem;font-size:.9rem}.explainer{margin-bottom:.65rem}.rankedCta{margin-bottom:.65rem}.panel{margin-top:.75rem}.empty{padding:1.35rem 1rem} }
-@media (min-width:150rem) { .content{max-width:none}.content h1{font-size:5rem}.eyebrow{font-size:1.2rem}.intro{font-size:1.6rem}.filters a,.categories a{padding:1rem 1.2rem;font-size:1.15rem}.panel{padding:2rem}.panelHead h2{font-size:2rem} }
+@media (min-width:150rem) { .content{max-width:none}.content h1{font-size:5rem}.eyebrow{font-size:1.2rem}.intro{font-size:1.6rem}.filterOptions a{min-height:4rem;padding:1rem 1.2rem;font-size:1.15rem}.filterHeading strong{font-size:1.15rem}.filterHeading span{font-size:.95rem}.panel{padding:2rem}.panelHead h2{font-size:2rem} }

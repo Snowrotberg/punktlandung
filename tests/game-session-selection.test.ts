@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isServerRankedSoloRoom, preferLocalRequiredSession, shouldRestoreRankedSoloSession, shouldUseRankedSoloSession } from "../lib/gameSessionSelection";
+import {
+  isServerRankedSoloRoom,
+  preferLocalRequiredSession,
+  shouldOfferSetupResume,
+  shouldRestoreLocalSession,
+  shouldRestoreRankedSoloSession,
+  shouldUseRankedSoloSession
+} from "../lib/gameSessionSelection";
 
 test("authenticated result route waits for browser-local guest restoration", () => {
   assert.equal(preferLocalRequiredSession("finished", true, undefined), true);
@@ -27,6 +34,19 @@ test("normal solo setup and direct play never auto-restore an older ranked game"
   assert.equal(shouldRestoreRankedSoloSession(undefined, false), false);
   assert.equal(shouldRestoreRankedSoloSession("guessing", false), true);
   assert.equal(shouldRestoreRankedSoloSession(undefined, true), true);
+});
+
+test("direct local route restores its active round and absolute deadline on reload", () => {
+  assert.equal(shouldRestoreLocalSession(undefined, false), false);
+  assert.equal(shouldRestoreLocalSession(undefined, true), true);
+  assert.equal(shouldRestoreLocalSession("guessing", false), true);
+});
+
+test("direct play returns to setup with an explicit resume offer", () => {
+  assert.equal(shouldOfferSetupResume(undefined, false, true), true);
+  assert.equal(shouldOfferSetupResume("guessing", false, false), true);
+  assert.equal(shouldOfferSetupResume(undefined, true, false), true);
+  assert.equal(shouldOfferSetupResume(undefined, false, false), false);
 });
 
 test("rankings-enabled guests use the server-backed solo flow", () => {
