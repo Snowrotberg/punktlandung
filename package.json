@@ -28,6 +28,8 @@
     "boundaries:fetch": "node scripts/generate-location-boundaries.mjs --fetch-osm",
     "check:responsive": "node scripts/responsive-check.mjs",
     "check:responsive:quick": "node scripts/responsive-check.mjs --profile=quick",
+    "check:home-map-handoff": "node scripts/check-home-map-handoff.mjs",
+    "check:globe-animation": "node scripts/check-globe-animation.mjs",
     "assets:home-map-posters": "node scripts/generate-home-map-posters.mjs",
     "test:domain": "node --import tsx --test tests/*.test.ts",
     "test:backend-prototypes": "node scripts/check-backend-prototypes.mjs",

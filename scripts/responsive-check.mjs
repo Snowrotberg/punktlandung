@@ -56,6 +56,7 @@ async function loadEnvFiles() {
 await loadEnvFiles();
 const outDir = path.join(root, "test-artifacts", "responsive");
 const baseUrl = process.env.RESPONSIVE_URL ?? "http://localhost:3000";
+const storageSeedPath = "/impressum";
 const chromePath = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const onlineRoomStorageKey = "punktlandung-online-room-v1";
 const qaPanoramaPath = path.join(root, "public", "og-punktlandung.jpg");
@@ -251,6 +252,41 @@ const globePhaseOneCases = [
     distanceKm: 520
   },
   {
+    id: "diagonal-nw-se",
+    location: {
+      ...sampleLocation,
+      id: "cities-nanjing-diagonal-nw-se",
+      title: "Nanjing",
+      countryCode: "CN",
+      countryName: "Volksrepublik China",
+      continent: "Asia",
+      lat: 32.0603,
+      lng: 118.7969,
+      shortDescription: "Nanjing liegt am Jangtsekiang und war mehrfach Hauptstadt Chinas."
+    },
+    guess: { lat: 36.4, lng: 113.2 },
+    distanceKm: 708,
+    expectedBearingSign: 1,
+    expectTouchControlDismissal: true
+  },
+  {
+    id: "diagonal-sw-ne",
+    location: {
+      ...sampleLocation,
+      id: "cities-nanjing-diagonal-sw-ne",
+      title: "Nanjing",
+      countryCode: "CN",
+      countryName: "Volksrepublik China",
+      continent: "Asia",
+      lat: 32.0603,
+      lng: 118.7969,
+      shortDescription: "Nanjing liegt am Jangtsekiang und war mehrfach Hauptstadt Chinas."
+    },
+    guess: { lat: 27.8, lng: 113.2 },
+    distanceKm: 716,
+    expectedBearingSign: -1
+  },
+  {
     id: "angola",
     location: {
       ...sampleLocation,
@@ -284,6 +320,22 @@ const globePhaseOneCases = [
     guess: { lat: 63.43051, lng: 10.39511 },
     distanceKm: 1,
     allowOmittedRoute: true
+  },
+  {
+    id: "extreme-15000",
+    location: {
+      ...sampleLocation,
+      id: "globe-extreme-west-pacific",
+      title: "Westpazifik",
+      countryCode: "XP",
+      countryName: "Laborfall",
+      continent: "Oceania",
+      lat: 0,
+      lng: -180,
+      shortDescription: "Generischer 15.000-km-Stresstest über den Antimeridian."
+    },
+    guess: { lat: 0, lng: 45 },
+    distanceKm: 15011
   }
 ];
 
@@ -434,8 +486,47 @@ function onlineWaitingRoomState() {
 }
 
 const targets = [
-  { name: "home", access: "route", path: "/", resetSession: true, note: "echter URL-Pfad" },
+  { name: "home", access: "route", path: "/", resetSession: true, expectGlobeLabelOrder: true, note: "echter URL-Pfad" },
+  {
+    name: "home-zielinfo",
+    access: "route-click",
+    path: "/",
+    resetSession: true,
+    clickSelector: ".punktlandung-home-map-preview [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    expectedText: "Das Brandenburger Tor ist eines der bekanntesten Wahrzeichen Berlins.",
+    readySelector: ".punktlandung-home-map-preview .kartenlabor-result-popup, .punktlandung-home-map-preview .punktlandung-globe-info-overlay",
+    readyTimeoutMs: 40000,
+    expectGlobeInfoOverlay: true,
+    expectCloseAndReopen: true,
+    expectHomeInfoTopLayer: true,
+    note: "Geöffnete Zielinformation der animierten Startseitenkarte oberhalb aller Karteninhalte"
+  },
   { name: "kartenlabor", access: "route", path: "/kartenlabor", expectedText: "Globe-Kartenlabor", note: "interne Globe-Testansicht" },
+  {
+    name: "kartenlabor-production-animation",
+    access: "lab-animation",
+    path: "/kartenlabor",
+    buttonText: "Kurz",
+    expectedText: "Produktion",
+    readySelector: "[aria-label='Globe-Testansicht'] [data-result-marker-kind='target'][data-visible='true'][data-label-visible='true']",
+    readyTimeoutMs: 40000,
+    screenshotFocusSelector: "[aria-label='Globe-Testansicht'] [data-current-zoom]",
+    expectRevealSequence: true,
+    expectTerrainExaggeration: 1.5,
+    note: "Produktionsfall des Kartenlabors mit gemeinsamem Landung-dann-Zielbadge-Vertrag"
+  },
+  {
+    name: "kartenlabor-extreme-experiment",
+    access: "lab-scenario",
+    path: "/kartenlabor",
+    buttonText: "15.000 km · Experiment",
+    expectedText: "Experiment",
+    readySelector: "[aria-label='Globe-Testansicht'] [data-result-composition='ready'] [data-result-marker-kind='target'][data-visible='true']",
+    screenshotFocusSelector: "[aria-label='Globe-Testansicht'] [data-current-zoom]",
+    expectGlobeSafeArea: true,
+    expectTerrainExaggeration: 1.5,
+    note: "ausdrücklich markierter 15.000-km-Laborfall mit derselben Produktionskamera"
+  },
   {
     name: "solo-modus",
     access: "route",
@@ -556,7 +647,14 @@ const targets = [
     expectedText: testCase.location.title,
     readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [data-result-composition='ready'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
     expectGlobeSafeArea: true,
+    expectTerrainExaggeration: 1.5,
+    expectTargetInfoReservation: true,
+    expectGlobeLabelOrder: true,
+    expectedBearingSign: testCase.expectedBearingSign,
+    expectTouchControlDismissal: testCase.expectTouchControlDismissal,
     allowOmittedGlobeRoute: testCase.allowOmittedRoute === true,
+    expectRevealSequence: testCase.id === "salzburg",
+    readyTimeoutMs: testCase.id === "salzburg" ? 40000 : undefined,
     note: `Dynamische Solo-Auflösung für Phase-1-Globe-Fall ${testCase.location.title}`
   })),
   {
@@ -581,6 +679,8 @@ const targets = [
     expectedText: globePhaseOneCases[0].location.shortDescription,
     readySelector: ".punktlandung-globe-info-overlay, .kartenlabor-result-popup",
     expectGlobeInfoOverlay: true,
+    expectCloseAndReopen: true,
+    expectTargetInfoReservation: true,
     note: "Mobile Zielinformation als zentriertes Overlay ohne erneute Kamerabewegung"
   },
   {
@@ -721,10 +821,27 @@ const targets = [
     },
     buttonText: "Bild nochmal ansehen",
     readySelector: ".punktlandung-image-replay [aria-label='Interaktive 3D-Ergebniskarte'] [data-surface-ready='true'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    expectGlobeLabelOrder: true,
+    expectGlobeSafeArea: true,
     note: "Bild-Replay mit derselben statischen Globe-Endkomposition"
   },
+  {
+    name: "nochmal-ansehen-globe-langes-ziel",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: globePhaseOneState(globePhaseOneCases.find((testCase) => testCase.id === "salzburg")),
+    buttonText: "Bild nochmal ansehen",
+    readySelector: ".punktlandung-image-replay [aria-label='Interaktive 3D-Ergebniskarte'] [data-surface-ready='true'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    expectTargetInfoReservation: true,
+    expectGlobeLabelOrder: true,
+    expectGlobeSafeArea: true,
+    expectReplaySourceLaneSeamless: true,
+    expectStaticReveal: true,
+    note: "Bild-Replay mit langem Zielnamen, reserviertem Infozeichen und durchgehender Quellenzeile"
+  },
   { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
-  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Nicht speichern", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session plus Klick auf Endstand ansehen" },
+  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Später", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session plus Klick auf Endstand ansehen" },
   { name: "infos", access: "route", path: "/infos", note: "echter URL-Pfad" },
   { name: "hilfe", access: "route", path: "/faq", expectedText: "Häufige Fragen zu Punktlandung", note: "öffentliche Hilfe-Übersicht" },
   { name: "hilfe-spielablauf", access: "route", path: "/faq/spielablauf", expectedText: "So läuft eine Partie ab", note: "öffentliche Hilfe-Unterseite" },
@@ -751,6 +868,8 @@ const targets = [
 
 const documentTargetNames = new Set([
   "kartenlabor",
+  "kartenlabor-extreme-experiment",
+  "kartenlabor-production-animation",
   "infos",
   "hilfe",
   "hilfe-spielablauf",
@@ -864,7 +983,10 @@ async function gotoFresh(page, url) {
 }
 
 async function loadState(page, status, targetPath = "/", stateOverrides = {}) {
-  await gotoFresh(page, targetUrl("/"));
+  // Seed localStorage on a same-origin document that does not mount the live
+  // homepage Globe. Navigating away from that Globe would otherwise report
+  // its intentionally aborted tile requests as errors of the target page.
+  await gotoFresh(page, targetUrl(storageSeedPath));
   await page.evaluate((nextRoom) => {
     localStorage.removeItem("punktlandung-ranked-active-game-v1");
     localStorage.removeItem("punktlandung-ranked-dismissed-game-v1");
@@ -892,7 +1014,7 @@ async function loadState(page, status, targetPath = "/", stateOverrides = {}) {
 }
 
 async function loadOnlineWaitingRoom(page) {
-  await gotoFresh(page, targetUrl("/"));
+  await gotoFresh(page, targetUrl(storageSeedPath));
   await seedOnlineWaitingRoom(page);
   const url = new URL(targetUrl("/warteraum"));
   url.searchParams.set("responsive", `warteraum-${Date.now()}`);
@@ -970,8 +1092,32 @@ async function clickButtonByVisibleText(page, text) {
 }
 
 async function openTarget(page, target) {
+  if (target.access === "lab-animation") {
+    const response = await gotoFresh(page, targetUrl(target.path));
+    await page.locator("[aria-label='Globe-Testansicht'] [data-surface-ready='true']").waitFor({ state: "visible", timeout: 20000 });
+    const startButton = page.getByRole("button", { name: "Ergebnisanimation starten" });
+    await startButton.waitFor({ state: "visible", timeout: 20000 });
+    await startButton.click({ timeout: 20000 });
+    await page.waitForFunction(() => {
+      const sequence = document.querySelector("[aria-label='Globe-Testansicht'] [data-result-reveal-phase]");
+      return sequence?.getAttribute("data-result-reveal-phase") === "settled"
+        && sequence?.getAttribute("data-result-composition") === "ready";
+    }, null, { timeout: 60000 });
+    return response;
+  }
+
+  if (target.access === "lab-scenario") {
+    const response = await gotoFresh(page, targetUrl(target.path));
+    await page.locator("[aria-label='Globe-Testansicht'] [data-surface-ready='true']").waitFor({ state: "visible", timeout: 20000 });
+    await clickButtonByVisibleText(page, target.buttonText);
+    const startButton = page.getByRole("button", { name: "Ergebnisanimation starten" });
+    await startButton.waitFor({ state: "visible", timeout: 20000 });
+    await startButton.click({ timeout: 20000 });
+    return response;
+  }
+
   if (target.access === "route-stored-settings") {
-    await gotoFresh(page, targetUrl("/"));
+    await gotoFresh(page, targetUrl(storageSeedPath));
     await resetStorage(page);
     await page.evaluate(() => {
       localStorage.setItem("punktlandung-setup-settings-v3", JSON.stringify({
@@ -988,13 +1134,12 @@ async function openTarget(page, target) {
   }
 
   if (target.access === "route") {
-    const response = await gotoFresh(page, targetUrl(target.path));
     if (target.resetSession) {
+      await gotoFresh(page, targetUrl(storageSeedPath));
       await resetStorage(page);
-      await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
-      await waitForApp(page);
+      return gotoFresh(page, targetUrl(target.path));
     }
-    return response;
+    return gotoFresh(page, targetUrl(target.path));
   }
 
   if (target.access === "click") {
@@ -1007,8 +1152,14 @@ async function openTarget(page, target) {
     return response;
   }
 
-  if (target.access === "state" || target.access === "state-click" || target.access === "state-submit") {
-    await loadState(page, target.status, target.path, target.stateOverrides);
+  if (target.access === "state" || target.access === "state-click" || target.access === "state-submit" || target.access === "route-click") {
+    if (target.access === "route-click") {
+      await gotoFresh(page, targetUrl(storageSeedPath));
+      if (target.resetSession) await resetStorage(page);
+      await gotoFresh(page, targetUrl(target.path));
+    } else {
+      await loadState(page, target.status, target.path, target.stateOverrides);
+    }
     if (target.access === "state-submit") {
       const game = page.locator(".punktlandung-game-shell");
       await game.waitFor({ state: "visible", timeout: 15000 });
@@ -1055,7 +1206,7 @@ async function openTarget(page, target) {
         if (window.__punktlandungTransitionProbe) window.__punktlandungTransitionProbe.active = false;
       });
     }
-    if (target.access === "state-click") {
+    if (target.access === "state-click" || target.access === "route-click") {
       if (target.hoverSelector) {
         const hoverTarget = page.locator(target.hoverSelector).first();
         await hoverTarget.waitFor({ state: "visible", timeout: 15000 });
@@ -1094,8 +1245,8 @@ async function openTarget(page, target) {
           }
         }
       }
-      if (target.clickSelector) {
-        const clickTarget = page.locator(target.clickSelector).first();
+      const clickTarget = target.clickSelector ? page.locator(target.clickSelector).first() : null;
+      if (clickTarget) {
         await clickTarget.waitFor({ state: "visible", timeout: 15000 });
         if (target.expectGlobeInfoOverlay) {
           await page.locator("[data-result-composition='ready']").first().waitFor({ state: "visible", timeout: 15000 });
@@ -1160,6 +1311,48 @@ async function openTarget(page, target) {
             };
           }
         });
+      }
+      if (target.expectCloseAndReopen && clickTarget) {
+        const closeButton = page.getByRole("button", { name: "Zusatzinformationen schließen" }).first();
+        await closeButton.waitFor({ state: "visible", timeout: 5000 });
+        await closeButton.click();
+        await page.locator(".punktlandung-globe-info-overlay:visible, .kartenlabor-result-popup:visible").waitFor({ state: "hidden", timeout: 5000 });
+        const pointerFocus = await clickTarget.evaluate((element) => ({
+          focused: document.activeElement === element,
+          focusVisible: element.matches(":focus-visible")
+        }));
+        if (pointerFocus.focused || pointerFocus.focusVisible) {
+          throw new Error(`Pointer-Schließen hinterlässt einen Markerfokus (${JSON.stringify(pointerFocus)}).`);
+        }
+
+        await clickTarget.focus();
+        await clickTarget.press("Enter");
+        const keyboardCloseButton = page.getByRole("button", { name: "Zusatzinformationen schließen" }).first();
+        await keyboardCloseButton.waitFor({ state: "visible", timeout: 5000 });
+        const keyboardCloseFocus = await keyboardCloseButton.evaluate((element) => {
+          const style = getComputedStyle(element);
+          return {
+            focused: document.activeElement === element,
+            focusVisible: element.matches(":focus-visible"),
+            outlineWidth: style.outlineWidth,
+            boxShadow: style.boxShadow
+          };
+        });
+        if (!keyboardCloseFocus.focused || !keyboardCloseFocus.focusVisible || keyboardCloseFocus.outlineWidth !== "2px" || keyboardCloseFocus.boxShadow !== "none") {
+          throw new Error(`Tastaturfokus am Schließen-Button ist nicht eindeutig (${JSON.stringify(keyboardCloseFocus)}).`);
+        }
+        await keyboardCloseButton.press("Enter");
+        await page.locator(".punktlandung-globe-info-overlay:visible, .kartenlabor-result-popup:visible").waitFor({ state: "hidden", timeout: 5000 });
+        const keyboardFocus = await clickTarget.evaluate((element) => ({
+          focused: document.activeElement === element,
+          focusVisible: element.matches(":focus-visible")
+        }));
+        if (!keyboardFocus.focused || !keyboardFocus.focusVisible) {
+          throw new Error(`Tastatur-Schließen stellt den sichtbaren Markerfokus nicht wieder her (${JSON.stringify(keyboardFocus)}).`);
+        }
+
+        await clickTarget.click({ timeout: 5000 });
+        await page.locator(target.readySelector).first().waitFor({ state: "visible", timeout: 5000 });
       }
       if (target.hoverSelector && await page.locator(".punktlandung-map-action-tooltip:visible").count()) {
         throw new Error("Kartenhinweis bleibt trotz bereits geöffneter Zusatzinformation sichtbar.");
@@ -1306,6 +1499,8 @@ async function collectLayoutMetrics(page, readySelector = null) {
     const homeMapBase = homeMapPreview
       ? [...homeMapPreview.querySelectorAll(".punktlandung-home-map-base")].find((element) => getComputedStyle(element).display !== "none") ?? null
       : null;
+    const homeMapPoster = homeMapPreview?.querySelector(".punktlandung-home-map-poster-wide") ?? null;
+    const homeGlobeFrame = homeMapPreview?.querySelector("[data-terrain-exaggeration]") ?? null;
     const homeMapRect = homeMapPreview?.getBoundingClientRect() ?? null;
     const homeMapLabels = homeMapPreview
       ? [...homeMapPreview.querySelectorAll(".punktlandung-map-label")]
@@ -1345,7 +1540,11 @@ async function collectLayoutMetrics(page, readySelector = null) {
     const actualAbovePlayer = actualPinRect && playerPinRect
       ? (actualPinRect.top + actualPinRect.bottom) / 2 < (playerPinRect.top + playerPinRect.bottom) / 2
       : null;
-    const globeFrame = resultMap?.querySelector("[aria-label='Interaktive 3D-Ergebniskarte']") ?? null;
+    const globeFrame = resultMap?.querySelector("[aria-label='Interaktive 3D-Ergebniskarte']")
+      ?? document.querySelector(".punktlandung-image-replay [aria-label='Interaktive 3D-Ergebniskarte']")
+      ?? document.querySelector("[aria-label='Globe-Testansicht'] [data-current-zoom]")
+      ?? homeMapPreview?.querySelector("[data-current-zoom]")
+      ?? null;
     const globeFrameRect = globeFrame?.getBoundingClientRect() ?? null;
     const globeVisualElements = globeFrame
       ? [...globeFrame.querySelectorAll("[data-visible='true'] svg[class*='markerPin'], [data-visible='true'] svg[class*='markerRings'], [data-visible='true'] [class*='markerLabel'], [data-result-route='connection']")].filter(visible)
@@ -1367,6 +1566,20 @@ async function collectLayoutMetrics(page, readySelector = null) {
     const globeControlContainer = globeFrame?.querySelector(".maplibregl-ctrl-top-right") ?? null;
     const targetPin = globeFrame?.querySelector("[data-result-marker-kind='target'][data-visible='true'] svg[class*='markerPin']") ?? null;
     const targetPinAnimations = targetPin ? getComputedStyle(targetPin).animationName.split(",").map((name) => name.trim()) : [];
+    const routeOverlay = globeFrame?.querySelector("svg[data-settled]") ?? null;
+    const routeAnimations = globeRoutes[0]
+      ? getComputedStyle(globeRoutes[0]).animationName.split(",").map((name) => name.trim())
+      : [];
+    const homeInfoPopup = homeMapPreview?.querySelector(".kartenlabor-result-popup, .punktlandung-globe-info-overlay") ?? null;
+    const homeInfoPopupRect = homeInfoPopup?.getBoundingClientRect() ?? null;
+    const homeInfoContent = homeInfoPopup?.querySelector(".maplibregl-popup-content") ?? homeInfoPopup;
+    const homeInfoContentRect = homeInfoContent?.getBoundingClientRect() ?? null;
+    const homePlayerBadge = homeMapPreview?.querySelector("[data-result-marker-kind='guess'] [data-marker-label]") ?? null;
+    const homePlayerBadgeRect = homePlayerBadge?.getBoundingClientRect() ?? null;
+    const resultRevealContainer = globeFrame?.querySelector("[data-result-reveal-phase]") ?? null;
+    const visibleResultLabels = globeFrame
+      ? [...globeFrame.querySelectorAll("[data-result-marker-kind][data-visible='true'][data-label-visible='true'] [data-marker-label]")].filter(visible)
+      : [];
     const stackingLevel = (element) => {
       if (!element) return 0;
       const parsed = Number.parseInt(getComputedStyle(element).zIndex, 10);
@@ -1396,7 +1609,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
         return centerDistance - ellipseRadius;
       });
     })();
-    const globeInfoOverlay = resultMap?.querySelector(".punktlandung-globe-info-overlay") ?? null;
+    const globeInfoOverlay = globeFrame?.querySelector(".punktlandung-globe-info-overlay") ?? null;
     const globeInfoOverlayRect = globeInfoOverlay?.getBoundingClientRect() ?? null;
     const navigationRect = globeFrame?.querySelector(".maplibregl-ctrl-top-right")?.getBoundingClientRect() ?? null;
     const attributionRect = globeFrame?.querySelector(".punktlandung-map-attribution")?.getBoundingClientRect() ?? null;
@@ -1441,9 +1654,14 @@ async function collectLayoutMetrics(page, readySelector = null) {
       homeMapPreview: homeMapPreview ? {
         renderMode: homeMapPreview.getAttribute("data-render-mode"),
         animationComplete: homeMapPreview.getAttribute("data-animation-complete") === "true",
+        animationStarted: homeMapPreview.getAttribute("data-animation-started") === "true",
         liveCanvasMounted: Boolean(homeMapPreview.querySelector(".maplibregl-canvas")),
         baseVisible: homeMapBase ? getComputedStyle(homeMapBase).visibility !== "hidden" && Number(getComputedStyle(homeMapBase).opacity) > 0.01 : false,
-        baseImageLoaded: Boolean(homeMapBase?.querySelector("img")?.complete && homeMapBase.querySelector("img")?.naturalWidth),
+        baseImageLoaded: Boolean(
+          (homeMapBase?.querySelector("img")?.complete && homeMapBase.querySelector("img")?.naturalWidth)
+          || (homeMapPoster && getComputedStyle(homeMapPoster).backgroundImage !== "none")
+        ),
+        terrainExaggeration: Number(homeGlobeFrame?.getAttribute("data-terrain-exaggeration") ?? "0"),
         labels: homeMapLabels,
         labelsInside: Boolean(homeMapRect) && homeMapLabels.length >= 2 && homeMapLabels.every((label) =>
           label.left >= homeMapRect.left + 7 &&
@@ -1458,6 +1676,34 @@ async function collectLayoutMetrics(page, readySelector = null) {
           visual.bottom <= homeMapRect.bottom - 12
         )
       } : null,
+      homeInfoSafety: homeInfoPopupRect && homeInfoContentRect && homeMapRect ? (() => {
+        const insetPoints = [
+          [homeInfoContentRect.left + 5, homeInfoContentRect.top + 5],
+          [homeInfoContentRect.right - 5, homeInfoContentRect.top + 5],
+          [(homeInfoContentRect.left + homeInfoContentRect.right) / 2, (homeInfoContentRect.top + homeInfoContentRect.bottom) / 2],
+          [homeInfoContentRect.left + 5, homeInfoContentRect.bottom - 5],
+          [homeInfoContentRect.right - 5, homeInfoContentRect.bottom - 5]
+        ];
+        return {
+          inside: homeInfoPopupRect.left >= homeMapRect.left + 3
+            && homeInfoPopupRect.right <= homeMapRect.right - 3
+            && homeInfoPopupRect.top >= homeMapRect.top + 3
+            && homeInfoPopupRect.bottom <= homeMapRect.bottom - 3,
+          overlapsPlayerBadge: overlaps(homeInfoPopupRect, homePlayerBadgeRect),
+          topLayerAtAllSamples: insetPoints.every(([x, y]) => {
+            const topElement = document.elementFromPoint(x, y);
+            return Boolean(topElement && homeInfoPopup.contains(topElement));
+          }),
+          popupZIndex: stackingLevel(homeInfoPopup),
+          playerBadgeZIndex: stackingLevel(homePlayerBadge?.closest("[data-result-marker-kind]")),
+          bounds: {
+            map: { left: homeMapRect.left, top: homeMapRect.top, right: homeMapRect.right, bottom: homeMapRect.bottom },
+            popup: { left: homeInfoPopupRect.left, top: homeInfoPopupRect.top, right: homeInfoPopupRect.right, bottom: homeInfoPopupRect.bottom },
+            content: { left: homeInfoContentRect.left, top: homeInfoContentRect.top, right: homeInfoContentRect.right, bottom: homeInfoContentRect.bottom },
+            playerBadge: homePlayerBadgeRect ? { left: homePlayerBadgeRect.left, top: homePlayerBadgeRect.top, right: homePlayerBadgeRect.right, bottom: homePlayerBadgeRect.bottom } : null
+          }
+        };
+      })() : null,
       resultPopupSafety: popupRect && resultMapRect ? {
         visualCount: resultInfoVisuals.length,
         bounds: {
@@ -1498,16 +1744,27 @@ async function collectLayoutMetrics(page, readySelector = null) {
         markerCount: markerKinds.length,
         routeCount: globeRoutes.length,
         routeSubpaths: globeRoutes[0]?.getAttribute("d")?.match(/M/g)?.length ?? 0,
+        currentZoom: Number(globeFrame.querySelector("[data-current-zoom]")?.getAttribute("data-current-zoom") ?? "NaN"),
         allInside: globeVisualRects.length >= 6 && globeVisualRects.every((rect) =>
           rect.left >= globeFrameRect.left + 16 - 0.25
           && rect.right <= globeFrameRect.right - 66 + 0.25
           // Account for the frame border and sub-pixel MapLibre projection.
           // The product camera still targets the stricter 20 px safe rect.
-          && rect.top >= globeFrameRect.top + 14 - 0.25
+          && rect.top >= globeFrameRect.top + 14 - 0.5
           && rect.bottom <= globeFrameRect.bottom - 16 + 0.25
         ),
         routeEndpointClearances,
+        terrainExaggeration: Number(
+          globeFrame.getAttribute("data-terrain-exaggeration")
+          ?? globeFrame.querySelector("[data-terrain-exaggeration]")?.getAttribute("data-terrain-exaggeration")
+          ?? "0"
+        ),
         targetPinAnimations,
+        routeAnimations,
+        routeSettled: routeOverlay?.getAttribute("data-settled") === "true",
+        targetLanding: globeFrame.querySelector("[data-result-marker-kind='target']")?.getAttribute("data-landing") === "true",
+        visibleLabelCount: visibleResultLabels.length,
+        revealPhase: resultRevealContainer?.getAttribute("data-result-reveal-phase") ?? null,
         controlsGerman: globeControlButtons.length === 3 && globeControlButtons.every((button) =>
           ["Karte vergrößern", "Karte verkleinern", "Nach Norden ausrichten", "Gedrehte Ansicht wiederherstellen"].includes(button.getAttribute("aria-label"))
           && !button.hasAttribute("title")
@@ -1673,6 +1930,29 @@ async function runTargetViewport(browser, target, viewport) {
       }
       return nativeFetch(input, init);
     };
+
+    window.__punktlandungRevealTrace = [];
+    let previousRevealPhase = null;
+    const sampleRevealPhase = () => {
+      const sequence = document.querySelector("[data-result-reveal-phase]");
+      const phase = sequence?.getAttribute("data-result-reveal-phase") ?? null;
+      if (phase && phase !== previousRevealPhase) {
+        const target = sequence.querySelector("[data-result-marker-kind='target']");
+        const frame = sequence.closest("[data-target-landing-duration-ms]");
+        window.__punktlandungRevealTrace.push({
+          phase,
+          at: performance.now(),
+          targetVisible: target?.getAttribute("data-visible") === "true",
+          targetLanding: target?.getAttribute("data-landing") === "true",
+          targetLabelVisible: target?.getAttribute("data-label-visible") === "true",
+          landingDurationMs: Number(frame?.getAttribute("data-target-landing-duration-ms") ?? "0"),
+          targetLabelGapMs: Number(frame?.getAttribute("data-target-label-gap-ms") ?? "0")
+        });
+        previousRevealPhase = phase;
+      }
+      window.requestAnimationFrame(sampleRevealPhase);
+    };
+    window.requestAnimationFrame(sampleRevealPhase);
   });
   await blockResponsiveThirdParties(context, target);
   const page = await context.newPage();
@@ -1687,6 +1967,7 @@ async function runTargetViewport(browser, target, viewport) {
   });
 
   let screenshot = path.join(outDir, `${target.name}-${viewport.name}.png`);
+  let closedScreenshot = null;
   const problems = [];
   const warnings = [];
   let responseStatus = null;
@@ -1712,6 +1993,11 @@ async function runTargetViewport(browser, target, viewport) {
         target.readySelector,
         { timeout: readyTimeoutMs }
       );
+      await page.waitForTimeout(250);
+    }
+
+    if (target.screenshotFocusSelector) {
+      await page.locator(target.screenshotFocusSelector).first().scrollIntoViewIfNeeded();
       await page.waitForTimeout(250);
     }
 
@@ -1890,6 +2176,9 @@ async function runTargetViewport(browser, target, viewport) {
         await page.locator(".punktlandung-home-map-preview .maplibregl-canvas").waitFor({ state: "attached", timeout: 20000 });
         await page.locator(".punktlandung-home-map-preview .punktlandung-map-label").first().waitFor({ state: "visible", timeout: 20000 });
         await page.locator(".punktlandung-home-map-preview[data-animation-complete='true']").waitFor({ state: "visible", timeout: 30000 });
+        // The completion callback and MapLibre's final paint happen in the same
+        // frame. Sample stability only after that final paint has settled.
+        await page.waitForTimeout(250);
       }
       await page.locator(".punktlandung-home-map-preview.is-map-ready").waitFor({ state: "visible", timeout: 20000 });
       const readStableVisuals = () => page.evaluate(() =>
@@ -1920,15 +2209,32 @@ async function runTargetViewport(browser, target, viewport) {
           .find((element) => getComputedStyle(element).display !== "none");
         const targetPin = document.querySelector(".punktlandung-home-map-static-pin.is-actual");
         const liveMap = document.querySelector(".punktlandung-home-map-preview[data-render-mode='animated-live']");
+        const liveRoute = document.querySelector(".punktlandung-home-map-preview [data-result-route='connection']");
+        const liveRouteOverlay = liveRoute?.closest("svg[data-settled]");
+        const liveTarget = document.querySelector(".punktlandung-home-map-preview [data-result-marker-kind='target']");
         const liveTargetPin = document.querySelector(".punktlandung-home-map-preview [data-result-marker-kind='target'] svg[class*='markerPin']");
+        const liveLabels = document.querySelectorAll(".punktlandung-home-map-preview [data-result-marker-kind][data-visible='true'][data-label-visible='true'] [data-marker-label]");
+        const revealContainer = document.querySelector(".punktlandung-home-map-preview [data-result-reveal-phase]");
         return liveMap
           ? {
-              connectorAnimation: document.querySelector(".punktlandung-home-map-preview [data-result-route='connection']") ? "shared-result-route" : "none",
-              targetPinAnimation: liveTargetPin ? getComputedStyle(liveTargetPin).animationName : "none"
+              routePresent: Boolean(liveRoute),
+              connectorAnimation: liveRoute ? getComputedStyle(liveRoute).animationName : "missing",
+              routeSettled: liveRouteOverlay?.getAttribute("data-settled") === "true",
+              targetPinPresent: Boolean(liveTargetPin),
+              targetPinAnimation: liveTargetPin ? getComputedStyle(liveTargetPin).animationName : "missing",
+              targetLanding: liveTarget?.getAttribute("data-landing") === "true",
+              visibleLabelCount: liveLabels.length,
+              revealPhase: revealContainer?.getAttribute("data-result-reveal-phase") ?? null
             }
           : {
+              routePresent: Boolean(connector),
               connectorAnimation: connector ? getComputedStyle(connector).animationName : "none",
-              targetPinAnimation: targetPin ? getComputedStyle(targetPin).animationName : "none"
+              routeSettled: true,
+              targetPinPresent: Boolean(targetPin),
+              targetPinAnimation: targetPin ? getComputedStyle(targetPin).animationName : "none",
+              targetLanding: false,
+              visibleLabelCount: document.querySelectorAll(".punktlandung-home-map-static-label").length,
+              revealPhase: "settled"
             };
       });
       homeMapStability.intendedMotion = intendedMotion;
@@ -2066,6 +2372,167 @@ async function runTargetViewport(browser, target, viewport) {
       }
     }
 
+    if (target.expectTouchControlDismissal) {
+      const controlRoot = "[aria-label='Interaktive 3D-Ergebniskarte']";
+      const controlSelectors = [
+        ".maplibregl-ctrl-zoom-in",
+        ".maplibregl-ctrl-zoom-out",
+        ".maplibregl-ctrl-compass",
+        ".maplibregl-ctrl-compass"
+      ];
+      if (viewport.category === "mobile") {
+        for (const [index, selector] of controlSelectors.entries()) {
+          const control = page.locator(`${controlRoot} ${selector}`).first();
+          await control.evaluate((button) => {
+            button.dispatchEvent(new PointerEvent("pointerdown", {
+              bubbles: true,
+              cancelable: true,
+              pointerType: "touch"
+            }));
+            button.click();
+          });
+          await page.waitForTimeout(selector.includes("compass") ? 620 : 380);
+          const touchState = await control.evaluate((button) => ({
+            focused: document.activeElement === button,
+            ariaLabel: button.getAttribute("aria-label"),
+            title: button.getAttribute("title"),
+            tooltip: button.getAttribute("data-tooltip"),
+            visibleSharedTooltip: [...document.querySelectorAll(".punktlandung-unified-tooltip")]
+              .some((element) => {
+                const style = getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+              })
+          }));
+          if (touchState.focused || touchState.visibleSharedTooltip || touchState.title || !touchState.ariaLabel || !touchState.tooltip) {
+            problems.push(`Touch-Kartensteuerung ${index + 1} hinterlässt Fokus/Tooltip oder verliert ihren zugänglichen Namen (${JSON.stringify(touchState)}).`);
+          }
+        }
+      } else {
+        const zoomIn = page.locator(`${controlRoot} .maplibregl-ctrl-zoom-in`).first();
+        await zoomIn.hover();
+        await page.locator(".punktlandung-unified-tooltip").filter({ hasText: "Karte vergrößern" }).waitFor({ state: "visible", timeout: 2000 });
+        await page.mouse.move(4, 4);
+      }
+    }
+
+    if (target.expectedBearingSign) {
+      const bearing = await page.locator("[aria-label='Interaktive 3D-Ergebniskarte'] [data-current-bearing]").first()
+        .evaluate((frame) => Number(frame.getAttribute("data-current-bearing")));
+      if (!Number.isFinite(bearing) || Math.sign(bearing) !== target.expectedBearingSign || Math.abs(bearing) < 5) {
+        problems.push(`Geografische Diagonale endet auf der falschen Kameraseite (Bearing ${bearing}, erwartetes Vorzeichen ${target.expectedBearingSign}).`);
+      }
+    }
+
+    if (target.expectGlobeLabelOrder) {
+      const labelOrder = await page.evaluate(() => {
+        const visible = (element) => {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+        };
+        const frame = [...document.querySelectorAll("[data-current-zoom]")]
+          .find((candidate) => visible(candidate) && candidate.querySelectorAll("[data-result-marker-kind][data-visible='true'][data-label-visible='true']").length === 2);
+        if (!frame) return null;
+        const markers = [...frame.querySelectorAll("[data-result-marker-kind][data-visible='true'][data-label-visible='true']")]
+          .map((marker) => {
+            const pin = marker.querySelector("svg[class*='markerPin']");
+            const label = marker.querySelector("[data-marker-label]");
+            if (!pin || !label) return null;
+            const pinRect = pin.getBoundingClientRect();
+            const labelRect = label.getBoundingClientRect();
+            return {
+              kind: marker.getAttribute("data-result-marker-kind"),
+              placement: marker.getAttribute("data-label-vertical"),
+              pinY: (pinRect.top + pinRect.bottom) / 2,
+              pinTop: pinRect.top,
+              pinBottom: pinRect.bottom,
+              labelTop: labelRect.top,
+              labelBottom: labelRect.bottom
+            };
+          })
+          .filter(Boolean)
+          .sort((first, second) => first.pinY - second.pinY);
+        if (markers.length !== 2) return null;
+        const [north, south] = markers;
+        return {
+          north,
+          south,
+          northernAbove: north.placement === "above" && north.labelBottom <= north.pinTop + 1,
+          southernBelow: south.placement === "below" && south.labelTop >= south.pinBottom - 1
+        };
+      });
+      if (!labelOrder?.northernAbove || !labelOrder?.southernBelow) {
+        problems.push(`Die Zwei-Pin-Labels folgen nicht der sichtbaren Nord-Süd-Reihenfolge (${JSON.stringify(labelOrder)}).`);
+      }
+    }
+
+    if (target.expectTargetInfoReservation) {
+      const reservation = await page.evaluate(() => {
+        const label = [...document.querySelectorAll(".punktlandung-map-label-actual[data-info-indicator]")]
+          .find((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && Number(style.opacity) > 0;
+          });
+        if (!label) return null;
+        const textElement = label.querySelector("[data-marker-label-text]");
+        const textNode = textElement
+          ? textElement.firstChild
+          : [...label.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim());
+        const labelRect = label.getBoundingClientRect();
+        const style = getComputedStyle(label);
+        const range = textNode ? document.createRange() : null;
+        if (range && textNode) range.selectNodeContents(textNode);
+        const textRect = range?.getBoundingClientRect() ?? null;
+        const paddingRight = Number.parseFloat(style.paddingRight);
+        const paddingLeft = Number.parseFloat(style.paddingLeft);
+        const indicatorStyle = getComputedStyle(label, "::after");
+        const indicatorWidth = Number.parseFloat(indicatorStyle.width);
+        const indicatorRight = Number.parseFloat(indicatorStyle.right);
+        return {
+          paddingRight,
+          paddingLeft,
+          indicatorGap: paddingRight - indicatorRight - indicatorWidth,
+          textClearance: textRect ? labelRect.right - textRect.right : null,
+          overflowPx: Math.max(0, label.scrollWidth - label.clientWidth),
+          width: labelRect.width,
+          textWidth: textRect?.width ?? null,
+          wraps: label.scrollHeight > Number.parseFloat(style.lineHeight) * 1.6,
+          label: label.textContent?.trim() ?? ""
+        };
+      });
+      const naturalWidthLimit = reservation?.textWidth === null
+        ? Number.POSITIVE_INFINITY
+        : reservation.textWidth + reservation.paddingLeft + reservation.paddingRight + 4;
+      if (
+        !reservation
+        || reservation.paddingRight < 28
+        || reservation.paddingRight > 36
+        || reservation.indicatorGap < 4
+        || reservation.indicatorGap > 10
+        || reservation.overflowPx > 1
+        || (!reservation.wraps && reservation.width > naturalWidthLimit + 2)
+        || !reservation.label
+      ) {
+        problems.push(`Zielbadge passt Breite, Umbruch oder kompakten Infoabstand nicht an den Inhalt an (${JSON.stringify(reservation)}).`);
+      }
+    }
+
+    if (target.expectReplaySourceLaneSeamless) {
+      const replayBackgrounds = await page.evaluate(() => {
+        const replay = document.querySelector(".punktlandung-image-replay");
+        const viewport = replay?.querySelector(".punktlandung-panorama-viewport");
+        return replay && viewport ? {
+          replay: getComputedStyle(replay).backgroundColor,
+          sourceLane: getComputedStyle(viewport).backgroundColor
+        } : null;
+      });
+      if (!replayBackgrounds || replayBackgrounds.replay !== replayBackgrounds.sourceLane) {
+        problems.push(`Die Quellenzeile hebt sich als eigener Hintergrundstreifen ab (${JSON.stringify(replayBackgrounds)}).`);
+      }
+    }
+
     await page.evaluate(async () => {
       if (document.fonts) await document.fonts.ready;
     }).catch(() => {});
@@ -2085,6 +2552,7 @@ async function runTargetViewport(browser, target, viewport) {
       globeCompositionStability = { markerCount: Object.keys(after).length, maxMovementPx: deltas.length ? Math.max(...deltas) : Number.POSITIVE_INFINITY };
     }
     const metrics = await collectLayoutMetricsStable(page, target.readySelector ?? null);
+    metrics.revealTrace = await page.evaluate(() => window.__punktlandungRevealTrace ?? []);
     if (homeMapStability) metrics.homeMapStability = homeMapStability;
     if (mapScrollStability) metrics.mapScrollStability = mapScrollStability;
     if (globeCompositionStability) metrics.globeCompositionStability = globeCompositionStability;
@@ -2138,6 +2606,33 @@ async function runTargetViewport(browser, target, viewport) {
     if (metrics.horizontalOverflow) {
       problems.push(`Horizontaler Overflow: Dokument ${metrics.documentWidth}px bei Viewport ${metrics.viewportWidth}px.`);
     }
+    if (target.expectRevealSequence) {
+      const phaseEntry = (phase) => metrics.revealTrace.find((entry) => entry.phase === phase);
+      const landing = phaseEntry("landing");
+      const landed = phaseEntry("landed");
+      const labels = phaseEntry("labels");
+      const phaseNames = metrics.revealTrace.map((entry) => entry.phase);
+      const ordered = ["prepared", "route", "landing", "landed", "labels", "settled"]
+        .every((phase, index, expected) => phaseNames.indexOf(phase) > (index === 0 ? -1 : phaseNames.indexOf(expected[index - 1])));
+      const valid = Boolean(
+        ordered
+        && landing?.targetVisible && landing?.targetLanding && !landing?.targetLabelVisible
+        && landed?.targetVisible && !landed?.targetLanding && !landed?.targetLabelVisible
+        && labels?.targetVisible && !labels?.targetLanding && labels?.targetLabelVisible
+        && landed.at - landing.at >= landing.landingDurationMs - 120
+        && labels.at - landed.at >= labels.targetLabelGapMs - 40
+      );
+      if (!valid) {
+        problems.push(`Gemeinsamer Reveal-Vertrag verletzt (${JSON.stringify(metrics.revealTrace)}).`);
+      }
+    }
+    if (target.expectStaticReveal) {
+      const transitional = metrics.revealTrace.some((entry) => ["route", "landing", "landed", "labels"].includes(entry.phase));
+      const settled = metrics.revealTrace.some((entry) => entry.phase === "settled");
+      if (transitional || !settled) {
+        problems.push(`Die statische Replay-Endkomposition erzwingt unerwartet eine Animation (${JSON.stringify(metrics.revealTrace)}).`);
+      }
+    }
     if (metrics.questionMarkCentering?.some((item) => !item.centered)) {
       problems.push(`Fragezeichen sitzt nicht mittig im Kreis (${JSON.stringify(metrics.questionMarkCentering)}).`);
     }
@@ -2150,8 +2645,17 @@ async function runTargetViewport(browser, target, viewport) {
     if (target.name === "home" && metrics.homeMapPreview && !metrics.homeMapPreview.animationComplete) {
       problems.push("Die Startseiten-Ergebnisanimation wurde nicht vollständig abgeschlossen.");
     }
+    if (target.name === "home" && metrics.homeMapPreview && Math.abs(metrics.homeMapPreview.terrainExaggeration - 1) > 0.01) {
+      problems.push(`Die Startseiten-Globe-Vorschau verwendet ${metrics.homeMapPreview.terrainExaggeration}× statt des vereinbarten 1,0×-Terrains.`);
+    }
     if (target.name === "home" && metrics.homeMapPreview && !metrics.homeMapPreview.labelsInside) {
       problems.push("Die Kartenlabels liegen nicht vollständig mit Randabstand innerhalb der Vorschau.");
+    }
+    if (target.expectHomeInfoTopLayer && (
+      !metrics.homeInfoSafety?.inside
+      || !metrics.homeInfoSafety?.topLayerAtAllSamples
+    )) {
+      problems.push(`Die Startseiten-Zielinformation liegt nicht vollständig und unverdeckt auf der obersten Kartenebene (${JSON.stringify(metrics.homeInfoSafety)}).`);
     }
     if (target.name === "home" && metrics.homeMapPreview && !metrics.homeMapPreview.visualsInside) {
       problems.push("Pins, Ellipsen oder Labels verletzen die Safe Area der Startseitenkarte.");
@@ -2160,10 +2664,16 @@ async function runTargetViewport(browser, target, viewport) {
       problems.push("Die statischen Karten-Overlays bewegen sich außerhalb der vorgesehenen Linien- und Zielpin-Animation.");
     }
     if (target.name === "home" && metrics.homeMapStability && (
-      metrics.homeMapStability.intendedMotion?.connectorAnimation === "none"
-      || metrics.homeMapStability.intendedMotion?.targetPinAnimation === "none"
+      !metrics.homeMapStability.intendedMotion?.routePresent
+      || !metrics.homeMapStability.intendedMotion?.targetPinPresent
+      || metrics.homeMapStability.intendedMotion?.connectorAnimation !== "none"
+      || metrics.homeMapStability.intendedMotion?.targetPinAnimation !== "none"
+      || !metrics.homeMapStability.intendedMotion?.routeSettled
+      || metrics.homeMapStability.intendedMotion?.targetLanding
+      || metrics.homeMapStability.intendedMotion?.visibleLabelCount !== 2
+      || !["settled", "reduced-settled"].includes(metrics.homeMapStability.intendedMotion?.revealPhase)
     )) {
-      problems.push("Die vorgesehene Linien- oder Zielpin-Animation ist nicht aktiv.");
+      problems.push(`Die Startseiten-Punktlandung endet nicht vollständig und ruhig (${JSON.stringify(metrics.homeMapStability.intendedMotion)}).`);
     }
 
     if (target.name === "nochmal-ansehen") {
@@ -2219,9 +2729,12 @@ async function runTargetViewport(browser, target, viewport) {
         : metrics.globeResultSafety.routeCount !== 1)
       || !metrics.globeResultSafety.allInside
       || !metrics.globeResultSafety.controlsGerman
-      || !["targetArrival", "targetIdleBounce"].every((name) =>
-        metrics.globeResultSafety.targetPinAnimations.some((animationName) => animationName.includes(name))
-      )
+      || metrics.globeResultSafety.targetPinAnimations.some((animationName) => animationName !== "none")
+      || metrics.globeResultSafety.routeAnimations.some((animationName) => animationName !== "none")
+      || !metrics.globeResultSafety.routeSettled
+      || metrics.globeResultSafety.targetLanding
+      || metrics.globeResultSafety.visibleLabelCount !== 2
+      || !["settled", "reduced-settled"].includes(metrics.globeResultSafety.revealPhase)
       || !metrics.globeResultSafety.controlStacking?.controlsAboveContent
       || (metrics.globeResultSafety.routeCount === 1
         && !metrics.globeResultSafety.routeEndpointClearances?.every((clearance) => clearance >= 4))
@@ -2230,6 +2743,9 @@ async function runTargetViewport(browser, target, viewport) {
       || metrics.globeCompositionStability.maxMovementPx > 1
     )) {
       problems.push(`Globe-Ergebnis verletzt Safe Area, eindeutige Linienzeichnung, Ellipsenabstand oder deutsche Steuerungslogik (${JSON.stringify(metrics.globeResultSafety)}).`);
+    }
+    if (target.expectTerrainExaggeration && Math.abs((metrics.globeResultSafety?.terrainExaggeration ?? 0) - target.expectTerrainExaggeration) > 0.01) {
+      problems.push(`Globe-Terrain ist ${(metrics.globeResultSafety?.terrainExaggeration ?? 0)}× statt ${target.expectTerrainExaggeration.toFixed(1)}× aktiv.`);
     }
     if (target.expectGlobeInfoOverlay && (viewport.width <= 879 || viewport.height <= 500)) {
       const before = metrics.globeOverlayProbe?.before;
@@ -2286,6 +2802,13 @@ async function runTargetViewport(browser, target, viewport) {
     }
 
     screenshot = await saveViewportScreenshot(page, screenshot);
+    if (target.expectCloseAndReopen && target.clickSelector) {
+      const closeButton = page.getByRole("button", { name: "Zusatzinformationen schließen" }).first();
+      await closeButton.click({ timeout: 5000 });
+      await page.locator(".punktlandung-globe-info-overlay:visible, .kartenlabor-result-popup:visible").waitFor({ state: "hidden", timeout: 5000 });
+      const parsedScreenshot = path.parse(screenshot);
+      closedScreenshot = await saveViewportScreenshot(page, path.join(parsedScreenshot.dir, `${parsedScreenshot.name}-closed${parsedScreenshot.ext}`));
+    }
 
     const normalizedConsole = normalizeConsoleMessages(consoleErrors);
     const normalizedHttp = normalizeHttpErrors(httpErrors);
@@ -2298,6 +2821,7 @@ async function runTargetViewport(browser, target, viewport) {
       durationMs: Date.now() - startedAt,
       responseStatus,
       screenshot,
+      closedScreenshot,
       metrics,
       problems,
       warnings,
@@ -2321,6 +2845,7 @@ async function runTargetViewport(browser, target, viewport) {
       durationMs: Date.now() - startedAt,
       responseStatus,
       screenshot,
+      closedScreenshot,
       metrics: null,
       problems: [error instanceof Error ? error.message : String(error)],
       warnings,
@@ -2448,22 +2973,28 @@ console.log(`Verfuegbare Seitennamen: ${availableNames.join(", ")}`);
 console.log(`Verfuegbare Viewports: ${viewports.map((viewport) => viewport.name).join(", ")}`);
 console.log(`Verfuegbare Profile: ${Object.keys(viewportProfiles).join(", ")}`);
 console.log("Einzelseite: npm run check:responsive -- --page=home");
+console.log("Seitenauswahl: npm run check:responsive -- --page=home,spielen,aufloesung");
 console.log("Einzelviewport: npm run check:responsive -- --viewport=laptop");
+console.log("Viewportauswahl: npm run check:responsive -- --viewport=phone-small,phone-large,laptop");
 console.log("Schnellprofil: npm run check:responsive -- --profile=quick");
 
 if (args.help) {
   process.exit(0);
 }
 
-if (args.page && !availableNames.includes(args.page)) {
-  console.error(`Unbekannte Seite: ${args.page}`);
+const requestedPages = args.page?.split(",").map((value) => value.trim()).filter(Boolean) ?? [];
+const unknownPages = requestedPages.filter((page) => !availableNames.includes(page));
+if (unknownPages.length) {
+  console.error(`Unbekannte Seite: ${unknownPages.join(", ")}`);
   console.error(`Verfuegbar: ${availableNames.join(", ")}`);
   process.exit(1);
 }
 
 const availableViewportNames = viewports.map((viewport) => viewport.name);
-if (args.viewport && !availableViewportNames.includes(args.viewport)) {
-  console.error(`Unbekannter Viewport: ${args.viewport}`);
+const requestedViewports = args.viewport?.split(",").map((value) => value.trim()).filter(Boolean) ?? [];
+const unknownViewports = requestedViewports.filter((viewport) => !availableViewportNames.includes(viewport));
+if (unknownViewports.length) {
+  console.error(`Unbekannter Viewport: ${unknownViewports.join(", ")}`);
   console.error(`Verfuegbar: ${availableViewportNames.join(", ")}`);
   process.exit(1);
 }
@@ -2476,12 +3007,12 @@ if (!Object.hasOwn(viewportProfiles, args.profile)) {
 
 await fs.mkdir(outDir, { recursive: true });
 
-const selected = args.page ? targets.filter((target) => target.name === args.page) : targets;
+const selected = requestedPages.length ? targets.filter((target) => requestedPages.includes(target.name)) : targets;
 const selectedTargets = selected.filter((target) => target.access !== "todo");
 const skippedTargets = selected.filter((target) => target.access === "todo");
 const profileViewportNames = viewportProfiles[args.profile];
-const selectedViewports = args.viewport
-  ? viewports.filter((viewport) => viewport.name === args.viewport)
+const selectedViewports = requestedViewports.length
+  ? viewports.filter((viewport) => requestedViewports.includes(viewport.name))
   : profileViewportNames
     ? viewports.filter((viewport) => profileViewportNames.includes(viewport.name))
     : viewports;

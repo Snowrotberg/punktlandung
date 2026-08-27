@@ -4,9 +4,11 @@ import sharp from "sharp";
 const baseUrl = process.env.HOME_POSTER_URL ?? "http://localhost:3000";
 const profiles = [
   { name: "phone-small", width: 360, height: 800 },
+  { name: "user-phone", width: 386, height: 770 },
   { name: "phone-large", width: 430, height: 932 },
   { name: "phone-landscape", width: 932, height: 430 },
   { name: "laptop", width: 1366, height: 768 },
+  { name: "user-laptop", width: 1440, height: 733 },
   { name: "monitor-short", width: 1920, height: 977 },
   { name: "monitor", width: 1920, height: 1080 },
   { name: "tv-4k", width: 3840, height: 2160 }
@@ -66,9 +68,8 @@ try {
       const canvas = document.querySelector(".punktlandung-home-map-preview .maplibregl-canvas");
       return poster && canvas && getComputedStyle(poster).opacity === "0";
     }, null, { timeout: 60_000 });
-    const pixelSuffix = `-${captureScale}x`;
-    const sourcePosterSuffix = profile.width <= 932 ? "-2x" : "";
-    const expectedPosterPath = `/home-map-preview-${profile.name}${sourcePosterSuffix}.webp`;
+    const pixelSuffix = captureScale === 1 ? "" : `-${captureScale}x`;
+    const expectedPosterPath = `/home-map-preview-${profile.name}${pixelSuffix}.webp`;
     const selectedPosterPath = await page.locator(".punktlandung-home-map-poster-wide").evaluate((poster) => {
       const match = getComputedStyle(poster).backgroundImage.match(/url\(["']?(.*?)["']?\)/);
       return match ? new URL(match[1], window.location.href).pathname : "";
@@ -108,17 +109,17 @@ try {
           .punktlandung-home-map-preview .leaflet-marker-pane,
           .punktlandung-home-map-preview .leaflet-tooltip-pane,
           .punktlandung-home-map-preview .punktlandung-home-map-mobile-labels,
+          .punktlandung-home-map-preview [data-result-marker-kind],
+          .punktlandung-home-map-preview [data-result-route],
           .punktlandung-home-map-preview .punktlandung-map-attribution {
             display: none !important;
           }
         ` : ""}
       `
     });
-    if (!baseOnly) {
-      await page.locator(".punktlandung-result-connector").evaluate((path) => {
-        path.setAttribute("stroke-dashoffset", "0");
-      });
-    }
+    if (!baseOnly) await page.locator(".punktlandung-result-connector").evaluateAll((paths) => {
+      for (const path of paths) path.setAttribute("stroke-dashoffset", "0");
+    });
 
     const preview = page.locator(".punktlandung-home-map-preview");
     const box = await preview.boundingBox();
@@ -126,7 +127,11 @@ try {
     const png = await preview.screenshot({ type: "png", animations: "disabled", scale: "device" });
     const variantSuffix = assetVariant ? `-${assetVariant}` : "";
     const output = `public/home-map-${baseOnly ? "base" : "preview"}${variantSuffix}-${profile.name}${pixelSuffix}${layoutMode === "ads" ? "-with-ads" : ""}.webp`;
-    await sharp(png).webp({ quality: baseOnly ? 94 : 92, smartSubsample: true, effort: 6 }).toFile(output);
+    await sharp(png)
+      .webp(baseOnly
+        ? { quality: 94, smartSubsample: true, effort: 6 }
+        : { lossless: true, effort: 6 })
+      .toFile(output);
     const alignment = await page.evaluate(() => {
       const map = document.querySelector(".punktlandung-home-map-preview")?.getBoundingClientRect();
       const action = document.querySelector("a[href^='/solo-modus/direct']")?.getBoundingClientRect();

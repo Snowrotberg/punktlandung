@@ -3,12 +3,15 @@ import assert from "node:assert/strict";
 import {
   expandResultRect,
   RESULT_MAP_CONTROL_LABELS,
+  resultLabelHorizontalPlacement,
+  resultLabelPairVerticalPlacement,
   resultMarkerCollisionOffsets,
   resultFitAdjustment,
   resultSafeRect,
   trimProjectedRoute,
   unionResultRects,
-  usesCenteredResultInfoOverlay
+  usesCenteredResultInfoOverlay,
+  shouldRestoreResultTriggerFocus
 } from "../lib/globeResultLayout";
 
 test("expandResultRect reserves asymmetric animation space", () => {
@@ -63,6 +66,48 @@ test("phone portrait and phone landscape use the centered target-information ove
   assert.equal(usesCenteredResultInfoOverlay(430, 932), true);
   assert.equal(usesCenteredResultInfoOverlay(932, 430), true);
   assert.equal(usesCenteredResultInfoOverlay(1366, 768), false);
+});
+
+test("the visually northern pin owns the upper label independent of player and target roles", () => {
+  const northwestPlayer = resultLabelPairVerticalPlacement(
+    { x: 80, y: 60 },
+    { x: 250, y: 190 },
+    [10, 54],
+    [14, 50]
+  );
+  const northwestTarget = resultLabelPairVerticalPlacement(
+    { x: 250, y: 190 },
+    { x: 80, y: 60 },
+    [14, 50],
+    [10, 54]
+  );
+
+  assert.deepEqual(northwestPlayer, { first: "above", second: "below" });
+  assert.deepEqual(northwestTarget, { first: "below", second: "above" });
+});
+
+test("both screen diagonals and almost equal projected heights remain stable", () => {
+  assert.deepEqual(
+    resultLabelPairVerticalPlacement({ x: 70, y: 200 }, { x: 260, y: 70 }, [8, 47], [16, 53]),
+    { first: "below", second: "above" }
+  );
+  assert.deepEqual(
+    resultLabelPairVerticalPlacement({ x: 70, y: 100 }, { x: 260, y: 100.4 }, [179.8, 12.0001], [-179.7, 12]),
+    { first: "above", second: "below" }
+  );
+});
+
+test("target focus is restored only for keyboard-driven information dialogs", () => {
+  assert.equal(shouldRestoreResultTriggerFocus("keyboard"), true);
+  assert.equal(shouldRestoreResultTriggerFocus("pointer"), false);
+});
+
+test("horizontal result labels choose the anchor with the least safe-area overflow", () => {
+  const safe = resultSafeRect(300, 240);
+
+  assert.equal(resultLabelHorizontalPlacement(104, 170, safe), "center");
+  assert.equal(resultLabelHorizontalPlacement(8, 170, safe), "right");
+  assert.equal(resultLabelHorizontalPlacement(270, 170, safe), "left");
 });
 
 test("all MapLibre result controls expose German labels", () => {

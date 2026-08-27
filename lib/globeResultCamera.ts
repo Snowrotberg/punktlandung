@@ -11,6 +11,7 @@ export type ResultCameraScenario = {
   targetDescription: string;
   guess: GlobeCoordinates;
   target: GlobeCoordinates;
+  kind?: "production" | "experiment";
 };
 
 export type CameraKeyframe = {
@@ -48,10 +49,16 @@ export const RESULT_CAMERA_CONFIG = {
     medium: 46,
     long: 42
   },
-  terrainExaggeration: 1.5
+  terrainExaggeration: {
+    homePreview: 1,
+    result: 1.5
+  }
 } as const;
 
-export const RESULT_MAP_MIN_ZOOM = 1.35;
+// Normal plans stay well above this floor. Near-antipodal relationships need
+// the additional space so both endpoints and their labels can share the
+// visible hemisphere without a location-specific exception.
+export const RESULT_MAP_MIN_ZOOM = 0.5;
 
 export const RESULT_CAMERA_SCENARIOS: ResultCameraScenario[] = [
   {
@@ -83,6 +90,17 @@ export const RESULT_CAMERA_SCENARIOS: ResultCameraScenario[] = [
     targetDescription: "Tokio ist die Hauptstadt Japans und das politische, wirtschaftliche und kulturelle Zentrum des Landes.",
     guess: [13.405, 52.52],
     target: [139.6917, 35.6895]
+  },
+  {
+    id: "extreme",
+    label: "Experiment · 15.000 km über den Antimeridian",
+    description: "generischer Stresstest für Vorderseite, Safe Area und Großkreislinie",
+    playerName: "#1 Testspieler",
+    targetName: "Westpazifik",
+    targetDescription: "Ausdrücklich gekennzeichneter Laborfall mit rund 15.000 km Distanz und Antimeridian-Querung.",
+    guess: [45, 0],
+    target: [-180, 0],
+    kind: "experiment"
   }
 ];
 
@@ -207,6 +225,28 @@ function relationshipCenter(guess: GlobeCoordinates, target: GlobeCoordinates): 
   return interpolateGreatCircle(guess, target, 0.5);
 }
 
+function resultViewingBearing(guess: GlobeCoordinates, target: GlobeCoordinates): number {
+  const longitudeDelta = shortestLongitudeDelta(guess[0], target[0]);
+  const latitudeDelta = target[1] - guess[1];
+  const axisEpsilon = 0.000001;
+
+  // Choose the viewing side from the unrotated geographic relationship. A
+  // north-west/south-east pair is viewed from the south-west toward the
+  // north-east; the opposite diagonal is viewed from the south-east toward
+  // the north-west. Using the shortest longitude delta keeps this rule intact
+  // across the antimeridian instead of interpreting a two-degree step as 358°.
+  if (Math.abs(longitudeDelta) > axisEpsilon && Math.abs(latitudeDelta) > axisEpsilon) {
+    return longitudeDelta * latitudeDelta < 0 ? 22 : -22;
+  }
+
+  // Axis-aligned and nearly coincident pairs do not define a diagonal. Keep a
+  // deterministic gentle side view so tiny coordinate noise cannot flip the
+  // camera between opposite sides.
+  if (Math.abs(longitudeDelta) > axisEpsilon) return longitudeDelta > 0 ? -22 : 22;
+  if (Math.abs(latitudeDelta) > axisEpsilon) return latitudeDelta > 0 ? 22 : -22;
+  return 22;
+}
+
 export function buildResultCameraPlan(
   guess: GlobeCoordinates,
   target: GlobeCoordinates,
@@ -219,28 +259,36 @@ export function buildResultCameraPlan(
   const compactAdjustment = options.compactViewport
     ? distanceClass === "short" ? -0.3 : distanceClass === "medium" ? -0.55 : -0.35
     : 0;
-  const direction = initialBearing(guess, target);
-  const eastWestDelta = shortestLongitudeDelta(guess[0], target[0]);
-  // Tilt against the east/west relationship of the two points. This keeps a
-  // naturally diagonal pair diagonal instead of rotating it into an almost
-  // vertical stack. Exact north/south pairs receive a stable gentle tilt.
-  const endBearing = Math.abs(eastWestDelta) < 0.001
-    ? (Math.cos(toRadians(direction)) >= 0 ? 22 : -22)
-    : (eastWestDelta > 0 ? -22 : 22);
+  const endBearing = resultViewingBearing(guess, target);
   const startBearing = endBearing * (distanceClass === "long" ? 0.45 : 0.65);
   const transitBearing = endBearing * 0.82;
   const midpoint = relationshipCenter(guess, target);
   const durationScale = clamp(options.durationScale ?? 1, 0.65, 1.5);
 
+  const interpolateRange = (value: number, from: number, to: number, start: number, end: number) => {
+    const progress = clamp((value - from) / Math.max(0.001, to - from), 0, 1);
+    return start + (end - start) * progress;
+  };
   const longEndZoom = distanceKm < 6_000
-    ? 3.05
+    ? interpolateRange(distanceKm, 2_500, 6_000, 3.35, 3.05)
     : distanceKm < 9_000
-      ? 2.68
+      ? interpolateRange(distanceKm, 6_000, 9_000, 3.05, 2.65)
       : distanceKm < 12_500
-        ? 2.42
-        : 2.24;
-  const longTransitZoom = longEndZoom - (distanceKm < 9_000 ? 0.32 : 0.26);
-  const longEndPitch = distanceKm < 6_000 ? 40 : distanceKm < 10_000 ? 36 : 31;
+        ? interpolateRange(distanceKm, 9_000, 12_500, 2.65, 2.05)
+        : distanceKm < 16_000
+          ? interpolateRange(distanceKm, 12_500, 16_000, 2.05, 1.05)
+          : interpolateRange(distanceKm, 16_000, 20_020, 1.05, RESULT_MAP_MIN_ZOOM);
+  const longTransitZoom = Math.max(RESULT_MAP_MIN_ZOOM, longEndZoom - (distanceKm < 9_000 ? 0.32 : 0.18));
+  // Pitch gives regional results depth, but on very large arcs it moves one
+  // endpoint behind the globe. Flatten continuously before 15,000 km so the
+  // great-circle midpoint remains a shared front-facing end composition.
+  const longEndPitch = distanceKm < 6_000
+    ? 40
+    : distanceKm < 10_000
+      ? interpolateRange(distanceKm, 6_000, 10_000, 40, 28)
+      : distanceKm < 15_000
+        ? interpolateRange(distanceKm, 10_000, 15_000, 28, 0)
+        : 0;
 
   // "Kurz" covers everything from a street-level miss to almost 90 km. A
   // single zoom for that complete range made very close results (including
@@ -292,18 +340,19 @@ export function buildResultCameraPlan(
   } as const;
   const profile = profiles[distanceClass];
   const endPitch = distanceClass === "long" ? longEndPitch : RESULT_CAMERA_CONFIG.endPitch[distanceClass];
+  const adjustedZoom = (zoom: number) => Math.max(RESULT_MAP_MIN_ZOOM, zoom + compactAdjustment);
 
   const startFrame: CameraKeyframe = {
     at: 0,
     center: guess,
-    zoom: profile.startZoom + compactAdjustment,
+    zoom: adjustedZoom(profile.startZoom),
     bearing: startBearing,
     pitch: profile.startPitch
   };
   const endFrame: CameraKeyframe = {
     at: 1,
     center: midpoint,
-    zoom: profile.endZoom + compactAdjustment,
+    zoom: adjustedZoom(profile.endZoom),
     bearing: endBearing,
     pitch: endPitch
   };
@@ -313,7 +362,7 @@ export function buildResultCameraPlan(
         {
           at: 0.44,
           center: interpolateGreatCircle(guess, target, 0.3),
-          zoom: profile.transitZoom + compactAdjustment,
+          zoom: adjustedZoom(profile.transitZoom),
           bearing: transitBearing,
           pitch: 45
         },
@@ -325,7 +374,7 @@ export function buildResultCameraPlan(
           {
             at: 0.55,
             center: curvedRoutePoint(guess, target, 0.32, profile.curve),
-            zoom: profile.transitZoom + compactAdjustment,
+            zoom: adjustedZoom(profile.transitZoom),
             bearing: transitBearing,
             pitch: 40
           },
@@ -336,14 +385,14 @@ export function buildResultCameraPlan(
           {
             at: 0.34,
             center: curvedRoutePoint(guess, target, 0.2, profile.curve),
-            zoom: profile.transitZoom + compactAdjustment,
+            zoom: adjustedZoom(profile.transitZoom),
             bearing: startBearing,
             pitch: profile.transitPitch
           },
           {
             at: 0.7,
             center: curvedRoutePoint(guess, target, 0.4, profile.curve),
-            zoom: profile.transitZoom + 0.1 + compactAdjustment,
+            zoom: adjustedZoom(profile.transitZoom + 0.1),
             bearing: transitBearing,
             pitch: 18
           },

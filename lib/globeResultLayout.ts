@@ -30,6 +30,63 @@ export function usesCenteredResultInfoOverlay(width: number, height: number): bo
   return width <= 480 || (width <= 960 && height <= 480);
 }
 
+/** Places a marker label toward the usable map interior instead of outside an
+ * endpoint. This keeps the rule independent of coordinates and route length. */
+export type ResultLabelVerticalPair = {
+  first: "above" | "below";
+  second: "above" | "below";
+};
+
+/** Keeps the visually northern endpoint label above its pin and the southern
+ * endpoint label below. Projected screen order is authoritative after camera
+ * rotation and pitch; latitude is only the stable tie-breaker for almost
+ * horizontal screen pairs. The final coordinate ordering makes coincident
+ * points deterministic without assigning meaning to player/target roles. */
+export function resultLabelPairVerticalPlacement(
+  firstPoint: ResultScreenPoint,
+  secondPoint: ResultScreenPoint,
+  firstCoordinates: readonly [number, number],
+  secondCoordinates: readonly [number, number]
+): ResultLabelVerticalPair {
+  const screenDelta = secondPoint.y - firstPoint.y;
+  const latitudeDelta = firstCoordinates[1] - secondCoordinates[1];
+  const firstIsNorthern = Math.abs(screenDelta) > 0.75
+    ? screenDelta > 0
+    : Math.abs(latitudeDelta) > 1e-7
+      ? latitudeDelta > 0
+      : firstCoordinates[0] !== secondCoordinates[0]
+        ? firstCoordinates[0] < secondCoordinates[0]
+        : true;
+
+  return firstIsNorthern
+    ? { first: "above", second: "below" }
+    : { first: "below", second: "above" };
+}
+
+export type ResultInfoInputMode = "keyboard" | "pointer";
+
+export function shouldRestoreResultTriggerFocus(inputMode: ResultInfoInputMode): boolean {
+  return inputMode === "keyboard";
+}
+
+/** Chooses the horizontal anchor with the smallest overflow into either map
+ * edge or the control rail. Center wins ties to avoid unnecessary jumps. */
+export function resultLabelHorizontalPlacement(
+  centerX: number,
+  labelWidth: number,
+  safeRect: ResultScreenRect
+): "left" | "center" | "right" {
+  const width = Math.max(0, labelWidth);
+  const candidates = [
+    { placement: "center" as const, left: centerX - width / 2, right: centerX + width / 2 },
+    { placement: "right" as const, left: centerX, right: centerX + width },
+    { placement: "left" as const, left: centerX - width, right: centerX }
+  ];
+  const overflow = (candidate: { left: number; right: number }) =>
+    Math.max(0, safeRect.left - candidate.left) + Math.max(0, candidate.right - safeRect.right);
+  return candidates.reduce((best, candidate) => overflow(candidate) < overflow(best) ? candidate : best).placement;
+}
+
 function distance(from: ResultScreenPoint, to: ResultScreenPoint): number {
   return Math.hypot(to.x - from.x, to.y - from.y);
 }

@@ -73,30 +73,18 @@
       transparent
     ),
     linear-gradient(90deg, var(--pl-grid) var(--pl-grid-line-width), transparent var(--pl-grid-line-width)),
-    linear-gradient(180deg, transparent, transparent);
-  background-position: 0 0, 0 0, 0 0, 0 0;
-  background-repeat: no-repeat, no-repeat, repeat, no-repeat;
-  background-size: 100% 100%, 100% 100%, var(--pl-grid-size) var(--pl-grid-size), 100% 100%;
+    linear-gradient(180deg, var(--pl-horizontal-grid-color) var(--pl-grid-line-width), transparent var(--pl-grid-line-width));
+  background-position: 0 0, 0 0, 0 0, 0 var(--pl-horizontal-grid-start);
+  background-repeat: no-repeat, no-repeat, repeat, repeat-y;
+  background-size: 100% 100%, 100% 100%, var(--pl-grid-size) var(--pl-grid-size), var(--pl-grid-size) var(--pl-grid-size);
   background-attachment: fixed, fixed, var(--pl-grid-attachment), fixed;
   box-shadow: 0 1.5rem 4rem var(--pl-shadow);
 }
 
-/* Keep horizontal grid lines below the shared header. A separate clipped
-   layer prevents the repeating pattern from creating a line inside it. */
-.shell::before {
-  position: absolute;
-  z-index: 0;
-  top: var(--pl-horizontal-grid-start);
-  right: 0;
-  bottom: 0;
-  left: 0;
-  content: "";
-  pointer-events: none;
-  background-image: linear-gradient(180deg, var(--pl-horizontal-grid-color) var(--pl-grid-line-width), transparent var(--pl-grid-line-width));
-  background-position: 0 0;
-  background-repeat: repeat-y;
-  background-size: var(--pl-grid-size) var(--pl-grid-size);
-}
+/* Horizontal lines now live in the shell background beside the vertical
+   lines. A pseudo-layer sat below opaque content sections and therefore left
+   visible horizontal fragments only in otherwise empty columns. */
+.shell::before { content: none; }
 
 .shell > * {
   position: relative;
