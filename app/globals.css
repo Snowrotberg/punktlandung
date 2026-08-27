@@ -6632,7 +6632,9 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 .punktlandung-home-map-pictures {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  /* The complete start-frame poster stays above the paused live Globe until
+     its crossfade finishes. Only then may the shared camera journey start. */
+  z-index: 4;
   pointer-events: none;
 }
 
@@ -6645,6 +6647,10 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   .punktlandung-home-map-poster { background-image: url("/home-map-preview-phone-small-2x.webp"); }
 }
 
+@media (min-width: 376px) and (max-width: 400px) and (orientation: portrait) {
+  .punktlandung-home-map-poster { background-image: url("/home-map-preview-user-phone-2x.webp"); }
+}
+
 @media (orientation: landscape) and (min-width: 640px) and (max-width: 1279px) and (max-height: 640px) {
   .punktlandung-home-map-poster { background-image: url("/home-map-preview-phone-landscape-2x.webp"); }
 }
@@ -6652,6 +6658,11 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 @media (min-width: 1200px) {
   .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-laptop.webp"); }
   .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-laptop-with-ads.webp"); }
+}
+
+@media (min-width: 1400px) and (max-width: 1799px) {
+  .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-user-laptop-2x.webp"); }
+  .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-user-laptop-2x-with-ads.webp"); }
 }
 
 @media (min-width: 1800px) {

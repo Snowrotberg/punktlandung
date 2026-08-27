@@ -43,6 +43,10 @@
   background: #5ee7bd !important;
 }
 
+.app :global(.punktlandung-home-map-preview .punktlandung-map-label-actual[data-info-indicator]) {
+  padding-right: 2rem !important;
+}
+
 .app :global(.punktlandung-home-map-preview .punktlandung-map-label-player),
 .app :global(.punktlandung-home-map-preview .punktlandung-map-label-guess) {
   border-color: var(--player-color, #ff4775) !important;
@@ -737,10 +741,10 @@
       radial-gradient(circle 34rem at 10% 28%, rgb(52 211 153 / 0.18), transparent),
       radial-gradient(circle 36rem at 88% 70%, rgb(99 102 241 / 0.18), transparent),
       linear-gradient(90deg, rgb(148 163 184 / 0.055) 1px, transparent 1px),
-      linear-gradient(180deg, transparent, transparent);
-    background-position: 0 0, 0 0, 0 0, 0 0;
-    background-repeat: no-repeat, no-repeat, repeat, no-repeat;
-    background-size: 100% 100%, 100% 100%, 56px 56px, 100% 100%;
+      linear-gradient(180deg, rgb(148 163 184 / 0.055) 1px, transparent 1px);
+    background-position: 0 0, 0 0, 0 0, 0 4rem;
+    background-repeat: no-repeat, no-repeat, repeat, repeat-y;
+    background-size: 100% 100%, 100% 100%, 56px 56px, 56px 56px;
   }
 
   .frame {

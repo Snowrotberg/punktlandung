@@ -38,8 +38,29 @@ test("long result plans keep the globe large and reduce pullback for nearer inte
   assert.equal(fourteenThousandKm.distanceClass, "long");
   assert.ok(fiveThousandKm.keyframes.at(-1)!.zoom > fourteenThousandKm.keyframes.at(-1)!.zoom);
   assert.ok(Math.min(...fiveThousandKm.keyframes.map((frame) => frame.zoom)) > 2.3);
-  assert.ok(Math.min(...fourteenThousandKm.keyframes.map((frame) => frame.zoom)) > 1.8);
-  assert.ok(fourteenThousandKm.keyframes.at(-1)!.pitch <= 31);
+  assert.ok(Math.min(...fourteenThousandKm.keyframes.map((frame) => frame.zoom)) > RESULT_MAP_MIN_ZOOM);
+  assert.ok(fourteenThousandKm.keyframes.at(-1)!.pitch < 14);
+});
+
+test("15,000 km plans flatten and pull back without location-specific exceptions", () => {
+  const plan = buildResultCameraPlan([45, 0], [-180, 0]);
+  const end = plan.keyframes.at(-1)!;
+
+  assert.equal(plan.distanceClass, "long");
+  assert.ok(plan.distanceKm > 14_900 && plan.distanceKm < 15_100);
+  assert.ok(end.zoom <= 1.4, `expected extreme end zoom <= 1.4, received ${end.zoom}`);
+  assert.equal(end.pitch, 0);
+  assert.ok(Math.abs(Math.abs(end.center[0]) - 112.5) < 0.01);
+});
+
+test("long-distance camera geometry changes continuously around the antimeridian", () => {
+  const west = buildResultCameraPlan([45, 0], [-179, 0]).keyframes.at(-1)!;
+  const east = buildResultCameraPlan([45, 0], [179, 0]).keyframes.at(-1)!;
+
+  assert.ok(Math.abs(west.zoom - east.zoom) < 0.1);
+  assert.ok(Math.abs(west.pitch - east.pitch) < 2);
+  assert.ok(west.center.every(Number.isFinite));
+  assert.ok(east.center.every(Number.isFinite));
 });
 
 test("short result plans retain a close city view for very near pins", () => {
@@ -61,14 +82,32 @@ test("compact near results keep their distance-aware framing", () => {
   assert.ok(Math.abs(regular.keyframes.at(-1)!.zoom - compact.keyframes.at(-1)!.zoom - 0.3) < 0.001);
 });
 
-test("result orientation tilts against the east-west relation instead of stacking pins", () => {
-  const targetNorthWest = buildResultCameraPlan([1.45, 45.15], [0.34, 46.58]);
-  const targetNorthEast = buildResultCameraPlan([-1.45, 45.15], [-0.34, 46.58]);
+test("result orientation chooses the viewing side from both geographic diagonal axes", () => {
+  const northWestToSouthEast = buildResultCameraPlan([113.2, 36.4], [118.8, 32.1]);
+  const southWestToNorthEast = buildResultCameraPlan([113.2, 32.1], [118.8, 36.4]);
+  const reversedNorthWestToSouthEast = buildResultCameraPlan([118.8, 32.1], [113.2, 36.4]);
+  const reversedSouthWestToNorthEast = buildResultCameraPlan([118.8, 36.4], [113.2, 32.1]);
 
-  assert.ok(targetNorthWest.keyframes.at(-1)!.bearing > 0);
-  assert.ok(targetNorthEast.keyframes.at(-1)!.bearing < 0);
-  assert.ok(Math.abs(targetNorthWest.keyframes.at(-1)!.bearing) <= 24);
-  assert.ok(Math.abs(targetNorthEast.keyframes.at(-1)!.bearing) <= 24);
+  assert.equal(northWestToSouthEast.keyframes.at(-1)!.bearing, 22);
+  assert.equal(reversedNorthWestToSouthEast.keyframes.at(-1)!.bearing, 22);
+  assert.equal(southWestToNorthEast.keyframes.at(-1)!.bearing, -22);
+  assert.equal(reversedSouthWestToNorthEast.keyframes.at(-1)!.bearing, -22);
+});
+
+test("result orientation preserves both diagonal rules across the antimeridian", () => {
+  const northWestToSouthEast = buildResultCameraPlan([179, 14], [-178, 10]);
+  const southWestToNorthEast = buildResultCameraPlan([179, 10], [-178, 14]);
+
+  assert.equal(northWestToSouthEast.keyframes.at(-1)!.bearing, 22);
+  assert.equal(southWestToNorthEast.keyframes.at(-1)!.bearing, -22);
+  assert.ok(northWestToSouthEast.keyframes.at(-1)!.center.every(Number.isFinite));
+  assert.ok(southWestToNorthEast.keyframes.at(-1)!.center.every(Number.isFinite));
+});
+
+test("axis-aligned and nearly coincident result orientations remain deterministic", () => {
+  assert.equal(buildResultCameraPlan([12, 48], [12, 49]).keyframes.at(-1)!.bearing, 22);
+  assert.equal(buildResultCameraPlan([12, 48], [13, 48]).keyframes.at(-1)!.bearing, -22);
+  assert.equal(buildResultCameraPlan([12, 48], [12 + 1e-8, 48 - 1e-8]).keyframes.at(-1)!.bearing, 22);
 });
 
 test("prepared safe-area camera replaces only the final result frame", () => {

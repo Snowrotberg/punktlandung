@@ -166,6 +166,12 @@
   font-family: var(--font-inter);
 }
 
+/* The portrait viewer reserves a source row below the image. Keep that row on
+ * the replay surface color so it does not read as a separate blue strip. */
+.redesign :global(.punktlandung-image-replay .punktlandung-panorama-viewport) {
+  background: var(--pl-result-bg) !important;
+}
+
 .redesign :global(.punktlandung-replay-info),
 .redesign :global(.punktlandung-guess-map-panel) {
   border: 1px solid var(--pl-result-line) !important;
@@ -326,6 +332,11 @@
   border-color: var(--pl-result-mint) !important;
   color: #06231c !important;
   background: var(--pl-result-mint) !important;
+}
+
+.redesign :global(.punktlandung-results-map .punktlandung-map-label-actual[data-info-indicator]),
+.redesign :global(.punktlandung-image-replay .punktlandung-map-label-actual[data-info-indicator]) {
+  padding-right: 2rem !important;
 }
 
 .redesign :global(.punktlandung-results-map .punktlandung-map-label-player),

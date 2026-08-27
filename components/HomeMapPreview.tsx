@@ -1,11 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { Guess, RoundSummary } from "@/types/game";
-import type { ResultCameraScenario } from "@/lib/globeResultCamera";
+import { RESULT_CAMERA_CONFIG, type ResultCameraScenario } from "@/lib/globeResultCamera";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { playerColorAt } from "@/lib/playerPalette";
-import { GuessMap } from "./GuessMap";
 import { MapAttributionBadge } from "./MapAttributionBadge";
 import { HomeMapPoster } from "./HomeMapPoster";
 
@@ -15,7 +13,7 @@ const HomeGlobeResultMap = dynamic(
 );
 
 const previewDistanceKm = 2;
-const previewGuess: Guess = { lat: 52.5147, lng: 13.3501, playerId: "home-preview-player", createdAt: 0 };
+const previewGuess = { lat: 52.5147, lng: 13.3501 };
 const homeResultScenario: ResultCameraScenario = {
   id: "home-tiergarten-brandenburger-tor",
   label: "Startseite · Tiergarten → Brandenburger Tor",
@@ -26,36 +24,6 @@ const homeResultScenario: ResultCameraScenario = {
   guess: [previewGuess.lng, previewGuess.lat],
   target: [13.3777, 52.5163]
 };
-const previewSummary: RoundSummary = {
-  roundNumber: 1,
-  location: {
-    id: "home-preview-brandenburger-tor",
-    title: "Brandenburger Tor",
-    lat: 52.5163,
-    lng: 13.3777,
-    countryCode: "DE",
-    countryName: "Deutschland",
-    continent: "Europe",
-    panoramaUrl: "",
-    attribution: "OpenStreetMap",
-    source: "wikimedia",
-    category: "landmarks"
-  },
-  results: [{
-    playerId: "home-preview-player",
-    distanceKm: previewDistanceKm,
-    points: 0,
-    badge: "",
-    eliminated: false,
-    guess: previewGuess,
-    countryCorrect: false
-  }],
-  crewGuess: null,
-  crewDistanceKm: null,
-  duel: [],
-  completedAt: 0
-};
-
 function PreviewPin({ actual = false }: { actual?: boolean }) {
   const color = actual ? "#5ee7bd" : playerColorAt(0);
   return (
@@ -109,31 +77,15 @@ function PreviewMapBase({ legacy = false }: { legacy?: boolean }) {
 function HomeMapSourcePreview() {
   const [mapReady, setMapReady] = useState(false);
   return (
-    <div className={`punktlandung-home-map-preview${mapReady ? " is-map-ready" : ""}`} data-render-mode="live-map">
-      <GuessMap
-        mode="results"
-        summary={previewSummary}
-        guesses={[previewGuess]}
-        players={[{
-          id: "home-preview-player",
-          name: "Dein Tipp",
-          color: "#ff4775",
-          score: 0,
-          connected: true,
-          isHost: true,
-          team: "aurora",
-          status: "active",
-          cosmetic: "none"
-        }]}
-        showLabels
-        resultLabelLayout="home-preview"
-        resultLabelInset
-        resultControlInset
-        resultPaddingScale={0.88}
-        resultZoomScale={1.2}
-        noPan
-        noZoom
-        onBaseMapReady={() => setMapReady(true)}
+    <div className={`punktlandung-home-map-preview${mapReady ? " is-map-ready" : ""}`} data-render-mode="globe-poster-source">
+      <HomeGlobeResultMap
+        scenario={homeResultScenario}
+        animate={false}
+        initialView="start"
+        previewMode
+        targetInfoIndicator="?"
+        terrainExaggeration={RESULT_CAMERA_CONFIG.terrainExaggeration.homePreview}
+        onSurfaceReady={() => setMapReady(true)}
       />
       <HomeMapPoster ready={mapReady} />
     </div>
@@ -146,6 +98,7 @@ export function HomeMapPreview() {
   const [previewMode, setPreviewMode] = useState<"animated" | "static" | "legacy" | "source">("animated");
   const [liveReady, setLiveReady] = useState(false);
   const [liveUnavailable, setLiveUnavailable] = useState(false);
+  const [animationStarted, setAnimationStarted] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
@@ -155,6 +108,42 @@ export function HomeMapPreview() {
     else if (parameters.get("homeMap") === "static") setPreviewMode("static");
     else setPreviewMode("animated");
   }, []);
+
+  useEffect(() => {
+    if (!liveReady || liveUnavailable || previewMode !== "animated") return;
+    const pictures = previewRef.current?.querySelector<HTMLElement>(".punktlandung-home-map-pictures");
+    const posters = pictures
+      ? Array.from(pictures.querySelectorAll<HTMLElement>(".punktlandung-home-map-poster"))
+      : [];
+    const visiblePoster = posters.find((poster) => getComputedStyle(poster).display !== "none");
+    if (!visiblePoster) return;
+
+    // Wait for the actual, currently selected poster to finish fading. A short
+    // settled frame after transitionend keeps the first camera movement clearly
+    // separated from the handoff; the timeout also covers Reduced Motion.
+    let settledTimer: number | undefined;
+    let fallbackTimer: number | undefined;
+    let finished = false;
+    const beginAfterSettledFrame = () => {
+      if (finished) return;
+      finished = true;
+      settledTimer = window.setTimeout(() => setAnimationStarted(true), 600);
+    };
+    const handleTransitionEnd = (event: TransitionEvent) => {
+      if (event.target === visiblePoster && event.propertyName === "opacity") beginAfterSettledFrame();
+    };
+    visiblePoster.addEventListener("transitionend", handleTransitionEnd);
+    const style = getComputedStyle(visiblePoster);
+    const durations = style.transitionDuration.split(",").map((value) => Number.parseFloat(value) * (value.includes("ms") ? 1 : 1_000));
+    const delays = style.transitionDelay.split(",").map((value) => Number.parseFloat(value) * (value.includes("ms") ? 1 : 1_000));
+    const transitionMs = Math.max(0, ...durations.map((duration, index) => duration + (delays[index] ?? delays[0] ?? 0)));
+    fallbackTimer = window.setTimeout(beginAfterSettledFrame, transitionMs + 80);
+    return () => {
+      visiblePoster.removeEventListener("transitionend", handleTransitionEnd);
+      if (settledTimer !== undefined) window.clearTimeout(settledTimer);
+      if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer);
+    };
+  }, [liveReady, liveUnavailable, previewMode]);
 
   useLayoutEffect(() => {
     const preview = previewRef.current;
@@ -212,10 +201,11 @@ export function HomeMapPreview() {
       ref={previewRef}
       className={`punktlandung-home-map-preview uses-tiergarten-fallback${previewMode === "legacy" ? " uses-legacy-fallback" : ""}${previewReady ? " is-map-ready" : ""}`}
       data-render-mode={renderMode}
+      data-animation-started={animationStarted ? "true" : "false"}
       data-animation-complete={animationComplete ? "true" : "false"}
       aria-label="Kartenvorschau: Dein Tipp liegt zwei Kilometer vom Brandenburger Tor entfernt."
     >
-      <div className={`punktlandung-home-map-static-layer${liveReady ? " is-hidden" : ""}`} data-home-map-fallback="true">
+      {!liveActive ? <div className="punktlandung-home-map-static-layer" data-home-map-fallback="true">
         <PreviewMapBase legacy={previewMode === "legacy"} />
         {showCompleteFallback ? (
           <svg className="punktlandung-home-map-static-connector" aria-hidden="true">
@@ -233,19 +223,22 @@ export function HomeMapPreview() {
           <span className="punktlandung-map-label punktlandung-map-label-actual punktlandung-home-map-static-label is-actual">Brandenburger Tor</span>
         ) : null}
         <MapAttributionBadge />
-      </div>
+      </div> : null}
       {liveActive ? (
         <div className={`punktlandung-home-map-live-layer${liveReady ? " is-ready" : ""}`}>
           <HomeGlobeResultMap
             scenario={homeResultScenario}
+            startPaused={!animationStarted}
             previewMode
             targetInfoIndicator="?"
+            terrainExaggeration={RESULT_CAMERA_CONFIG.terrainExaggeration.homePreview}
             onSurfaceReady={() => setLiveReady(true)}
             onAnimationComplete={() => setAnimationComplete(true)}
             onUnavailable={() => setLiveUnavailable(true)}
           />
         </div>
       ) : null}
+      {liveActive ? <HomeMapPoster ready={liveReady} /> : null}
     </div>
   );
 }
