@@ -11,10 +11,10 @@
 
 .app { --pl-content-inset: clamp(1.5rem, 3vw, 4rem); display: flex; min-width: 0; min-height: 0; flex-direction: column; font-family: var(--font-inter); }
 .shell { width: 100%; max-width: 76rem; min-height: 0; margin: 0 auto; padding: 0 var(--pl-content-inset); flex: 1; overflow: auto; scrollbar-color: color-mix(in srgb, var(--pl-mint) 45%, var(--pl-line)) transparent; scrollbar-width: thin; }
-.topbar { flex: 0 0 auto; padding-inline: var(--pl-content-inset) !important; }
+.topbar { flex: 0 0 auto; }
 .brand { text-decoration: none; }
 .toplinks { align-items: center; display: flex; gap: 1rem; }
-.subpageTop { flex: 0 0 auto; padding-inline: var(--pl-content-inset) !important; }
+.subpageTop { flex: 0 0 auto; }
 .toplink { min-height: 2.75rem; font-size: 1rem; }
 .logout { background: transparent; border: 1px solid #334155; border-radius: .55rem; color: #e2e8f0; cursor: pointer; font: inherit; font-size: .82rem; font-weight: 800; padding: .7rem .9rem; }
 .eyebrow { color: #a7f3d0; display: block; font-size: .72rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
@@ -121,6 +121,7 @@
 .historyListPanel { padding-bottom: 1rem; }
 .historyListPanel .panelMeta { margin: -.35rem 0 .8rem; }
 .historyControls { display: grid; gap: .75rem; grid-template-columns: minmax(0, 1.6fr) minmax(15rem, 1fr); margin: 0 0 .85rem; }
+.mobileHistoryControls { display: none; }
 .historyControlGroup { display: grid; gap: .38rem; min-width: 0; }
 .historyControlLabel { color: #94a3b8; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .historyFilterLinks { display: flex; flex-wrap: wrap; gap: .4rem; }
@@ -221,7 +222,8 @@
   .historyStats .stat:nth-child(3)::before { display: none; }
   .historyStats .stat:nth-child(n + 3) { border-top: 1px solid rgba(148, 163, 184, .15); }
   .categoryBestPanel .insightList { grid-template-columns: 1fr; }
-  .historyControls { grid-template-columns: 1fr; }
+  .historyControls { display: none; }
+  .mobileHistoryControls { display: grid; gap: .5rem; grid-template-columns: minmax(0, 1fr); margin: 0 0 .85rem; }
   .overviewDashboard, .overviewNavigation { grid-template-columns: 1fr; grid-template-rows: auto; }
   .dashboardCard.overviewMilestones, .scoreStrip, .overviewNavigation { grid-column: 1; grid-row: auto; }
   .scoreStrip { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .8rem; }
@@ -301,7 +303,11 @@
 @media (max-width: 480px) {
   .statsGrid { grid-template-columns: 1fr 1fr; }
   .accountOverviewLinks, .overviewMilestones .achievementList { grid-template-columns: 1fr; }
-  .topbar, .subpageTop { padding-inline: 1rem; }
+}
+
+@media (max-height: 31.25rem) and (min-width: 42.01rem) {
+  .historyControls { display: none; }
+  .mobileHistoryControls { display: grid; gap: .5rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 0 .85rem; }
 }
 
 @media (max-width: 52rem) {
@@ -339,7 +345,6 @@
     align-items: center;
     flex-direction: row;
     gap: .35rem;
-    padding: .75rem 1rem;
   }
   .toplinks {
     min-width: 0;
@@ -382,16 +387,16 @@
   .page {
     min-height: 100dvh;
     overflow-x: hidden;
-    padding: .55rem;
+    padding: 0;
   }
 
   .frame {
-    min-height: calc(100dvh - 1.1rem);
+    min-height: 100dvh;
     gap: 0;
   }
 
   .app {
-    min-height: calc(100dvh - 1.1rem);
+    min-height: 100dvh;
     overflow: visible;
   }
 
@@ -399,7 +404,6 @@
   .subpageTop {
     min-height: 3.4rem;
     gap: .65rem;
-    padding: .45rem 1rem;
   }
 
   .topbar .brand,

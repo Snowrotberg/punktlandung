@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { RedesignButtonLink } from "@/components/redesign";
 import { InfoPageShell } from "@/components/InfoPageShell";
 import { JsonLd } from "@/components/StructuredData";
+import { GameFlowDiagram, ScoreDiagram } from "@/components/EditorialExplainers";
 import { absoluteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -70,25 +71,9 @@ export default function SoFunktioniertPunktlandungPage() {
         title="Wie funktioniert Punktlandung?"
         intro="Punktlandung zeigt dir einen Ort, ein Wahrzeichen, eine Landschaft, eine Stadt oder eine Flagge. Du setzt deinen Tipp auf der Weltkarte. Je kleiner die Entfernung zum Ziel, desto mehr der maximal 5.000 Punkte erhältst du."
       >
-      <p className="text-sm text-slate-400">Inhaltlich geprüft: 26. August 2026</p>
+      <p className="text-sm text-slate-400">Inhaltlich geprüft: 27. August 2026</p>
 
-      <section className="mt-6">
-        <h2 className="text-[22px] font-black leading-tight text-white">Eine Runde in vier Schritten</h2>
-        <ol className="mt-4 grid gap-3 md:grid-cols-2">
-          {[
-            ["1", "Hinweis ansehen", "Du siehst ein Bild oder eine geografische Aufgabe aus der gewählten Kategorie."],
-            ["2", "Ort einschätzen", "Du suchst auf der Weltkarte die Stelle, an der du das gezeigte Ziel vermutest."],
-            ["3", "Pin setzen", "Dein Kartentipp wird für die aktuelle Runde gespeichert."],
-            ["4", "Ergebnis vergleichen", "Punktlandung zeigt Ziel, Entfernung und erreichte Punkte."]
-          ].map(([number, title, body]) => (
-            <li key={number} className="punktlandung-info-static-card--translucent rounded-md p-4">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">Schritt {number}</p>
-              <h3 className="mt-1 text-lg font-black text-white">{title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <GameFlowDiagram />
 
       <section className="mt-8">
         <h2 className="text-[22px] font-black leading-tight text-white">Wie werden die Punkte berechnet?</h2>
@@ -97,6 +82,7 @@ export default function SoFunktioniertPunktlandungPage() {
           Im Spiel wird die Formel <strong className="text-white">5.000 × e<sup>−Entfernung/1.850</sup></strong> verwendet
           und auf eine ganze Zahl gerundet.
         </p>
+        <ScoreDiagram />
 
         <div className="punktlandung-info-table mt-4 overflow-x-auto">
           <table className="w-full border-collapse text-left text-sm">

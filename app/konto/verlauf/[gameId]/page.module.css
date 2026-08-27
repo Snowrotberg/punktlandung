@@ -3,7 +3,7 @@
 .frameNoAds { grid-template-columns: minmax(0, 1fr) !important; }
 .rail { display: none; }
 .app { --pl-content-inset: clamp(1.5rem, 3vw, 4rem); display: flex; min-width: 0; min-height: 0; flex-direction: column; font-family: var(--font-inter); }
-.topbar { flex: 0 0 auto; padding-inline: var(--pl-content-inset) !important; }
+.topbar { flex: 0 0 auto; }
 .brand { text-decoration: none; }
 .toplinks { align-items: center; display: flex; gap: 1rem; }
 .toplink { min-height: 2.5rem; }
@@ -57,4 +57,5 @@
 @media (min-width: 80rem) { .page { height: 100dvh; overflow: hidden; } .frame { height: calc(100dvh - clamp(1.5rem, 2vw, 4rem)); min-height: 0; grid-template-columns: clamp(9rem, 12vw, 30rem) minmax(0, 1fr) clamp(9rem, 12vw, 30rem); } .rail { display: block; min-height: 0; width: auto; } .app { height: 100%; overflow: hidden; } }
 @media (max-width: 60rem) { .roundCard { grid-template-columns: 4rem minmax(0, 1fr); } .roundResult { border-left: 0; border-top: 1px solid #26354a; grid-column: 2; padding: .75rem 0 0; } .roundVisuals { grid-column: 2; grid-template-columns: 1fr; } .learningGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 48rem) { .headerRow { align-items: start; flex-direction: column; } .scoreCard { align-self: flex-start; min-width: calc((100% - .65rem) / 2); max-width: 100%; text-align: left; width: fit-content; } .metaGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 30rem) { .page { padding: 0; } .topbar { padding-inline: 1rem !important; } .shell { padding-inline: 1rem; } .scoreCard { min-width: calc((100% - .5rem) / 2); } .metaGrid { gap: .5rem; } .roundCard { gap: .65rem; grid-template-columns: 1fr; } .roundResult, .roundVisuals { grid-column: auto; } .panelHeading { align-items: start; flex-direction: column; } .learningGrid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 30rem) { .page { padding: 0; } .shell { padding-inline: 1rem; } .scoreCard { min-width: calc((100% - .5rem) / 2); } .metaGrid { gap: .5rem; } .roundCard { gap: .65rem; grid-template-columns: 1fr; } .roundResult, .roundVisuals { grid-column: auto; } .panelHeading { align-items: start; flex-direction: column; } .learningGrid { grid-template-columns: 1fr 1fr; } }
+@media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) { .page { min-height: 100dvh; padding: 0; } .frame, .app { min-height: 100dvh; } }

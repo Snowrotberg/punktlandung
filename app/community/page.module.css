@@ -2,7 +2,7 @@
 .frame { position: relative; display: grid; width: 100%; min-height: calc(100dvh - clamp(1.5rem, 2vw, 4rem)); margin: 0 auto; grid-template-columns: minmax(0, 1fr); gap: clamp(.75rem, 1vw, 2rem); }
 .rail { display: none; }
 .app { --pl-content-inset: clamp(1.5rem, 3vw, 4rem); display: flex; min-height: calc(100dvh - clamp(1.5rem, 2vw, 4rem)); flex-direction: column; font-family: var(--font-inter); }
-.header { flex: 0 0 auto; padding-inline: var(--pl-content-inset) !important; }
+.header { flex: 0 0 auto; }
 .headerActions { display: flex; align-items: center; gap: .7rem; }
 .playLink { min-height: 2.75rem; font-size: 1rem; }
 .body { width: 100%; max-width: 78rem; margin: 0 auto; padding: clamp(1rem, 2vw, 1.75rem) var(--pl-content-inset) 2rem; flex: 1; }
@@ -176,7 +176,7 @@
   .page { padding: 0; }
   .frame, .app { min-height: 100dvh; }
   .app { border-radius: 0; }
-  .header, .body { padding-inline: 1rem !important; }
+  .body { padding-inline: 1rem !important; }
   .body { padding-bottom: 1rem; }
   .footer { padding-inline: 1rem; }
 }
@@ -193,7 +193,7 @@
   .ideaList { padding-inline: .85rem; }
 }
 @media (max-width: 30rem) {
-  .header { align-items: center; flex-direction: row; gap: .35rem; padding: .75rem 1rem; }
+  .header { align-items: center; flex-direction: row; gap: .35rem; }
   .headerActions { min-width: 0; width: auto; justify-content: flex-end; gap: .35rem; }
   .playLink { display: inline-grid; width: 2.5rem; min-width: 2.5rem; min-height: 2.5rem; padding: 0; place-items: center; border-radius: 50%; font-size: 0; overflow: hidden; position: relative; text-indent: -9999px; }
   .playLink::before { content: "▶"; position: absolute; inset: 0; display: grid; place-items: center; font-size: .72rem; text-indent: 0; }

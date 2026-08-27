@@ -566,6 +566,60 @@
   }
 }
 
+/* One geometry system for setup controls. Category cards are the visual
+   reference: compact rectangles with a clear, consistent corner radius. */
+.app {
+  --setup-field-height: 2.35rem;
+  --setup-field-gap: .5rem;
+  --setup-field-radius: var(--pl-radius-card);
+}
+
+.modeTabs,
+.timeOptions,
+.roundOptions,
+.threeOptions,
+.restrictionOptions {
+  gap: var(--setup-field-gap);
+}
+
+.modeTabs a,
+.controlGroup > div > button,
+.customTime,
+.customRounds {
+  min-height: var(--setup-field-height);
+  border-radius: var(--setup-field-radius);
+}
+
+.introActions button {
+  min-height: 2.75rem;
+  border-radius: var(--pl-radius-card);
+}
+
+.customTime button,
+.customRounds button {
+  border-radius: 0;
+}
+
+@media (orientation: portrait) and (max-width: 52rem) {
+  .app {
+    --setup-field-height: 3rem;
+    --setup-field-radius: var(--pl-radius-card);
+  }
+}
+
+@media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
+  .app {
+    --setup-field-height: 2.75rem;
+    --setup-field-gap: .3rem;
+    --setup-field-radius: .7rem;
+  }
+
+  .introActions button {
+    min-height: var(--setup-field-height);
+    border-radius: .7rem;
+  }
+}
+
 /* The fixed action bar lives inside .intro.  The shell deliberately gives
    each direct child its own stacking context; raising the bar alone therefore
    cannot put it above the later workspace.  Raise the complete intro context

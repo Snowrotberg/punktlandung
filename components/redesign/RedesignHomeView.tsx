@@ -1,6 +1,6 @@
 "use client";
 
-import { Globe2, UserRound, UsersRound } from "lucide-react";
+import { AlertTriangle, Globe2, UserRound, UsersRound } from "lucide-react";
 import type { MouseEvent } from "react";
 import { AdContainer } from "@/components/AdContainer";
 import { LegalLinks } from "@/components/LegalLinks";
@@ -28,6 +28,8 @@ type RedesignHomeViewProps = {
   soundEnabled: boolean;
   accountHref?: string;
   accountAuthenticated?: boolean;
+  directStartError?: string | null;
+  directStartPending?: boolean;
   mapPreview: React.ReactNode;
   modes: ReadonlyArray<HomeMode>;
   onDirectPlay: (event: MouseEvent<HTMLAnchorElement>) => void;
@@ -47,6 +49,8 @@ export function RedesignHomeView({
   soundEnabled,
   accountHref,
   accountAuthenticated,
+  directStartError,
+  directStartPending = false,
   mapPreview,
   modes,
   onDirectPlay,
@@ -77,11 +81,13 @@ export function RedesignHomeView({
                       href="/solo-modus/direct?rounds=15&time=60&difficulty=medium&category=mixed"
                       tone="primary"
                       className={`${styles.directButton} punktlandung-optical-arrow-right`}
-                    onClick={onDirectPlay}
+                      aria-disabled={directStartPending || undefined}
+                      onClick={onDirectPlay}
                   >
-                    <span>Direkt spielen</span>
+                    <span>{directStartPending ? "Partie wird vorbereitet…" : "Direkt spielen"}</span>
                     <TriangleIcon direction="right" />
                   </RedesignButtonLink>
+                  {directStartError && <p className={styles.directStartError} role="alert"><AlertTriangle aria-hidden="true" />{directStartError}</p>}
                 </div>
               </div>
               <div className={styles.heroMap} role="region" aria-label="Beispiel einer Spielauflösung">{mapPreview}</div>

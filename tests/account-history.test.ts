@@ -33,12 +33,15 @@ test("history filters one category without changing the original list", () => {
 test("history sorting separates newest, average and total score", () => {
   const games = [
     game({ game_id: "new", score: 10_000, completed_at: "2026-08-26T12:00:00.000Z" }),
-    game({ game_id: "average", score: 18_000, completed_rounds: 5, planned_rounds: 5, completed_at: "2026-08-24T12:00:00.000Z" }),
-    game({ game_id: "total", score: 30_000, completed_rounds: 20, planned_rounds: 20, completed_at: "2026-08-25T12:00:00.000Z" })
+    game({ game_id: "average", score: 24_000, completed_rounds: 5, planned_rounds: 5, completed_at: "2026-08-24T12:00:00.000Z" }),
+    game({ game_id: "total", score: 40_000, completed_rounds: 10, planned_rounds: 10, completed_at: "2026-08-25T12:00:00.000Z" })
   ];
   assert.deepEqual(filterAndSortAccountHistory(games, "all", "latest").map((entry) => entry.game_id), ["new", "total", "average"]);
-  assert.deepEqual(filterAndSortAccountHistory(games, "all", "average").map((entry) => entry.game_id), ["average", "total", "new"]);
-  assert.deepEqual(filterAndSortAccountHistory(games, "all", "score").map((entry) => entry.game_id), ["total", "average", "new"]);
+  const byPointsPerRound = filterAndSortAccountHistory(games, "all", "average").map((entry) => entry.game_id);
+  const byTotalScore = filterAndSortAccountHistory(games, "all", "score").map((entry) => entry.game_id);
+  assert.deepEqual(byPointsPerRound, ["average", "total", "new"], "24,000 / 5 rounds ranks above 40,000 / 10 rounds");
+  assert.deepEqual(byTotalScore, ["total", "average", "new"], "the raw 40,000 total ranks above 24,000");
+  assert.notDeepEqual(byPointsPerRound, byTotalScore);
 });
 
 test("unknown history query values fall back safely", () => {

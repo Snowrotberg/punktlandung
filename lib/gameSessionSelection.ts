@@ -37,6 +37,26 @@ export function shouldRestoreRankedSoloSession(
 }
 
 /**
+ * Gameplay routes restore their required state. The dedicated direct-start
+ * route also restores its browser-local room so a reload keeps the original
+ * absolute round deadline instead of silently creating a second first round.
+ */
+export function shouldRestoreLocalSession(
+  requiredStatus: RoundStatus | undefined,
+  directStart: boolean
+): boolean {
+  return Boolean(requiredStatus) || directStart;
+}
+
+export function shouldOfferSetupResume(
+  requiredStatus: RoundStatus | undefined,
+  onSetupRoute: boolean,
+  directStart: boolean
+): boolean {
+  return Boolean(requiredStatus) || onSetupRoute || directStart;
+}
+
+/**
  * Ranked provenance belongs to the room, not to the currently selected hook.
  * During route restoration the hook selection can change for a render. A
  * ranked result must still never be persisted as an unverified local game.

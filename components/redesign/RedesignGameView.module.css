@@ -45,15 +45,7 @@
   font-weight: 650 !important;
 }
 
-/* Runde und Zeit sind bewusst die violette Sekundärinformation. Diese
-   spezifischere Regel muss nach der gemeinsamen Mint-Regel stehen. */
-.redesign :global(.punktlandung-game-stat) {
-  border-color: color-mix(in srgb, var(--pl-game-violet) 62%, var(--pl-game-line)) !important;
-  background:
-    linear-gradient(145deg, rgb(147 140 255 / 0.14), transparent 72%),
-    var(--pl-game-panel-background) !important;
-}
-
+/* Nur die Beschriftungen bleiben als violette Sekundärinformation markiert. */
 .redesign :global(.punktlandung-game-stat p:first-child) {
   color: var(--pl-game-violet) !important;
 }

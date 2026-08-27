@@ -14,6 +14,7 @@ import styles from "./page.module.css";
 import { SectionNavigation } from "@/components/SectionNavigation";
 import { isAdminAccount } from "@/lib/adminAccess.server";
 import { InlineInfoPopover } from "@/components/InlineInfoPopover";
+import { ResponsiveRouteSelect } from "@/components/ResponsiveRouteSelect";
 
 export const metadata: Metadata = { title: "Rankings", robots: { index: false, follow: false } };
 
@@ -52,8 +53,20 @@ export default async function RankingsPage({ searchParams }: { searchParams: Pro
   return <main className={layoutStyles.page}><div className={`${layoutStyles.frame} ${layoutStyles.frameNoAds}`}><RedesignShell className={layoutStyles.app}>
     <RedesignHeader className={layoutStyles.topbar}><RedesignBrand className={layoutStyles.brand} /><div className={layoutStyles.toplinks}><RedesignButtonLink href="/solo-modus" tone="primary" className={layoutStyles.toplink}>Spielen</RedesignButtonLink><AccountHeaderControls authenticated={Boolean(accountContext)} /></div></RedesignHeader>
     <SectionNavigation section="account" admin={isAdmin} /><div className={styles.shell}><div className={styles.content}><h1>Rankings</h1><p className={styles.intro}>Vergleiche die besten gewerteten Partien nach Zeitraum, Kategorie oder über alle Kategorien hinweg.</p>
-      <nav className={styles.filters} aria-label="Ranking-Filter">{(["daily", "weekly", "monthly", "yearly"] as const).map((value) => <Link key={value} href={`/rankings?period=${value}&category=${category}`} data-active={period === value}>{periodLabels[value]}</Link>)}</nav>
-      <div className={styles.categories}>{categories.map(([value, label]) => <Link key={value} href={`/rankings?period=${period}&category=${value}`} data-active={category === value}>{label}</Link>)}</div>
+      <section className={styles.filterPanel} aria-label="Rankings filtern">
+        <div className={styles.filterGroup}>
+          <div className={styles.filterHeading}><strong>Zeitraum</strong><span>Wann wurde gespielt?</span></div>
+          <nav className={`${styles.filterOptions} ${styles.periodOptions}`} aria-label="Ranking-Zeitraum">{(["daily", "weekly", "monthly", "yearly"] as const).map((value) => <Link key={value} href={`/rankings?period=${value}&category=${category}`} aria-current={period === value ? "page" : undefined}>{periodLabels[value]}</Link>)}</nav>
+        </div>
+        <div className={styles.filterGroup}>
+          <div className={styles.filterHeading}><strong>Kategorie</strong><span>Welche Aufgaben zählen?</span></div>
+          <nav className={styles.filterOptions} aria-label="Ranking-Kategorie">{categories.map(([value, label]) => <Link key={value} href={`/rankings?period=${period}&category=${value}`} aria-current={category === value ? "page" : undefined}>{label}</Link>)}</nav>
+        </div>
+      </section>
+      <div className={styles.mobileFilterPanel} aria-label="Rankings filtern">
+        <ResponsiveRouteSelect label="Zeitraum" value={period} options={(["daily", "weekly", "monthly", "yearly"] as const).map((value) => ({ value, label: periodLabels[value], href: `/rankings?period=${value}&category=${category}` }))} />
+        <ResponsiveRouteSelect label="Kategorie" value={category} options={categories.map(([value, label]) => ({ value, label, href: `/rankings?period=${period}&category=${value}` }))} />
+      </div>
       <section className={styles.panel} aria-live="polite"><div className={styles.panelHead}><h2>{rankingTitles[period]}</h2><span>{categories.find(([value]) => value === category)?.[1]}</span></div>
         <>
           {displayedOwnEntry && <div className={styles.ownSummary}><strong>Deine Platzierung: #{displayedOwnEntry.rank}</strong><span>Bestwert {(displayedOwnEntry.comparisonValue ?? displayedOwnEntry.score).toLocaleString("de-DE")} Punkte/Runde</span></div>}

@@ -20,6 +20,7 @@ import { SectionNavigation } from "@/components/SectionNavigation";
 import { bestAveragePointsByCategory } from "@/lib/accountStatistics";
 import { isAdminAccount } from "@/lib/adminAccess.server";
 import { InlineInfoPopover } from "@/components/InlineInfoPopover";
+import { ResponsiveRouteSelect } from "@/components/ResponsiveRouteSelect";
 
 export const metadata: Metadata = { title: "Spielverlauf", robots: { index: false, follow: false } };
 
@@ -45,8 +46,8 @@ const historyCategoryFilters: Array<[AccountHistoryCategory, string]> = [
 
 const historySortOptions: Array<[AccountHistorySort, string]> = [
   ["latest", "Neueste"],
-  ["average", "Beste Ø-Punkte"],
-  ["score", "Höchste Gesamtpunkte"]
+  ["average", "Beste Punkte pro Runde"],
+  ["score", "Höchste Gesamtpunktzahl"]
 ];
 
 function gameStatusLabel(status: string): string | null {
@@ -60,7 +61,7 @@ export default async function AccountHistoryPage({ searchParams }: { searchParam
   const selectedCategory = parseAccountHistoryCategory(params.category);
   const selectedSort = parseAccountHistorySort(params.sort);
   const context = await getSupabaseAccountContext();
-  if (!context) redirect("/anmelden?returnTo=%2Fkonto%2Fverlauf");
+  if (!context) redirect(`/anmelden?returnTo=${encodeURIComponent(`/konto/verlauf?category=${selectedCategory}&sort=${selectedSort}`)}`);
   const [admin, isAdmin] = [createSupabaseAdminClient(), await isAdminAccount(context.identity.account.accountId)];
   const { data: games } = await admin.from("ranked_games").select("game_id, category, score, completed_at, integrity_status, planned_rounds, completed_rounds, time_limit_sec, difficulty, no_zoom, total_response_time_ms").eq("account_id", context.identity.account.accountId).eq("status", "completed").order("completed_at", { ascending: false }).limit(500);
   const completedGames = (games ?? []) as AccountHistoryGame[];
@@ -80,6 +81,10 @@ export default async function AccountHistoryPage({ searchParams }: { searchParam
         <div className={styles.historyControls}>
           <nav className={styles.historyControlGroup} aria-label="Partien nach Kategorie filtern"><span className={styles.historyControlLabel}>Kategorie</span><div className={styles.historyFilterLinks}>{historyCategoryFilters.map(([value, label]) => <Link key={value} href={`/konto/verlauf?category=${value}&sort=${selectedSort}`} data-active={selectedCategory === value}>{label}</Link>)}</div></nav>
           <nav className={styles.historyControlGroup} aria-label="Partien sortieren"><span className={styles.historyControlLabel}>Sortierung</span><div className={styles.historyFilterLinks}>{historySortOptions.map(([value, label]) => <Link key={value} href={`/konto/verlauf?category=${selectedCategory}&sort=${value}`} data-active={selectedSort === value}>{label}</Link>)}</div></nav>
+        </div>
+        <div className={styles.mobileHistoryControls} aria-label="Partien filtern und sortieren">
+          <ResponsiveRouteSelect label="Kategorie" value={selectedCategory} options={historyCategoryFilters.map(([value, label]) => ({ value, label, href: `/konto/verlauf?category=${value}&sort=${selectedSort}` }))} />
+          <ResponsiveRouteSelect label="Sortierung" value={selectedSort} options={historySortOptions.map(([value, label]) => ({ value, label, href: `/konto/verlauf?category=${selectedCategory}&sort=${value}` }))} />
         </div>
         {completedGames.length === 0 ? <p className={styles.empty}>Noch keine gespeicherte Partie. Angemeldete Spieler speichern ihren Endstand automatisch.</p> : visibleGames.length === 0 ? <p className={styles.empty}>In dieser Kategorie hast du noch keine gespeicherte Partie.</p> : <><p className={styles.historyResultMeta}>{visibleGames.length} {visibleGames.length === 1 ? "Partie" : "Partien"}</p><ul className={styles.gameList}>{visibleGames.map((game) => {
         const rounds = game.completed_rounds ?? game.planned_rounds ?? 0;

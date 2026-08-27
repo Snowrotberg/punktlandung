@@ -15,6 +15,14 @@ export function gameplayStatusForRoute(pathname: string): Exclude<RoundStatus, "
   return null;
 }
 
+function isGameplaySetupRoute(pathname: string): boolean {
+  return pathname === "/solo-modus"
+    || pathname === "/solo-modus/direct"
+    || pathname === "/party-modus"
+    || pathname === "/online-modus"
+    || pathname === "/warteraum";
+}
+
 export function shouldSynchronizeGameplayRoute(input: {
   pathname: string;
   targetRoute: string | null;
@@ -22,7 +30,7 @@ export function shouldSynchronizeGameplayRoute(input: {
   intentionalExitPending: boolean;
 }): boolean {
   return Boolean(
-    gameplayStatusForRoute(input.pathname)
+    (gameplayStatusForRoute(input.pathname) || isGameplaySetupRoute(input.pathname))
       && input.targetRoute
       && input.pathname !== input.targetRoute
       && !input.restorationPending
