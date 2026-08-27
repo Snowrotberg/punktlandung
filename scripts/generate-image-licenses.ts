@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { builtInLocations } from "../data/locations";
+import { imageFileNameForLicense } from "../lib/imageLicenseLink";
 
 const endpoint = "https://commons.wikimedia.org/w/api.php";
 const outputPath = path.join(process.cwd(), "data", "generated", "image-licenses.generated.json");
@@ -24,15 +25,6 @@ type CommonsResponse = {
     pages?: Record<string, CommonsPage>;
   };
 };
-
-function fileNameFromUrl(rawUrl: string): string {
-  const url = new URL(rawUrl);
-  const filePathMarker = "/Special:FilePath/";
-  const redirectMarker = "/Special:Redirect/file/";
-  if (url.pathname.includes(filePathMarker)) return decodeURIComponent(url.pathname.split(filePathMarker).pop() ?? "");
-  if (url.pathname.includes(redirectMarker)) return decodeURIComponent(url.pathname.split(redirectMarker).pop() ?? "");
-  return decodeURIComponent(url.pathname.split("/").pop() ?? "").replace(/^File:/, "");
-}
 
 function plainText(input = ""): string {
   return input
@@ -103,7 +95,7 @@ async function run() {
   const locationsByFile = new Map<string, typeof builtInLocations>();
   for (const location of builtInLocations) {
     if (location.source !== "wikimedia") continue;
-    const fileName = location.imageFile?.trim() || fileNameFromUrl(location.panoramaUrl);
+    const fileName = imageFileNameForLicense(location);
     if (!fileName) continue;
     const locations = locationsByFile.get(fileName) ?? [];
     locations.push(location);

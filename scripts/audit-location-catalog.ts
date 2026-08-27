@@ -1,6 +1,7 @@
 import { builtInLocations, catalogInventoryLocations } from "../data/locations";
 import { locationDifficultyMap } from "../lib/locationDifficulty";
 import { catalogImageIssues } from "../lib/catalogImageQuality";
+import { buildCatalogStatistics } from "../lib/catalogStatistics";
 
 const prohibitedCuratedFilePatterns = [
   /\b(person|people|portraits?|politicians?|presidents?|ministers?|secretaries|ambassadors?)\b/i,
@@ -12,6 +13,7 @@ const prohibitedCuratedFilePatterns = [
 const difficultyById = locationDifficultyMap(builtInLocations);
 const stats = new Map<string, { total: number; base: number; curated: number; easy: number; medium: number; hard: number }>();
 const errors: string[] = [];
+const catalogStatistics = buildCatalogStatistics(builtInLocations, catalogInventoryLocations);
 
 for (const location of builtInLocations) {
   const row = stats.get(location.category) ?? { total: 0, base: 0, curated: 0, easy: 0, medium: 0, hard: 0 };
@@ -32,6 +34,10 @@ for (const location of builtInLocations) {
       errors.push(`${location.id}: gesperrtes Motiv im Dateinamen ${location.imageFile}`);
     }
   }
+}
+
+if (catalogStatistics.missingLicenseImages > 0) {
+  errors.push(`${catalogStatistics.missingLicenseImages} aktive Bilddateien haben keinen vollständigen Lizenzeintrag`);
 }
 
 console.table(Object.fromEntries(stats));

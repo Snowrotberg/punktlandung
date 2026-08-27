@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { imageLicenseEntryId, imageLicenseHref, normalizeImageLicenseFileName } from "../lib/imageLicenseLink";
+import { imageFileNameForLicense, imageLicenseEntryId, imageLicenseHref, normalizeImageLicenseFileName } from "../lib/imageLicenseLink";
 
 test("image license links target a stable exact catalogue entry", () => {
   const fileName = "Festung_Hohensalzburg – Salzburg.jpg";
@@ -14,4 +14,13 @@ test("image license links target a stable exact catalogue entry", () => {
 
 test("missing image metadata falls back to the image-credit section", () => {
   assert.equal(imageLicenseHref(), "/lizenzen#bildnachweise");
+});
+
+test("derives Wikimedia file names when older catalogue rows lack imageFile", () => {
+  assert.equal(imageFileNameForLicense({
+    panoramaUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Festung_Hohensalzburg.jpg?width=1200"
+  }), "Festung_Hohensalzburg.jpg");
+  assert.equal(imageFileNameForLicense({
+    panoramaUrl: "https://upload.wikimedia.org/wikipedia/commons/a/a1/Example_image.jpg"
+  }), "Example_image.jpg");
 });

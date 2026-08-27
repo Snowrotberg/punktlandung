@@ -1,32 +1,14 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import { builtInLocations } from "../data/locations.ts";
 
-const catalogPath = path.join(process.cwd(), "data", "generated", "locations.generated.json");
-const contentExclusionsPath = path.join(process.cwd(), "data", "image-content-exclusions.json");
 const outputDirectory = path.join(process.cwd(), "test-artifacts", "catalog-quality");
 const categories = ["capitals", "cities", "landmarks", "landscapes"];
 const samplesPerCategory = Math.max(1, Number.parseInt(process.env.CATALOG_SAMPLE_PER_CATEGORY ?? "6", 10));
 const tileWidth = 480;
 const tileHeight = 320;
 const imageHeight = 270;
-
-function strictEligible(location) {
-  const width = location.imageWidth ?? 0;
-  const height = location.imageHeight ?? 0;
-  const year = location.imageCapturedAt ? new Date(location.imageCapturedAt).getUTCFullYear() : 0;
-  const aspectRatio = width / Math.max(1, height);
-  const categoryVerified = location.catalogVariant === "curated-image"
-    ? location.imageReviewStatus === "approved" && (location.imageCategoryFitScore ?? 0) >= 8
-    : Boolean(location.wikidataId && location.imageFile && (location.imageCategoryFitScore ?? 0) >= 8);
-  return categoryVerified
-    && year >= 2010
-    && width >= 2560
-    && height >= 1440
-    && aspectRatio >= 1.25
-    && aspectRatio <= 3
-    && location.imageReviewStatus !== "quarantined";
-}
 
 function stableHash(value) {
   let hash = 2166136261;
@@ -52,9 +34,10 @@ function thumbnailUrl(location) {
 }
 
 async function renderTile(location) {
+  const requestedThumbnailUrl = thumbnailUrl(location);
   let response;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    response = await fetch(thumbnailUrl(location), {
+    response = await fetch(requestedThumbnailUrl, {
       headers: { "user-agent": "Punktlandung/1.0 (catalog visual audit; aintartstudio@gmail.com)" },
       signal: AbortSignal.timeout(15_000)
     });
@@ -64,7 +47,10 @@ async function renderTile(location) {
     await new Promise((resolve) => setTimeout(resolve, Math.max(2, retryAfterSeconds) * 1000));
   }
   if (!response?.ok) throw new Error("No successful image response");
-  const image = await sharp(Buffer.from(await response.arrayBuffer()))
+  const deliveredBytes = Buffer.from(await response.arrayBuffer());
+  const deliveredMetadata = await sharp(deliveredBytes).metadata();
+  const deliveredStatistics = await sharp(deliveredBytes).stats();
+  const image = await sharp(deliveredBytes)
     .resize(tileWidth, imageHeight, { fit: "cover", position: "attention" })
     .webp({ quality: 82 })
     .toBuffer();
@@ -76,18 +62,32 @@ async function renderTile(location) {
     <text x="14" y="20" fill="#a7f3d0" font-family="Arial, sans-serif" font-size="12" font-weight="700">${escaped(label)}</text>
     <text x="14" y="40" fill="#f8fafc" font-family="Arial, sans-serif" font-size="15" font-weight="700">${escaped(title)}</text>
   </svg>`);
-  return sharp({
+  const tile = await sharp({
     create: { width: tileWidth, height: tileHeight, channels: 3, background: "#08111f" }
   }).composite([
     { input: image, left: 0, top: 0 },
     { input: caption, left: 0, top: imageHeight }
   ]).webp({ quality: 84 }).toBuffer();
+  return {
+    tile,
+    delivery: {
+      requestedThumbnailUrl,
+      deliveredUrl: response.url,
+      deliveredWidth: deliveredMetadata.width ?? null,
+      deliveredHeight: deliveredMetadata.height ?? null,
+      deliveredBytes: deliveredBytes.byteLength,
+      sharpness: Number.isFinite(deliveredStatistics.sharpness)
+        ? Number(deliveredStatistics.sharpness.toFixed(3))
+        : null,
+      entropy: Number.isFinite(deliveredStatistics.entropy)
+        ? Number(deliveredStatistics.entropy.toFixed(3))
+        : null
+    }
+  };
 }
 
-const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
-const contentExclusions = new Set(JSON.parse(await readFile(contentExclusionsPath, "utf8")));
-const selected = categories.flatMap((category) => catalog
-  .filter((location) => location.category === category && !contentExclusions.has(location.id) && strictEligible(location))
+const selected = categories.flatMap((category) => builtInLocations
+  .filter((location) => location.category === category)
   .sort((first, second) => stableHash(first.id) - stableHash(second.id))
   .slice(0, samplesPerCategory));
 const results = [];
@@ -95,7 +95,8 @@ const tiles = [];
 
 for (const location of selected) {
   try {
-    tiles.push(await renderTile(location));
+    const rendered = await renderTile(location);
+    tiles.push(rendered.tile);
     results.push({
       id: location.id,
       title: location.title,
@@ -104,6 +105,7 @@ for (const location of selected) {
       imageCapturedAt: location.imageCapturedAt,
       imageWidth: location.imageWidth,
       imageHeight: location.imageHeight,
+      ...rendered.delivery,
       status: "rendered"
     });
   } catch (error) {

@@ -1,6 +1,6 @@
 import licenseCatalog from "@/data/generated/image-licenses.generated.json";
 import { builtInLocations } from "@/data/locations";
-import { imageLicenseEntryId, normalizeImageLicenseFileName } from "@/lib/imageLicenseLink";
+import { imageFileNameForLicense, imageLicenseEntryId, normalizeImageLicenseFileName } from "@/lib/imageLicenseLink";
 
 type LicenseEntry = {
   fileName: string;
@@ -12,7 +12,7 @@ type LicenseEntry = {
 
 const activeImageFiles = new Set(
   builtInLocations
-    .map((location) => location.imageFile)
+    .map(imageFileNameForLicense)
     .filter((fileName): fileName is string => Boolean(fileName))
     .map(normalizeImageLicenseFileName)
 );
@@ -33,11 +33,14 @@ const groupedEntries = entries.reduce<Map<string, LicenseEntry[]>>((groups, entr
   return groups;
 }, new Map());
 
-export function ImageLicenseCatalog({ selectedFile }: { selectedFile?: string }) {
+export function ImageLicenseCatalog({ selectedFile, selectedGroup }: { selectedFile?: string; selectedGroup?: string }) {
   const normalizedSelectedFile = selectedFile ? normalizeImageLicenseFileName(selectedFile) : null;
   const selectedEntryAvailable = normalizedSelectedFile !== null && entries.some((entry) =>
     normalizeImageLicenseFileName(entry.fileName) === normalizedSelectedFile
   );
+  const selectedFileGroup = selectedEntryAvailable && selectedFile ? groupLabel(selectedFile) : null;
+  const activeGroup = selectedFileGroup ?? (selectedGroup && groupedEntries.has(selectedGroup) ? selectedGroup : null);
+  const visibleEntries = activeGroup ? groupedEntries.get(activeGroup) ?? [] : [];
   return (
     <section id="bildnachweise">
       <h2 className="text-[22px] font-black leading-tight text-white">Einzelnachweise der Ratebilder</h2>
@@ -56,15 +59,23 @@ export function ImageLicenseCatalog({ selectedFile }: { selectedFile?: string })
         </p>
       )}
 
-      <div className="mt-4 space-y-2">
-        {[...groupedEntries.entries()].map(([label, group]) => {
-          const selectedGroup = normalizedSelectedFile !== null && group.some((entry) => normalizeImageLicenseFileName(entry.fileName) === normalizedSelectedFile);
-          return <details key={label} open={selectedGroup} className="punktlandung-license-disclosure rounded-md border border-slate-700/80 bg-slate-950/45">
-            <summary className="cursor-pointer px-4 py-3 font-black text-white marker:text-emerald-300">
-              {label} <span className="ml-1 text-xs text-slate-400">({group.length})</span>
-            </summary>
-            <div className="space-y-2 border-t border-slate-700/70 p-3">
-              {group.map((entry, entryIndex) => {
+      <nav aria-label="Bildnachweise nach Anfangsbuchstabe" className="mt-4 flex flex-wrap gap-2">
+        {[...groupedEntries.entries()].map(([label, group]) => <a
+          key={label}
+          href={`/lizenzen?gruppe=${encodeURIComponent(label)}#bildnachweise`}
+          aria-current={activeGroup === label ? "page" : undefined}
+          className={`rounded border px-3 py-2 text-sm font-black ${activeGroup === label ? "border-emerald-300 bg-emerald-300/10 text-emerald-200" : "border-slate-700 bg-slate-950/45 text-slate-300 hover:border-slate-500 hover:text-white"}`}
+        >
+          {label} <span className="text-xs text-slate-400">({group.length})</span>
+        </a>)}
+      </nav>
+
+      {!activeGroup && <p className="mt-4 rounded border border-slate-800 bg-slate-950/45 px-4 py-3 text-slate-400">Wähle einen Anfangsbuchstaben, um die zugehörigen Einzelnachweise zu öffnen.</p>}
+
+      {activeGroup && <div className="mt-4 space-y-2">
+        <h3 className="text-lg font-black text-white">Einträge {activeGroup} <span className="text-sm text-slate-400">({visibleEntries.length})</span></h3>
+        <div className="space-y-2">
+              {visibleEntries.map((entry, entryIndex) => {
                 const selected = normalizeImageLicenseFileName(entry.fileName) === normalizedSelectedFile;
                 return <details key={`${entry.fileName}-${entry.sourceUrl}-${entryIndex}`} id={imageLicenseEntryId(entry.fileName)} open={selected} data-highlighted={selected ? "true" : undefined} className="punktlandung-license-entry rounded border border-slate-800 bg-slate-950/60 px-3 py-2">
                   <summary className="cursor-pointer break-words font-bold text-slate-200 marker:text-emerald-300">
@@ -100,10 +111,8 @@ export function ImageLicenseCatalog({ selectedFile }: { selectedFile?: string })
                   </div>
                 </details>;
               })}
-            </div>
-          </details>;
-        })}
-      </div>
+        </div>
+      </div>}
     </section>
   );
 }
