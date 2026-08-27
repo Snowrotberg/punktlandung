@@ -56,9 +56,19 @@ function sizedWikimediaUrl(rawUrl: string, width: number): string {
   return url.toString();
 }
 
-function currentImageWidth(): number {
+function currentImageWidth(location: GeoLocation): number {
   const connection = (navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }).connection;
-  return gameplayImageWidth(window.innerWidth, window.devicePixelRatio, connection);
+  // The portrait game image does not occupy the full window height. Using the
+  // full height here would request oversized panoramic thumbnails before the
+  // actual viewer exists. Three quarters of the window width closely bounds
+  // the responsive image stage while landscape layouts may still use all of
+  // their available height.
+  const estimatedViewportHeight = Math.min(window.innerHeight, window.innerWidth * 0.75);
+  return gameplayImageWidth(window.innerWidth, window.devicePixelRatio, connection, {
+    viewportHeight: estimatedViewportHeight,
+    sourceWidth: location.imageWidth,
+    sourceHeight: location.imageHeight
+  });
 }
 
 function imageLargeEnough(image: HTMLImageElement, category: GeoLocation["category"], trustedRankedAsset = false): boolean {
@@ -133,7 +143,7 @@ export function preloadBrowserImage(
 
 export async function prepareLocationImage(location: GeoLocation): Promise<GeoLocation | null> {
   if (typeof window === "undefined") return location;
-  const width = currentImageWidth();
+  const width = currentImageWidth(location);
   const sourceUrls = Array.from(new Set((location.panoramaUrls?.length ? location.panoramaUrls : [location.panoramaUrl]).filter(Boolean)));
 
   for (const sourceUrl of sourceUrls) {

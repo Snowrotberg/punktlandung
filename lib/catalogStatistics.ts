@@ -1,5 +1,7 @@
 import { locationVisualKey } from "@/data/locations";
+import licenseCatalog from "@/data/generated/image-licenses.generated.json";
 import type { GeoLocation, LocationCategory, LocationDifficulty } from "@/types/game";
+import { imageFileNameForLicense, normalizeImageLicenseFileName } from "@/lib/imageLicenseLink";
 import {
   catalogImageCaptureYear,
   catalogImageDisplayTier,
@@ -51,6 +53,8 @@ export type CatalogStatistics = {
   countriesAndTerritories: number;
   sourceCountriesAndTerritories: number;
   reviewedImages: number;
+  licensedImages: number;
+  missingLicenseImages: number;
   featuredOrQualityImages: number;
   recentlyCapturedImages: number;
   captureMetadataImages: number;
@@ -80,6 +84,12 @@ export function buildCatalogStatistics(locations: GeoLocation[], inventory: GeoL
     .map((location) => location.imageQualityScore)
     .filter((score): score is number => Number.isFinite(score));
   const recentCutoff = Date.UTC(new Date().getUTCFullYear() - 5, 0, 1);
+  const licensedFiles = new Set(licenseCatalog.entries.map((entry) => normalizeImageLicenseFileName(entry.fileName)));
+  const activeImageFiles = new Set(locations
+    .map(imageFileNameForLicense)
+    .filter((fileName): fileName is string => Boolean(fileName))
+    .map(normalizeImageLicenseFileName));
+  const licensedImages = [...activeImageFiles].filter((fileName) => licensedFiles.has(fileName)).length;
   const exclusionReasons: Record<CatalogImageIssue, number> = {
     quarantined: 0,
     "category-unverified": 0,
@@ -104,6 +114,8 @@ export function buildCatalogStatistics(locations: GeoLocation[], inventory: GeoL
     countriesAndTerritories: new Set(locations.map((location) => location.countryCode).filter(Boolean)).size,
     sourceCountriesAndTerritories: new Set(inventory.map((location) => location.countryCode).filter(Boolean)).size,
     reviewedImages: locations.filter((location) => location.imageReviewStatus === "approved").length,
+    licensedImages,
+    missingLicenseImages: Math.max(0, activeImageFiles.size - licensedImages),
     featuredOrQualityImages: locations.filter((location) =>
       location.commonsQualityAssessment === "featured" || location.commonsQualityAssessment === "quality"
     ).length,

@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEven
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { directImageFallbackDelayMs, gameplayImageWidth, normalizeEffectiveConnectionType } from "@/lib/imageDelivery";
 import { isPreparedImageUrl } from "@/lib/imagePreload.client";
-import { imageLicenseHref } from "@/lib/imageLicenseLink";
+import { imageFileNameForLicense, imageLicenseHref } from "@/lib/imageLicenseLink";
 import type { GeoLocation, GameSettings } from "@/types/game";
 
 type PanoramaViewerProps = {
@@ -103,13 +103,18 @@ function wikimediaSizedImageUrl(rawUrl: string, width: number) {
   return thumbnailUrl.toString();
 }
 
-function estimateResponsiveImageWidth(element?: HTMLElement | null) {
+function estimateResponsiveImageWidth(element: HTMLElement | null | undefined, location: GeoLocation) {
   if (typeof window === "undefined") return defaultProxyWidth;
 
   const rect = element?.getBoundingClientRect();
   const cssWidth = rect?.width && rect.width > 0 ? rect.width : window.innerWidth;
+  const cssHeight = rect?.height && rect.height > 0 ? rect.height : window.innerHeight;
   const connection = (navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }).connection;
-  return gameplayImageWidth(cssWidth, window.devicePixelRatio, connection);
+  return gameplayImageWidth(cssWidth, window.devicePixelRatio, connection, {
+    viewportHeight: cssHeight,
+    sourceWidth: location.imageWidth,
+    sourceHeight: location.imageHeight
+  });
 }
 
 function isImageLargeEnough(width: number, height: number, category: GeoLocation["category"]) {
@@ -244,7 +249,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
   const loadStartedAtRef = useRef(0);
   const loadStartedFromCacheRef = useRef(false);
   const reportedLocationIdRef = useRef<string | null>(null);
-  const [proxyWidth, setProxyWidth] = useState(() => estimateResponsiveImageWidth());
+  const [proxyWidth, setProxyWidth] = useState(() => estimateResponsiveImageWidth(null, location));
 
   // Keep the searchlight phase continuous across React's development remount
   // and fast route handovers. A fresh DOM node therefore joins the global
@@ -263,7 +268,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
 
   const currentImageUrl = imageUrls[imageIndex] ?? location.panoramaUrl;
   const sourceHref = location.source === "wikimedia"
-    ? imageLicenseHref(location.imageFile)
+    ? imageLicenseHref(imageFileNameForLicense(location))
     : location.sourceUrl ?? currentImageUrl;
   const sourceName = location.source === "wikimedia" ? "Wikimedia Commons" : location.attribution || location.source;
   const requestImageWidth = proxyWidth;
@@ -324,7 +329,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
 
   useEffect(() => {
     const updateProxyWidth = () => {
-      const nextWidth = estimateResponsiveImageWidth(viewportRef.current);
+      const nextWidth = estimateResponsiveImageWidth(viewportRef.current, location);
       setProxyWidth((currentWidth) => (currentWidth === nextWidth ? currentWidth : nextWidth));
     };
 
@@ -338,7 +343,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
       window.removeEventListener("resize", updateProxyWidth);
       observer?.disconnect();
     };
-  }, []);
+  }, [location.imageHeight, location.imageWidth]);
 
   useEffect(() => {
     const roundId = location.id.split("@", 1)[0];

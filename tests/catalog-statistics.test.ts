@@ -15,6 +15,8 @@ test("active catalog has enough unique tasks for every category and difficulty",
   assert.ok(statistics.sourceCountriesAndTerritories >= 204);
   assert.equal(statistics.categories.length, 5);
   assert.ok(statistics.uniqueVisuals >= 1750);
+  assert.equal(statistics.missingLicenseImages, 0);
+  assert.ok(statistics.licensedImages >= 1750);
 
   for (const category of statistics.categories) {
     if (category.category === "flags") {
@@ -31,8 +33,12 @@ test("active catalog has enough unique tasks for every category and difficulty",
 test("manually quarantined conflict and weapon imagery is never playable", () => {
   const excludedIds = [
     "capitals-mogadischu-q2449",
+    "capitals-manila-q1461-curated-9766taytay-rizal-roads-landmarks-buildings-11-jp",
+    "capitals-manila-q1461-curated-south-view-from-lrt-1-doroteo-jose-station-manil",
+    "capitals-sarajevo-q11194-curated-sarajevo-debelo-brdo-7-jpg",
     "cities-bachmut-q706857",
-    "cities-slowjansk-q33581"
+    "cities-slowjansk-q33581",
+    "landscapes-kreta-q34374-curated-a-repose-agios-nikolaos-beach-and-kassos-island-"
   ];
   assert.ok(excludedIds.every((id) => !builtInLocations.some((location) => location.id === id)));
 });
