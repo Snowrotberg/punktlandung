@@ -1,24 +1,25 @@
 import licenseCatalog from "@/data/generated/image-licenses.generated.json";
-import { builtInLocations } from "@/data/locations";
-import { imageFileNameForLicense, imageLicenseEntryId, normalizeImageLicenseFileName } from "@/lib/imageLicenseLink";
+import {
+  imageCommonsSourceHref,
+  imageLicenseCatalogFileName,
+  imageLicenseEntryId,
+  imageLicenseEntryMatchesFile,
+  normalizeImageLicenseFileName
+} from "@/lib/imageLicenseLink";
 
 type LicenseEntry = {
   fileName: string;
-  artist: string;
-  license: string;
+  catalogFileName?: string;
+  catalogFileNames?: string[];
+  availability?: "available" | "unavailable";
+  unavailableReason?: string;
+  artist: string | null;
+  license: string | null;
   licenseUrl: string | null;
   sourceUrl: string;
 };
 
-const activeImageFiles = new Set(
-  builtInLocations
-    .map(imageFileNameForLicense)
-    .filter((fileName): fileName is string => Boolean(fileName))
-    .map(normalizeImageLicenseFileName)
-);
-const entries = (licenseCatalog.entries as LicenseEntry[]).filter((entry) =>
-  activeImageFiles.has(normalizeImageLicenseFileName(entry.fileName))
-);
+const entries = licenseCatalog.entries as LicenseEntry[];
 
 function groupLabel(fileName: string) {
   const firstCharacter = fileName.trim().charAt(0).toLocaleUpperCase("de");
@@ -26,7 +27,7 @@ function groupLabel(fileName: string) {
 }
 
 const groupedEntries = entries.reduce<Map<string, LicenseEntry[]>>((groups, entry) => {
-  const label = groupLabel(entry.fileName);
+  const label = groupLabel(imageLicenseCatalogFileName(entry));
   const group = groups.get(label) ?? [];
   group.push(entry);
   groups.set(label, group);
@@ -36,7 +37,7 @@ const groupedEntries = entries.reduce<Map<string, LicenseEntry[]>>((groups, entr
 export function ImageLicenseCatalog({ selectedFile, selectedGroup }: { selectedFile?: string; selectedGroup?: string }) {
   const normalizedSelectedFile = selectedFile ? normalizeImageLicenseFileName(selectedFile) : null;
   const selectedEntryAvailable = normalizedSelectedFile !== null && entries.some((entry) =>
-    normalizeImageLicenseFileName(entry.fileName) === normalizedSelectedFile
+    imageLicenseEntryMatchesFile(entry, selectedFile ?? "")
   );
   const selectedFileGroup = selectedEntryAvailable && selectedFile ? groupLabel(selectedFile) : null;
   const activeGroup = selectedFileGroup ?? (selectedGroup && groupedEntries.has(selectedGroup) ? selectedGroup : null);
@@ -45,8 +46,9 @@ export function ImageLicenseCatalog({ selectedFile, selectedGroup }: { selectedF
     <section id="bildnachweise">
       <h2 className="text-[22px] font-black leading-tight text-white">Einzelnachweise der Ratebilder</h2>
       <p className="mt-2">
-        Der Katalog enthält {entries.length.toLocaleString("de-DE")} derzeit im Spiel verwendete Wikimedia-Dateien. Öffne einen
-        Buchstaben und anschließend eine Datei, um Urheber, Lizenz und Originalseite aufzurufen.
+        Der Katalog dokumentiert {entries.length.toLocaleString("de-DE")} aktive und früher ausgespielte Wikimedia-Dateien. Öffne
+        einen Buchstaben und anschließend eine Datei, um Urheber, Lizenz und Originalseite beziehungsweise dokumentierte
+        Verfügbarkeitsangaben aufzurufen.
       </p>
 
       {selectedFile && !selectedEntryAvailable && (
@@ -55,7 +57,17 @@ export function ImageLicenseCatalog({ selectedFile, selectedGroup }: { selectedF
           data-highlighted="true"
           className="punktlandung-license-entry mt-4 rounded border border-slate-800 bg-slate-950/60 px-3 py-2"
         >
-          Für <strong>{selectedFile}</strong> ist im aktuellen Katalog noch kein Einzelnachweis hinterlegt.
+          Für <strong>{selectedFile}</strong> ist im lokalen Katalog noch kein vollständiger Einzelnachweis hinterlegt. Die
+          Originaldatei und ihre Lizenzangaben können direkt bei Wikimedia Commons geöffnet werden:{" "}
+          <a
+            href={imageCommonsSourceHref(selectedFile)}
+            target="_blank"
+            rel="noreferrer"
+            className="font-bold text-emerald-300 hover:text-emerald-200"
+          >
+            Bildquelle öffnen
+          </a>
+          .
         </p>
       )}
 
@@ -76,12 +88,19 @@ export function ImageLicenseCatalog({ selectedFile, selectedGroup }: { selectedF
         <h3 className="text-lg font-black text-white">Einträge {activeGroup} <span className="text-sm text-slate-400">({visibleEntries.length})</span></h3>
         <div className="space-y-2">
               {visibleEntries.map((entry, entryIndex) => {
-                const selected = normalizeImageLicenseFileName(entry.fileName) === normalizedSelectedFile;
-                return <details key={`${entry.fileName}-${entry.sourceUrl}-${entryIndex}`} id={imageLicenseEntryId(entry.fileName)} open={selected} data-highlighted={selected ? "true" : undefined} className="punktlandung-license-entry rounded border border-slate-800 bg-slate-950/60 px-3 py-2">
+                const displayFileName = imageLicenseCatalogFileName(entry);
+                const selected = normalizedSelectedFile !== null && imageLicenseEntryMatchesFile(entry, selectedFile ?? "");
+                const entryIdFileName = selected && selectedFile ? selectedFile : displayFileName;
+                return <details key={`${displayFileName}-${entry.sourceUrl}-${entryIndex}`} id={imageLicenseEntryId(entryIdFileName)} open={selected} data-highlighted={selected ? "true" : undefined} className="punktlandung-license-entry rounded border border-slate-800 bg-slate-950/60 px-3 py-2">
                   <summary className="cursor-pointer break-words font-bold text-slate-200 marker:text-emerald-300">
-                    {entry.fileName} <span className="text-xs font-semibold text-emerald-300">· {entry.license}</span>
+                    {displayFileName} <span className="text-xs font-semibold text-emerald-300">· {entry.availability === "unavailable" ? "nicht mehr bei Commons verfügbar" : entry.license}</span>
                   </summary>
-                  <div className="mt-2 space-y-2 border-t border-slate-800 pt-2 text-xs leading-5 text-slate-400">
+                  {entry.availability === "unavailable" ? <div className="mt-2 space-y-2 border-t border-slate-800 pt-2 text-xs leading-5 text-slate-400">
+                    <p>{entry.unavailableReason}</p>
+                    <a href={entry.sourceUrl} target="_blank" rel="noreferrer" className="inline-block font-bold text-emerald-300 hover:text-emerald-200">
+                      Commons-Löschprotokoll öffnen
+                    </a>
+                  </div> : <div className="mt-2 space-y-2 border-t border-slate-800 pt-2 text-xs leading-5 text-slate-400">
                     <p className="break-words">
                       <span className="font-black text-slate-300">Urheber/Quelle:</span> {entry.artist}
                     </p>
@@ -108,7 +127,7 @@ export function ImageLicenseCatalog({ selectedFile, selectedGroup }: { selectedF
                     >
                       Originaldatei und vollständige Angaben bei Wikimedia Commons
                     </a>
-                  </div>
+                  </div>}
                 </details>;
               })}
         </div>

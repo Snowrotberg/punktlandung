@@ -1,10 +1,60 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { builtInLocations, catalogInventoryLocations, prioritizeCatalogImages } from "../data/locations";
+import licenseCatalog from "../data/generated/image-licenses.generated.json";
 import { locationVisualKey } from "../data/locations";
 import { shuffledLocationIds } from "../lib/locationSelection";
 import { buildCatalogStatistics } from "../lib/catalogStatistics";
 import { catalogImageIssues, catalogMinimumCaptureYear } from "../lib/catalogImageQuality";
+import {
+  imageFileNameForLicense,
+  imageLicenseEntryMatchesFile,
+  normalizeImageLicenseFileName
+} from "../lib/imageLicenseLink";
+
+test("historically played admin images retain exact license entries", () => {
+  const historicalFiles = [
+    "Brandenburger_Tor_abends.jpg",
+    "Palácio Nacional da Pena por Rodrigo Tetsuo Argenton (15).jpg",
+    "Waldenburg-Schloss-Fürstenstein-Schlosspark-IMG 5610-5×5B-360×180G-PanoS-05-08-2024.jpg"
+  ];
+
+  assert.ok(historicalFiles.every((fileName) =>
+    licenseCatalog.entries.some((entry) => imageLicenseEntryMatchesFile(entry, fileName))
+  ));
+  const palaceEntry = licenseCatalog.entries.find((entry) =>
+    imageLicenseEntryMatchesFile(entry, historicalFiles[1])
+  );
+  assert.match(palaceEntry?.artist ?? "", /Rodrigo Tetsuo Argenton/);
+});
+
+test("license catalogue deduplicates raw aliases and resolves every available entry completely", () => {
+  assert.equal(licenseCatalog.rawCatalogFileCount, 3567);
+  assert.equal(licenseCatalog.imageCount, 3562);
+  assert.equal(licenseCatalog.entries.length, 3562);
+  assert.equal(licenseCatalog.unavailableImageCount, 2);
+  assert.equal(licenseCatalog.entries.reduce((count, entry) => count + Math.max(0, (entry.catalogFileNames?.length ?? 1) - 1), 0), 5);
+  assert.equal(licenseCatalog.entries.filter((entry) =>
+    normalizeImageLicenseFileName(entry.catalogFileName) !== normalizeImageLicenseFileName(entry.fileName)
+  ).length, 2);
+  assert.equal(licenseCatalog.entries.filter((entry) =>
+    entry.availability !== "unavailable" && (!entry.artist || !entry.license || entry.artist === "Nicht angegeben" || entry.license === "Nicht angegeben")
+  ).length, 0);
+});
+
+test("every currently playable Wikimedia image resolves to a complete license entry", () => {
+  const activeFiles = builtInLocations
+    .filter((location) => location.source === "wikimedia")
+    .map(imageFileNameForLicense)
+    .filter((fileName): fileName is string => Boolean(fileName));
+
+  for (const fileName of activeFiles) {
+    const entry = licenseCatalog.entries.find((candidate) => imageLicenseEntryMatchesFile(candidate, fileName));
+    assert.ok(entry, `missing license entry for active file: ${fileName}`);
+    assert.notEqual(entry.availability, "unavailable", `active file is unavailable: ${fileName}`);
+    assert.ok(entry.artist && entry.license && entry.sourceUrl, `incomplete active entry: ${fileName}`);
+  }
+});
 
 test("active catalog has enough unique tasks for every category and difficulty", () => {
   const statistics = buildCatalogStatistics(builtInLocations, catalogInventoryLocations);
@@ -17,6 +67,9 @@ test("active catalog has enough unique tasks for every category and difficulty",
   assert.ok(statistics.uniqueVisuals >= 1750);
   assert.equal(statistics.missingLicenseImages, 0);
   assert.ok(statistics.licensedImages >= 1750);
+  assert.equal(statistics.missingInventoryLicenseImages, 0);
+  assert.equal(statistics.inventoryLicensedImages, 3560);
+  assert.equal(statistics.unavailableInventoryImages, 2);
 
   for (const category of statistics.categories) {
     if (category.category === "flags") {

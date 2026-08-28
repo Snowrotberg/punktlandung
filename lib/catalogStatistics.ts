@@ -1,7 +1,12 @@
 import { locationVisualKey } from "@/data/locations";
 import licenseCatalog from "@/data/generated/image-licenses.generated.json";
 import type { GeoLocation, LocationCategory, LocationDifficulty } from "@/types/game";
-import { imageFileNameForLicense, normalizeImageLicenseFileName } from "@/lib/imageLicenseLink";
+import {
+  imageFileNameForLicense,
+  imageLicenseEntryFileNames,
+  normalizeImageLicenseFileName,
+  type ImageLicenseEntryFileNames
+} from "@/lib/imageLicenseLink";
 import {
   catalogImageCaptureYear,
   catalogImageDisplayTier,
@@ -55,6 +60,9 @@ export type CatalogStatistics = {
   reviewedImages: number;
   licensedImages: number;
   missingLicenseImages: number;
+  inventoryLicensedImages: number;
+  unavailableInventoryImages: number;
+  missingInventoryLicenseImages: number;
   featuredOrQualityImages: number;
   recentlyCapturedImages: number;
   captureMetadataImages: number;
@@ -84,12 +92,31 @@ export function buildCatalogStatistics(locations: GeoLocation[], inventory: GeoL
     .map((location) => location.imageQualityScore)
     .filter((score): score is number => Number.isFinite(score));
   const recentCutoff = Date.UTC(new Date().getUTCFullYear() - 5, 0, 1);
-  const licensedFiles = new Set(licenseCatalog.entries.map((entry) => normalizeImageLicenseFileName(entry.fileName)));
+  const licenseEntries = licenseCatalog.entries as Array<ImageLicenseEntryFileNames & {
+    availability?: "available" | "unavailable";
+    artist: string | null;
+    license: string | null;
+    sourceUrl: string;
+  }>;
+  const licensedFiles = new Set(licenseEntries
+    .filter((entry) => entry.availability !== "unavailable" && entry.artist && entry.license && entry.sourceUrl)
+    .flatMap(imageLicenseEntryFileNames)
+    .map(normalizeImageLicenseFileName));
+  const unavailableFiles = new Set(licenseEntries
+    .filter((entry) => entry.availability === "unavailable")
+    .flatMap(imageLicenseEntryFileNames)
+    .map(normalizeImageLicenseFileName));
   const activeImageFiles = new Set(locations
     .map(imageFileNameForLicense)
     .filter((fileName): fileName is string => Boolean(fileName))
     .map(normalizeImageLicenseFileName));
   const licensedImages = [...activeImageFiles].filter((fileName) => licensedFiles.has(fileName)).length;
+  const inventoryImageFiles = new Set(inventory
+    .map(imageFileNameForLicense)
+    .filter((fileName): fileName is string => Boolean(fileName))
+    .map(normalizeImageLicenseFileName));
+  const inventoryLicensedImages = [...inventoryImageFiles].filter((fileName) => licensedFiles.has(fileName)).length;
+  const unavailableInventoryImages = [...inventoryImageFiles].filter((fileName) => unavailableFiles.has(fileName)).length;
   const exclusionReasons: Record<CatalogImageIssue, number> = {
     quarantined: 0,
     "category-unverified": 0,
@@ -116,6 +143,9 @@ export function buildCatalogStatistics(locations: GeoLocation[], inventory: GeoL
     reviewedImages: locations.filter((location) => location.imageReviewStatus === "approved").length,
     licensedImages,
     missingLicenseImages: Math.max(0, activeImageFiles.size - licensedImages),
+    inventoryLicensedImages,
+    unavailableInventoryImages,
+    missingInventoryLicenseImages: Math.max(0, inventoryImageFiles.size - inventoryLicensedImages - unavailableInventoryImages),
     featuredOrQualityImages: locations.filter((location) =>
       location.commonsQualityAssessment === "featured" || location.commonsQualityAssessment === "quality"
     ).length,
