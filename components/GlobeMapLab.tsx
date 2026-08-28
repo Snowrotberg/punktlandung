@@ -133,7 +133,7 @@ function activeResultSafeRect(width: number, height: number, previewMode: boolea
   if (!previewMode) {
     const compactShortFrame = width <= 440 && height <= 240;
     return compactShortFrame
-      ? { ...safeRect, top: 17, bottom: Math.max(17, height - 16) }
+      ? { ...safeRect, top: 22, bottom: Math.max(22, height - 16) }
       : { ...safeRect, top: safeRect.top + 2 };
   }
 
@@ -404,8 +404,10 @@ export function GlobeMapLab({
         activeResultSafeRect(container.clientWidth, container.clientHeight, previewMode)
       );
       if (adjustment.fits) break;
-      if (adjustment.zoomDelta < 0) {
-        map.jumpTo({ zoom: Math.max(map.getMinZoom(), map.getZoom() + adjustment.zoomDelta) });
+      const minimumZoom = map.getMinZoom();
+      const nextZoom = Math.max(minimumZoom, map.getZoom() + adjustment.zoomDelta);
+      if (adjustment.zoomDelta < 0 && nextZoom < map.getZoom() - 0.001) {
+        map.jumpTo({ zoom: nextZoom });
       } else {
         const centerPoint = { x: container.clientWidth / 2, y: container.clientHeight / 2 };
         map.jumpTo({
@@ -417,9 +419,21 @@ export function GlobeMapLab({
       }
       await nextFrame();
     }
+    if (embedded) {
+      map.setMinZoom(RESULT_MAP_MIN_ZOOM);
+      if (map.getZoom() < RESULT_MAP_MIN_ZOOM) map.jumpTo({ zoom: RESULT_MAP_MIN_ZOOM });
+    }
     updateRouteOverlay();
+    const center = map.getCenter();
+    setCamera({
+      lng: center.lng,
+      lat: center.lat,
+      zoom: map.getZoom(),
+      bearing: map.getBearing(),
+      pitch: map.getPitch()
+    });
     container.dataset.resultComposition = "ready";
-  }, [previewMode, updateRouteOverlay]);
+  }, [embedded, previewMode, updateRouteOverlay]);
 
   const targetFitsResultSafeArea = useCallback(() => {
     const map = mapRef.current;
@@ -821,8 +835,22 @@ export function GlobeMapLab({
       const center = map.getCenter();
       setCamera({ lng: center.lng, lat: center.lat, zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() });
     };
+    const enforceEmbeddedZoomFloor = () => {
+      if (!embedded) return;
+      map.setMinZoom(RESULT_MAP_MIN_ZOOM);
+      if (map.getZoom() < RESULT_MAP_MIN_ZOOM) map.jumpTo({ zoom: RESULT_MAP_MIN_ZOOM });
+      const center = map.getCenter();
+      setCamera({
+        lng: center.lng,
+        lat: center.lat,
+        zoom: map.getZoom(),
+        bearing: map.getBearing(),
+        pitch: map.getPitch()
+      });
+    };
     const configureGlobe = () => {
       map.setProjection({ type: "globe" });
+      enforceEmbeddedZoomFloor();
       const terrainSource = map.getStyle().sources[PUNKTLANDUNG_TERRAIN_SOURCE_ID];
       const canUseTerrain = terrainSource?.type === "raster-dem";
       terrainAvailableRef.current = canUseTerrain;
@@ -983,6 +1011,7 @@ export function GlobeMapLab({
     map.on("style.load", configureGlobe); map.on("load", reportReady); map.on("move", updateCamera); map.on("error", reportError);
     const resizeObserver = new ResizeObserver(() => {
       map.resize();
+      enforceEmbeddedZoomFloor();
       if (routeVisibleRef.current) void stabilizeResultComposition();
     });
     resizeObserver.observe(container);
@@ -1304,7 +1333,7 @@ export function GlobeMapLab({
       <div
         className={styles.mapFrame}
         style={{ "--target-landing-duration": `${RESULT_REVEAL_TIMING.targetLandingDurationMs}ms` } as CSSProperties}
-        data-current-zoom={camera.zoom.toFixed(2)}
+        data-current-zoom={(embedded ? Math.max(camera.zoom, RESULT_MAP_MIN_ZOOM) : camera.zoom).toFixed(2)}
         data-current-lng={camera.lng.toFixed(5)}
         data-current-lat={camera.lat.toFixed(5)}
         data-current-bearing={camera.bearing.toFixed(2)}

@@ -17218,7 +17218,7 @@ body .punktlandung-lobby
   }
 
   body .punktlandung-image-replay .punktlandung-replay-top-actions {
-    display: flex !important;
+    display: none !important;
     gap: 0.45rem !important;
     grid-column: 2 !important;
     justify-self: end !important;
@@ -17245,7 +17245,7 @@ body .punktlandung-lobby
     height: auto !important;
     left: calc(65% + 0.75rem) !important;
     right: 0.75rem !important;
-    top: calc(5.05rem + max(0px, env(safe-area-inset-top))) !important;
+    top: calc(0.75rem + max(0px, env(safe-area-inset-top))) !important;
     transform: none !important;
     width: auto !important;
   }

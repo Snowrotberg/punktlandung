@@ -158,7 +158,7 @@ try {
         const landedPath = path.join(outDir, `${testCase.name}-${profile.name}-landed.png`);
         await preview.screenshot({ path: landedPath });
         screenshots.push(landedPath);
-        await page.waitForFunction(() => document.querySelector("[data-result-reveal-phase]")?.getAttribute("data-result-reveal-phase") === "labels", null, { timeout: 10_000 });
+        await page.waitForFunction(() => (window.__punktlandungRevealPhases ?? []).some((entry) => entry.phase === "labels"), null, { timeout: 10_000 });
         await page.waitForTimeout(350);
         const labelsPath = path.join(outDir, `${testCase.name}-${profile.name}-labels.png`);
         await preview.screenshot({ path: labelsPath });

@@ -656,7 +656,7 @@
   }
 
   :global(.punktlandung-image-replay) .mapFrame[data-preview-mode="false"] .resultMarker[data-label-vertical="above"] .markerLabel {
-    bottom: calc(100% + 0.62rem);
+    bottom: calc(100% + 0.9rem);
   }
 
   :global(.punktlandung-image-replay) .mapFrame[data-preview-mode="false"] .resultMarker[data-label-vertical="below"] .markerLabel {

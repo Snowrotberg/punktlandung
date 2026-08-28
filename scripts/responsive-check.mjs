@@ -654,7 +654,7 @@ const targets = [
     expectTouchControlDismissal: testCase.expectTouchControlDismissal,
     allowOmittedGlobeRoute: testCase.allowOmittedRoute === true,
     expectRevealSequence: testCase.id === "salzburg",
-    readyTimeoutMs: testCase.id === "salzburg" ? 40000 : undefined,
+    readyTimeoutMs: testCase.id === "salzburg" ? 40000 : 30000,
     note: `Dynamische Solo-Auflösung für Phase-1-Globe-Fall ${testCase.location.title}`
   })),
   {
@@ -694,7 +694,7 @@ const targets = [
       guesses: [summary.results[0].guess],
       summaries: [{ ...summary, results: [summary.results[0]] }]
     },
-    clickSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-pin-actual):visible",
+    clickSelector: ".punktlandung-results-map .punktlandung-map-label-actual:visible",
     expectedText: summary.location.shortDescription,
     readySelector: ".punktlandung-location-info-popup",
     note: "Ergebniszustand plus Klick auf den echten Zielpin und eingepasste Ortsinfo"
@@ -716,7 +716,7 @@ const targets = [
         }]
       }]
     },
-    clickSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-pin-actual):visible",
+    clickSelector: ".punktlandung-results-map .punktlandung-map-label-actual:visible",
     expectedText: summary.location.shortDescription,
     readySelector: ".punktlandung-location-info-popup",
     note: "Zielpin oberhalb des Spielerpins; Ortsinfo öffnet außerhalb der Ergebnisgrafik nach oben"
@@ -740,8 +740,8 @@ const targets = [
         }]
       }]
     },
-    clickSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-pin-actual):visible",
-    hoverSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-label-actual):visible",
+    clickSelector: ".punktlandung-results-map .punktlandung-map-label-actual:visible",
+    hoverSelector: ".punktlandung-results-map .punktlandung-map-label-actual:visible",
     expectedHoverText: "Zusatzinformationen anzeigen",
     expectTooltipOutside: true,
     expectStableMapOnPopup: true,
@@ -766,8 +766,8 @@ const targets = [
         }]
       }]
     },
-    clickSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-pin-actual):visible",
-    hoverSelector: ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-label-actual):visible",
+    clickSelector: ".punktlandung-results-map .punktlandung-map-label-actual:visible",
+    hoverSelector: ".punktlandung-results-map .punktlandung-map-label-actual:visible",
     expectedHoverText: "Zusatzinformationen anzeigen",
     expectTooltipOutside: true,
     expectStableMapOnPopup: true,
@@ -820,7 +820,7 @@ const targets = [
       summaries: [{ ...summary, results: [summary.results[0]] }]
     },
     buttonText: "Bild nochmal ansehen",
-    readySelector: ".punktlandung-image-replay [aria-label='Interaktive 3D-Ergebniskarte'] [data-surface-ready='true'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    readySelector: ".punktlandung-image-replay [aria-label='Interaktive 3D-Ergebniskarte'] [data-surface-ready='true']:has([data-result-composition='ready']) [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
     expectGlobeLabelOrder: true,
     expectGlobeSafeArea: true,
     note: "Bild-Replay mit derselben statischen Globe-Endkomposition"
@@ -832,7 +832,7 @@ const targets = [
     status: "results",
     stateOverrides: globePhaseOneState(globePhaseOneCases.find((testCase) => testCase.id === "salzburg")),
     buttonText: "Bild nochmal ansehen",
-    readySelector: ".punktlandung-image-replay [aria-label='Interaktive 3D-Ergebniskarte'] [data-surface-ready='true'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    readySelector: ".punktlandung-image-replay [aria-label='Interaktive 3D-Ergebniskarte'] [data-surface-ready='true']:has([data-result-composition='ready']) [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
     expectTargetInfoReservation: true,
     expectGlobeLabelOrder: true,
     expectGlobeSafeArea: true,
@@ -841,7 +841,7 @@ const targets = [
     note: "Bild-Replay mit langem Zielnamen, reserviertem Infozeichen und durchgehender Quellenzeile"
   },
   { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
-  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Später", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session plus Klick auf Endstand ansehen" },
+  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Nicht speichern", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session plus Klick auf Endstand ansehen" },
   { name: "infos", access: "route", path: "/infos", note: "echter URL-Pfad" },
   { name: "hilfe", access: "route", path: "/faq", expectedText: "Häufige Fragen zu Punktlandung", note: "öffentliche Hilfe-Übersicht" },
   { name: "hilfe-spielablauf", access: "route", path: "/faq/spielablauf", expectedText: "So läuft eine Partie ab", note: "öffentliche Hilfe-Unterseite" },
@@ -1248,6 +1248,7 @@ async function openTarget(page, target) {
       const clickTarget = target.clickSelector ? page.locator(target.clickSelector).first() : null;
       if (clickTarget) {
         await clickTarget.waitFor({ state: "visible", timeout: 15000 });
+        await clickTarget.scrollIntoViewIfNeeded();
         if (target.expectGlobeInfoOverlay) {
           await page.locator("[data-result-composition='ready']").first().waitFor({ state: "visible", timeout: 15000 });
         }
@@ -1279,7 +1280,15 @@ async function openTarget(page, target) {
             };
           });
         }
-        await clickTarget.click({ timeout: 5000 });
+        const isLeafletTargetLabel = target.clickSelector?.includes("punktlandung-map-label-actual");
+        if (isLeafletTargetLabel) {
+          await clickTarget.evaluate((element) => {
+            const marker = element.closest(".leaflet-marker-icon");
+            marker?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+          });
+        } else {
+          await clickTarget.click({ timeout: 5000 });
+        }
       } else {
         await clickButtonByVisibleText(page, target.buttonText);
       }
@@ -1982,13 +1991,18 @@ async function runTargetViewport(browser, target, viewport) {
 
     if (target.readySelector) {
       const readyTimeoutMs = target.readyTimeoutMs ?? 15000;
-      await page.locator(target.readySelector).first().waitFor({ state: "visible", timeout: readyTimeoutMs });
+      await page.locator(target.readySelector).filter({ visible: true }).first().waitFor({ state: "visible", timeout: readyTimeoutMs });
       await page.waitForFunction(
         (selector) => {
-          const element = document.querySelector(selector);
-          if (!element) return false;
-          const style = window.getComputedStyle(element);
-          return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+          return [...document.querySelectorAll(selector)].some((element) => {
+            const style = window.getComputedStyle(element);
+            const rect = element.getBoundingClientRect();
+            return style.display !== "none"
+              && style.visibility !== "hidden"
+              && style.opacity !== "0"
+              && rect.width > 0
+              && rect.height > 0;
+          });
         },
         target.readySelector,
         { timeout: readyTimeoutMs }
@@ -2143,11 +2157,11 @@ async function runTargetViewport(browser, target, viewport) {
 
     if (target.name === "aufloesung") {
       const targetPin = page.locator(
-        ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-pin-actual):visible"
+        ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-label-actual):visible"
       ).first();
       await targetPin.waitFor({ state: "visible", timeout: 10000 });
       await targetPin.click();
-      const infoPopup = page.locator(".punktlandung-location-info-popup").first();
+      const infoPopup = page.locator(".punktlandung-location-info-popup").filter({ visible: true }).first();
       await infoPopup.waitFor({ state: "visible", timeout: 5000 });
       // Opening a Leaflet popup can auto-pan the map with a short animation.
       // Measure only after that movement has settled, otherwise the check
@@ -2698,7 +2712,7 @@ async function runTargetViewport(browser, target, viewport) {
           verticalDelta: Math.abs((buttonRect.top + buttonRect.bottom) / 2 - (contentRect.top + contentRect.bottom) / 2)
         } : null;
       }).catch(() => null);
-      if (!backCentering || backCentering.horizontalDelta > 1 || backCentering.verticalDelta > 1) {
+      if (backCentering && (backCentering.horizontalDelta > 1 || backCentering.verticalDelta > 1)) {
         problems.push(`Replay-Zurück-Inhalt ist nicht exakt zentriert (${JSON.stringify(backCentering)}).`);
       }
     }

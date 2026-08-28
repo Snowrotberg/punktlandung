@@ -804,7 +804,7 @@
 
   .redesign :global(.punktlandung-guess-map-panel--closed) {
     width: min(31vw, 25rem) !important;
-    height: min(31vh, 14.25rem) !important;
+    height: min(38vh, 18rem) !important;
   }
 
   .redesign :global(.punktlandung-guess-map-panel--open) {
@@ -1128,5 +1128,20 @@
 
   .redesign :global(.punktlandung-final-table-list.is-dense .punktlandung-final-player-name-line) {
     flex-wrap: wrap;
+  }
+}
+
+/* In very shallow phone-landscape viewports, the replay map is the primary
+ * content. The general mobile rule limits it to 38svh, which leaves only about
+ * 100px for the actual map after its header. Let the panel fill the available
+ * replay stage once the duplicate top action strip has been collapsed. */
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1024px) {
+  .redesign :global(.punktlandung-image-replay .punktlandung-guess-map-panel--closed),
+  .redesign :global(.punktlandung-image-replay .punktlandung-guess-map-panel--open) {
+    bottom: calc(.75rem + max(0px, env(safe-area-inset-bottom))) !important;
+    height: auto !important;
+    left: .75rem !important;
+    right: .75rem !important;
+    top: calc(.75rem + max(0px, env(safe-area-inset-top))) !important;
   }
 }
