@@ -6,6 +6,7 @@
 .periodLabel { color: #e2e8f0; font-size: .72rem; font-weight: 800; }
 .periodFilter > p { grid-column: 1 / -1; color: #718198; font-size: .68rem; margin: 0; }
 .periods { display: flex; flex-wrap: wrap; gap: .45rem; }
+.mobilePeriodSelect { display: none; }
 .periods a { background: #0e1527; border: 1px solid #334155; border-radius: .6rem; color: #cbd5e1; font-size: .75rem; font-weight: 800; padding: .55rem .75rem; text-decoration: none; transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease; }
 .periods a.periodAll { margin-right: .45rem; position: relative; }
 .periods a.periodAll::after { content: ""; position: absolute; top: .25rem; bottom: .25rem; right: -.5rem; width: 1px; background: #334155; }
@@ -173,13 +174,12 @@
 .chartEmpty { display: grid; place-items: center; min-height: 11rem; color: #718198; font-size: .72rem; text-align: center; }
 @media (min-width: 100rem) { .content { max-width: none; margin-inline: 0; } }
 @media (max-width: 55rem) { .content, .grid, .panel, .analyticsPanel, .chartCard { min-width: 0; max-width: 100%; } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid, .progressColumns, .chartGrid, .difficultyOverview { grid-template-columns: minmax(0, 1fr); } .communityItem { grid-template-columns: minmax(0, 1fr); } .catalogQualityList { grid-template-columns: repeat(2, minmax(0, 1fr)); } .roadmapItem > summary { grid-template-columns: auto minmax(0, 1fr) auto; } .roadmapSummaryMeta { grid-column: 2 / -1; } .tableWrap { max-width: 100%; overflow: visible; } }
+@media (max-width: 55rem), (max-height: 31.25rem) and (min-width: 36.01rem) { .periodFilter { grid-template-columns: minmax(0, 1fr); } .periods { display: none; } .mobilePeriodSelect { display: block; min-width: 0; } }
 @media (max-width: 36rem) {
   .heading, .panelHeading { align-items: start; flex-direction: column; }
   .periodFilter { grid-template-columns: minmax(0, 1fr); }
-  .periods, .communityFilters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: .1rem; width: 100%; }
-  .periods a, .communityFilters a { justify-content: center; min-width: 0; text-align: center; }
-  .periods a.periodAll { margin-right: 0; }
-  .periods a.periodAll::after { display: none; }
+  .communityFilters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: .1rem; width: 100%; }
+  .communityFilters a { justify-content: center; min-width: 0; text-align: center; }
   .roadmapItem > summary { grid-template-columns: minmax(0, 1fr) auto; }
   .roadmapStatus, .roadmapSummaryMeta { grid-column: 1 / -1; }
   .roadmapItem > summary strong { overflow-wrap: anywhere; white-space: normal; }

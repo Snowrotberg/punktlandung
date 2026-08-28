@@ -11,6 +11,5 @@
 .select nav { background:#111c2e; border:1px solid #334155; border-radius:.78rem; box-shadow:0 .8rem 2rem rgb(2 6 23 / .28); display:grid; gap:.22rem; margin-top:.35rem; padding:.35rem; width:100%; }
 .select nav a { align-items:center; border-radius:.55rem; color:#cbd5e1; display:flex; font-size:.8rem; font-weight:750; min-height:2.75rem; padding:.55rem .65rem; text-decoration:none; }
 .select nav a:hover,.select nav a[aria-current="page"] { background:#12382f; color:#f8fafc; }
-.select nav a[aria-current="page"]::before { background:var(--pl-mint,#5ee7bd); border-radius:50%; content:""; height:.38rem; margin-right:.48rem; width:.38rem; }
 .select nav a:focus-visible { outline:2px solid var(--pl-mint,#5ee7bd); outline-offset:-2px; }
 @media (prefers-reduced-motion:reduce) { .chevron { transition:none; } }

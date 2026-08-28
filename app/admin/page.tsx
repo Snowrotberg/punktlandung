@@ -27,6 +27,7 @@ import { builtInLocations, catalogInventoryLocations } from "@/data/locations";
 import { getAdminAccountContext } from "@/lib/adminAccess.server";
 import { adConfig } from "@/lib/ads";
 import { buildUsageTimeline, earliestUsageTimestamp, PUBLIC_BETA_STARTED_AT } from "@/lib/adminUsageTimeline";
+import { adminUsagePeriods, adminUsagePeriodSince, filterAdminUsageEvents, parseAdminUsagePeriod } from "@/lib/adminPeriodFilter";
 import { summarizeGameplayTypes } from "@/lib/adminGameplayStatistics";
 import { buildCatalogStatistics, catalogCategoryLabels } from "@/lib/catalogStatistics";
 import { imageFileNameForLicense, imageLicenseHref } from "@/lib/imageLicenseLink";
@@ -41,7 +42,6 @@ import {
   type LocationDifficultyOverride
 } from "@/lib/locationDifficulty";
 import { readUsageEvents, type UsageEvent } from "@/lib/usageMetrics.server";
-import { leaderboardPeriodKey } from "@/lib/leaderboards";
 import { readRoomServerHealth } from "@/lib/roomServerHealth.server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin.server";
 import { distributeProgress, gameProgressBands, pointProgressBands } from "@/lib/accountProgress";
@@ -50,20 +50,11 @@ import { readCommunitySuggestions, type CommunityReadResult } from "@/lib/commun
 import { moderateCommunitySuggestion } from "./community-actions";
 import layoutStyles from "../konto/dashboard.module.css";
 import styles from "./page.module.css";
+import { ResponsiveRouteSelect } from "@/components/ResponsiveRouteSelect";
 
 export const metadata: Metadata = { title: "Administration", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-const periods = {
-  all: { days: null, label: "Gesamt" },
-  "6m": { days: 180, label: "6 Monate" },
-  "3m": { days: 90, label: "3 Monate" },
-  "30d": { days: 30, label: "30 Tage" },
-  "7d": { days: 7, label: "7 Tage" },
-  today: { days: 2, label: "Heute" }
-} as const;
-
-type PeriodKey = keyof typeof periods;
 type MetricTone = "good" | "warning" | "critical" | "neutral";
 const ROADMAP_PAGE_SIZE = 5;
 
@@ -212,16 +203,15 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const context = await getAdminAccountContext();
   if (!context) redirect("/konto");
   const params = await searchParams;
-  const requestedPeriod = params.period;
-  const periodKey: PeriodKey = requestedPeriod && requestedPeriod in periods ? requestedPeriod as PeriodKey : "all";
-  const period = periods[periodKey];
+  const periodKey = parseAdminUsagePeriod(params.period);
+  const period = adminUsagePeriods.find((item) => item.key === periodKey)!;
   const communityStatus = communityFilters.some((filter) => filter.value === params.communityStatus)
     ? params.communityStatus as CommunityStatus | "all"
     : "all";
 
   const admin = createSupabaseAdminClient();
   const now = new Date();
-  const since = period.days === null ? undefined : new Date(now.getTime() - period.days * 24 * 60 * 60 * 1000);
+  const since = adminUsagePeriodSince(periodKey, now);
   const staleGameThreshold = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString();
   const [accountProgress, completed, verified, active, staleActive, usageEvents, difficultyMetrics, roomServerHealth] = await Promise.all([
     readAccountProgress(admin),
@@ -235,17 +225,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     readRoomServerHealth()
   ]);
   const measurementStart = earliestUsageTimestamp(usageEvents);
-  const todayKey = leaderboardPeriodKey(now.getTime(), "daily");
-  const periodEvents = since ? usageEvents.filter((event) => {
-    const timestamp = Date.parse(event.at);
-    return Number.isFinite(timestamp) && timestamp >= since.getTime();
-  }) : usageEvents;
-  const events = periodKey === "today"
-    ? periodEvents.filter((event) => {
-        const timestamp = Date.parse(event.at);
-        return Number.isFinite(timestamp) && leaderboardPeriodKey(timestamp, "daily") === todayKey;
-      })
-    : periodEvents;
+  const events = filterAdminUsageEvents(usageEvents, periodKey, now);
   const count = (name: string) => events.filter((event) => event.event === name).length;
   const starts = count("game_start");
   const finishes = count("game_complete");
@@ -363,8 +343,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <div className={styles.periodFilter}>
           <span className={styles.periodLabel}>Zeitraum für Nutzung &amp; Auslieferung</span>
           <nav className={styles.periods} aria-label="Zeitraum für Nutzung und Auslieferung">
-            {Object.entries(periods).map(([key, item]) => <a key={key} href={`/admin?period=${key}`} className={key === "all" ? styles.periodAll : undefined} aria-current={key === periodKey ? "page" : undefined}>{item.label}</a>)}
+            {adminUsagePeriods.map((item) => <a key={item.key} href={`/admin?period=${item.key}`} className={item.key === "all" ? styles.periodAll : undefined} aria-current={item.key === periodKey ? "page" : undefined}>{item.label}</a>)}
           </nav>
+          <div className={styles.mobilePeriodSelect}>
+            <ResponsiveRouteSelect label="Zeitraum" value={periodKey} options={adminUsagePeriods.map((item) => ({ value: item.key, label: item.label, href: `/admin?period=${item.key}` }))} />
+          </div>
           <p>Historische Werte folgen dem gewählten Zeitraum. „Gesamt“ beginnt mit der öffentlichen Beta am {publicBetaStartLabel} und reicht bis heute. {measurementNotice} Frühere Nutzung wurde nicht rückwirkend erfasst.</p>
         </div>
         <div className={styles.metricLegend} aria-label="Bedeutung der Kennzahlenfarben">
