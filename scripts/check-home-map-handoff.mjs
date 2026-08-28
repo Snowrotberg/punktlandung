@@ -12,7 +12,11 @@ const profiles = [
   { name: "phone-large", width: 430, height: 932, deviceScaleFactor: 2 },
   { name: "phone-landscape", width: 932, height: 430, deviceScaleFactor: 2 },
   { name: "laptop", width: 1366, height: 768, deviceScaleFactor: 1 },
-  { name: "user-laptop", width: 1440, height: 733, deviceScaleFactor: 2 }
+  { name: "laptop-hidpi", width: 1366, height: 768, deviceScaleFactor: 2 },
+  { name: "user-laptop", width: 1440, height: 733, deviceScaleFactor: 2 },
+  { name: "monitor-short", width: 1920, height: 977, deviceScaleFactor: 1 },
+  { name: "monitor", width: 1920, height: 1080, deviceScaleFactor: 1 },
+  { name: "monitor-hidpi", width: 1920, height: 1080, deviceScaleFactor: 2 }
 ];
 
 async function compareImages(first, second, diffPath) {
@@ -53,11 +57,31 @@ async function compareImages(first, second, diffPath) {
     if (pixelDifference > 16) perceptualChangedPixels += 1;
   }
   const perceptualPixelCount = perceptualLeft.info.width * perceptualLeft.info.height;
+  // Compare one level below CSS resolution and blur sub-pixel rasterization.
+  // This stays sensitive to camera/geometry shifts while ignoring harmless
+  // WebGL-versus-WebP antialiasing differences on HiDPI displays.
+  const structuralWidth = Math.max(1, Math.round(left.info.width / 4));
+  const structuralLeft = await sharp(first).removeAlpha().resize({ width: structuralWidth }).blur(1.5).raw().toBuffer({ resolveWithObject: true });
+  const structuralRight = await sharp(second).removeAlpha().resize({ width: structuralWidth }).blur(1.5).raw().toBuffer({ resolveWithObject: true });
+  let structuralDifference = 0;
+  let structuralChangedPixels = 0;
+  for (let offset = 0; offset < structuralLeft.data.length; offset += structuralLeft.info.channels) {
+    let pixelDifference = 0;
+    for (let channel = 0; channel < structuralLeft.info.channels; channel += 1) {
+      const difference = Math.abs(structuralLeft.data[offset + channel] - structuralRight.data[offset + channel]);
+      structuralDifference += difference;
+      pixelDifference = Math.max(pixelDifference, difference);
+    }
+    if (pixelDifference > 10) structuralChangedPixels += 1;
+  }
+  const structuralPixelCount = structuralLeft.info.width * structuralLeft.info.height;
   return {
     meanChannelDifference: totalDifference / (pixelCount * channels),
     changedPixelRatio: changedPixels / pixelCount,
     perceptualMeanDifference: perceptualDifference / (perceptualPixelCount * perceptualLeft.info.channels),
-    perceptualChangedPixelRatio: perceptualChangedPixels / perceptualPixelCount
+    perceptualChangedPixelRatio: perceptualChangedPixels / perceptualPixelCount,
+    structuralMeanDifference: structuralDifference / (structuralPixelCount * structuralLeft.info.channels),
+    structuralChangedPixelRatio: structuralChangedPixels / structuralPixelCount
   };
 }
 
@@ -131,6 +155,13 @@ try {
       const match = getComputedStyle(element).backgroundImage.match(/url\(["']?(.*?)["']?\)/);
       return match ? new URL(match[1], location.href).pathname : "";
     });
+    const previewSize = await preview.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    });
+    const posterMetadata = await sharp(path.join(root, "public", selectedPoster.replace(/^\//, ""))).metadata();
+    const densityPassed = Number(posterMetadata.width) >= Math.floor(previewSize.width * profile.deviceScaleFactor) - 2
+      && Number(posterMetadata.height) >= Math.floor(previewSize.height * profile.deviceScaleFactor) - 2;
     const posterLayout = await page.locator(".punktlandung-home-map-pictures").getAttribute("data-poster-layout");
 
     await preview.locator("[data-surface-ready='true']").waitFor({ state: "attached", timeout: 60_000 });
@@ -228,8 +259,9 @@ try {
       && animationStartedAt <= movementAt
       && hiddenToAnimationMs >= 500
       && animationToMovementMs >= 120;
-    const visualPassed = comparison.perceptualMeanDifference <= 2.6
-      && comparison.perceptualChangedPixelRatio <= 0.05;
+    const visualPassed = comparison.structuralMeanDifference <= 1.5
+      && comparison.structuralChangedPixelRatio <= 0.02
+      && densityPassed;
     const stableCanvasPassed = surfaceCanvasId !== null
       && canvasIdsAfterSurface.length === 1
       && canvasIdsAfterSurface[0] === surfaceCanvasId;
@@ -260,6 +292,7 @@ try {
       passed,
       sequencePassed,
       visualPassed,
+      densityPassed,
       stableCanvasPassed,
       cameraPassed,
       cameraStableBeforeAnimation,
@@ -267,6 +300,8 @@ try {
       motionContinuityPassed,
       firstMovementDelta,
       selectedPoster,
+      posterPixels: { width: posterMetadata.width, height: posterMetadata.height },
+      previewCssPixels: previewSize,
       posterLayout,
       surfaceReadyAt,
       posterHiddenAt,
@@ -280,7 +315,7 @@ try {
       ...comparison,
       screenshots: { posterPath, pausedPath, movingPath, diffPath }
     });
-    console.log(`${profile.name}: perceptual mean ${comparison.perceptualMeanDifference.toFixed(2)}, changed ${(comparison.perceptualChangedPixelRatio * 100).toFixed(2)}% (raw ${comparison.meanChannelDifference.toFixed(2)} / ${(comparison.changedPixelRatio * 100).toFixed(2)}%), crossfade hold ${hiddenToAnimationMs?.toFixed(0) ?? "n/a"}ms, motion hold ${animationToMovementMs?.toFixed(0) ?? "n/a"}ms, surface canvases ${canvasIdsAfterSurface.join(",")} -> ${passed ? "PASS" : "FAIL"}`);
+    console.log(`${profile.name}: structural mean ${comparison.structuralMeanDifference.toFixed(2)}, changed ${(comparison.structuralChangedPixelRatio * 100).toFixed(2)}%; perceptual ${comparison.perceptualMeanDifference.toFixed(2)} / ${(comparison.perceptualChangedPixelRatio * 100).toFixed(2)}%; density ${densityPassed ? "PASS" : "FAIL"}; crossfade hold ${hiddenToAnimationMs?.toFixed(0) ?? "n/a"}ms, motion hold ${animationToMovementMs?.toFixed(0) ?? "n/a"}ms, surface canvases ${canvasIdsAfterSurface.join(",")} -> ${passed ? "PASS" : "FAIL"}`);
     await context.close();
   }
 } finally {

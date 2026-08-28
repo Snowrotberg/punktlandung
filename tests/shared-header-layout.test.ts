@@ -12,6 +12,18 @@ test("the shared mobile header owns the canonical safe-area-aware edge inset", a
   assert.match(source, /padding-right: max\(1rem, env\(safe-area-inset-right\)\)/);
 });
 
+test("the shared shell owns a full-width content raster outside the header no-go zone", async () => {
+  const [shared, home] = await Promise.all([
+    readSource("../components/redesign/RedesignPrimitives.module.css"),
+    readSource("../components/redesign/RedesignHomeView.module.css")
+  ]);
+
+  assert.match(shared, /\.shell\s*\{[\s\S]*?linear-gradient\(90deg,[\s\S]*?background-repeat:\s*no-repeat, no-repeat, repeat;/);
+  assert.match(shared, /\.shell::before\s*\{[\s\S]*?top:\s*var\(--pl-horizontal-grid-start\);[\s\S]*?right:\s*0;[\s\S]*?bottom:\s*0;[\s\S]*?left:\s*0;/);
+  assert.match(shared, /\.shell::before\s*\{[\s\S]*?background-repeat:\s*repeat-y;[\s\S]*?background-size:\s*100% var\(--pl-grid-size\);/);
+  assert.doesNotMatch(home, /background-position:\s*0 0, 0 0, 0 0, 0 4rem;/);
+});
+
 test("account, detail and community headers do not override the shared horizontal padding", async () => {
   const [account, detail, community] = await Promise.all([
     readSource("../app/konto/dashboard.module.css"),

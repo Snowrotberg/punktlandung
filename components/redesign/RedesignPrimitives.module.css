@@ -50,7 +50,7 @@
   --pl-ambient-violet-origin-y: 70%;
   --pl-ambient-violet-radius: 36rem;
   --pl-grid-attachment: local;
-  --pl-horizontal-grid-start: 4.75rem;
+  --pl-horizontal-grid-start: 4.875rem;
   --pl-header-separator-color: var(--pl-line);
   --pl-header-separator-width: 1px;
 
@@ -72,19 +72,35 @@
       var(--pl-violet-glow),
       transparent
     ),
-    linear-gradient(90deg, var(--pl-grid) var(--pl-grid-line-width), transparent var(--pl-grid-line-width)),
-    linear-gradient(180deg, var(--pl-horizontal-grid-color) var(--pl-grid-line-width), transparent var(--pl-grid-line-width));
-  background-position: 0 0, 0 0, 0 0, 0 var(--pl-horizontal-grid-start);
-  background-repeat: no-repeat, no-repeat, repeat, repeat-y;
-  background-size: 100% 100%, 100% 100%, var(--pl-grid-size) var(--pl-grid-size), var(--pl-grid-size) var(--pl-grid-size);
-  background-attachment: fixed, fixed, var(--pl-grid-attachment), fixed;
+    linear-gradient(90deg, var(--pl-grid) var(--pl-grid-line-width), transparent var(--pl-grid-line-width));
+  background-position: 0 0, 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat, repeat;
+  background-size: 100% 100%, 100% 100%, var(--pl-grid-size) var(--pl-grid-size);
+  background-attachment: fixed, fixed, var(--pl-grid-attachment);
   box-shadow: 0 1.5rem 4rem var(--pl-shadow);
 }
 
-/* Horizontal lines now live in the shell background beside the vertical
-   lines. A pseudo-layer sat below opaque content sections and therefore left
-   visible horizontal fragments only in otherwise empty columns. */
-.shell::before { content: none; }
+/* Clip the horizontal grid to the content area. Each stripe spans the full
+   shell width; repeating only on the y-axis keeps the header completely free
+   of grid lines while preserving the shared vertical rhythm below it. */
+.shell::before {
+  position: absolute;
+  z-index: 0;
+  top: var(--pl-horizontal-grid-start);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  content: "";
+  pointer-events: none;
+  background-image: linear-gradient(
+    180deg,
+    var(--pl-horizontal-grid-color) var(--pl-grid-line-width),
+    transparent var(--pl-grid-line-width)
+  );
+  background-position: 0 0;
+  background-repeat: repeat-y;
+  background-size: 100% var(--pl-grid-size);
+}
 
 .shell > * {
   position: relative;
@@ -125,7 +141,7 @@
 
 @media (min-width: 150rem) {
   .shell {
-    --pl-horizontal-grid-start: 7rem;
+    --pl-horizontal-grid-start: 7.375rem;
     --pl-grid: rgb(148 163 184 / 0.07);
     --pl-header-separator-color: color-mix(in srgb, var(--pl-line) 70%, #94a3b8 30%);
   }
@@ -609,7 +625,7 @@
 }
 
 @media (max-width: 30rem) {
-  .shell { --pl-horizontal-grid-start: 4rem; }
+  .shell { --pl-horizontal-grid-start: 4.125rem; }
 
   .header { min-height: 4rem; }
 
@@ -716,7 +732,7 @@
 
 /* Phone Landscape: wordmark and WEB +10%; pin remains unchanged. */
 @media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
-  .shell { --pl-horizontal-grid-start: 4rem; }
+  .shell { --pl-horizontal-grid-start: 4.125rem; }
 
   .header { min-height: 4rem; }
 
@@ -790,6 +806,10 @@
 
 /* Monitor: complete brand +10%. */
 @media (min-width: 100rem) and (max-width: 149.999rem) {
+  .shell {
+    --pl-horizontal-grid-start: 5.125rem;
+  }
+
   .brand {
     font-size: 1.43rem;
   }

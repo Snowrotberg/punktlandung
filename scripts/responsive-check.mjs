@@ -1636,6 +1636,43 @@ async function collectLayoutMetrics(page, readySelector = null) {
     const recoverySourceTopElement = recoverySourceRect
       ? document.elementFromPoint((recoverySourceRect.left + recoverySourceRect.right) / 2, (recoverySourceRect.top + recoverySourceRect.bottom) / 2)
       : null;
+    const sharedRaster = (() => {
+      const header = document.querySelector("header");
+      let shell = header?.parentElement ?? null;
+      while (shell) {
+        const before = getComputedStyle(shell, "::before");
+        if (before.content !== "none" && before.backgroundImage !== "none") {
+          const shellStyle = getComputedStyle(shell);
+          const shellRect = shell.getBoundingClientRect();
+          const headerRect = header?.getBoundingClientRect() ?? null;
+          const beforeTop = shellRect.top + Number.parseFloat(before.top || "0");
+          const headerContentBottom = header
+            ? Math.max(headerRect?.top ?? 0, ...[...header.querySelectorAll("a, button, img")]
+              .map((element) => element.getBoundingClientRect())
+              .filter((rect) => rect.width > 0 && rect.height > 0)
+              .map((rect) => rect.bottom))
+            : null;
+          return {
+            horizontalFullWidth: Number.parseFloat(before.left || "0") === 0
+              && Number.parseFloat(before.right || "0") === 0
+              && before.backgroundSize.split(",").some((size) => size.trim().startsWith("100%")),
+            horizontalRepeatsVertically: before.backgroundRepeat.split(",").some((repeat) => repeat.trim() === "repeat-y"),
+            verticalGridPresent: shellStyle.backgroundImage !== "none"
+              && shellStyle.backgroundRepeat.split(",").some((repeat) => repeat.trim() === "repeat"),
+            startsOutsideHeader: Boolean(headerRect) && beforeTop >= headerRect.bottom - 1,
+            shellLeft: shellRect.left,
+            shellRight: shellRect.right,
+            headerBottom: headerRect?.bottom ?? null,
+            headerContentBottom,
+            horizontalStart: beforeTop,
+            horizontalBackgroundSize: before.backgroundSize,
+            horizontalBackgroundRepeat: before.backgroundRepeat
+          };
+        }
+        shell = shell.parentElement;
+      }
+      return null;
+    })();
 
     return {
       title: document.title,
@@ -1647,6 +1684,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
       bodyWidth: body?.scrollWidth ?? 0,
       bodyHeight: body?.scrollHeight ?? 0,
       horizontalOverflow: Math.max(doc.scrollWidth, body?.scrollWidth ?? 0) > viewportWidth + 2,
+      sharedRaster,
       verticalOverflow: Math.max(doc.scrollHeight, body?.scrollHeight ?? 0) > viewportHeight + 2,
       bodyTextLength: (body?.innerText ?? "").trim().length,
       bodyText: (body?.innerText ?? "").replace(/\s+/g, " ").trim(),
@@ -2619,6 +2657,17 @@ async function runTargetViewport(browser, target, viewport) {
     }
     if (metrics.horizontalOverflow) {
       problems.push(`Horizontaler Overflow: Dokument ${metrics.documentWidth}px bei Viewport ${metrics.viewportWidth}px.`);
+    }
+    if (metrics.sharedRaster && (
+      !metrics.sharedRaster.horizontalFullWidth
+      || !metrics.sharedRaster.horizontalRepeatsVertically
+      || !metrics.sharedRaster.verticalGridPresent
+      || !metrics.sharedRaster.startsOutsideHeader
+    )) {
+      problems.push(`Gemeinsamer Rastervertrag verletzt (${JSON.stringify(metrics.sharedRaster)}).`);
+    }
+    if (["home", "rankings"].includes(target.name) && !metrics.sharedRaster) {
+      problems.push("Die gemeinsame Raster-Shell wurde auf der erwarteten Seite nicht erkannt.");
     }
     if (target.expectRevealSequence) {
       const phaseEntry = (phase) => metrics.revealTrace.find((entry) => entry.phase === phase);

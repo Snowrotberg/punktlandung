@@ -6656,8 +6656,8 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 @media (min-width: 1200px) {
-  .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-laptop.webp"); }
-  .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-laptop-with-ads.webp"); }
+  .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-laptop-2x.webp"); }
+  .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-laptop-2x-with-ads.webp"); }
 }
 
 @media (min-width: 1400px) and (max-width: 1799px) {
@@ -6666,13 +6666,13 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 @media (min-width: 1800px) {
-  .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-monitor.webp"); }
-  .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-monitor-with-ads.webp"); }
+  .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-monitor-2x.webp"); }
+  .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-monitor-2x-with-ads.webp"); }
 }
 
 @media (min-width: 1800px) and (max-width: 2999px) and (min-aspect-ratio: 19/10) {
-  .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-monitor-short.webp"); }
-  .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-monitor-short-with-ads.webp"); }
+  .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-monitor-short-2x.webp"); }
+  .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-monitor-short-2x-with-ads.webp"); }
 }
 
 @media (min-width: 3000px) {
