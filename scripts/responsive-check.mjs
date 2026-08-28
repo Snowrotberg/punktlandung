@@ -635,7 +635,8 @@ const targets = [
       summaries: [{ ...summary, results: [summary.results[0]] }]
     },
     expectedText: "AUFLÖSUNG",
-    readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [data-surface-ready='true']:has([data-result-composition='ready']) [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    readyTimeoutMs: 40000,
     note: "Solo-Auflösung mit echter Globe-Ergebnisanimation"
   },
   ...globePhaseOneCases.map((testCase) => ({
