@@ -24,11 +24,12 @@ test("editorial diagrams are semantic code-native explanations", async () => {
   assert.match(source, /<figure/);
   assert.match(source, /<figcaption/);
   assert.match(source, /aria-label=/);
+  assert.match(source, /stepNumberInline/);
   assert.doesNotMatch(source, /<img\b/);
   assert.doesNotMatch(source, /Screenshot/i);
 });
 
-test("FAQ and info overview state their different purposes and use the shared diagrams", async () => {
+test("FAQ keeps a compact, complete set of next steps and info pages use the shared diagrams", async () => {
   const [faq, infos, rules] = await Promise.all([
     readSource("../app/faq/page.tsx"),
     readSource("../app/infos/page.tsx"),
@@ -36,8 +37,10 @@ test("FAQ and info overview state their different purposes and use the shared di
   ]);
 
   assert.match(faq, /Hilfe · Übersicht/);
-  assert.match(faq, /Schnelle Hilfe oder ausführliche Infos/);
-  assert.match(faq, /href="\/infos"/);
+  for (const href of ["/infos", "/feedback", "/community#vorschlagen"]) {
+    assert.ok(faq.includes(`["${href}"`), href);
+  }
+  assert.doesNotMatch(faq, /ContributionPaths/);
   assert.match(infos, /ModesAndContentDiagram/);
   assert.match(rules, /GameFlowDiagram/);
   assert.match(rules, /ScoreDiagram/);

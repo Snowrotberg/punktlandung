@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { InfoPageShell } from "@/components/InfoPageShell";
 import { absoluteUrl } from "@/lib/seo";
 import Link from "next/link";
-import { ContributionPaths } from "@/components/ContributionPaths";
-import { CircleUserRound, ListChecks, Target, Trophy } from "lucide-react";
+import { BookOpenText, CircleUserRound, Lightbulb, ListChecks, MessageSquareWarning, Target, Trophy } from "lucide-react";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -20,6 +19,12 @@ const faqLinks = [
   ["/faq/punkte", "Punkte", "Entfernungswertung, 5.000-Punkte-Treffer und Gesamtpunktzahl.", Target],
   ["/faq/konten", "Konten", "Freiwillige Anmeldung, automatische Speicherung und private Profile.", CircleUserRound],
   ["/faq/rankings", "Rankings", "Welche Ergebnisse öffentlich zählen und wie faire Vergleiche entstehen.", Trophy]
+] as const;
+
+const nextSteps = [
+  ["/infos", "Infos zum Spiel", "Spielprinzip, Spielarten und Aufgabenkatalog im Überblick.", BookOpenText],
+  ["/feedback", "Frage oder Problem melden", "Schreib direkt an das Punktlandung-Team.", MessageSquareWarning],
+  ["/community#vorschlagen", "Idee vorschlagen", "Teile deinen Vorschlag öffentlich mit der Community.", Lightbulb]
 ] as const;
 
 export default function FaqPage() {
@@ -42,16 +47,18 @@ export default function FaqPage() {
             </Link>
           ))}
         </div>
-        <section className="punktlandung-static-card rounded-xl border p-4">
-          <h2 className="text-lg font-black text-white">Schnelle Hilfe oder ausführliche Infos?</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-300">
-            Die Hilfethemen oben beantworten konkrete Fragen beim Spielen. Unter Infos findest du ausführliche Hintergründe zum Spielprinzip, zu Spielarten und zum Aufgabenkatalog.
-          </p>
-          <Link href="/infos" className="mt-3 inline-block text-sm font-bold text-emerald-300 underline underline-offset-4">
-            Zu den Infos über Punktlandung
-          </Link>
+        <section className={styles.nextSteps} aria-labelledby="faq-next-steps-heading">
+          <h2 id="faq-next-steps-heading">Mehr erfahren oder mitmachen</h2>
+          <nav className={styles.nextStepLinks} aria-label="Weitere Informationen und Kontaktwege">
+            {nextSteps.map(([href, title, text, Icon]) => (
+              <Link key={href} href={href}>
+                <Icon aria-hidden="true" />
+                <span><strong>{title}</strong><small>{text}</small></span>
+                <i aria-hidden="true">›</i>
+              </Link>
+            ))}
+          </nav>
         </section>
-        <ContributionPaths mode="both" />
         </div>
       </InfoPageShell>
   );
