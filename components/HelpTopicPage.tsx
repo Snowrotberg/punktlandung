@@ -1,5 +1,5 @@
 import { InfoPageShell } from "@/components/InfoPageShell";
-import { AccountFlowDiagram, GameFlowDiagram, RankingScopeDiagram, ScoreDiagram } from "@/components/EditorialExplainers";
+import { AccountFlowDiagram, RankingScopeDiagram, ScoreDiagram } from "@/components/EditorialExplainers";
 import { RedesignButtonLink } from "@/components/redesign";
 import { CircleUserRound, Clock3, Eye, Flag, Gauge, History, LockKeyhole, MapPin, RefreshCw, Settings2, ShieldCheck, Sigma, Target, Trophy, type LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -64,18 +64,18 @@ const topicContent: Record<HelpTopic, {
 
 export function HelpTopicPage({ topic }: { topic: HelpTopic }) {
   const content = topicContent[topic];
-  const Diagram = topic === "spielablauf"
-    ? GameFlowDiagram
-    : topic === "punkte"
-      ? ScoreDiagram
-      : topic === "konten"
-        ? AccountFlowDiagram
-        : RankingScopeDiagram;
+  const Diagram = topic === "punkte"
+    ? ScoreDiagram
+    : topic === "konten"
+      ? AccountFlowDiagram
+      : topic === "rankings"
+        ? RankingScopeDiagram
+        : null;
   return (
     <InfoPageShell compact fillDesktop plainContent eyebrow={content.eyebrow} title={content.title} intro={content.intro}>
       <div className={styles.content}>
         <Link href="/faq" className={styles.backLink}>← Zurück zur Hilfe-Übersicht</Link>
-        <Diagram />
+        {Diagram && <Diagram />}
         <div className={styles.cards}>
           {content.sections.map((section) => (
             <section key={section.title} className="punktlandung-static-card rounded-xl border p-4">

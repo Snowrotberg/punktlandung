@@ -1,7 +1,6 @@
 .frame { margin: 1rem 0 0; overflow: hidden; border: 1px solid rgba(94,231,189,.3); border-radius: 1rem; background: linear-gradient(145deg, rgba(14,21,39,.96), rgba(10,16,28,.84)); box-shadow: 0 .9rem 2.4rem rgb(0 0 0 / .16); }
 .caption { padding: 1rem 1.1rem .85rem; border-bottom: 1px solid rgba(148,163,184,.16); }
-.caption > span { color: var(--pl-mint); font-size: .62rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
-.caption h2 { margin: .28rem 0 0; color: #f8fafc; font-size: 1.15rem; font-weight: 750 !important; }
+.caption h2 { margin: 0; color: #f8fafc; font-size: 1.15rem; font-weight: 750 !important; }
 .caption p { max-width: 54rem; margin: .3rem 0 0; color: #a8b4c6; font-size: .78rem; line-height: 1.55; }
 .flow { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); list-style: none; margin: 0; padding: 1rem; }
 .flow li { position: relative; display: grid; min-width: 0; justify-items: center; gap: .35rem; padding: .3rem .75rem; text-align: center; }

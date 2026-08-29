@@ -29,6 +29,17 @@ test("editorial diagrams are semantic code-native explanations", async () => {
   assert.doesNotMatch(gameFlow, /className=\{styles\.stepNumber\}/);
   assert.doesNotMatch(source, /<img\b/);
   assert.doesNotMatch(source, /Screenshot/i);
+  assert.doesNotMatch(source, /Prinzipdarstellung/);
+});
+
+test("the compact game-flow help avoids repeating the detailed explainer", async () => {
+  const [helpTopic, rules] = await Promise.all([
+    readSource("../components/HelpTopicPage.tsx"),
+    readSource("../app/so-funktioniert-punktlandung/page.tsx")
+  ]);
+
+  assert.doesNotMatch(helpTopic, /GameFlowDiagram/);
+  assert.match(rules, /GameFlowDiagram/);
 });
 
 test("score diagram reuses the production result marker and route primitives", async () => {

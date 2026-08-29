@@ -35,7 +35,6 @@ function DiagramFrame({
   return (
     <figure className={styles.frame} aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`}>
       <figcaption className={styles.caption}>
-        <span>Prinzipdarstellung · keine Spielansicht</span>
         <h2 id={`${id}-title`}>{title}</h2>
         <p id={`${id}-description`}>{description}</p>
       </figcaption>
