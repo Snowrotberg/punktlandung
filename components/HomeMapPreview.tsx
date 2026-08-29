@@ -96,6 +96,7 @@ export function HomeMapPreview() {
   const previewRef = useRef<HTMLDivElement>(null);
   const connectorRef = useRef<SVGLineElement>(null);
   const [previewMode, setPreviewMode] = useState<"animated" | "static" | "legacy" | "source">("animated");
+  const [liveSurfaceReady, setLiveSurfaceReady] = useState(false);
   const [liveReady, setLiveReady] = useState(false);
   const [liveUnavailable, setLiveUnavailable] = useState(false);
   const [animationStarted, setAnimationStarted] = useState(false);
@@ -108,6 +109,32 @@ export function HomeMapPreview() {
     else if (parameters.get("homeMap") === "static") setPreviewMode("static");
     else setPreviewMode("animated");
   }, []);
+
+  useEffect(() => {
+    if (!liveSurfaceReady || liveUnavailable || previewMode !== "animated") return;
+    let cancelled = false;
+    let firstFrame = 0;
+    let secondFrame = 0;
+    let settleTimer: number | undefined;
+    const settleLayout = async () => {
+      if (document.fonts) await document.fonts.ready;
+      if (cancelled) return;
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          settleTimer = window.setTimeout(() => {
+            if (!cancelled) setLiveReady(true);
+          }, 120);
+        });
+      });
+    };
+    void settleLayout();
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+      if (settleTimer !== undefined) window.clearTimeout(settleTimer);
+    };
+  }, [liveSurfaceReady, liveUnavailable, previewMode]);
 
   useEffect(() => {
     if (!liveReady || liveUnavailable || previewMode !== "animated") return;
@@ -232,7 +259,7 @@ export function HomeMapPreview() {
             previewMode
             targetInfoIndicator="?"
             terrainExaggeration={RESULT_CAMERA_CONFIG.terrainExaggeration.homePreview}
-            onSurfaceReady={() => setLiveReady(true)}
+            onSurfaceReady={() => setLiveSurfaceReady(true)}
             onAnimationComplete={() => setAnimationComplete(true)}
             onUnavailable={() => setLiveUnavailable(true)}
           />

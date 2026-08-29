@@ -71,8 +71,11 @@ try {
     const pixelSuffix = captureScale === 1 ? "" : `-${captureScale}x`;
     const expectedPosterPath = `/home-map-preview-${profile.name}${pixelSuffix}.webp`;
     const selectedPosterPath = await page.locator(".punktlandung-home-map-poster-wide").evaluate((poster) => {
-      const match = getComputedStyle(poster).backgroundImage.match(/url\(["']?(.*?)["']?\)/);
-      return match ? new URL(match[1], window.location.href).pathname : "";
+      const candidates = [...getComputedStyle(poster).backgroundImage.matchAll(/url\(["']?(.*?)["']?\)/g)]
+        .map((match) => new URL(match[1], window.location.href).pathname);
+      const loadedResources = performance.getEntriesByType("resource")
+        .map((entry) => new URL(entry.name, window.location.href).pathname);
+      return [...loadedResources].reverse().find((resource) => candidates.includes(resource)) ?? candidates.at(-1) ?? "";
     });
     if (layoutMode === "wide" && selectedPosterPath !== expectedPosterPath) {
       throw new Error(`${profile.name} selected ${selectedPosterPath} instead of ${expectedPosterPath}`);
@@ -125,9 +128,23 @@ try {
     const box = await preview.boundingBox();
     if (!box) throw new Error(`Home map preview missing for ${profile.name}`);
     const png = await preview.screenshot({ type: "png", animations: "disabled", scale: "device" });
+    const captured = await sharp(png).metadata();
+    const outputWidth = Math.max(1, Math.round(box.width * captureScale));
+    const outputHeight = Math.max(1, Math.round(box.height * captureScale));
+    const cropWidth = Number(captured.width) - outputWidth;
+    const cropHeight = Number(captured.height) - outputHeight;
+    if (cropWidth < 0 || cropHeight < 0) {
+      throw new Error(`${profile.name} capture ${captured.width}x${captured.height} is smaller than ${outputWidth}x${outputHeight}`);
+    }
     const variantSuffix = assetVariant ? `-${assetVariant}` : "";
     const output = `public/home-map-${baseOnly ? "base" : "preview"}${variantSuffix}-${profile.name}${pixelSuffix}${layoutMode === "ads" ? "-with-ads" : ""}.webp`;
     await sharp(png)
+      .extract({
+        left: Math.floor(cropWidth / 2),
+        top: Math.floor(cropHeight / 2),
+        width: outputWidth,
+        height: outputHeight
+      })
       .webp(baseOnly
         ? { quality: 94, smartSubsample: true, effort: 6 }
         : { lossless: true, effort: 6 })
@@ -137,7 +154,7 @@ try {
       const action = document.querySelector("a[href^='/solo-modus/direct']")?.getBoundingClientRect();
       return map && action ? Math.round((map.bottom - action.bottom) * 10) / 10 : null;
     });
-    console.log(`${profile.name}: ${Math.round(box.width)}x${Math.round(box.height)} -> ${output}${alignment === null ? "" : ` (map/action bottom delta ${alignment}px)`}`);
+    console.log(`${profile.name}: ${box.width.toFixed(3)}x${box.height.toFixed(3)} CSS @ ${captureScale}x -> ${outputWidth}x${outputHeight} ${output}${alignment === null ? "" : ` (map/action bottom delta ${alignment}px)`}`);
     if (baseOnly) console.log(`${profile.name} overlay: ${JSON.stringify(overlayGeometry)}`);
     await context.close();
   }

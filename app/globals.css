@@ -6656,22 +6656,46 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 @media (min-width: 1200px) {
-  .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-laptop-2x.webp"); }
+  .punktlandung-home-map-poster-wide {
+    background-image: image-set(
+      url("/home-map-preview-laptop.webp") 1x,
+      url("/home-map-preview-laptop-1.5x.webp") 1.5x,
+      url("/home-map-preview-laptop-2x.webp") 2x
+    );
+  }
   .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-laptop-2x-with-ads.webp"); }
 }
 
 @media (min-width: 1400px) and (max-width: 1799px) {
-  .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-user-laptop-2x.webp"); }
+  .punktlandung-home-map-poster-wide {
+    background-image: image-set(
+      url("/home-map-preview-user-laptop.webp") 1x,
+      url("/home-map-preview-user-laptop-1.5x.webp") 1.5x,
+      url("/home-map-preview-user-laptop-2x.webp") 2x
+    );
+  }
   .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-user-laptop-2x-with-ads.webp"); }
 }
 
 @media (min-width: 1800px) {
-  .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-monitor-2x.webp"); }
+  .punktlandung-home-map-poster-wide {
+    background-image: image-set(
+      url("/home-map-preview-monitor.webp") 1x,
+      url("/home-map-preview-monitor-1.5x.webp") 1.5x,
+      url("/home-map-preview-monitor-2x.webp") 2x
+    );
+  }
   .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-monitor-2x-with-ads.webp"); }
 }
 
 @media (min-width: 1800px) and (max-width: 2999px) and (min-aspect-ratio: 19/10) {
-  .punktlandung-home-map-poster-wide { background-image: url("/home-map-preview-monitor-short-2x.webp"); }
+  .punktlandung-home-map-poster-wide {
+    background-image: image-set(
+      url("/home-map-preview-monitor-short.webp") 1x,
+      url("/home-map-preview-monitor-short-1.5x.webp") 1.5x,
+      url("/home-map-preview-monitor-short-2x.webp") 2x
+    );
+  }
   .punktlandung-home-map-poster-ads { background-image: url("/home-map-preview-monitor-short-2x-with-ads.webp"); }
 }
 

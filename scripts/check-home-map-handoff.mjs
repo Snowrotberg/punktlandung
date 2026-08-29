@@ -12,12 +12,24 @@ const profiles = [
   { name: "phone-large", width: 430, height: 932, deviceScaleFactor: 2 },
   { name: "phone-landscape", width: 932, height: 430, deviceScaleFactor: 2 },
   { name: "laptop", width: 1366, height: 768, deviceScaleFactor: 1 },
+  { name: "laptop-dpr-1-5", width: 1366, height: 768, deviceScaleFactor: 1.5 },
   { name: "laptop-hidpi", width: 1366, height: 768, deviceScaleFactor: 2 },
+  { name: "user-laptop-dpr-1-5", width: 1440, height: 733, deviceScaleFactor: 1.5 },
   { name: "user-laptop", width: 1440, height: 733, deviceScaleFactor: 2 },
   { name: "monitor-short", width: 1920, height: 977, deviceScaleFactor: 1 },
+  { name: "monitor-short-dpr-1-5", width: 1920, height: 977, deviceScaleFactor: 1.5 },
   { name: "monitor", width: 1920, height: 1080, deviceScaleFactor: 1 },
+  { name: "monitor-dpr-1-5", width: 1920, height: 1080, deviceScaleFactor: 1.5 },
   { name: "monitor-hidpi", width: 1920, height: 1080, deviceScaleFactor: 2 }
 ];
+const requestedProfiles = new Set((process.env.HOME_HANDOFF_PROFILE ?? "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean));
+const selectedProfiles = requestedProfiles.size
+  ? profiles.filter((profile) => requestedProfiles.has(profile.name))
+  : profiles;
+if (!selectedProfiles.length) throw new Error(`Unknown HOME_HANDOFF_PROFILE: ${[...requestedProfiles].join(",")}`);
 
 async function compareImages(first, second, diffPath) {
   const left = await sharp(first).removeAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -93,7 +105,7 @@ await fs.mkdir(outDir, { recursive: true });
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const results = [];
 try {
-  for (const profile of profiles) {
+  for (const profile of selectedProfiles) {
     const context = await browser.newContext({
       viewport: { width: profile.width, height: profile.height },
       deviceScaleFactor: profile.deviceScaleFactor,
@@ -138,7 +150,7 @@ try {
       requestAnimationFrame(sample);
     });
 
-    await page.goto(new URL("/", baseUrl).toString(), { waitUntil: "domcontentloaded" });
+    await page.goto(new URL("/", baseUrl).toString(), { waitUntil: "commit" });
     const preview = page.locator(".punktlandung-home-map-preview");
     const poster = page.locator(".punktlandung-home-map-poster-wide");
     await preview.waitFor({ state: "visible", timeout: 60_000 });
@@ -148,13 +160,30 @@ try {
       return image !== "none";
     });
     await page.evaluate(async () => { if (document.fonts) await document.fonts.ready; });
-
     const posterPath = path.join(outDir, `${profile.name}-initial-poster.png`);
-    const posterBuffer = await preview.screenshot({ path: posterPath });
-    const selectedPoster = await poster.evaluate((element) => {
-      const match = getComputedStyle(element).backgroundImage.match(/url\(["']?(.*?)["']?\)/);
-      return match ? new URL(match[1], location.href).pathname : "";
+    const initialPosterState = await poster.evaluate((element) => {
+      const style = getComputedStyle(element);
+      const preview = element.closest(".punktlandung-home-map-preview");
+      return {
+        opacity: Number(style.opacity),
+        visibility: style.visibility,
+        surfaceReady: preview?.querySelector("[data-surface-ready]")?.getAttribute("data-surface-ready") === "true",
+        animationStarted: preview?.getAttribute("data-animation-started") === "true",
+        crossfadeStarted: element.classList.contains("is-ready")
+      };
     });
+    const posterBuffer = await preview.screenshot({ path: posterPath });
+    const posterSelection = await poster.evaluate((element) => {
+      const candidates = [...getComputedStyle(element).backgroundImage.matchAll(/url\(["']?(.*?)["']?\)/g)]
+        .map((match) => new URL(match[1], location.href).pathname);
+      const loadedResources = performance.getEntriesByType("resource")
+        .map((entry) => new URL(entry.name, location.href).pathname);
+      return {
+        candidates,
+        selected: [...loadedResources].reverse().find((resource) => candidates.includes(resource)) ?? candidates.at(-1) ?? ""
+      };
+    });
+    const selectedPoster = posterSelection.selected;
     const previewSize = await preview.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       return { width: rect.width, height: rect.height };
@@ -162,6 +191,12 @@ try {
     const posterMetadata = await sharp(path.join(root, "public", selectedPoster.replace(/^\//, ""))).metadata();
     const densityPassed = Number(posterMetadata.width) >= Math.floor(previewSize.width * profile.deviceScaleFactor) - 2
       && Number(posterMetadata.height) >= Math.floor(previewSize.height * profile.deviceScaleFactor) - 2;
+    const expectedDensitySuffix = profile.deviceScaleFactor === 1 ? ".webp" : `-${profile.deviceScaleFactor}x.webp`;
+    const sourceDensityPassed = selectedPoster.endsWith(expectedDensitySuffix);
+    const initialPosterPassed = initialPosterState.opacity === 1
+      && initialPosterState.visibility === "visible"
+      && !initialPosterState.animationStarted
+      && !initialPosterState.crossfadeStarted;
     const posterLayout = await page.locator(".punktlandung-home-map-pictures").getAttribute("data-poster-layout");
 
     await preview.locator("[data-surface-ready='true']").waitFor({ state: "attached", timeout: 60_000 });
@@ -259,9 +294,13 @@ try {
       && animationStartedAt <= movementAt
       && hiddenToAnimationMs >= 500
       && animationToMovementMs >= 120;
-    const visualPassed = comparison.structuralMeanDifference <= 1.5
-      && comparison.structuralChangedPixelRatio <= 0.02
-      && densityPassed;
+    const visualPassed = comparison.perceptualMeanDifference <= 3.5
+      && comparison.perceptualChangedPixelRatio <= 0.07
+      && comparison.structuralMeanDifference <= 1.5
+      && comparison.structuralChangedPixelRatio <= 0.015
+      && densityPassed
+      && sourceDensityPassed
+      && initialPosterPassed;
     const stableCanvasPassed = surfaceCanvasId !== null
       && canvasIdsAfterSurface.length === 1
       && canvasIdsAfterSurface[0] === surfaceCanvasId;
@@ -293,6 +332,8 @@ try {
       sequencePassed,
       visualPassed,
       densityPassed,
+      sourceDensityPassed,
+      initialPosterPassed,
       stableCanvasPassed,
       cameraPassed,
       cameraStableBeforeAnimation,
@@ -300,9 +341,11 @@ try {
       motionContinuityPassed,
       firstMovementDelta,
       selectedPoster,
+      posterCandidates: posterSelection.candidates,
       posterPixels: { width: posterMetadata.width, height: posterMetadata.height },
       previewCssPixels: previewSize,
       posterLayout,
+      initialPosterState,
       surfaceReadyAt,
       posterHiddenAt,
       animationStartedAt,
