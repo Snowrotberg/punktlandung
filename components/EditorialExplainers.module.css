@@ -13,13 +13,8 @@
 .stepNumberInline { display: none; margin-right: .3em; }
 .scoreVisual { position: relative; display: grid; min-height: 10rem; grid-template-columns: 1fr minmax(5rem,1.35fr) 1fr; align-items: center; padding: 1.25rem clamp(1rem,5vw,3rem); background: radial-gradient(circle at 50% 50%, rgba(94,231,189,.08), transparent 48%); }
 .mapPoint { position: relative; z-index: 1; display: grid; justify-items: center; gap: .4rem; }
-.mapPoint svg { width: 2.4rem; height: 2.4rem; fill: #0a101c; stroke-width: 1.6; filter: drop-shadow(0 .4rem .7rem rgb(0 0 0 / .35)); }
-.mapPoint span { padding: .35rem .55rem; border: 1px solid currentColor; border-radius: .55rem; background: #0a101c; font-size: .72rem; font-weight: 800; }
-.guessPoint { color: #f43f7a; }
-.targetPoint { color: var(--pl-mint); }
-.distanceLine { position: relative; height: 2px; background: repeating-linear-gradient(90deg,#f43f7a 0 7px,transparent 7px 12px); }
-.distanceLine::after { content: ""; position: absolute; right: -.15rem; top: -.24rem; width: .55rem; height: .55rem; border-top: 2px solid var(--pl-mint); border-right: 2px solid var(--pl-mint); transform: rotate(45deg); }
-.distanceLine span { position: absolute; left: 50%; bottom: .65rem; translate: -50% 0; color: #d8b4fe; font-size: .75rem; font-weight: 850; white-space: nowrap; }
+.scoreMarker { position: relative; }
+.mapPoint > :global(.punktlandung-map-label) { max-width: 8.5rem !important; justify-content: center; font-size: .72rem !important; padding: .4rem .65rem !important; }
 .scoreFacts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin: 0; border-top: 1px solid rgba(148,163,184,.16); }
 .scoreFacts div { padding: .8rem 1rem; }
 .scoreFacts div + div { border-left: 1px solid rgba(148,163,184,.16); }

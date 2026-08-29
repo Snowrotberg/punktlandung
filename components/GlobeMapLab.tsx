@@ -4,6 +4,11 @@ import maplibregl from "maplibre-gl";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { MapAttributionBadge } from "@/components/MapAttributionBadge";
 import {
+  resultMarkerGraphicMarkup,
+  resultMarkerRootClassName,
+  resultRouteLineClassName
+} from "@/components/ResultMapPrimitives";
+import {
   buildMunichJourneyKeyframes,
   buildResultCameraPlan,
   type CameraKeyframe,
@@ -86,12 +91,8 @@ function formatDistance(distanceKm: number): string {
 }
 
 function createResultMarker(kind: "guess" | "target", label: string, targetInfoIndicator: "i" | "?" = "i"): HTMLDivElement {
-  const ringWidth = kind === "target" ? 58 : 46;
-  const ringHeight = kind === "target" ? 18 : 14;
-  const ringRadiusX = ringWidth / 2 - 1.25;
-  const ringRadiusY = ringHeight / 2 - 1.25;
   const marker = document.createElement("div");
-  marker.className = `${styles.resultMarker} ${kind === "guess" ? styles.guessMarker : styles.targetMarker}`;
+  marker.className = `${styles.resultMarker} ${kind === "guess" ? styles.guessMarker : styles.targetMarker} ${resultMarkerRootClassName(kind)}`;
   marker.dataset.resultMarkerKind = kind;
   marker.dataset.visible = "false";
   marker.dataset.labelVisible = "false";
@@ -105,16 +106,7 @@ function createResultMarker(kind: "guess" | "target", label: string, targetInfoI
   }
   marker.innerHTML = `
     <span class="${styles.markerVisual}" aria-hidden="true">
-      <svg class="${styles.markerPin}" viewBox="0 0 32 42">
-        <path class="${styles.markerPinOutline}" fill-rule="evenodd" d="M16 42C16 42 3 24 3 15C3 6.7 8.8 1 16 1C23.2 1 29 6.7 29 15C29 24 16 42 16 42ZM16 9.75A5.25 5.25 0 1 0 16 20.25A5.25 5.25 0 1 0 16 9.75Z"/>
-        <path class="${styles.markerPinFill}" fill-rule="evenodd" d="M16 38C16 38 5 23 5 15C5 8.4 9.9 4 16 4C22.1 4 27 8.4 27 15C27 23 16 38 16 38ZM16 8A7 7 0 1 0 16 22A7 7 0 1 0 16 8Z"/>
-        <circle class="${styles.markerPinCore}" cx="16" cy="15" r="7.15"/>
-      </svg>
-      <svg class="${styles.markerRings}" viewBox="0 0 ${ringWidth} ${ringHeight}">
-        <ellipse class="${styles.markerRingOuter}" cx="${ringWidth / 2}" cy="${ringHeight / 2}" rx="${ringRadiusX}" ry="${ringRadiusY}"/>
-        <ellipse class="${styles.markerRingMiddle}" cx="${ringWidth / 2}" cy="${ringHeight / 2}" rx="${ringRadiusX * 0.68}" ry="${ringRadiusY * 0.68}"/>
-        <ellipse class="${styles.markerRingInner}" cx="${ringWidth / 2}" cy="${ringHeight / 2}" rx="${ringRadiusX * 0.38}" ry="${Math.max(ringRadiusY * 0.38, 0.9)}"/>
-      </svg>
+      ${resultMarkerGraphicMarkup(kind, { pin: styles.markerPin, rings: styles.markerRings })}
     </span>
     <span class="${styles.markerLabel} punktlandung-map-label ${kind === "guess" ? "punktlandung-map-label-player punktlandung-player-color-0" : "punktlandung-map-label-actual"}"${kind === "target" ? ` data-info-indicator="${targetInfoIndicator}"` : ""} data-marker-label>${kind === "target" ? `<span class="${styles.targetLabelText}" data-marker-label-text>${label}</span>` : label}</span>`;
   return marker;
@@ -276,7 +268,7 @@ export function GlobeMapLab({
     const ellipseRadius = (unit: { x: number; y: number }, width: number, height: number) =>
       1 / Math.sqrt((unit.x ** 2) / ((width / 2) ** 2) + (unit.y ** 2) / ((height / 2) ** 2));
     const startGap = ellipseRadius(startUnit, 46, 14) + 18;
-    const targetRing = targetMarkerRef.current?.getElement().querySelector<SVGElement>(`.${styles.markerRings}`);
+    const targetRing = targetMarkerRef.current?.getElement().querySelector<SVGElement>("[data-result-marker-rings]");
     const targetRingRect = targetRing?.getBoundingClientRect();
     const targetWidth = targetRingRect?.width || 58;
     const targetHeight = targetRingRect?.height || 18;
@@ -371,7 +363,7 @@ export function GlobeMapLab({
       await nextFrame();
       const containerRect = container.getBoundingClientRect();
       const visualElements = [
-        ...container.querySelectorAll<HTMLElement>(`[data-visible="true"] .${styles.markerPin}, [data-visible="true"] .${styles.markerRings}, [data-visible="true"] .${styles.markerLabel}`),
+        ...container.querySelectorAll<HTMLElement>(`[data-visible="true"] [data-result-marker-pin], [data-visible="true"] [data-result-marker-rings], [data-visible="true"] .${styles.markerLabel}`),
         ...(routeVisibleRef.current && routeLineRef.current ? [routeLineRef.current] : [])
       ];
       const visualRects = visualElements
@@ -383,7 +375,7 @@ export function GlobeMapLab({
             right: rect.right - containerRect.left,
             bottom: rect.bottom - containerRect.top
           };
-          if (element.classList.contains(styles.markerRings) && element.closest(`.${styles.targetMarker}`)) {
+          if (element.matches("[data-result-marker-rings]") && element.closest(`.${styles.targetMarker}`)) {
             return expandResultRect(relativeRect, {
               left: rect.width / 2,
               top: rect.height / 2,
@@ -391,7 +383,7 @@ export function GlobeMapLab({
               bottom: rect.height / 2
             });
           }
-          if (element.classList.contains(styles.markerPin) && element.closest(`.${styles.targetMarker}`)) {
+          if (element.matches("[data-result-marker-pin]") && element.closest(`.${styles.targetMarker}`)) {
             return expandResultRect(relativeRect, { top: 12 });
           }
           return relativeRect;
@@ -443,8 +435,8 @@ export function GlobeMapLab({
     updateRouteOverlay();
     const containerRect = container.getBoundingClientRect();
     const visualRects = [
-      targetElement.querySelector<SVGElement>(`.${styles.markerPin}`),
-      targetElement.querySelector<SVGElement>(`.${styles.markerRings}`),
+      targetElement.querySelector<SVGElement>("[data-result-marker-pin]"),
+      targetElement.querySelector<SVGElement>("[data-result-marker-rings]"),
       targetElement.querySelector<HTMLElement>(`.${styles.markerLabel}`)
     ].filter((element): element is SVGElement | HTMLElement => Boolean(element)).map((element): ResultScreenRect => {
       const rect = element.getBoundingClientRect();
@@ -1358,7 +1350,7 @@ export function GlobeMapLab({
             </mask>
           </defs>
             <path ref={routeShadowRef} className={styles.routeShadow} mask="url(#kartenlabor-result-reveal)" />
-            <path ref={routeLineRef} className={styles.routeLine} data-result-route="connection" mask="url(#kartenlabor-result-reveal)" />
+            <path ref={routeLineRef} className={`${styles.routeLine} ${resultRouteLineClassName}`} data-result-route="connection" mask="url(#kartenlabor-result-reveal)" />
           </svg>
         {!embedded ? <div className={styles.mapPresets} aria-label="Globe-Kamerapresets">
           {Object.values(CAMERA_PRESETS).map((preset) => (

@@ -18,6 +18,7 @@ import {
   Users
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { ResultMarkerGraphic, ResultRouteGraphic } from "./ResultMapPrimitives";
 import styles from "./EditorialExplainers.module.css";
 
 function DiagramFrame({
@@ -79,9 +80,15 @@ export function ScoreDiagram() {
       description="Die Linie steht für die gemessene Entfernung zwischen deinem Pin und dem tatsächlichen Ziel."
     >
       <div className={styles.scoreVisual} aria-hidden="true">
-        <div className={`${styles.mapPoint} ${styles.guessPoint}`}><MapPin /><span>Dein Tipp</span></div>
-        <div className={styles.distanceLine}><span>500 km</span></div>
-        <div className={`${styles.mapPoint} ${styles.targetPoint}`}><MapPin /><span>Ziel</span></div>
+        <div className={styles.mapPoint}>
+          <ResultMarkerGraphic kind="guess" className={styles.scoreMarker} />
+          <span className="punktlandung-map-label punktlandung-map-label-player punktlandung-player-color-0">#1 Dein Tipp</span>
+        </div>
+        <ResultRouteGraphic label="500 km" />
+        <div className={styles.mapPoint}>
+          <ResultMarkerGraphic kind="target" className={styles.scoreMarker} />
+          <span className="punktlandung-map-label punktlandung-map-label-actual">Ziel</span>
+        </div>
       </div>
       <dl className={styles.scoreFacts}>
         <div><dt>Tipp</dt><dd>dein gesetzter Kartenpunkt</dd></div>

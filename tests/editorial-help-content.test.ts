@@ -29,6 +29,24 @@ test("editorial diagrams are semantic code-native explanations", async () => {
   assert.doesNotMatch(source, /Screenshot/i);
 });
 
+test("score diagram reuses the production result marker and route primitives", async () => {
+  const [editorial, primitives, globe] = await Promise.all([
+    readSource("../components/EditorialExplainers.tsx"),
+    readSource("../components/ResultMapPrimitives.tsx"),
+    readSource("../components/GlobeMapLab.tsx")
+  ]);
+  const scoreDiagram = editorial.slice(editorial.indexOf("export function ScoreDiagram"), editorial.indexOf("export function AccountFlowDiagram"));
+
+  assert.match(scoreDiagram, /ResultMarkerGraphic kind="guess"/);
+  assert.match(scoreDiagram, /ResultMarkerGraphic kind="target"/);
+  assert.match(scoreDiagram, /ResultRouteGraphic label="500 km"/);
+  assert.doesNotMatch(scoreDiagram, /<MapPin/);
+  assert.match(primitives, /resultMarkerGraphicMarkup/);
+  assert.match(primitives, /resultRouteLineClassName/);
+  assert.match(globe, /resultMarkerGraphicMarkup\(kind, \{ pin: styles\.markerPin, rings: styles\.markerRings \}\)/);
+  assert.match(globe, /resultRouteLineClassName/);
+});
+
 test("FAQ keeps a compact, complete set of next steps and info pages use the shared diagrams", async () => {
   const [faq, infos, rules] = await Promise.all([
     readSource("../app/faq/page.tsx"),
