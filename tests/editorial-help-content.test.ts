@@ -17,6 +17,7 @@ test("all help topics provide one unambiguous route back to the FAQ overview", a
 
 test("editorial diagrams are semantic code-native explanations", async () => {
   const source = await readSource("../components/EditorialExplainers.tsx");
+  const gameFlow = source.slice(source.indexOf("export function GameFlowDiagram"), source.indexOf("export function ScoreDiagram"));
 
   for (const diagram of ["GameFlowDiagram", "ScoreDiagram", "AccountFlowDiagram", "RankingScopeDiagram", "ModesAndContentDiagram"]) {
     assert.match(source, new RegExp(`export function ${diagram}\\(`), diagram);
@@ -24,7 +25,8 @@ test("editorial diagrams are semantic code-native explanations", async () => {
   assert.match(source, /<figure/);
   assert.match(source, /<figcaption/);
   assert.match(source, /aria-label=/);
-  assert.match(source, /stepNumberInline/);
+  assert.match(gameFlow, /stepNumberInline/);
+  assert.doesNotMatch(gameFlow, /className=\{styles\.stepNumber\}/);
   assert.doesNotMatch(source, /<img\b/);
   assert.doesNotMatch(source, /Screenshot/i);
 });

@@ -61,7 +61,6 @@ export function GameFlowDiagram() {
       <ol className={styles.flow} aria-label="Ablauf einer Runde in vier Schritten">
         {steps.map(({ label, detail, Icon }, index) => (
           <li key={label}>
-            <span className={styles.stepNumber}>{index + 1}</span>
             <Icon aria-hidden="true" />
             <strong><span className={styles.stepNumberInline} aria-hidden="true">{index + 1}</span>{" "}{label}</strong>
             <small>{detail}</small>
