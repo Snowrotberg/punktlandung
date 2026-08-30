@@ -125,10 +125,9 @@ test("editorial cards use visual signposts and the current target badge", async 
     readSource("../components/EditorialExplainers.module.css")
   ]);
 
-  for (const icon of ["SlidersHorizontal", "ListOrdered", "Clock3", "Gauge", "Smartphone", "Users", "Laptop"]) assert.match(rules, new RegExp(icon));
-  for (const icon of ["Building2", "Landmark", "TentTree", "MountainSnow", "Flag"]) assert.match(catalog, new RegExp(icon));
-  assert.match(party, /<Users/);
-  assert.match(party, /<Laptop/);
+  for (const icon of ["SlidersHorizontal", "ListOrdered", "Clock3", "Gauge", "UserRound", "UsersRound", "Globe2"]) assert.match(rules, new RegExp(icon));
+  for (const icon of ["Building2", "Crown", "Landmark", "Mountain", "Flag"]) assert.match(catalog, new RegExp(icon));
+  for (const icon of ["UsersRound", "SlidersHorizontal", "ListChecks", "Target", "Tv", "Globe2"]) assert.match(party, new RegExp(icon));
   assert.match(explainers, /styles\.targetLabel/);
   assert.match(explainerStyles, /\.targetLabel::before \{ display: none !important; \}/);
 });

@@ -11,7 +11,7 @@
 .flow strong { color: #f8fafc; font-size: .82rem; }
 .flow small { color: #94a3b8; font-size: .68rem; line-height: 1.4; }
 .stepNumberInline { margin-right: .3em; }
-.scoreVisual { position: relative; display: grid; min-height: 10rem; grid-template-columns: 1fr minmax(5rem,1.35fr) 1fr; align-items: center; padding: 1.25rem clamp(1rem,5vw,3rem); background: radial-gradient(circle at 50% 50%, rgba(94,231,189,.08), transparent 48%); }
+.scoreVisual { position: relative; display: grid; min-height: 10rem; grid-template-columns: auto minmax(5rem,1fr) auto; align-items: center; column-gap: .45rem; padding: 1.25rem clamp(1rem,5vw,3rem); background: radial-gradient(circle at 50% 50%, rgba(94,231,189,.08), transparent 48%); }
 .mapPoint { position: relative; z-index: 1; display: grid; justify-items: center; gap: .85rem; }
 .scoreMarker { position: relative; }
 .mapPoint > :global(.punktlandung-map-label) { max-width: 8.5rem !important; justify-content: center; font-size: .72rem !important; padding: .4rem .65rem !important; }
@@ -57,7 +57,7 @@
 @media (max-width: 34rem) {
   .caption { padding: .85rem; }
   .flow,.accountFlow,.modeGrid { padding: .75rem; }
-  .scoreVisual { min-height: 8rem; grid-template-columns: 1fr minmax(3.5rem,.8fr) 1fr; padding-inline: .75rem; }
+  .scoreVisual { min-height: 8rem; grid-template-columns: auto minmax(3.5rem,1fr) auto; column-gap: .25rem; padding-inline: .75rem; }
   .mapPoint span { font-size: .64rem; }
   .scoreFacts { grid-template-columns: 1fr; }
   .scoreFacts div + div { border-top: 1px solid rgba(148,163,184,.16); border-left: 0; }

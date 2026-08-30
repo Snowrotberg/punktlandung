@@ -5,7 +5,7 @@ import { JsonLd } from "@/components/StructuredData";
 import { GameFlowDiagram, ScoreDiagram } from "@/components/EditorialExplainers";
 import { absoluteUrl } from "@/lib/seo";
 import { HelpBackLink } from "@/components/HelpBackLink";
-import { Clock3, Gauge, Laptop, ListOrdered, SlidersHorizontal, Smartphone, Users } from "lucide-react";
+import { Clock3, Gauge, Globe2, ListOrdered, SlidersHorizontal, UserRound, UsersRound } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Wie funktioniert Punktlandung? Spielablauf und Punkte",
@@ -151,9 +151,9 @@ export default function SoFunktioniertPunktlandungPage() {
         <h2 className="text-[22px] font-black leading-tight text-white">Welche Spielmodi gibt es?</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {[
-            { title: "Solo", body: "Du spielst allein und setzt alle Tipps selbst. Ideal zum Üben und für persönliche Bestwerte.", Icon: Smartphone },
-            { title: "Party", body: "Zwei bis zehn Personen spielen reihum am selben Gerät und vergleichen jede Auflösung gemeinsam.", Icon: Users },
-            { title: "Online-Raum", body: "Bis zu zehn Personen treten über einen gemeinsamen Raumcode auf ihren eigenen Geräten an.", Icon: Laptop }
+            { title: "Solo", body: "Du spielst allein und setzt alle Tipps selbst. Ideal zum Üben und für persönliche Bestwerte.", Icon: UserRound },
+            { title: "Party", body: "Zwei bis zehn Personen spielen reihum am selben Gerät und vergleichen jede Auflösung gemeinsam.", Icon: UsersRound },
+            { title: "Online-Raum", body: "Bis zu zehn Personen treten über einen gemeinsamen Raumcode auf ihren eigenen Geräten an.", Icon: Globe2 }
           ].map(({ title, body, Icon }) => (
             <article key={title} className="punktlandung-info-static-card rounded-xl p-5">
               <h3 className="flex items-center gap-3 text-lg font-black text-white"><Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />{title}</h3>

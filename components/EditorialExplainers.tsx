@@ -6,15 +6,14 @@ import {
   Globe2,
   History,
   Images,
-  Laptop,
   MapPin,
   Route,
   ShieldCheck,
   SlidersHorizontal,
-  Smartphone,
   Trophy,
   UserRoundCheck,
-  Users
+  UserRound,
+  UsersRound
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { ResultMarkerGraphic, ResultRouteGraphic } from "./ResultMapPrimitives";
@@ -137,9 +136,9 @@ export function RankingScopeDiagram() {
 
 export function ModesAndContentDiagram() {
   const modes = [
-    { title: "Solo", detail: "allein am eigenen Gerät", Icon: Smartphone },
-    { title: "Party", detail: "2–10 Personen an einem Gerät", Icon: Users },
-    { title: "Online-Raum", detail: "bis zu 10 Personen auf mehreren Geräten", Icon: Laptop }
+    { title: "Solo", detail: "allein am eigenen Gerät", Icon: UserRound },
+    { title: "Party", detail: "2–10 Personen an einem Gerät", Icon: UsersRound },
+    { title: "Online-Raum", detail: "bis zu 10 Personen auf mehreren Geräten", Icon: Globe2 }
   ];
   const categories = ["Städte", "Hauptstädte", "Wahrzeichen", "Landschaften", "Flaggen"];
 

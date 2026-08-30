@@ -6,7 +6,7 @@ import { builtInLocations, catalogInventoryLocations } from "@/data/locations";
 import { buildCatalogStatistics, catalogCategoryLabels, catalogCategoryOrder } from "@/lib/catalogStatistics";
 import { absoluteUrl } from "@/lib/seo";
 import { HelpBackLink } from "@/components/HelpBackLink";
-import { Building2, Flag, Landmark, MountainSnow, TentTree } from "lucide-react";
+import { Building2, Crown, Flag, Landmark, Mountain } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Welche Orte und Aufgaben gibt es bei Punktlandung?",
@@ -86,9 +86,9 @@ export default function OrtskatalogPage() {
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[
             { title: "Städte", body: "Stadtbilder aus aller Welt: von bekannten Metropolen bis zu Orten, die du erst über Architektur, Lage und Umgebung einordnest.", Icon: Building2 },
-            { title: "Hauptstädte", body: "Politische und kulturelle Zentren, bei denen du das gezeigte Land auf der Weltkarte finden musst.", Icon: Landmark },
-            { title: "Wahrzeichen", body: "Markante Bauwerke, Denkmäler und Orte, deren Standort du möglichst genau bestimmst.", Icon: TentTree },
-            { title: "Landschaften", body: "Berge, Küsten, Seen und andere Naturräume, bei denen Gelände, Klima und Vegetation wichtige Hinweise liefern.", Icon: MountainSnow },
+            { title: "Hauptstädte", body: "Politische und kulturelle Zentren, bei denen du das gezeigte Land auf der Weltkarte finden musst.", Icon: Crown },
+            { title: "Wahrzeichen", body: "Markante Bauwerke, Denkmäler und Orte, deren Standort du möglichst genau bestimmst.", Icon: Landmark },
+            { title: "Landschaften", body: "Berge, Küsten, Seen und andere Naturräume, bei denen Gelände, Klima und Vegetation wichtige Hinweise liefern.", Icon: Mountain },
             { title: "Flaggen", body: "Erkenne die Flagge und markiere das zugehörige Land. Hier zählt der richtige Ländertreffer.", Icon: Flag }
           ].map(({ title, body, Icon }) => (
             <article key={title} className="punktlandung-info-static-card rounded-md p-5">
