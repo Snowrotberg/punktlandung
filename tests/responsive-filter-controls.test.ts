@@ -11,6 +11,8 @@ test("mobile route selectors expose their label, selected value and URL links", 
   assert.match(source, /aria-current=.*page/);
   assert.match(source, /href=\{option\.href\}/);
   assert.match(source, /name="responsive-route-select"/);
+  assert.match(source, /removeAttribute\("open"\)/);
+  assert.match(source, /onClick=\{closeOptions\}/);
 });
 
 test("selected filter states do not add decorative bullets", async () => {
@@ -29,6 +31,13 @@ test("shared mobile selectors use a mint outline with only a restrained active t
   assert.match(sharedStyles, /\.select summary \{[^}]*background:var\(--pl-choice-active-surface\)[^}]*border:1px solid var\(--pl-choice-active-border\)/);
   assert.match(sharedStyles, /a\[aria-current="page"\] \{[^}]*background:var\(--pl-choice-active-surface\)[^}]*border-color:var\(--pl-choice-active-border\)/);
   assert.doesNotMatch(sharedStyles, /background:#12382f/);
+});
+
+test("mobile section navigation keeps its divider visible around smaller route pills", async () => {
+  const styles = await read("components/SectionNavigation.module.css");
+  assert.match(styles, /\.bar::after \{[\s\S]*background: var\(--pl-line\)/);
+  assert.match(styles, /min-height: 2\.6rem !important/);
+  assert.doesNotMatch(styles, /min-height: 2\.75rem !important/);
 });
 
 test("account and admin choice surfaces consume the same active, hover and focus tokens", async () => {
@@ -60,8 +69,9 @@ test("the account header flyout exposes the current account destination", async 
 
 test("history names points-per-round and total-score sorting unambiguously", async () => {
   const source = await read("app/konto/verlauf/page.tsx");
-  assert.match(source, /Beste Punkte pro Runde/);
+  assert.match(source, /Bester Partiedurchschnitt/);
   assert.match(source, /Höchste Gesamtpunktzahl/);
+  assert.match(source, /nicht die beste Einzelrunde/);
   assert.doesNotMatch(source, /\["average", "Beste Ø-Punkte"\]/);
   assert.match(source, /category=\$\{value\}&sort=\$\{selectedSort\}/);
   assert.match(source, /category=\$\{selectedCategory\}&sort=\$\{value\}/);

@@ -98,7 +98,7 @@ export const faqItems = [
   {
     question: "Was ist Punktlandung?",
     answer:
-      "Punktlandung ist ein deutschsprachiges Geo-Guessing-Spiel fuer den Browser. Du siehst ein Bild oder eine Aufgabe, erratest den Ort auf der Karte und bekommst Punkte nach Entfernung."
+      "Punktlandung ist ein Geografie-Spiel im Browser: Du siehst ein Bild oder eine Aufgabe, setzt deinen Tipp selbst auf der Weltkarte und bekommst Punkte nach Entfernung."
   },
   {
     question: "Ist Punktlandung kostenlos?",
@@ -108,7 +108,7 @@ export const faqItems = [
   {
     question: "Ist Punktlandung eine deutsche GeoGuessr-Alternative?",
     answer:
-      "Punktlandung ist eine deutschsprachige Alternative fuer Spieler, die ein schnelles Geo-Quiz mit Orten, Staedten, Landschaften, Flaggen und Wahrzeichen suchen."
+      "Ja. Punktlandung ist eine eigenständig entwickelte, deutschsprachige Alternative mit Orten, Staedten, Landschaften, Flaggen und Wahrzeichen."
   },
   {
     question: "Kann man Punktlandung ohne Anmeldung spielen?",

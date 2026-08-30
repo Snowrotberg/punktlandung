@@ -7,8 +7,7 @@ const readSource = (path: string) => readFile(new URL(path, import.meta.url), "u
 test("the consolidated account and ranking help returns to the shared overview", async () => {
   const source = await readSource("../components/HelpTopicPage.tsx");
 
-  assert.match(source, /href="\/faq"/);
-  assert.match(source, /Zurück zu Hilfe &amp; Infos/);
+  assert.match(source, /HelpBackLink/);
   assert.match(source, /rankings:/);
   for (const retiredTopic of ["spielablauf:", "punkte:", "konten:"]) {
     assert.doesNotMatch(source, new RegExp(retiredTopic));
@@ -94,9 +93,42 @@ test("FAQ is the shared help and info hub while feedback stays independent", asy
   assert.match(navigation, /label: "Konto & Rankings"/);
   assert.match(navigation, /label: "Orte & Quellen"/);
   assert.match(navigation, /label: "Mit Freunden spielen"/);
+  assert.match(navigation, /href: "\/infos", label: "Über Punktlandung"/);
   assert.doesNotMatch(navigation, /href: "\/feedback"/);
   assert.match(footer, /href: "\/faq", label: "Hilfe & Infos"/);
   assert.match(footer, /href: "\/feedback", label: "Feedback"/);
   assert.match(rules, /GameFlowDiagram/);
   assert.match(rules, /ScoreDiagram/);
+});
+
+test("all consolidated help detail pages provide a shared return path", async () => {
+  const [rules, catalog, party, infos, backLink] = await Promise.all([
+    readSource("../app/so-funktioniert-punktlandung/page.tsx"),
+    readSource("../app/ortskatalog/page.tsx"),
+    readSource("../app/partyspiel-geografie/page.tsx"),
+    readSource("../app/infos/page.tsx"),
+    readSource("../components/HelpBackLink.tsx")
+  ]);
+
+  for (const page of [rules, catalog, party, infos]) assert.match(page, /<HelpBackLink \/>/);
+  assert.match(backLink, /href="\/faq"/);
+  assert.match(backLink, /Zurück zu Hilfe &amp; Infos/);
+  assert.doesNotMatch(rules, /Inhaltlich geprüft/);
+});
+
+test("editorial cards use visual signposts and the current target badge", async () => {
+  const [rules, catalog, party, explainers, explainerStyles] = await Promise.all([
+    readSource("../app/so-funktioniert-punktlandung/page.tsx"),
+    readSource("../app/ortskatalog/page.tsx"),
+    readSource("../app/partyspiel-geografie/page.tsx"),
+    readSource("../components/EditorialExplainers.tsx"),
+    readSource("../components/EditorialExplainers.module.css")
+  ]);
+
+  for (const icon of ["SlidersHorizontal", "ListOrdered", "Clock3", "Gauge", "Smartphone", "Users", "Laptop"]) assert.match(rules, new RegExp(icon));
+  for (const icon of ["Building2", "Landmark", "TentTree", "MountainSnow", "Flag"]) assert.match(catalog, new RegExp(icon));
+  assert.match(party, /<Users/);
+  assert.match(party, /<Laptop/);
+  assert.match(explainers, /styles\.targetLabel/);
+  assert.match(explainerStyles, /\.targetLabel::before \{ display: none !important; \}/);
 });

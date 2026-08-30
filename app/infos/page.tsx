@@ -11,6 +11,7 @@ import Link from "next/link";
 import { InfoPageShell } from "@/components/InfoPageShell";
 import { RedesignButtonLink } from "@/components/redesign";
 import { absoluteUrl } from "@/lib/seo";
+import { HelpBackLink } from "@/components/HelpBackLink";
 
 export const metadata: Metadata = {
   title: "Über Punktlandung – Spielidee, Inhalte und Web-Version",
@@ -34,9 +35,11 @@ export default function InfosPage() {
       title="Was ist Punktlandung?"
       intro="Punktlandung ist ein eigenständig entwickeltes Geografie-Spiel für den Browser. Hier erklären wir, was das Projekt anbietet, wie die Inhalte gepflegt werden und wie die Web-Version weiterentwickelt wird."
     >
-      <p className="text-sm text-slate-400">Zuletzt aktualisiert: 30. August 2026</p>
+      <HelpBackLink />
+      <p className="mt-3 text-sm text-slate-400">Zuletzt aktualisiert: 30. August 2026</p>
 
-      <section className="mt-6">
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
+      <section>
         <IconHeading Icon={Waypoints}>Die Spielidee</IconHeading>
         <p className="mt-3 max-w-4xl leading-7 text-slate-300">
           Statt eine vorgegebene Antwort auszuwählen, setzt du selbst einen Pin auf die Weltkarte. Die Entfernung zum
@@ -46,7 +49,7 @@ export default function InfosPage() {
         </p>
       </section>
 
-      <section className="mt-8">
+      <section>
         <IconHeading Icon={ShieldCheck}>Wie werden die Inhalte gepflegt?</IconHeading>
         <p className="mt-3 max-w-4xl leading-7 text-slate-300">
           Der aktive Aufgabenkatalog wird im Projekt gepflegt und vor der Veröffentlichung redaktionell sowie technisch
@@ -55,6 +58,7 @@ export default function InfosPage() {
           umgangen werden können.
         </p>
       </section>
+      </div>
 
       <section className="mt-8 grid gap-4 md:grid-cols-2">
         <article className="punktlandung-info-static-card rounded-xl p-5">

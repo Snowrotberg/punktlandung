@@ -3,6 +3,8 @@ import Link from "next/link";
 import { InfoPageShell } from "@/components/InfoPageShell";
 import { RedesignButtonLink } from "@/components/redesign";
 import { absoluteUrl } from "@/lib/seo";
+import { HelpBackLink } from "@/components/HelpBackLink";
+import { Laptop, Users } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Geografie-Partyspiel für gemeinsame Runden",
@@ -28,7 +30,7 @@ export default function PartyspielGeografiePage() {
       title="Punktlandung als Geografie-Partyspiel"
       intro="Im Party-Modus spielen zwei bis zehn Personen an einem Gerät. Jede Aufgabe ist für alle gleich, die Tipps werden reihum abgegeben und anschließend gemeinsam aufgelöst."
     >
-      <p className="text-sm text-slate-400">Inhaltlich geprüft: 26. August 2026</p>
+      <HelpBackLink />
 
       <section className="mt-6">
         <h2 className="text-[22px] leading-tight text-white">So bereitet ihr eine Partie vor</h2>
@@ -47,13 +49,13 @@ export default function PartyspielGeografiePage() {
         <h2 className="text-[22px] leading-tight text-white">Party-Modus oder Online-Raum?</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <article className="punktlandung-info-static-card rounded-xl p-5">
-            <h3 className="text-lg font-bold text-white">Party-Modus: gemeinsam an einem Gerät</h3>
+            <h3 className="flex items-center gap-3 text-lg font-bold text-white"><Users aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />Party-Modus: gemeinsam an einem Gerät</h3>
             <p className="mt-2 text-sm leading-6 text-slate-300">
               Ideal für Sofa, Unterricht oder Spieleabend. Ihr gebt ein Handy, Tablet oder Notebook weiter und löst jede Aufgabe anschließend gemeinsam auf.
             </p>
           </article>
           <article className="punktlandung-info-static-card rounded-xl p-5">
-            <h3 className="text-lg font-bold text-white">Online-Raum: gemeinsam auf mehreren Geräten</h3>
+            <h3 className="flex items-center gap-3 text-lg font-bold text-white"><Laptop aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />Online-Raum: gemeinsam auf mehreren Geräten</h3>
             <p className="mt-2 text-sm leading-6 text-slate-300">
               Wenn ihr getrennt sitzt oder jede Person am eigenen Gerät spielen soll, verbindet euch ein Raumcode mit derselben laufenden Partie.
             </p>

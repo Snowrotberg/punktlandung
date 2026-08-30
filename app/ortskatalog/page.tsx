@@ -5,6 +5,8 @@ import { JsonLd } from "@/components/StructuredData";
 import { builtInLocations, catalogInventoryLocations } from "@/data/locations";
 import { buildCatalogStatistics, catalogCategoryLabels, catalogCategoryOrder } from "@/lib/catalogStatistics";
 import { absoluteUrl } from "@/lib/seo";
+import { HelpBackLink } from "@/components/HelpBackLink";
+import { Building2, Flag, Landmark, MountainSnow, TentTree } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Welche Orte und Aufgaben gibt es bei Punktlandung?",
@@ -56,7 +58,7 @@ export default function OrtskatalogPage() {
         title="Welche Orte und Aufgaben gibt es bei Punktlandung?"
         intro={`Diese Seite zeigt, welche Inhalte im Spiel vorkommen: aktuell ${builtInLocations.length.toLocaleString("de-DE")} spielbare Aufgaben mit Städten, Hauptstädten, Wahrzeichen, Landschaften und Flaggen. Außerdem erklären wir, wie die Motive ausgewählt und geprüft werden.`}
       >
-      <p className="text-sm text-slate-400">Datenstand der Katalogversion: August 2026</p>
+      <HelpBackLink />
 
       <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <div className="punktlandung-info-static-card rounded-md p-5">
@@ -77,19 +79,20 @@ export default function OrtskatalogPage() {
           <p className="mt-2 text-sm leading-6 text-slate-400">Zusätzlich können alle Inhalte gemischt gespielt werden.</p>
         </div>
       </section>
+      <p className="mt-2 text-right text-sm text-slate-400">Datenstand der Katalogversion: August 2026</p>
 
       <section className="mt-8">
         <h2 className="text-[22px] font-black leading-tight text-white">Was erwartet dich in den Kategorien?</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[
-            ["Städte", "Stadtbilder aus aller Welt: von bekannten Metropolen bis zu Orten, die du erst über Architektur, Lage und Umgebung einordnest."],
-            ["Hauptstädte", "Politische und kulturelle Zentren, bei denen du das gezeigte Land auf der Weltkarte finden musst."],
-            ["Wahrzeichen", "Markante Bauwerke, Denkmäler und Orte, deren Standort du möglichst genau bestimmst."],
-            ["Landschaften", "Berge, Küsten, Seen und andere Naturräume, bei denen Gelände, Klima und Vegetation wichtige Hinweise liefern."],
-            ["Flaggen", "Erkenne die Flagge und markiere das zugehörige Land. Hier zählt der richtige Ländertreffer." ]
-          ].map(([title, body]) => (
+            { title: "Städte", body: "Stadtbilder aus aller Welt: von bekannten Metropolen bis zu Orten, die du erst über Architektur, Lage und Umgebung einordnest.", Icon: Building2 },
+            { title: "Hauptstädte", body: "Politische und kulturelle Zentren, bei denen du das gezeigte Land auf der Weltkarte finden musst.", Icon: Landmark },
+            { title: "Wahrzeichen", body: "Markante Bauwerke, Denkmäler und Orte, deren Standort du möglichst genau bestimmst.", Icon: TentTree },
+            { title: "Landschaften", body: "Berge, Küsten, Seen und andere Naturräume, bei denen Gelände, Klima und Vegetation wichtige Hinweise liefern.", Icon: MountainSnow },
+            { title: "Flaggen", body: "Erkenne die Flagge und markiere das zugehörige Land. Hier zählt der richtige Ländertreffer.", Icon: Flag }
+          ].map(({ title, body, Icon }) => (
             <article key={title} className="punktlandung-info-static-card rounded-md p-5">
-              <h3 className="text-lg font-black text-white">{title}</h3>
+              <h3 className="flex items-center gap-3 text-lg font-black text-white"><Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />{title}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
             </article>
           ))}

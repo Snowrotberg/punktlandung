@@ -1,4 +1,5 @@
 .bar {
+  position: relative;
   display: flex;
   min-width: 0;
   align-items: center;
@@ -74,6 +75,18 @@
 }
 
 @media (max-width: 52rem) and (orientation: portrait) {
+  .bar::after {
+    content: "";
+    position: absolute;
+    z-index: 3;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 1px;
+    background: var(--pl-line);
+    pointer-events: none;
+  }
+
   .bar {
     align-items: stretch;
     flex-direction: column;
@@ -107,8 +120,8 @@
   .cookieButton {
     width: auto;
     min-width: max-content;
-    min-height: 2.75rem !important;
-    padding: .45rem .75rem .35rem;
+    min-height: 2.6rem !important;
+    padding: .4rem .7rem .32rem;
     border: 1px solid transparent;
     border-radius: .55rem;
     font-size: .72rem;

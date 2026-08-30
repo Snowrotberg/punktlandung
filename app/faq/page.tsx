@@ -45,7 +45,7 @@ export default function FaqPage() {
           ))}
         </div>
 
-        <section aria-labelledby="about-punktlandung-heading">
+        <section className={styles.aboutCard} aria-labelledby="about-punktlandung-heading">
           <Link href="/infos" className="punktlandung-help-card rounded-xl border p-4 no-underline">
             <h2 id="about-punktlandung-heading" className="flex items-center gap-3 text-lg font-black text-white"><BookOpenText aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />Über Punktlandung</h2>
             <p className="mt-2 text-sm leading-6 text-slate-300">Erfahre mehr über die Spielidee, die Web-Version, die Pflege der Inhalte und die Finanzierung des Projekts.</p>

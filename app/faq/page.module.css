@@ -1,7 +1,10 @@
 .content {
   display: grid;
   gap: 1rem;
+  padding-bottom: 1.25rem;
 }
+
+.aboutCard { min-width: 0; }
 
 .quickAnswers {
   display: grid;
@@ -13,4 +16,8 @@
   color: #f8fafc;
   font-size: 1.2rem;
   font-weight: 650;
+}
+
+@media (min-width: 48rem) {
+  .aboutCard { width: calc(50% - .375rem); }
 }

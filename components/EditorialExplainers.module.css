@@ -5,14 +5,18 @@
 .flow { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); list-style: none; margin: 0; padding: 1rem; }
 .flow li { position: relative; display: grid; min-width: 0; justify-items: center; gap: .35rem; padding: .3rem .75rem; text-align: center; }
 .flow li:not(:last-child)::after { content: ""; position: absolute; top: 1.3rem; right: -.4rem; width: .8rem; height: .8rem; border-top: 2px solid rgba(94,231,189,.55); border-right: 2px solid rgba(94,231,189,.55); transform: rotate(45deg); }
-.flow svg { width: 1.55rem; height: 1.55rem; color: var(--pl-mint); }
+.flowVisual { display: grid; width: 3.75rem; min-height: 3rem; place-items: center; }
+.flowVisual > svg { width: 1.75rem; height: 1.75rem; color: var(--pl-mint); }
+.flowVisual > :global([data-landing]) { position: relative; scale: .72; }
 .flow strong { color: #f8fafc; font-size: .82rem; }
 .flow small { color: #94a3b8; font-size: .68rem; line-height: 1.4; }
 .stepNumberInline { margin-right: .3em; }
 .scoreVisual { position: relative; display: grid; min-height: 10rem; grid-template-columns: 1fr minmax(5rem,1.35fr) 1fr; align-items: center; padding: 1.25rem clamp(1rem,5vw,3rem); background: radial-gradient(circle at 50% 50%, rgba(94,231,189,.08), transparent 48%); }
-.mapPoint { position: relative; z-index: 1; display: grid; justify-items: center; gap: .4rem; }
+.mapPoint { position: relative; z-index: 1; display: grid; justify-items: center; gap: .85rem; }
 .scoreMarker { position: relative; }
 .mapPoint > :global(.punktlandung-map-label) { max-width: 8.5rem !important; justify-content: center; font-size: .72rem !important; padding: .4rem .65rem !important; }
+.mapPoint > .targetLabel { border-color: var(--pl-mint) !important; color: var(--pl-mint-ink) !important; background: var(--pl-mint) !important; box-shadow: 0 .65rem 1.5rem rgb(2 6 23 / .3), 0 0 1.2rem rgb(94 231 189 / .28) !important; }
+.mapPoint > .targetLabel::before { display: none !important; }
 .scoreFacts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin: 0; border-top: 1px solid rgba(148,163,184,.16); }
 .scoreFacts div { padding: .8rem 1rem; }
 .scoreFacts div + div { border-left: 1px solid rgba(148,163,184,.16); }

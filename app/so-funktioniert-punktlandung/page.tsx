@@ -4,6 +4,8 @@ import { InfoPageShell } from "@/components/InfoPageShell";
 import { JsonLd } from "@/components/StructuredData";
 import { GameFlowDiagram, ScoreDiagram } from "@/components/EditorialExplainers";
 import { absoluteUrl } from "@/lib/seo";
+import { HelpBackLink } from "@/components/HelpBackLink";
+import { Clock3, Gauge, Laptop, ListOrdered, SlidersHorizontal, Smartphone, Users } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Wie funktioniert Punktlandung? Spielablauf und Punkte",
@@ -71,7 +73,7 @@ export default function SoFunktioniertPunktlandungPage() {
         title="Wie funktioniert Punktlandung?"
         intro="Punktlandung zeigt dir einen Ort, ein Wahrzeichen, eine Landschaft, eine Stadt oder eine Flagge. Du setzt deinen Tipp auf der Weltkarte. Je kleiner die Entfernung zum Ziel, desto mehr der maximal 5.000 Punkte erhältst du."
       >
-      <p className="text-sm text-slate-400">Inhaltlich geprüft: 27. August 2026</p>
+      <HelpBackLink />
 
       <section id="spielablauf" className="scroll-mt-24">
         <GameFlowDiagram />
@@ -132,13 +134,13 @@ export default function SoFunktioniertPunktlandungPage() {
         <h2 className="text-[22px] font-black leading-tight text-white">Welche Einstellungen kannst du wählen?</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           {[
-            ["Kategorie", "Spiele gemischt oder konzentriere dich auf Städte, Hauptstädte, Wahrzeichen, Landschaften oder Flaggen."],
-            ["Rundenzahl", "Kurze Partien eignen sich zum Kennenlernen. Mehr Runden machen das Gesamtergebnis aussagekräftiger."],
-            ["Zeit", "Ein festes Zeitlimit belohnt schnelle Entscheidungen. Mit freier Zeit kannst du Bild und Karte in Ruhe prüfen."],
-            ["Schwierigkeit", "Leichte Aufgaben sind oft klarer erkennbar; schwere Motive verlangen genaueres Hinsehen und mehr Ortswissen."]
-          ].map(([title, body]) => (
+            { title: "Kategorie", body: "Spiele gemischt oder konzentriere dich auf Städte, Hauptstädte, Wahrzeichen, Landschaften oder Flaggen.", Icon: SlidersHorizontal },
+            { title: "Rundenzahl", body: "Kurze Partien eignen sich zum Kennenlernen. Mehr Runden machen das Gesamtergebnis aussagekräftiger.", Icon: ListOrdered },
+            { title: "Zeit", body: "Ein festes Zeitlimit belohnt schnelle Entscheidungen. Mit freier Zeit kannst du Bild und Karte in Ruhe prüfen.", Icon: Clock3 },
+            { title: "Schwierigkeit", body: "Leichte Aufgaben sind oft klarer erkennbar; schwere Motive verlangen genaueres Hinsehen und mehr Ortswissen.", Icon: Gauge }
+          ].map(({ title, body, Icon }) => (
             <article key={title} className="punktlandung-info-static-card rounded-xl p-5">
-              <h3 className="text-lg font-black text-white">{title}</h3>
+              <h3 className="flex items-center gap-3 text-lg font-black text-white"><Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />{title}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
             </article>
           ))}
@@ -149,12 +151,12 @@ export default function SoFunktioniertPunktlandungPage() {
         <h2 className="text-[22px] font-black leading-tight text-white">Welche Spielmodi gibt es?</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {[
-            ["Solo", "Du spielst allein und setzt alle Tipps selbst. Ideal zum Üben und für persönliche Bestwerte."],
-            ["Party", "Zwei bis zehn Personen spielen reihum am selben Gerät und vergleichen jede Auflösung gemeinsam."],
-            ["Online-Raum", "Bis zu zehn Personen treten über einen gemeinsamen Raumcode auf ihren eigenen Geräten an."]
-          ].map(([title, body]) => (
+            { title: "Solo", body: "Du spielst allein und setzt alle Tipps selbst. Ideal zum Üben und für persönliche Bestwerte.", Icon: Smartphone },
+            { title: "Party", body: "Zwei bis zehn Personen spielen reihum am selben Gerät und vergleichen jede Auflösung gemeinsam.", Icon: Users },
+            { title: "Online-Raum", body: "Bis zu zehn Personen treten über einen gemeinsamen Raumcode auf ihren eigenen Geräten an.", Icon: Laptop }
+          ].map(({ title, body, Icon }) => (
             <article key={title} className="punktlandung-info-static-card rounded-xl p-5">
-              <h3 className="text-lg font-black text-white">{title}</h3>
+              <h3 className="flex items-center gap-3 text-lg font-black text-white"><Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />{title}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
             </article>
           ))}

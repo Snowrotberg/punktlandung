@@ -20,7 +20,8 @@ const helpItems: NavigationItem[] = [
   { href: "/so-funktioniert-punktlandung", label: "Spielen & Punkte" },
   { href: "/faq/rankings", label: "Konto & Rankings" },
   { href: "/ortskatalog", label: "Orte & Quellen" },
-  { href: "/partyspiel-geografie", label: "Mit Freunden spielen" }
+  { href: "/partyspiel-geografie", label: "Mit Freunden spielen" },
+  { href: "/infos", label: "Über Punktlandung" }
 ];
 
 const legalItems: NavigationItem[] = [
@@ -34,10 +35,7 @@ const communityItems: NavigationItem[] = [
   { href: "/community/meine-vorschlaege", label: "Meine Vorschläge" }
 ];
 
-const helpPaths = new Set([
-  "/infos",
-  ...helpItems.map((item) => item.href)
-]);
+const helpPaths = new Set(helpItems.map((item) => item.href));
 const legalPaths = new Set(legalItems.map((item) => item.href));
 
 function isActive(pathname: string, item: NavigationItem) {

@@ -1,9 +1,9 @@
 import {
   BadgeCheck,
   CircleUserRound,
-  Eye,
   Flag,
   Gamepad2,
+  Globe2,
   History,
   Images,
   Laptop,
@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Smartphone,
-  Target,
   Trophy,
   UserRoundCheck,
   Users
@@ -45,10 +44,10 @@ function DiagramFrame({
 
 export function GameFlowDiagram() {
   const steps = [
-    { label: "Aufgabe ansehen", detail: "Bild, Flagge oder Ortsmotiv erkennen", Icon: Eye },
-    { label: "Ort einschätzen", detail: "Hinweise geografisch einordnen", Icon: Target },
-    { label: "Tipp setzen", detail: "Pin auf der Weltkarte bestätigen", Icon: MapPin },
-    { label: "Auflösung", detail: "Ziel, Entfernung und Punkte vergleichen", Icon: Flag }
+    { label: "Aufgabe ansehen", detail: "Bild, Flagge oder Ortsmotiv erkennen", Icon: Images, marker: null },
+    { label: "Ort einschätzen", detail: "Hinweise geografisch einordnen", Icon: Globe2, marker: null },
+    { label: "Tipp setzen", detail: "Pin auf der Weltkarte bestätigen", Icon: MapPin, marker: "guess" as const },
+    { label: "Auflösung", detail: "Ziel, Entfernung und Punkte vergleichen", Icon: Flag, marker: "target" as const }
   ];
 
   return (
@@ -58,9 +57,11 @@ export function GameFlowDiagram() {
       description="Vier Schritte führen von der Aufgabe bis zur nachvollziehbaren Auflösung."
     >
       <ol className={styles.flow} aria-label="Ablauf einer Runde in vier Schritten">
-        {steps.map(({ label, detail, Icon }, index) => (
+        {steps.map(({ label, detail, Icon, marker }, index) => (
           <li key={label}>
-            <Icon aria-hidden="true" />
+            <span className={styles.flowVisual} aria-hidden="true">
+              {marker ? <ResultMarkerGraphic kind={marker} /> : <Icon />}
+            </span>
             <strong><span className={styles.stepNumberInline} aria-hidden="true">{index + 1}</span>{" "}{label}</strong>
             <small>{detail}</small>
           </li>
@@ -85,7 +86,7 @@ export function ScoreDiagram() {
         <ResultRouteGraphic label="500 km" />
         <div className={styles.mapPoint}>
           <ResultMarkerGraphic kind="target" className={styles.scoreMarker} />
-          <span className="punktlandung-map-label punktlandung-map-label-actual">Ziel</span>
+          <span className={`${styles.targetLabel} punktlandung-map-label punktlandung-map-label-actual`}>Ziel</span>
         </div>
       </div>
       <dl className={styles.scoreFacts}>

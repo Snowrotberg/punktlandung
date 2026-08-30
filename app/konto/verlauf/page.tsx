@@ -46,7 +46,7 @@ const historyCategoryFilters: Array<[AccountHistoryCategory, string]> = [
 
 const historySortOptions: Array<[AccountHistorySort, string]> = [
   ["latest", "Neueste"],
-  ["average", "Beste Punkte pro Runde"],
+  ["average", "Bester Partiedurchschnitt"],
   ["score", "Höchste Gesamtpunktzahl"]
 ];
 
@@ -77,7 +77,7 @@ export default async function AccountHistoryPage({ searchParams }: { searchParam
     <div className={styles.narrowShell}><h1 className={styles.subpageTitle}>Spielverlauf</h1><p className={styles.panelIntro}>Deine abgeschlossenen Partien mit Punkten, Einstellungen und Ranglistenstatus.</p>
       <div className={`${styles.statsGrid} ${styles.historyStats}`} aria-label="Verlaufsstatistik"><div className={styles.stat}><strong>{completedGames.length}</strong><span>gespeicherte Partien</span></div><div className={styles.stat}><strong>{verifiedCount}</strong><span className={styles.statLabelWithHelp}>für Rankings gewertet<InlineInfoPopover align="right" className={styles.historyInfo} ariaLabel="Welche Partien werden für Rankings gewertet?" title="Für Rankings gewertet" href="/faq/rankings" hrefLabel="Ranking-Regeln ansehen">Öffentlich zählen vollständig abgeschlossene, technisch geprüfte Partien mit festem Zeitlimit von 15, 30 oder 60 Sekunden. Auffällige Ergebnisse können nachträglich entfernt werden.</InlineInfoPopover></span></div><div className={styles.stat}><strong>{totalRounds ? Math.round(totalScore / totalRounds).toLocaleString("de-DE") : "–"}</strong><span>Ø Punkte/Runde</span></div><div className={styles.stat}><strong>{totalScore.toLocaleString("de-DE")}</strong><span>Punkte im Verlauf</span></div></div>
       {categoryBest.length > 0 && <section className={`${styles.panel} ${styles.categoryBestPanel}`}><h2>Beste Ø-Punkte nach Kategorie</h2><p className={styles.panelMeta}>Der beste Rundendurchschnitt je gespeicherter Kategorie – unabhängig von der Partielänge.</p><ul className={styles.insightList}>{categoryBest.map(([category, score]) => <li key={category}><span>{categoryLabels[category] ?? category}</span><strong>{score.toLocaleString("de-DE")} / Runde</strong></li>)}</ul></section>}
-      <section className={`${styles.panel} ${styles.historyListPanel}`}><h2>Gespeicherte Partien</h2><p className={styles.panelMeta}>Filtere deine abgeschlossenen Partien nach Kategorie und sortiere sie unabhängig davon.</p>
+      <section className={`${styles.panel} ${styles.historyListPanel}`}><h2>Gespeicherte Partien</h2><p className={styles.panelMeta}>Filtere deine abgeschlossenen Partien nach Kategorie. „Bester Partiedurchschnitt“ vergleicht die durchschnittlichen Punkte pro Runde einer vollständigen Partie, nicht die beste Einzelrunde.</p>
         <div className={styles.historyControls}>
           <nav className={styles.historyControlGroup} aria-label="Partien nach Kategorie filtern"><span className={styles.historyControlLabel}>Kategorie</span><div className={styles.historyFilterLinks}>{historyCategoryFilters.map(([value, label]) => <Link key={value} href={`/konto/verlauf?category=${value}&sort=${selectedSort}`} data-active={selectedCategory === value}>{label}</Link>)}</div></nav>
           <nav className={styles.historyControlGroup} aria-label="Partien sortieren"><span className={styles.historyControlLabel}>Sortierung</span><div className={styles.historyFilterLinks}>{historySortOptions.map(([value, label]) => <Link key={value} href={`/konto/verlauf?category=${selectedCategory}&sort=${value}`} data-active={selectedSort === value}>{label}</Link>)}</div></nav>

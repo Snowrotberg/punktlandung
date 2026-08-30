@@ -4,6 +4,7 @@ import { RedesignButtonLink } from "@/components/redesign";
 import { CircleUserRound, Gauge, History, ShieldCheck, Target, Trophy, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import styles from "./HelpTopicPage.module.css";
+import { HelpBackLink } from "./HelpBackLink";
 
 export type HelpTopic = "rankings";
 
@@ -33,7 +34,7 @@ export function HelpTopicPage({ topic }: { topic: HelpTopic }) {
   return (
     <InfoPageShell fillDesktop plainContent eyebrow={content.eyebrow} title={content.title} intro={content.intro}>
       <div className={styles.content}>
-        <Link href="/faq" className={styles.backLink}>← Zurück zu Hilfe &amp; Infos</Link>
+        <HelpBackLink />
         <AccountFlowDiagram />
         <div className={styles.cards}>
           {content.sections.map((section) => (
