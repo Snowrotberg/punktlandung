@@ -15,6 +15,7 @@ Die erste technische Redesign-Schicht liegt isoliert unter `components/redesign`
 ## Gestaltungslogik
 
 - Mint kennzeichnet primäre Aktionen und aktive Auswahlzustände.
+- Funktions- und Inhaltsicons sind mintgrün und dienen als kompakte Orientierung neben Bedienelementen oder Kartenüberschriften. Globale Aktionsicons im Header bleiben weiß. Große Seitenüberschriften erhalten keine rein dekorativen Icons.
 - Flächen bleiben dunkel und ruhig; Konturen bilden die Hierarchie statt zusätzlicher Effekte.
 - Reine Inhaltsflächen verwenden `--pl-content-surface` mit 50 Prozent Deckkraft. Interaktive Karten, Auswahlfelder und Buttons verwenden eine vollständig deckende Aktionsfläche (`--pl-action-surface` beziehungsweise `--pl-button-surface`). Tabellenköpfe und verschachtelte Bedienelemente dürfen sich ebenfalls mit einer deckenden Fläche abheben.
 - Das Grid hat 56 Pixel Abstand. Mint- und Violett-Verläufe driften langsam und werden bei `prefers-reduced-motion` angehalten.

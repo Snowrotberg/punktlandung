@@ -161,7 +161,8 @@
 .quickLinks { display: grid; gap: .55rem; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 14rem)); max-width: 29rem; }
 .accountOverviewLinks { display: grid; gap: .7rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .accountOverviewCard { align-content: center; background: #0e1527; border: 1px solid rgba(148, 163, 184, .2); border-radius: .85rem; color: var(--pl-text); display: grid; gap: .35rem; height: 100%; min-height: 0; padding: .9rem 2.5rem .9rem 1rem; position: relative; text-decoration: none; transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
-.accountOverviewCard strong { font-size: 1.05rem; font-weight: 750; letter-spacing: -.015em; }
+.accountOverviewCard strong { align-items: center; display: flex; font-size: 1.05rem; font-weight: 750; gap: .55rem; letter-spacing: -.015em; }
+.accountOverviewCard strong svg { color: var(--pl-mint); flex: 0 0 auto; height: 1.05rem; width: 1.05rem; }
 .accountOverviewCard span { color: #aebbd0; font-size: .84rem; line-height: 1.5; }
 .accountOverviewCard i { color: #94a3b8; font-size: 1.5rem; font-style: normal; position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); transition: color 160ms ease, transform 160ms ease; }
 .accountOverviewCard:hover, .accountOverviewCard:focus-visible { background: color-mix(in srgb, var(--pl-mint) 9%, var(--pl-surface)); border-color: var(--pl-mint); box-shadow: 0 .8rem 2rem rgba(0,0,0,.16); color: var(--pl-text); transform: translateY(-2px); }

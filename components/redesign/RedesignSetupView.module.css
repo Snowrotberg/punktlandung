@@ -36,6 +36,8 @@
 .resetButton{justify-content:flex-start;width:fit-content;margin-top:auto;padding-inline:0;font-size:.72rem}
 .resetButton svg{width:.9rem}
 .modeTabs a,.categoryIcon{border:1px solid var(--pl-line);background:var(--pl-surface-strong)}
+.modeTabs svg,.threeOptions button svg,.restrictionOptions button svg{width:.95rem;height:.95rem;flex:0 0 auto;color:var(--pl-mint)}
+.threeOptions button,.restrictionOptions button{gap:.4rem}
 .modeTabs a[data-active]{background:color-mix(in srgb,var(--pl-mint) 7%,var(--pl-surface-strong))}
 .modeTabs a:hover,.modeTabs a:focus-visible,.controlGroup button:hover:not(:disabled),.controlGroup button:focus-visible,.categories>button:hover:not(:disabled),.categories>button:focus-visible{border-color:var(--pl-mint);background:color-mix(in srgb,var(--pl-surface-strong) 88%,var(--pl-mint) 12%);outline:none}
 .introActions svg{width:.82rem;height:.82rem;flex:0 0 auto}

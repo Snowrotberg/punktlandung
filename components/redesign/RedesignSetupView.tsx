@@ -16,6 +16,10 @@ import {
   Mountain,
   RotateCcw,
   Satellite,
+  SearchX,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
   Sparkles,
   UserRound,
   UsersRound,
@@ -54,7 +58,11 @@ type Props = {
 
 const timeOptions = [[15, "15 s"], [30, "30 s"], [60, "60 s"]] as const;
 // Legacy-Links mit "mixed" bleiben kompatibel, die Auswahl bietet aber nur drei Stufen.
-const difficultyOptions: Array<[GameDifficulty, string]> = [["easy", "Leicht"], ["medium", "Mittel"], ["hard", "Schwer"]];
+const difficultyOptions = [
+  { value: "easy" as GameDifficulty, label: "Leicht", icon: SignalLow },
+  { value: "medium" as GameDifficulty, label: "Mittel", icon: SignalMedium },
+  { value: "hard" as GameDifficulty, label: "Schwer", icon: SignalHigh }
+] as const;
 const modeOptions = [
   { id: "solo", label: "Solo", href: "/solo-modus", icon: UserRound },
   { id: "couch", label: "Party", href: "/party-modus", icon: UsersRound },
@@ -258,17 +266,14 @@ export function RedesignSetupView({
             <div className={styles.settingsColumn}>
               <div className={styles.columnHeading}><span>Einstellungen</span></div>
               <section className={styles.settingsPanel} aria-label="Spieleinstellungen">
-              <div className={styles.controlGroup}>
-                <label>Spielmodi</label>
-                <div className={styles.modeTabs} aria-label="Spielweise">
-                  {modeOptions.map(({ id, label, href, icon: Icon }) => <Link key={id} href={modeHref(href, settings)} data-active={activeMode === id || undefined}><Icon />{label}</Link>)}
-                </div>
+              <div className={styles.modeTabs} aria-label="Spielweise">
+                {modeOptions.map(({ id, label, href, icon: Icon }) => <Link key={id} href={modeHref(href, settings)} data-active={activeMode === id || undefined}><Icon aria-hidden="true" />{label}</Link>)}
               </div>
 
               {isParty && (
                 <div className={styles.controlGroup}>
                   <div className={styles.controlGroupHeader}>
-                    <label>Spieleranzahl</label>
+                    <label className={styles.controlLabel}><UsersRound aria-hidden="true" />Spieleranzahl</label>
                     <button type="button" className={styles.namesButton} onClick={() => setNamesOpen(true)}>Namen bearbeiten</button>
                   </div>
                   <div className={styles.playerCount}>
@@ -291,8 +296,8 @@ export function RedesignSetupView({
 
               <div className={styles.controlGroup}><label className={styles.controlLabel}><Clock3 aria-hidden="true" />Zeit pro Runde</label><div className={styles.timeOptions}>{timeOptions.map(([value, label]) => <button key={value} data-active={settings.timeLimitSec === value || undefined} onClick={() => onSettings({ timeLimitSec: value })}>{label}</button>)}<NumericStepper className={styles.customTime} value={settings.timeLimitSec} presets={[15, 30, 60]} step={5} min={5} max={999} suffix="s" inputLabel="Zeit pro Runde frei eingeben" increaseLabel="Zeit pro Runde erhöhen" decreaseLabel="Zeit pro Runde verringern" onChange={(timeLimitSec) => onSettings({ timeLimitSec })} /></div></div>
               <div className={styles.controlGroup}><label className={styles.controlLabel}><ListOrdered aria-hidden="true" />Runden</label><div className={styles.roundOptions}>{[10, 15, 20].map((value) => <button key={value} data-active={settings.rounds === value || undefined} onClick={() => onSettings({ rounds: value })}>{value}</button>)}<NumericStepper className={styles.customRounds} value={settings.rounds} presets={[10, 15, 20]} step={1} min={1} max={999} inputLabel="Rundenzahl frei eingeben" increaseLabel="Rundenzahl erhöhen" decreaseLabel="Rundenzahl verringern" onChange={(rounds) => onSettings({ rounds })} /></div></div>
-              <div className={styles.controlGroup}><label className={styles.controlLabel}><Gauge aria-hidden="true" />Schwierigkeit</label><div className={styles.threeOptions}>{difficultyOptions.map(([value, label]) => <button key={value} data-active={settings.difficulty === value || undefined} onClick={() => onSettings({ difficulty: value })}>{label}</button>)}</div></div>
-              <div className={styles.controlGroup}><label className={styles.controlLabel}><ZoomOut aria-hidden="true" />Einschränkungen <small>(optional)</small></label><div className={styles.restrictionOptions}><button data-active={settings.noZoom || undefined} onClick={() => onSettings({ noZoom: !settings.noZoom })}>Kein Bildzoom</button></div></div>
+              <div className={styles.controlGroup}><label className={styles.controlLabel}><Gauge aria-hidden="true" />Schwierigkeit</label><div className={styles.threeOptions}>{difficultyOptions.map(({ value, label, icon: Icon }) => <button key={value} data-active={settings.difficulty === value || undefined} onClick={() => onSettings({ difficulty: value })}><Icon aria-hidden="true" />{label}</button>)}</div></div>
+              <div className={styles.controlGroup}><label className={styles.controlLabel}><ZoomOut aria-hidden="true" />Einschränkungen <small>(optional)</small></label><div className={styles.restrictionOptions}><button data-active={settings.noZoom || undefined} onClick={() => onSettings({ noZoom: !settings.noZoom })}><SearchX aria-hidden="true" />Kein Bildzoom</button></div></div>
               <RedesignButton tone="text" className={styles.resetButton} onClick={reset}><RotateCcw />Standard wiederherstellen</RedesignButton>
               </section>
             </div>

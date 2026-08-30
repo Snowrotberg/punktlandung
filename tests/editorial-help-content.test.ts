@@ -169,10 +169,20 @@ test("setup controls have compact group signposts and one-line party editing", a
   const setup = await readSource("../components/redesign/RedesignSetupView.tsx");
   const playerSection = setup.slice(setup.indexOf("{isParty &&"), setup.indexOf("{isOnline &&"));
 
-  assert.match(setup, /<label>Spielmodi<\/label>/);
+  assert.doesNotMatch(setup, /<label>Spielmodi<\/label>/);
+  assert.match(setup, /modeTabs[\s\S]*aria-label="Spielweise"/);
+  for (const icon of ["SignalLow", "SignalMedium", "SignalHigh", "SearchX"]) assert.match(setup, new RegExp(icon));
   for (const icon of ["Clock3", "ListOrdered", "Gauge", "ZoomOut"]) assert.match(setup, new RegExp(icon));
   assert.match(playerSection, /controlGroupHeader[\s\S]*Spieleranzahl[\s\S]*Namen bearbeiten[\s\S]*playerCount/);
   assert.equal((playerSection.match(/Namen bearbeiten/g) ?? []).length, 1);
+});
+
+test("account navigation uses the shared mint functional icon language", async () => {
+  const account = await readSource("../app/konto/page.tsx");
+  const styles = await readSource("../app/konto/dashboard.module.css");
+
+  for (const icon of ["History", "Medal", "Settings2"]) assert.match(account, new RegExp(icon));
+  assert.match(styles, /accountOverviewCard strong svg[^}]*color:\s*var\(--pl-mint\)/);
 });
 
 test("the info shell keeps its footer in the scrollable content flow", async () => {

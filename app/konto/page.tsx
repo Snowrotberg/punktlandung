@@ -15,6 +15,7 @@ import { rankedRulesetId, rankedRulesetVersion, rankedScoringVersion } from "@/l
 import type { LocationCategory } from "@/types/game";
 import { buildPlayerInsight, gameMilestoneTargets, nextMilestone, pointMilestoneTargets } from "@/lib/accountProgress";
 import { InlineInfoPopover } from "@/components/InlineInfoPopover";
+import { History, Medal, Settings2 } from "lucide-react";
 
 export const metadata: Metadata = { title: "Mein Konto", robots: { index: false, follow: false } };
 
@@ -171,9 +172,9 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
                 </section>
 
                 <nav className={styles.overviewNavigation} aria-label="Bereiche des Spielerkontos">
-                  <Link href="/konto/verlauf" className={styles.accountOverviewCard}><strong>Spielverlauf</strong><span>Partien und jede einzelne Runde ansehen.</span><i aria-hidden="true">›</i></Link>
-                  <Link href="/rankings" className={styles.accountOverviewCard}><strong>Rankings</strong><span>Platzierungen und Kategorien vergleichen.</span><i aria-hidden="true">›</i></Link>
-                  <Link href="/konto/einstellungen" className={styles.accountOverviewCard}><strong>Einstellungen</strong><span>Profil, Sichtbarkeit und Login verwalten.</span><i aria-hidden="true">›</i></Link>
+                  <Link href="/konto/verlauf" className={styles.accountOverviewCard}><strong><History aria-hidden="true" />Spielverlauf</strong><span>Partien und jede einzelne Runde ansehen.</span><i aria-hidden="true">›</i></Link>
+                  <Link href="/rankings" className={styles.accountOverviewCard}><strong><Medal aria-hidden="true" />Rankings</strong><span>Platzierungen und Kategorien vergleichen.</span><i aria-hidden="true">›</i></Link>
+                  <Link href="/konto/einstellungen" className={styles.accountOverviewCard}><strong><Settings2 aria-hidden="true" />Einstellungen</strong><span>Profil, Sichtbarkeit und Login verwalten.</span><i aria-hidden="true">›</i></Link>
                 </nav>
               </section>
               {params.saved && <p className={`${styles.notice} ${styles.success}`} role="status">Profil gespeichert.</p>}
