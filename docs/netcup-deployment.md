@@ -66,6 +66,18 @@ Die Vorlage `ops/logrotate/punktlandung-pm2` begrenzt die PM2-Protokolle auf 14 
 
 Die konkreten Serverzugänge und Zugangsbefehle werden bewusst nicht im Repository dokumentiert.
 
+Der versionierte VPS-Ablauf liegt in `deploy.sh`. Er akzeptiert ausschließlich
+ein sauberes Produktions-Repository und Fast-forward-Updates von `origin/main`,
+installiert mit `npm ci`, führt Typ-, WebSocket-, Build- und
+Integritätsprüfungen aus und lädt erst danach beide PM2-Prozesse mit der
+aktuellen Umgebung neu. Ein fehlgeschlagener HTTPS-Test liefert einen
+Fehlerstatus statt eine irreführende Erfolgsmeldung.
+
+Next.js aktualisiert beim Produktions-Build den generierten Verweis in
+`next-env.d.ts`. Das Skript stellt diese eine bekannte generierte Datei nach dem
+Build wieder her und bricht bei allen anderen unerwarteten Repository-Änderungen
+vor dem PM2-Reload ab.
+
 ## Einfacher Rollback-Ablauf
 
 Vor jedem Deployment wird der aktuell produktive Commit notiert:
@@ -77,7 +89,7 @@ sudo -u punktapp -H git -C /opt/punktlandung rev-parse HEAD
 Falls die neue Version trotz der Vorprüfungen nicht stabil läuft, wird genau dieser zuvor notierte Commit wiederhergestellt. Dabei bleibt die Produktionsumgebung einschließlich `.env` unverändert:
 
 ```bash
-sudo -u punktapp -H bash -lc 'cd /opt/punktlandung && git reset --hard <ROLLBACK_COMMIT> && npm install && npm run build && pm2 reload punktlandung && pm2 reload punktlandung-ws && pm2 save'
+sudo -u punktapp -H bash -lc 'set -euo pipefail; cd /opt/punktlandung; git reset --hard <ROLLBACK_COMMIT>; npm ci --no-audit; npm run typecheck; npm run test:ws-hardening; npm run build; npm run security:verify; git restore --worktree -- next-env.d.ts; pm2 reload punktlandung --update-env; pm2 reload punktlandung-ws --update-env; pm2 save; curl --fail --silent --show-error --location --max-time 20 https://punktlandung.app >/dev/null'
 ```
 
 Danach werden HTTPS-Erreichbarkeit, Zugangssperre, Next.js-Prozess und WebSocket-Prozess erneut geprüft. Ein Rollback-Commit wird niemals geraten, sondern immer aus der unmittelbar vor dem Deployment notierten Commit-ID übernommen.
