@@ -25,6 +25,8 @@ import {
 import {
   expandResultRect,
   RESULT_MAP_CONTROL_LABELS,
+  RESULT_ROUTE_DASH_GAP_PX,
+  RESULT_ROUTE_DASH_LENGTH_PX,
   resultLabelHorizontalPlacement,
   resultLabelPairVerticalPlacement,
   resultMarkerCollisionOffsets,
@@ -67,6 +69,13 @@ export function prewarmGlobeResultMap(): void {
   // MapLibre normally creates its workers with the first visible map. Starting
   // them during the guessing phase removes that setup cost from the reveal.
   maplibregl.prewarm();
+}
+
+function markResultMilestone(name: "punktlandung-result-surface" | "punktlandung-result-motion", measureName: string): void {
+  performance.mark(name);
+  if (!performance.getEntriesByName("punktlandung-result-submit", "mark").length) return;
+  performance.clearMeasures(measureName);
+  performance.measure(measureName, "punktlandung-result-submit", name);
 }
 
 const CAMERA_PRESETS = {
@@ -164,6 +173,7 @@ export function GlobeMapLab({
   const routeOverlayRef = useRef<SVGSVGElement | null>(null);
   const routeShadowRef = useRef<SVGPathElement | null>(null);
   const routeLineRef = useRef<SVGPathElement | null>(null);
+  const routeEndpointRef = useRef<SVGPathElement | null>(null);
   const routeClipRef = useRef<SVGPathElement | null>(null);
   const routeGradientRef = useRef<SVGLinearGradientElement | null>(null);
   const routeVisibleRef = useRef(false);
@@ -193,6 +203,7 @@ export function GlobeMapLab({
   const [terrainPreparing, setTerrainPreparing] = useState(false);
   const [cameraPreparing, setCameraPreparing] = useState(false);
   const [surfaceReady, setSurfaceReady] = useState(false);
+  const surfaceReadyRef = useRef(false);
   const [terrainActive, setTerrainActive] = useState(false);
   const [selectedScenarioId, setSelectedScenarioId] = useState(initialScenario.id);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -225,10 +236,11 @@ export function GlobeMapLab({
     const map = mapRef.current;
     const overlay = routeOverlayRef.current;
     const route = routeLineRef.current;
+    const endpoints = routeEndpointRef.current;
     const shadow = routeShadowRef.current;
     const clip = routeClipRef.current;
     const gradient = routeGradientRef.current;
-    if (!map || !overlay || !route || !shadow || !clip || !gradient) return;
+    if (!map || !overlay || !route || !endpoints || !shadow || !clip || !gradient) return;
     const scenario = activeScenarioRef.current;
     const coordinates = routeLineCoordinates(scenario.guess, scenario.target);
     let points: Array<{ x: number; y: number }> = coordinates.map((coordinate) => {
@@ -267,12 +279,14 @@ export function GlobeMapLab({
     const endUnit = normalize(endDirection);
     const ellipseRadius = (unit: { x: number; y: number }, width: number, height: number) =>
       1 / Math.sqrt((unit.x ** 2) / ((width / 2) ** 2) + (unit.y ** 2) / ((height / 2) ** 2));
-    const startGap = ellipseRadius(startUnit, 46, 14) + 18;
+    const guessRing = guessMarkerRef.current?.getElement().querySelector<SVGElement>("[data-result-marker-rings]");
+    const guessRingRect = guessRing?.getBoundingClientRect();
+    const startGap = ellipseRadius(startUnit, guessRingRect?.width || 46, guessRingRect?.height || 14) + RESULT_ROUTE_DASH_GAP_PX;
     const targetRing = targetMarkerRef.current?.getElement().querySelector<SVGElement>("[data-result-marker-rings]");
     const targetRingRect = targetRing?.getBoundingClientRect();
     const targetWidth = targetRingRect?.width || 58;
     const targetHeight = targetRingRect?.height || 18;
-    const endGap = ellipseRadius(endUnit, targetWidth, targetHeight) + 18;
+    const endGap = ellipseRadius(endUnit, targetWidth, targetHeight) + RESULT_ROUTE_DASH_GAP_PX;
     const visibility = markerOffsets.active
       ? [scenario.guess, scenario.target].map((coordinate) => !map.transform.isLocationOccluded(new maplibregl.LngLat(coordinate[0], coordinate[1])))
       : coordinates.map((coordinate) => !map.transform.isLocationOccluded(new maplibregl.LngLat(coordinate[0], coordinate[1])));
@@ -313,7 +327,7 @@ export function GlobeMapLab({
     });
     const d = commands.join(" ");
     if (!d) {
-      route.setAttribute("d", ""); shadow.setAttribute("d", ""); clip.setAttribute("d", "");
+      route.setAttribute("d", ""); endpoints.setAttribute("d", ""); shadow.setAttribute("d", ""); clip.setAttribute("d", "");
       return;
     }
     route.setAttribute("d", d); shadow.setAttribute("d", d); clip.setAttribute("d", d);
@@ -322,6 +336,12 @@ export function GlobeMapLab({
     gradient.setAttribute("x1", String(firstRoutePoint.x)); gradient.setAttribute("y1", String(firstRoutePoint.y));
     gradient.setAttribute("x2", String(lastRoutePoint.x)); gradient.setAttribute("y2", String(lastRoutePoint.y));
     const length = route.getTotalLength();
+    const endpointDash = Math.min(RESULT_ROUTE_DASH_LENGTH_PX, length / 2);
+    const start = route.getPointAtLength(0);
+    const startDashEnd = route.getPointAtLength(endpointDash);
+    const endDashStart = route.getPointAtLength(Math.max(0, length - endpointDash));
+    const end = route.getPointAtLength(length);
+    endpoints.setAttribute("d", `M${start.x.toFixed(2)} ${start.y.toFixed(2)}L${startDashEnd.x.toFixed(2)} ${startDashEnd.y.toFixed(2)} M${endDashStart.x.toFixed(2)} ${endDashStart.y.toFixed(2)}L${end.x.toFixed(2)} ${end.y.toFixed(2)}`);
     const drawn = Math.max(0.001, length * routeProgressRef.current);
     clip.setAttribute("stroke-dasharray", `${drawn} ${Math.max(0.001, length)}`);
     overlay.dataset.visible = routeVisibleRef.current ? "true" : "false";
@@ -621,13 +641,13 @@ export function GlobeMapLab({
     const routeWasVisible = routeVisibleRef.current;
     const routeProgress = routeProgressRef.current;
     const compositionState = container.dataset.resultComposition;
-    setMarkerVisibility("guess", true);
+    setMarkerVisibility("guess", !plan.targetOnlyEndComposition);
     setMarkerVisibility("target", true);
     // Measure the final, untransformed label boxes. Hidden reveal labels use a
     // small entrance transform and would otherwise understate the safe area.
-    setMarkerLabelVisibility("guess", true);
+    setMarkerLabelVisibility("guess", !plan.targetOnlyEndComposition);
     setMarkerLabelVisibility("target", true);
-    setRouteVisibility(true);
+    setRouteVisibility(!plan.targetOnlyEndComposition);
     setRouteDrawProgress(1);
     await pause(reducedMotionRef.current ? 20 : 300);
     await stabilizeResultComposition(fast ? 6 : 12);
@@ -676,6 +696,7 @@ export function GlobeMapLab({
     terrainStrengthRef.current = terrainExaggeration;
     setTerrainStrength(terrainExaggeration);
     setSurfaceReady(false);
+    surfaceReadyRef.current = false;
 
     const initialPlan = buildResultCameraPlan(initialScenario.guess, initialScenario.target, {
       compactViewport: container.clientWidth < 700
@@ -947,19 +968,26 @@ export function GlobeMapLab({
         const preparedPlan = !revealImmediately ? await preloadCameraViews(plan, preparationRun, previewMode) : plan;
         if (!mapRef.current || preparationRun !== journeyRunRef.current) return;
         if (!preparedPlan) return;
-        map.jumpTo(revealImmediately ? preparedPlan.keyframes.at(-1)! : preparedPlan.keyframes[0]);
-        setMarkerVisibility("guess", true);
-        setMarkerLabelVisibility("guess", true);
+        map.resize();
+        const finalContainerPlan = buildResultCameraPlan(scenario.guess, scenario.target, {
+          compactViewport: container.clientWidth < 700
+        });
+        map.jumpTo(revealImmediately ? preparedPlan.keyframes.at(-1)! : finalContainerPlan.keyframes[0]);
+        setMarkerVisibility("guess", revealImmediately ? !preparedPlan.targetOnlyEndComposition : true);
+        setMarkerLabelVisibility("guess", revealImmediately ? !preparedPlan.targetOnlyEndComposition : true);
         setMarkerVisibility("target", revealImmediately);
         setMarkerLabelVisibility("target", revealImmediately);
         setTargetLanding(false);
-        setRouteVisibility(revealImmediately);
+        setRouteVisibility(revealImmediately && !preparedPlan.targetOnlyEndComposition);
         setRouteSettled(revealImmediately);
         setResultRevealPhase(revealImmediately ? "settled" : "prepared");
         if (revealImmediately) setRouteDrawProgress(1);
         if (revealImmediately) await stabilizeResultComposition(36);
+        await new Promise<void>((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve())));
+        surfaceReadyRef.current = true;
         setSurfaceReady(true);
         setMapReady(true);
+        markResultMilestone("punktlandung-result-surface", "punktlandung-submit-to-result-surface");
         onSurfaceReadyRef.current?.();
         setStatus(`${scenario.label} vorbereitet · Tipp sichtbar · ${formatDistance(plan.distanceKm)}`);
         if (revealImmediately) {
@@ -1006,6 +1034,13 @@ export function GlobeMapLab({
     map.on("style.load", configureGlobe); map.on("load", reportReady); map.on("move", updateCamera); map.on("error", reportError);
     const resizeObserver = new ResizeObserver(() => {
       map.resize();
+      if (previewMode && surfaceReadyRef.current && map.getContainer().dataset.resultRevealPhase === "prepared") {
+        const currentPlan = buildResultCameraPlan(initialScenario.guess, initialScenario.target, {
+          compactViewport: container.clientWidth < 700
+        });
+        map.jumpTo(currentPlan.keyframes[0]);
+        updateRouteOverlay();
+      }
       enforceEmbeddedZoomFloor();
       if (routeVisibleRef.current) void stabilizeResultComposition();
     });
@@ -1026,6 +1061,7 @@ export function GlobeMapLab({
         button.removeEventListener("keydown", restoreKeyboardControlTooltip, { capture: true });
       }
       resizeObserver.disconnect();
+      surfaceReadyRef.current = false;
       map.off("style.load", configureGlobe); map.off("load", reportReady); map.off("move", updateCamera); map.off("error", reportError);
       if (activateTargetInformation) targetMarkerRef.current?.getElement().removeEventListener("click", activateTargetInformation);
       if (activateTargetInformationByKeyboard) targetMarkerRef.current?.getElement().removeEventListener("keydown", activateTargetInformationByKeyboard);
@@ -1158,6 +1194,7 @@ export function GlobeMapLab({
     let routeRevealed = false;
     let targetRevealed = false;
     let targetLabelRevealed = false;
+    let guessHiddenForTargetEnd = false;
     let targetRevealedAt: number | null = null;
     let targetLabelTimer: number | undefined;
     let lastRouteUpdate = 0;
@@ -1198,12 +1235,18 @@ export function GlobeMapLab({
       }, RESULT_REVEAL_TIMING.targetLabelAfterRevealMs);
     };
     try {
+      markResultMilestone("punktlandung-result-motion", "punktlandung-submit-to-result-motion");
       if (reducedMotionRef.current) {
         const end = plan.keyframes[plan.keyframes.length - 1];
         revealRoute(); setRouteDrawProgress(1);
         map.easeTo({ center: end.center, zoom: end.zoom, bearing: end.bearing, pitch: end.pitch, duration: 320, essential: false });
         await pause(350);
         if (run !== journeyRunRef.current) return;
+        if (plan.targetOnlyEndComposition) {
+          setMarkerVisibility("guess", false);
+          setMarkerLabelVisibility("guess", false);
+          setRouteVisibility(false);
+        }
         setMarkerVisibility("target", true); setMarkerLabelVisibility("target", true); setTargetLanding(false);
         setRouteSettled(true); setResultRevealPhase("reduced-settled");
       } else {
@@ -1211,6 +1254,12 @@ export function GlobeMapLab({
           if (!routeRevealed && progress >= plan.revealProgress) revealRoute();
           if (!targetRevealed && progress >= plan.targetRevealProgress && targetFitsResultSafeArea()) {
             revealTarget();
+          }
+          if (!guessHiddenForTargetEnd && plan.guessHideProgress !== null && progress >= plan.guessHideProgress) {
+            guessHiddenForTargetEnd = true;
+            setMarkerVisibility("guess", false);
+            setMarkerLabelVisibility("guess", false);
+            setRouteVisibility(false);
           }
           if (routeRevealed && progress - lastRouteUpdate >= 0.025) {
             lastRouteUpdate = progress;
@@ -1228,17 +1277,18 @@ export function GlobeMapLab({
         if (revealWaits.landingMs > 0) await pause(revealWaits.landingMs);
         if (run !== journeyRunRef.current) return;
         if (targetLabelTimer !== undefined) window.clearTimeout(targetLabelTimer);
-        revealTargetLabel();
         setTargetLanding(false);
         setResultRevealPhase("landed");
+        revealTargetLabel();
         setRouteSettled(true);
         await pause(RESULT_REVEAL_TIMING.finalStillnessMs);
         if (run !== journeyRunRef.current) return;
         setResultRevealPhase("settled");
       }
       if (run === journeyRunRef.current) {
-        setRouteVisibility(true); setRouteSettled(true); setRouteDrawProgress(1);
-        setMarkerVisibility("guess", true); setMarkerLabelVisibility("guess", true);
+        setRouteVisibility(!plan.targetOnlyEndComposition); setRouteSettled(true); setRouteDrawProgress(1);
+        setMarkerVisibility("guess", !plan.targetOnlyEndComposition);
+        setMarkerLabelVisibility("guess", !plan.targetOnlyEndComposition);
         setMarkerVisibility("target", true); setMarkerLabelVisibility("target", true); setTargetLanding(false);
         if (!reducedMotionRef.current) setResultRevealPhase("settled");
         await pause(20);
@@ -1365,6 +1415,7 @@ export function GlobeMapLab({
           </defs>
             <path ref={routeShadowRef} className={styles.routeShadow} mask="url(#kartenlabor-result-reveal)" />
             <path ref={routeLineRef} className={`${styles.routeLine} ${resultRouteLineClassName}`} data-result-route="connection" mask="url(#kartenlabor-result-reveal)" />
+            <path ref={routeEndpointRef} className={styles.routeEndpoints} mask="url(#kartenlabor-result-reveal)" />
           </svg>
         {!embedded ? <div className={styles.mapPresets} aria-label="Globe-Kamerapresets">
           {Object.values(CAMERA_PRESETS).map((preset) => (

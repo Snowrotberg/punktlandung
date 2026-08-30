@@ -80,6 +80,7 @@ const viewports = [
   { name: "phone-landscape", width: 932, height: 430, category: "mobile" },
   { name: "laptop", width: 1366, height: 768, category: "desktop" },
   { name: "monitor", width: 1920, height: 1080, category: "desktop" },
+  { name: "tv-wide", width: 2560, height: 1440, category: "desktop" },
   { name: "tv-4k", width: 3840, height: 2160, category: "desktop" }
 ];
 
@@ -336,6 +337,23 @@ const globePhaseOneCases = [
     },
     guess: { lat: 0, lng: 45 },
     distanceKm: 15011
+  },
+  {
+    id: "extreme-antipode",
+    location: {
+      ...sampleLocation,
+      id: "globe-extreme-antipode",
+      title: "Antipodenfall",
+      countryCode: "XA",
+      countryName: "Laborfall",
+      continent: "Oceania",
+      lat: 0,
+      lng: 170,
+      shortDescription: "Generischer Stresstest oberhalb von achtzig Prozent des halben Erdumfangs."
+    },
+    guess: { lat: 0, lng: 0 },
+    distanceKm: 18903,
+    targetOnlyEnd: true
   }
 ];
 
@@ -592,6 +610,18 @@ const targets = [
   },
   { name: "spielen", access: "state", path: "/spielen", status: "guessing", readySelector: ".punktlandung-game-shell", readyImageSelector: ".punktlandung-panorama-viewport img", note: "echter URL-Pfad mit QA-Session" },
   {
+    name: "spielen-karte-maximiert",
+    access: "state-click",
+    path: "/spielen",
+    status: "guessing",
+    clickSelector: ".punktlandung-guess-map-panel",
+    secondaryButtonText: "Maximieren",
+    readySelector: ".punktlandung-guess-map-panel--full",
+    readyImageSelector: ".punktlandung-panorama-viewport img",
+    expectGameHudSafeArea: true,
+    note: "Maximierte Tippkarte wahrt auf Desktop die gemeinsame Runde-/Zeit-Safe-Area"
+  },
+  {
     name: "spielen-landscape-wahrzeichen",
     access: "state",
     path: "/spielen",
@@ -627,7 +657,9 @@ const targets = [
     stateOverrides: { players: [hostPlayer], guesses: [], summaries: [] },
     expectedPath: "/aufloesung",
     expectedText: "AUFLÖSUNG",
-    readySelector: ".punktlandung-results-grid",
+    readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [data-surface-ready='true']:has([data-result-composition='ready'])",
+    readyTimeoutMs: 40000,
+    expectResultPerformance: true,
     note: "echte Pin-Abgabe wechselt ohne leeren Zwischenframe und ohne Seiten-Remount zur Auflösung"
   },
   {
@@ -706,10 +738,11 @@ const targets = [
     expectGlobeSafeArea: true,
     expectTerrainExaggeration: 1.5,
     expectTargetInfoReservation: true,
-    expectGlobeLabelOrder: true,
+    expectGlobeLabelOrder: testCase.targetOnlyEnd !== true,
     expectedBearingSign: testCase.expectedBearingSign,
     expectTouchControlDismissal: testCase.expectTouchControlDismissal,
     allowOmittedGlobeRoute: testCase.allowOmittedRoute === true,
+    expectTargetOnlyEnd: testCase.targetOnlyEnd === true,
     expectRevealSequence: testCase.id === "salzburg",
     readyTimeoutMs: testCase.id === "salzburg" ? 40000 : 30000,
     note: `Dynamische Solo-Auflösung für Phase-1-Globe-Fall ${testCase.location.title}`
@@ -1350,6 +1383,10 @@ async function openTarget(page, target) {
       } else {
         await clickButtonByVisibleText(page, target.buttonText);
       }
+      if (target.secondaryButtonText) {
+        await page.waitForTimeout(350);
+        await clickButtonByVisibleText(page, target.secondaryButtonText);
+      }
       await page.waitForTimeout(target.clickSelector ? 1200 : 700);
       if (target.expectStableMapOnPopup) {
         await page.evaluate(() => {
@@ -1614,7 +1651,10 @@ async function collectLayoutMetrics(page, readySelector = null) {
       ?? null;
     const globeFrameRect = globeFrame?.getBoundingClientRect() ?? null;
     const globeVisualElements = globeFrame
-      ? [...globeFrame.querySelectorAll("[data-visible='true'] svg[class*='markerPin'], [data-visible='true'] svg[class*='markerRings'], [data-visible='true'] [class*='markerLabel'], [data-result-route='connection']")].filter(visible)
+      ? [...globeFrame.querySelectorAll("[data-visible='true'] svg[class*='markerPin'], [data-visible='true'] svg[class*='markerRings'], [data-visible='true'] [class*='markerLabel'], [data-result-route='connection']")].filter((element) => (
+          visible(element)
+          && (element.getAttribute("data-result-route") !== "connection" || element.closest("svg")?.getAttribute("data-visible") === "true")
+        ))
       : [];
     const globeVisualRects = globeVisualElements.map((element) => element.getBoundingClientRect());
     const globeVisualBounds = globeVisualElements.map((element, index) => {
@@ -1627,7 +1667,9 @@ async function collectLayoutMetrics(page, readySelector = null) {
         bottom: rect.bottom
       };
     });
-    const globeRoutes = globeFrame ? [...globeFrame.querySelectorAll("[data-result-route='connection']")].filter(visible) : [];
+    const globeRoutes = globeFrame ? [...globeFrame.querySelectorAll("[data-result-route='connection']")].filter((element) => (
+      visible(element) && element.closest("svg")?.getAttribute("data-visible") === "true"
+    )) : [];
     const markerKinds = globeFrame ? [...globeFrame.querySelectorAll("[data-result-marker-kind][data-visible='true']")] : [];
     const globeControlButtons = globeFrame ? [...globeFrame.querySelectorAll(".maplibregl-ctrl-group button")] : [];
     const globeControlContainer = globeFrame?.querySelector(".maplibregl-ctrl-top-right") ?? null;
@@ -1746,6 +1788,23 @@ async function collectLayoutMetrics(page, readySelector = null) {
       bodyWidth: body?.scrollWidth ?? 0,
       bodyHeight: body?.scrollHeight ?? 0,
       horizontalOverflow: Math.max(doc.scrollWidth, body?.scrollWidth ?? 0) > viewportWidth + 2,
+      resultPerformance: {
+        submitToSurfaceMs: performance.getEntriesByName("punktlandung-submit-to-result-surface", "measure").at(-1)?.duration ?? null,
+        submitToMotionMs: performance.getEntriesByName("punktlandung-submit-to-result-motion", "measure").at(-1)?.duration ?? null,
+        prewarmReady: performance.getEntriesByName("punktlandung-result-prewarm-ready", "mark").length > 0
+      },
+      gameHudSafeArea: (() => {
+        const panel = document.querySelector(".punktlandung-guess-map-panel--full");
+        const stats = [...document.querySelectorAll(".punktlandung-game-stat")].filter(visible);
+        if (!panel || !stats.length) return null;
+        const panelRect = panel.getBoundingClientRect();
+        const statRects = stats.map((stat) => stat.getBoundingClientRect());
+        return {
+          gapPx: panelRect.top - Math.max(...statRects.map((rect) => rect.bottom)),
+          panel: { left: panelRect.left, top: panelRect.top, right: panelRect.right, bottom: panelRect.bottom },
+          stats: statRects.map((rect) => ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }))
+        };
+      })(),
       sharedRaster,
       verticalOverflow: Math.max(doc.scrollHeight, body?.scrollHeight ?? 0) > viewportHeight + 2,
       bodyTextLength: (body?.innerText ?? "").trim().length,
@@ -1854,7 +1913,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
         routeCount: globeRoutes.length,
         routeSubpaths: globeRoutes[0]?.getAttribute("d")?.match(/M/g)?.length ?? 0,
         currentZoom: Number(globeFrame.querySelector("[data-current-zoom]")?.getAttribute("data-current-zoom") ?? "NaN"),
-        allInside: globeVisualRects.length >= 6 && globeVisualRects.every((rect) =>
+        allInside: globeVisualRects.length >= 3 && globeVisualRects.every((rect) =>
           rect.left >= globeFrameRect.left + 16 - 0.25
           && rect.right <= globeFrameRect.right - 66 + 0.25
           // Account for the frame border and sub-pixel MapLibre projection.
@@ -2083,7 +2142,8 @@ async function runTargetViewport(browser, target, viewport) {
           targetLanding: target?.getAttribute("data-landing") === "true",
           targetLabelVisible: target?.getAttribute("data-label-visible") === "true",
           landingDurationMs: Number(frame?.getAttribute("data-target-landing-duration-ms") ?? "0"),
-          targetLabelDelayMs: Number(frame?.getAttribute("data-target-label-delay-ms") ?? "0")
+          targetLabelDelayMs: Number(frame?.getAttribute("data-target-label-delay-ms") ?? "0"),
+          targetLabelGapMs: Math.max(0, Number(frame?.getAttribute("data-target-label-delay-ms") ?? "0") - Number(frame?.getAttribute("data-target-landing-duration-ms") ?? "0"))
         });
         previousRevealPhase = phase;
       }
@@ -2136,6 +2196,13 @@ async function runTargetViewport(browser, target, viewport) {
         { timeout: readyTimeoutMs }
       );
       await page.waitForTimeout(250);
+    }
+
+    if (target.expectResultPerformance) {
+      await page.waitForFunction(() => (
+        performance.getEntriesByName("punktlandung-submit-to-result-surface", "measure").length > 0
+        && performance.getEntriesByName("punktlandung-submit-to-result-motion", "measure").length > 0
+      ), null, { timeout: 15_000 });
     }
 
     if (target.screenshotFocusSelector) {
@@ -2684,7 +2751,7 @@ async function runTargetViewport(browser, target, viewport) {
     }).catch(() => {});
     if (target.expectGlobeSafeArea) {
       const readMarkerCenters = () => page.evaluate(() => Object.fromEntries(
-        [...document.querySelectorAll("[data-result-marker-kind]")].map((marker) => {
+        [...document.querySelectorAll("[data-result-marker-kind][data-visible='true']")].map((marker) => {
           const rect = marker.getBoundingClientRect();
           return [marker.getAttribute("data-result-marker-kind"), { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 }];
         })
@@ -2769,15 +2836,15 @@ async function runTargetViewport(browser, target, viewport) {
       const landed = phaseEntry("landed");
       const labels = phaseEntry("labels");
       const phaseNames = metrics.revealTrace.map((entry) => entry.phase);
-      const ordered = ["prepared", "route", "landing", "landed", "labels", "settled"]
+      const ordered = ["prepared", "route", "landing", "labels", "landed", "settled"]
         .every((phase, index, expected) => phaseNames.indexOf(phase) > (index === 0 ? -1 : phaseNames.indexOf(expected[index - 1])));
       const valid = Boolean(
         ordered
         && landing?.targetVisible && landing?.targetLanding && !landing?.targetLabelVisible
-        && landed?.targetVisible && !landed?.targetLanding && !landed?.targetLabelVisible
-        && labels?.targetVisible && !labels?.targetLanding && labels?.targetLabelVisible
+        && labels?.targetVisible && labels?.targetLanding && labels?.targetLabelVisible
+        && landed?.targetVisible && !landed?.targetLanding && landed?.targetLabelVisible
         && landed.at - landing.at >= landing.landingDurationMs - 120
-        && labels.at - landed.at >= labels.targetLabelGapMs - 40
+        && labels.at - landing.at >= labels.targetLabelDelayMs - 80
       );
       if (!valid) {
         problems.push(`Gemeinsamer Reveal-Vertrag verletzt (${JSON.stringify(metrics.revealTrace)}).`);
@@ -2824,7 +2891,7 @@ async function runTargetViewport(browser, target, viewport) {
       !metrics.homeMapStability.intendedMotion?.routePresent
       || !metrics.homeMapStability.intendedMotion?.targetPinPresent
       || metrics.homeMapStability.intendedMotion?.connectorAnimation === "none"
-      || metrics.homeMapStability.intendedMotion?.targetPinAnimation !== "none"
+      || !metrics.homeMapStability.intendedMotion?.targetPinAnimation?.includes("targetIdle")
       || !metrics.homeMapStability.intendedMotion?.routeSettled
       || metrics.homeMapStability.intendedMotion?.targetLanding
       || metrics.homeMapStability.intendedMotion?.visibleLabelCount !== 2
@@ -2869,6 +2936,13 @@ async function runTargetViewport(browser, target, viewport) {
     )) {
       problems.push(`Der Wechsel zur Auflösung enthielt ${metrics.transitionProbe?.blankFrames ?? "unbekannt viele"} leere Zwischenframes.`);
     }
+    if (target.expectResultPerformance && (
+      !metrics.resultPerformance.prewarmReady
+      || !Number.isFinite(metrics.resultPerformance.submitToSurfaceMs)
+      || !Number.isFinite(metrics.resultPerformance.submitToMotionMs)
+    )) {
+      problems.push(`Prewarm oder Übergangsmessung der Auflösung fehlt (${JSON.stringify(metrics.resultPerformance)}).`);
+    }
     const strictPopupEdge = viewport.width > 480;
     if (target.name.startsWith("aufloesung-zielinfo") && (
       !metrics.resultPopupSafety ||
@@ -2880,26 +2954,33 @@ async function runTargetViewport(browser, target, viewport) {
     }
     if (target.expectGlobeSafeArea && (
       !metrics.globeResultSafety
-      || metrics.globeResultSafety.markerCount !== 2
-      || (target.allowOmittedGlobeRoute
+      || metrics.globeResultSafety.markerCount !== (target.expectTargetOnlyEnd ? 1 : 2)
+      || (target.expectTargetOnlyEnd
+        ? metrics.globeResultSafety.routeCount !== 0
+        : target.allowOmittedGlobeRoute
         ? ![0, 1].includes(metrics.globeResultSafety.routeCount)
         : metrics.globeResultSafety.routeCount !== 1)
       || !metrics.globeResultSafety.allInside
       || !metrics.globeResultSafety.controlsGerman
-      || metrics.globeResultSafety.targetPinAnimations.some((animationName) => animationName !== "none")
-      || metrics.globeResultSafety.routeAnimations.some((animationName) => animationName === "none")
+      || metrics.globeResultSafety.targetPinAnimations.some((animationName) => !animationName.includes("targetIdle"))
+      || (!target.expectTargetOnlyEnd && metrics.globeResultSafety.routeAnimations.some((animationName) => animationName === "none"))
       || !metrics.globeResultSafety.routeSettled
       || metrics.globeResultSafety.targetLanding
-      || metrics.globeResultSafety.visibleLabelCount !== 2
+      || metrics.globeResultSafety.visibleLabelCount !== (target.expectTargetOnlyEnd ? 1 : 2)
       || !["settled", "reduced-settled"].includes(metrics.globeResultSafety.revealPhase)
       || !metrics.globeResultSafety.controlStacking?.controlsAboveContent
       || (metrics.globeResultSafety.routeCount === 1
         && !metrics.globeResultSafety.routeEndpointClearances?.every((clearance) => clearance >= 4))
       || !metrics.globeCompositionStability
-      || metrics.globeCompositionStability.markerCount !== 2
+      || metrics.globeCompositionStability.markerCount !== (target.expectTargetOnlyEnd ? 1 : 2)
       || metrics.globeCompositionStability.maxMovementPx > 1
     )) {
       problems.push(`Globe-Ergebnis verletzt Safe Area, eindeutige Linienzeichnung, Ellipsenabstand oder deutsche Steuerungslogik (${JSON.stringify(metrics.globeResultSafety)}).`);
+    }
+    if (target.expectGameHudSafeArea && viewport.category === "desktop" && (
+      !metrics.gameHudSafeArea || metrics.gameHudSafeArea.gapPx < 8
+    )) {
+      problems.push(`Die maximierte Tippkarte verletzt die Runde-/Zeit-Safe-Area (${JSON.stringify(metrics.gameHudSafeArea)}).`);
     }
     if (target.expectActiveRoute && (
       metrics.globeResultSafety?.routeCount !== 1

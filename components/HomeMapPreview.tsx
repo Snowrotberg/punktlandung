@@ -95,6 +95,8 @@ function HomeMapSourcePreview() {
 export function HomeMapPreview() {
   const previewRef = useRef<HTMLDivElement>(null);
   const connectorRef = useRef<SVGLineElement>(null);
+  const connectorStartRef = useRef<SVGLineElement>(null);
+  const connectorEndRef = useRef<SVGLineElement>(null);
   const [previewMode, setPreviewMode] = useState<"animated" | "static" | "legacy" | "source">("animated");
   const [liveSurfaceReady, setLiveSurfaceReady] = useState(false);
   const [liveReady, setLiveReady] = useState(false);
@@ -138,37 +140,21 @@ export function HomeMapPreview() {
 
   useEffect(() => {
     if (!liveReady || liveUnavailable || previewMode !== "animated") return;
-    const pictures = previewRef.current?.querySelector<HTMLElement>(".punktlandung-home-map-pictures");
-    const posters = pictures
-      ? Array.from(pictures.querySelectorAll<HTMLElement>(".punktlandung-home-map-poster"))
-      : [];
-    const visiblePoster = posters.find((poster) => getComputedStyle(poster).display !== "none");
-    if (!visiblePoster) return;
-
-    // Wait for the actual, currently selected poster to finish fading. A short
-    // settled frame after transitionend keeps the first camera movement clearly
-    // separated from the handoff without making the already-live map feel idle.
+    // The poster and the already-paused Globe exchange in one paint. Movement
+    // starts only after several fully live frames, so no opacity blend can hide
+    // a geometry mismatch and the handoff itself stays motionless.
+    let firstFrame = 0;
+    let secondFrame = 0;
     let settledTimer: number | undefined;
-    let fallbackTimer: number | undefined;
-    let finished = false;
-    const beginAfterSettledFrame = () => {
-      if (finished) return;
-      finished = true;
-      settledTimer = window.setTimeout(() => setAnimationStarted(true), 140);
-    };
-    const handleTransitionEnd = (event: TransitionEvent) => {
-      if (event.target === visiblePoster && event.propertyName === "opacity") beginAfterSettledFrame();
-    };
-    visiblePoster.addEventListener("transitionend", handleTransitionEnd);
-    const style = getComputedStyle(visiblePoster);
-    const durations = style.transitionDuration.split(",").map((value) => Number.parseFloat(value) * (value.includes("ms") ? 1 : 1_000));
-    const delays = style.transitionDelay.split(",").map((value) => Number.parseFloat(value) * (value.includes("ms") ? 1 : 1_000));
-    const transitionMs = Math.max(0, ...durations.map((duration, index) => duration + (delays[index] ?? delays[0] ?? 0)));
-    fallbackTimer = window.setTimeout(beginAfterSettledFrame, transitionMs + 80);
+    firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        settledTimer = window.setTimeout(() => setAnimationStarted(true), 320);
+      });
+    });
     return () => {
-      visiblePoster.removeEventListener("transitionend", handleTransitionEnd);
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
       if (settledTimer !== undefined) window.clearTimeout(settledTimer);
-      if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer);
     };
   }, [liveReady, liveUnavailable, previewMode]);
 
@@ -202,12 +188,20 @@ export function HomeMapPreview() {
       const dashGap = 9;
       const startInset = ellipseRadius(playerBox) + dashGap;
       const endInset = ellipseRadius(targetBox) + dashGap;
-
-      connector.setAttribute("x1", String(playerCenter.x + ux * startInset));
-      connector.setAttribute("y1", String(playerCenter.y + uy * startInset));
-      connector.setAttribute("x2", String(targetCenter.x - ux * endInset));
-      connector.setAttribute("y2", String(targetCenter.y - uy * endInset));
-      connector.dataset.ready = "true";
+      const start = { x: playerCenter.x + ux * startInset, y: playerCenter.y + uy * startInset };
+      const end = { x: targetCenter.x - ux * endInset, y: targetCenter.y - uy * endInset };
+      const endpointDash = Math.min(6, Math.hypot(end.x - start.x, end.y - start.y) / 2);
+      const setLine = (line: SVGLineElement | null, from: { x: number; y: number }, to: { x: number; y: number }) => {
+        if (!line) return;
+        line.setAttribute("x1", String(from.x));
+        line.setAttribute("y1", String(from.y));
+        line.setAttribute("x2", String(to.x));
+        line.setAttribute("y2", String(to.y));
+        line.dataset.ready = "true";
+      };
+      setLine(connector, start, end);
+      setLine(connectorStartRef.current, start, { x: start.x + ux * endpointDash, y: start.y + uy * endpointDash });
+      setLine(connectorEndRef.current, { x: end.x - ux * endpointDash, y: end.y - uy * endpointDash }, end);
     };
 
     positionConnector();
@@ -237,6 +231,8 @@ export function HomeMapPreview() {
         {showCompleteFallback ? (
           <svg className="punktlandung-home-map-static-connector" aria-hidden="true">
             <line ref={connectorRef} className="punktlandung-result-connector is-flowing" />
+            <line ref={connectorStartRef} className="punktlandung-result-connector-endpoint" />
+            <line ref={connectorEndRef} className="punktlandung-result-connector-endpoint" />
           </svg>
         ) : null}
         {showCompleteFallback ? <PreviewEllipse actual /> : null}

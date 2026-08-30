@@ -13,6 +13,7 @@ import { PLAYER_PALETTE, playerColorAt, playerColorForId } from "@/lib/playerPal
 import { MapLibreBaseLayer } from "@/components/MapLibreBaseLayer";
 import { MapAttributionBadge } from "@/components/MapAttributionBadge";
 import { resultWorldMinimumZoom } from "@/lib/resultMapViewport";
+import { RESULT_LABEL_VISUAL_GAP_PX, RESULT_ROUTE_DASH_GAP_PX, RESULT_ROUTE_DASH_LENGTH_PX } from "@/lib/globeResultLayout";
 
 type LeafletMapProps = {
   mode: "guess" | "results";
@@ -487,8 +488,6 @@ function resultBoundsPadding(map: LeafletMapInstance, showLabels: boolean, paddi
 function homePreviewPlacements(mapSize: { x: number; y: number }, locationTitle: string, playerLabel: string) {
   const compact = mapSize.x <= 520 && mapSize.y >= mapSize.x;
   const tv = mapSize.x >= 1000;
-  const actualBadgeGap = tv ? 34 : 20;
-  const playerBadgeGap = tv ? 72 : 48;
   const scaleForViewport = (size: { width: number; height: number }) => tv
     ? { width: Math.round(size.width * 1.5), height: Math.round(size.height * 1.45) }
     : size;
@@ -496,19 +495,15 @@ function homePreviewPlacements(mapSize: { x: number; y: number }, locationTitle:
   const playerDimensions = scaleForViewport(labelSize(playerLabel, false, compact));
   return {
     actual: {
-      // The home-preview target label sits below and to the left of the pin.
-      // Result maps use the collision solver below so north/south ordering
-      // can be respected there.
+      // Prefer the same centred visual lane as production result maps.
       offset: [
-        -actualDimensions.width / 2,
-        actualDimensions.height / 2 + actualBadgeGap
+        0,
+        actualDimensions.height / 2 + 12 + RESULT_LABEL_VISUAL_GAP_PX
       ] as [number, number],
       size: actualDimensions
     },
     player: {
-      // The home-preview player label sits above and to the right of the pin.
-      // Result maps use the collision solver below for the semantic ordering.
-      offset: [playerDimensions.width / 2, -playerDimensions.height / 2 - playerBadgeGap] as [number, number],
+      offset: [0, -playerDimensions.height / 2 - 42 - RESULT_LABEL_VISUAL_GAP_PX] as [number, number],
       size: playerDimensions
     }
   };
@@ -1057,6 +1052,15 @@ function resultTooltipPlacement(
   const compact = size.x <= 520 && size.y >= size.x;
   const dimensions = labelSize(label, actual, compact);
   const candidates = placementCandidates(dimensions.width, dimensions.height, actual, preferredVector, compact);
+  if (preferredVector?.y) {
+    const visualExtent = actual
+      ? preferredVector.y > 0 ? 12 : 52
+      : preferredVector.y < 0 ? 42 : 20;
+    candidates.unshift({
+      dx: 0,
+      dy: Math.sign(preferredVector.y) * (dimensions.height / 2 + visualExtent + RESULT_LABEL_VISUAL_GAP_PX)
+    });
+  }
   const verticalCandidates = strictVerticalSide && preferredVector?.y
     ? candidates.filter((candidate) => Math.sign(candidate.dy) === Math.sign(preferredVector.y))
     : candidates;
@@ -1777,10 +1781,9 @@ function FlowingResultConnector({ color, animate = true, positions }: FlowingRes
             (unitDirection.y * unitDirection.y) / Math.pow(ACTUAL_ELLIPSE_SIZE.height / 2, 2)
         )
       : 0;
-  // Keep the animated connector visibly clear of both pin ellipses.  The
-  // previous 3px gap made the dash endpoints look cramped on result and
-  // replay maps, especially at laptop/TV scales.
-  const connectorGap = 10;
+  // Match the endpoint clearance to the normal gap of the shared 6/9 route
+  // pattern in both the Leaflet fallback and the production Globe.
+  const connectorGap = RESULT_ROUTE_DASH_GAP_PX;
   const visiblePlayer = map.containerPointToLatLng([
     playerEllipseCenter.x + unitDirection.x * (playerEllipseRadius + connectorGap),
     playerEllipseCenter.y + unitDirection.y * (playerEllipseRadius + connectorGap)
@@ -1791,20 +1794,32 @@ function FlowingResultConnector({ color, animate = true, positions }: FlowingRes
   ]);
   const requiredLength = playerEllipseRadius + targetEllipseRadius + connectorGap * 2;
   const visiblePositions: LatLngExpression[] = directionLength > requiredLength ? [visiblePlayer, visibleTarget] : [];
+  const visibleLength = Math.max(0, directionLength - requiredLength);
+  const endpointDash = Math.min(RESULT_ROUTE_DASH_LENGTH_PX, visibleLength / 2);
+  const visiblePlayerDashEnd = map.containerPointToLatLng([
+    playerEllipseCenter.x + unitDirection.x * (playerEllipseRadius + connectorGap + endpointDash),
+    playerEllipseCenter.y + unitDirection.y * (playerEllipseRadius + connectorGap + endpointDash)
+  ]);
+  const visibleTargetDashStart = map.containerPointToLatLng([
+    targetEllipseCenter.x - unitDirection.x * (targetEllipseRadius + connectorGap + endpointDash),
+    targetEllipseCenter.y - unitDirection.y * (targetEllipseRadius + connectorGap + endpointDash)
+  ]);
 
   return (
-    <Polyline
-      className={`punktlandung-result-connector${animate ? " is-flowing" : ""}`}
-      positions={visiblePositions}
-      interactive={false}
-      pathOptions={{
-        color,
-        opacity: 0.82,
-        weight: 1.375,
-        dashArray: "6 9",
-        lineCap: "round"
-      }}
-    />
+    <>
+      <Polyline
+        className={`punktlandung-result-connector${animate ? " is-flowing" : ""}`}
+        positions={visiblePositions}
+        interactive={false}
+        pathOptions={{ color, opacity: 0.82, weight: 1.375, dashArray: "6 9", lineCap: "round" }}
+      />
+      {visiblePositions.length ? <>
+        <Polyline className="punktlandung-result-connector-endpoint" positions={[visiblePlayer, visiblePlayerDashEnd]} interactive={false}
+          pathOptions={{ color, opacity: 0.82, weight: 1.375, lineCap: "round" }} />
+        <Polyline className="punktlandung-result-connector-endpoint" positions={[visibleTargetDashStart, visibleTarget]} interactive={false}
+          pathOptions={{ color, opacity: 0.82, weight: 1.375, lineCap: "round" }} />
+      </> : null}
+    </>
   );
 }
 

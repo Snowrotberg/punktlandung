@@ -7,6 +7,8 @@ const profiles = [
   { name: "user-phone", width: 386, height: 770 },
   { name: "phone-large", width: 430, height: 932 },
   { name: "phone-landscape", width: 932, height: 430 },
+  { name: "tablet", width: 768, height: 1024 },
+  { name: "tablet-landscape", width: 1024, height: 768 },
   { name: "laptop", width: 1366, height: 768 },
   { name: "user-laptop", width: 1440, height: 733 },
   { name: "monitor-short", width: 1920, height: 977 },

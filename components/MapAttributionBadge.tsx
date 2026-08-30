@@ -23,20 +23,27 @@ export function MapAttributionBadge({ locationInfoSourceUrl }: { locationInfoSou
           </div>
           <span className="punktlandung-map-attribution-design">Kartendesign: Punktlandung</span>
           <div className="punktlandung-map-attribution-sources">
-            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
-              © OpenStreetMap-Mitwirkende
-            </a>
-            <span aria-hidden="true">·</span>
-            <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">
-              © OpenMapTiles
-            </a>
-            <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">
-              OpenFreeMap
-            </a>
+            <span className="punktlandung-map-attribution-source-group">
+              <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+                © OpenStreetMap-Mitwirkende
+              </a>
+              <span aria-hidden="true">·</span>
+            </span>
+            <span className="punktlandung-map-attribution-source-group">
+              <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">
+                © OpenMapTiles
+              </a>
+              <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">
+                OpenFreeMap
+              </a>
+              <span aria-hidden="true">·</span>
+            </span>
+            <span className="punktlandung-map-attribution-source-group">
+              <a href="https://mapterhorn.com/attribution" target="_blank" rel="noopener noreferrer">
+                © Mapterhorn
+              </a>
+            </span>
           </div>
-          <a href="https://mapterhorn.com/attribution" target="_blank" rel="noopener noreferrer">
-            © Mapterhorn
-          </a>
           {locationInfoSourceUrl && (
             <a href={locationInfoSourceUrl} target="_blank" rel="noopener noreferrer">
               Ortsinformation: Wikipedia

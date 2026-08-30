@@ -26,6 +26,7 @@
   top: -0.55rem;
   filter: drop-shadow(0 0 0.75rem rgba(94, 231, 189, 0.56));
   transform: translateX(-50%) scale(1.12);
+  animation: targetIdle 1650ms ease-in-out infinite;
 }
 
 .pinOutline,
@@ -64,7 +65,7 @@
 .ringInner { fill: color-mix(in srgb, var(--marker-color) 38%, transparent); }
 
 .target[data-landing="true"] .pin {
-  animation: targetLanding var(--target-landing-duration, 4.2s) cubic-bezier(0.22, 0.74, 0.2, 1) 1 both;
+  animation: targetLanding var(--target-landing-duration, 3.1s) linear 1 both;
 }
 
 .target[data-landing="true"] .ringInner { animation: targetRipple 420ms cubic-bezier(0.16, 1, 0.3, 1) 120ms 1 both; }
@@ -72,14 +73,23 @@
 .target[data-landing="true"] .ringOuter { animation: targetRipple 500ms cubic-bezier(0.16, 1, 0.3, 1) 220ms 1 both; }
 
 @keyframes targetLanding {
-  0% { opacity: 0; transform: translateX(-50%) translateY(-3.5rem) scale(1.12); }
-  16% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
-  27% { opacity: 1; transform: translateX(-50%) translateY(-0.78rem) scale(1.12); }
-  41% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
-  53% { opacity: 1; transform: translateX(-50%) translateY(-0.42rem) scale(1.12); }
-  67% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
-  77% { opacity: 1; transform: translateX(-50%) translateY(-0.2rem) scale(1.12); }
-  89%, 100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  0% { opacity: 0; transform: translateX(-50%) translateY(-3.8rem) scale(1.12); }
+  12% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  26% { opacity: 1; transform: translateX(-50%) translateY(-1.15rem) scale(1.12); }
+  38% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  49% { opacity: 1; transform: translateX(-50%) translateY(-0.68rem) scale(1.12); }
+  59% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  68% { opacity: 1; transform: translateX(-50%) translateY(-0.38rem) scale(1.12); }
+  76% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  83% { opacity: 1; transform: translateX(-50%) translateY(-0.2rem) scale(1.12); }
+  89% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  94% { opacity: 1; transform: translateX(-50%) translateY(-0.09rem) scale(1.12); }
+  98%, 100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+}
+
+@keyframes targetIdle {
+  0%, 100% { transform: translateX(-50%) translateY(0) scale(1.12); }
+  50% { transform: translateX(-50%) translateY(-0.16rem) scale(1.12); }
 }
 
 @keyframes targetRipple {
@@ -122,6 +132,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .routeLine,
+  .target .pin,
   .target[data-landing="true"] .pin,
   .target[data-landing="true"] .rings ellipse { animation: none; }
 }

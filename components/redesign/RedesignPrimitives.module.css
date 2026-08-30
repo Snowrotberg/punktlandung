@@ -27,6 +27,7 @@
   --pl-grid: rgb(148 163 184 / 0.055);
   --pl-grid-size: 56px;
   --pl-grid-line-width: 1px;
+  --pl-header-height: 4.75rem;
   --pl-horizontal-grid-color: var(--pl-grid);
   --pl-mint-glow: rgb(52 211 153 / 0.18);
   --pl-violet-glow: rgb(99 102 241 / 0.18);
@@ -641,7 +642,10 @@
 }
 
 @media (max-width: 30rem) {
-  .shell { --pl-horizontal-grid-start: 4.125rem; }
+  .shell {
+    --pl-header-height: 4rem;
+    --pl-horizontal-grid-start: var(--pl-header-height);
+  }
 
   .header { min-height: 4rem; }
 
@@ -748,7 +752,10 @@
 
 /* Phone Landscape: wordmark and WEB +10%; pin remains unchanged. */
 @media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) {
-  .shell { --pl-horizontal-grid-start: 4.125rem; }
+  .shell {
+    --pl-header-height: 4rem;
+    --pl-horizontal-grid-start: var(--pl-header-height);
+  }
 
   .header { min-height: 4rem; }
 

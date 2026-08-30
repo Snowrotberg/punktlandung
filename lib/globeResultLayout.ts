@@ -17,6 +17,10 @@ export const RESULT_MAP_CONTROL_LABELS = {
 const RESULT_EDGE_INSET_PX = 20;
 const RESULT_CONTROL_RAIL_PX = 72;
 
+export const RESULT_ROUTE_DASH_LENGTH_PX = 6;
+export const RESULT_ROUTE_DASH_GAP_PX = 9;
+export const RESULT_LABEL_VISUAL_GAP_PX = 10;
+
 export function resultSafeRect(width: number, height: number): ResultScreenRect {
   return {
     left: RESULT_EDGE_INSET_PX,

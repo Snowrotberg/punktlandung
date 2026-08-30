@@ -29,6 +29,8 @@ export type ResultCameraPlan = {
   revealProgress: number;
   targetRevealProgress: number;
   terrainRampProgress: number | null;
+  targetOnlyEndComposition: boolean;
+  guessHideProgress: number | null;
   keyframes: CameraKeyframe[];
 };
 
@@ -104,7 +106,9 @@ export const RESULT_CAMERA_SCENARIOS: ResultCameraScenario[] = [
   }
 ];
 
-const EARTH_RADIUS_KM = 6_371.0088;
+export const EARTH_RADIUS_KM = 6_371.0088;
+export const MAX_GREAT_CIRCLE_DISTANCE_KM = Math.PI * EARTH_RADIUS_KM;
+export const TARGET_ONLY_END_DISTANCE_KM = MAX_GREAT_CIRCLE_DISTANCE_KM * 0.8;
 
 function toRadians(value: number): number {
   return value * Math.PI / 180;
@@ -254,6 +258,7 @@ export function buildResultCameraPlan(
 ): ResultCameraPlan {
   const distanceKm = distanceBetweenCoordinatesKm(guess, target);
   const distanceClass = classifyResultDistance(distanceKm);
+  const targetOnlyEndComposition = distanceKm >= TARGET_ONLY_END_DISTANCE_KM;
   // Compact result maps need additional breathing room for the two badges
   // and the target information card, not just for the geographic points.
   const compactAdjustment = options.compactViewport
@@ -351,10 +356,10 @@ export function buildResultCameraPlan(
   };
   const endFrame: CameraKeyframe = {
     at: 1,
-    center: midpoint,
-    zoom: adjustedZoom(profile.endZoom),
+    center: targetOnlyEndComposition ? target : midpoint,
+    zoom: targetOnlyEndComposition ? adjustedZoom(4.15) : adjustedZoom(profile.endZoom),
     bearing: endBearing,
-    pitch: endPitch
+    pitch: targetOnlyEndComposition ? 38 : endPitch
   };
   const keyframes: CameraKeyframe[] = distanceClass === "short"
     ? [
@@ -408,6 +413,8 @@ export function buildResultCameraPlan(
       ? Math.min(profile.targetRevealProgress, distanceClass === "long" ? 0.48 : 0.58)
       : profile.targetRevealProgress,
     terrainRampProgress: profile.terrainRampProgress,
+    targetOnlyEndComposition,
+    guessHideProgress: targetOnlyEndComposition ? 0.88 : null,
     keyframes
   };
 }

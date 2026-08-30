@@ -6600,7 +6600,6 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 .punktlandung-home-map-live-layer {
   z-index: 1;
   opacity: 0;
-  transition: opacity 220ms ease;
 }
 
 .punktlandung-home-map-live-layer.is-ready {
@@ -6626,7 +6625,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   opacity: 1;
   visibility: visible;
   pointer-events: none;
-  transition: opacity 260ms ease, visibility 0s linear 260ms;
+  transition: none;
 }
 
 .punktlandung-home-map-pictures {
@@ -6653,6 +6652,14 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 
 @media (orientation: landscape) and (min-width: 640px) and (max-width: 1279px) and (max-height: 640px) {
   .punktlandung-home-map-poster { background-image: url("/home-map-preview-phone-landscape-2x.webp"); }
+}
+
+@media (orientation: portrait) and (min-width: 641px) and (max-width: 1199px) {
+  .punktlandung-home-map-poster { background-image: url("/home-map-preview-tablet-2x.webp"); }
+}
+
+@media (orientation: landscape) and (min-width: 640px) and (max-width: 1199px) and (min-height: 641px) {
+  .punktlandung-home-map-poster { background-image: url("/home-map-preview-tablet-landscape-2x.webp"); }
 }
 
 @media (min-width: 1200px) {
@@ -6779,6 +6786,10 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 
 .punktlandung-home-map-static-connector line[data-ready="true"] {
   opacity: 1;
+}
+
+.punktlandung-home-map-static-connector .punktlandung-result-connector-endpoint {
+  stroke-dasharray: none;
 }
 
 .punktlandung-home-map-static-pin,
@@ -7131,12 +7142,17 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   min-width: 0;
   max-width: 100%;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 3px 5px;
   white-space: normal;
 }
 
-.punktlandung-map-attribution-sources a {
+.punktlandung-map-attribution-source-group {
+  display: inline-flex;
   flex: 0 1 auto;
+  min-width: 0;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 .punktlandung-map-attribution-panel a:hover,
@@ -8984,8 +9000,6 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 }
 
 @keyframes punktlandung-result-connector-flow {
-  /* One complete dash period (6px dash + 9px gap). Ending on the exact
-     period keeps the infinite loop visually continuous. */
   to { stroke-dashoffset: -15; }
 }
 

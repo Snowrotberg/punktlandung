@@ -188,6 +188,10 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
 
   const submitCurrentGuess = async () => {
     if (!guess || !targetPlayerId) return;
+    performance.clearMarks("punktlandung-result-submit");
+    performance.clearMeasures("punktlandung-submit-to-result-surface");
+    performance.clearMeasures("punktlandung-submit-to-result-motion");
+    performance.mark("punktlandung-result-submit");
     if (isLocalRoom) {
       const nextPendingPlayer = activePlayerList.find(
         (player) => player.id !== targetPlayerId && !resolvedPlayerIds.has(player.id)

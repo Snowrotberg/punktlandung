@@ -11,6 +11,8 @@ const profiles = [
   { name: "user-phone", width: 386, height: 770, deviceScaleFactor: 2 },
   { name: "phone-large", width: 430, height: 932, deviceScaleFactor: 2 },
   { name: "phone-landscape", width: 932, height: 430, deviceScaleFactor: 2 },
+  { name: "tablet", width: 768, height: 1024, deviceScaleFactor: 2 },
+  { name: "tablet-landscape", width: 1024, height: 768, deviceScaleFactor: 2 },
   { name: "laptop", width: 1366, height: 768, deviceScaleFactor: 1 },
   { name: "laptop-dpr-1-5", width: 1366, height: 768, deviceScaleFactor: 1.5 },
   { name: "laptop-hidpi", width: 1366, height: 768, deviceScaleFactor: 2 },
@@ -160,6 +162,29 @@ try {
       return image !== "none";
     });
     await page.evaluate(async () => { if (document.fonts) await document.fonts.ready; });
+    await page.waitForFunction(() => {
+      const element = document.querySelector(".punktlandung-home-map-poster-wide");
+      if (!element) return false;
+      const candidates = [...getComputedStyle(element).backgroundImage.matchAll(/url\(["']?(.*?)["']?\)/g)]
+        .map((match) => new URL(match[1], location.href).pathname);
+      const loadedResources = performance.getEntriesByType("resource")
+        .map((entry) => new URL(entry.name, location.href).pathname);
+      return candidates.some((candidate) => loadedResources.includes(candidate));
+    }, null, { timeout: 10_000 });
+    const posterSelection = await poster.evaluate(async (element) => {
+      const candidates = [...getComputedStyle(element).backgroundImage.matchAll(/url\(["']?(.*?)["']?\)/g)]
+        .map((match) => new URL(match[1], location.href).pathname);
+      const loadedResources = performance.getEntriesByType("resource")
+        .map((entry) => new URL(entry.name, location.href).pathname);
+      const selected = [...loadedResources].reverse().find((resource) => candidates.includes(resource)) ?? candidates.at(-1) ?? "";
+      if (selected) {
+        const decoded = new Image();
+        decoded.src = selected;
+        await decoded.decode();
+      }
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      return { candidates, selected };
+    });
     const posterPath = path.join(outDir, `${profile.name}-initial-poster.png`);
     const initialPosterState = await poster.evaluate((element) => {
       const style = getComputedStyle(element);
@@ -169,20 +194,11 @@ try {
         visibility: style.visibility,
         surfaceReady: preview?.querySelector("[data-surface-ready]")?.getAttribute("data-surface-ready") === "true",
         animationStarted: preview?.getAttribute("data-animation-started") === "true",
-        crossfadeStarted: element.classList.contains("is-ready")
+        handoffStarted: element.classList.contains("is-ready"),
+        transitionDuration: style.transitionDuration
       };
     });
     const posterBuffer = await preview.screenshot({ path: posterPath });
-    const posterSelection = await poster.evaluate((element) => {
-      const candidates = [...getComputedStyle(element).backgroundImage.matchAll(/url\(["']?(.*?)["']?\)/g)]
-        .map((match) => new URL(match[1], location.href).pathname);
-      const loadedResources = performance.getEntriesByType("resource")
-        .map((entry) => new URL(entry.name, location.href).pathname);
-      return {
-        candidates,
-        selected: [...loadedResources].reverse().find((resource) => candidates.includes(resource)) ?? candidates.at(-1) ?? ""
-      };
-    });
     const selectedPoster = posterSelection.selected;
     const previewSize = await preview.evaluate((element) => {
       const rect = element.getBoundingClientRect();
@@ -196,7 +212,8 @@ try {
     const initialPosterPassed = initialPosterState.opacity === 1
       && initialPosterState.visibility === "visible"
       && !initialPosterState.animationStarted
-      && !initialPosterState.crossfadeStarted;
+      && !initialPosterState.handoffStarted
+      && initialPosterState.transitionDuration.split(",").every((duration) => Number.parseFloat(duration) === 0);
     const posterLayout = await page.locator(".punktlandung-home-map-pictures").getAttribute("data-poster-layout");
 
     await preview.locator("[data-surface-ready='true']").waitFor({ state: "attached", timeout: 60_000 });
@@ -292,10 +309,10 @@ try {
       && surfaceReadyAt <= posterHiddenAt
       && posterHiddenAt < animationStartedAt
       && animationStartedAt <= movementAt
-      && hiddenToAnimationMs >= 80
-      && hiddenToAnimationMs <= 260
+      && hiddenToAnimationMs >= 250
+      && hiddenToAnimationMs <= 520
       && animationToMovementMs >= 0
-      && animationToMovementMs <= 420;
+      && animationToMovementMs <= 700;
     const visualPassed = comparison.perceptualMeanDifference <= 3.5
       && comparison.perceptualChangedPixelRatio <= 0.07
       && comparison.structuralMeanDifference <= 1.5
@@ -367,7 +384,7 @@ try {
       ...comparison,
       screenshots: { posterPath, pausedPath, movingPath, diffPath }
     });
-    console.log(`${profile.name}: structural mean ${comparison.structuralMeanDifference.toFixed(2)}, changed ${(comparison.structuralChangedPixelRatio * 100).toFixed(2)}%; perceptual ${comparison.perceptualMeanDifference.toFixed(2)} / ${(comparison.perceptualChangedPixelRatio * 100).toFixed(2)}%; density ${densityPassed ? "PASS" : "FAIL"}; crossfade hold ${hiddenToAnimationMs?.toFixed(0) ?? "n/a"}ms, motion hold ${animationToMovementMs?.toFixed(0) ?? "n/a"}ms, surface canvases ${canvasIdsAfterSurface.join(",")} -> ${passed ? "PASS" : "FAIL"}`);
+    console.log(`${profile.name}: structural mean ${comparison.structuralMeanDifference.toFixed(2)}, changed ${(comparison.structuralChangedPixelRatio * 100).toFixed(2)}%; perceptual ${comparison.perceptualMeanDifference.toFixed(2)} / ${(comparison.perceptualChangedPixelRatio * 100).toFixed(2)}%; density ${densityPassed ? "PASS" : "FAIL"}; direct handoff hold ${hiddenToAnimationMs?.toFixed(0) ?? "n/a"}ms, motion hold ${animationToMovementMs?.toFixed(0) ?? "n/a"}ms, surface canvases ${canvasIdsAfterSurface.join(",")} -> ${passed ? "PASS" : "FAIL"}`);
     await context.close();
   }
 } finally {

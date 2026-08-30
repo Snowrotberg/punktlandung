@@ -21,6 +21,8 @@ test("the shared shell owns a full-width content raster outside the header no-go
   assert.match(shared, /\.shell\s*\{[\s\S]*?linear-gradient\(90deg,[\s\S]*?background-repeat:\s*no-repeat, no-repeat, repeat;/);
   assert.match(shared, /\.shell::before\s*\{[\s\S]*?top:\s*var\(--pl-horizontal-grid-start\);[\s\S]*?right:\s*0;[\s\S]*?bottom:\s*0;[\s\S]*?left:\s*0;/);
   assert.match(shared, /\.shell::before\s*\{[\s\S]*?background-repeat:\s*repeat-y;[\s\S]*?background-size:\s*100% var\(--pl-grid-size\);/);
+  assert.match(shared, /@media \(max-width: 30rem\)[\s\S]*?--pl-header-height:\s*4rem;[\s\S]*?--pl-horizontal-grid-start:\s*var\(--pl-header-height\);/);
+  assert.match(shared, /@media \(orientation: landscape\)[\s\S]*?--pl-header-height:\s*4rem;[\s\S]*?--pl-horizontal-grid-start:\s*var\(--pl-header-height\);/);
   assert.doesNotMatch(home, /background-position:\s*0 0, 0 0, 0 0, 0 4rem;/);
 });
 

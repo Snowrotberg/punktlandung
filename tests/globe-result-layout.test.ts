@@ -1,8 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
   expandResultRect,
+  RESULT_LABEL_VISUAL_GAP_PX,
   RESULT_MAP_CONTROL_LABELS,
+  RESULT_ROUTE_DASH_GAP_PX,
+  RESULT_ROUTE_DASH_LENGTH_PX,
   resultLabelHorizontalPlacement,
   resultLabelPairVerticalPlacement,
   resultMarkerCollisionOffsets,
@@ -66,6 +70,47 @@ test("phone portrait and phone landscape use the centered target-information ove
   assert.equal(usesCenteredResultInfoOverlay(430, 932), true);
   assert.equal(usesCenteredResultInfoOverlay(932, 430), true);
   assert.equal(usesCenteredResultInfoOverlay(1366, 768), false);
+});
+
+test("result routes use the same endpoint clearance as the shared dash gap", () => {
+  assert.equal(RESULT_LABEL_VISUAL_GAP_PX, 10);
+  assert.equal(RESULT_ROUTE_DASH_LENGTH_PX, 6);
+  assert.equal(RESULT_ROUTE_DASH_GAP_PX, 9);
+  const route = trimProjectedRoute([{ x: 0, y: 0 }, { x: 100, y: 0 }], 20 + RESULT_ROUTE_DASH_GAP_PX, 30 + RESULT_ROUTE_DASH_GAP_PX);
+  assert.ok(Math.abs(route[0].x - 29) < 1e-9);
+  assert.ok(Math.abs(route.at(-1)!.x - 61) < 1e-9);
+});
+
+test("flowing result routes keep fixed endpoint dashes outside the animated dash phase", async () => {
+  const [globe, leaflet, primitivesCss, globals] = await Promise.all([
+    readFile(new URL("../components/GlobeMapLab.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/LeafletMap.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/ResultMapPrimitives.module.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8")
+  ]);
+
+  assert.match(globe, /routeEndpointRef[\s\S]*?RESULT_ROUTE_DASH_LENGTH_PX[\s\S]*?className=\{styles\.routeEndpoints\}/);
+  assert.match(leaflet, /punktlandung-result-connector-endpoint/);
+  assert.match(primitivesCss, /@keyframes routeFlow\s*\{\s*to\s*\{\s*stroke-dashoffset:\s*-15;/);
+  assert.match(globals, /@keyframes punktlandung-result-connector-flow\s*\{\s*to\s*\{\s*stroke-dashoffset:\s*-15;/);
+});
+
+test("target landing decays into the shared idle hop while reduced motion stays still", async () => {
+  const source = await readFile(new URL("../components/ResultMapPrimitives.module.css", import.meta.url), "utf8");
+  assert.match(source, /\.target \.pin\s*\{[\s\S]*?animation:\s*targetIdle 1650ms/);
+  assert.match(source, /@keyframes targetLanding\s*\{[\s\S]*?26%[\s\S]*?-1\.15rem[\s\S]*?49%[\s\S]*?-0\.68rem[\s\S]*?68%[\s\S]*?-0\.38rem[\s\S]*?83%[\s\S]*?-0\.2rem[\s\S]*?94%[\s\S]*?-0\.09rem/);
+  assert.match(source, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.target \.pin,[\s\S]*?animation:\s*none;/);
+});
+
+test("result labels prefer a shared centred visual gap before collision fallback", async () => {
+  const [globeCss, leaflet] = await Promise.all([
+    readFile(new URL("../components/GlobeMapLab.module.css", import.meta.url), "utf8"),
+    readFile(new URL("../components/LeafletMap.tsx", import.meta.url), "utf8")
+  ]);
+  assert.equal(RESULT_LABEL_VISUAL_GAP_PX, 10);
+  assert.match(globeCss, /--result-label-above-offset:[\s\S]*?--result-label-below-offset:[\s\S]*?translateX\(-50%\)/);
+  assert.match(leaflet, /candidates\.unshift\(\{\s*dx:\s*0,[\s\S]*?RESULT_LABEL_VISUAL_GAP_PX/);
+  assert.match(leaflet, /actual:\s*\{[\s\S]*?offset:\s*\[\s*0,[\s\S]*?player:\s*\{[\s\S]*?offset:\s*\[0,/);
 });
 
 test("the visually northern pin owns the upper label independent of player and target roles", () => {

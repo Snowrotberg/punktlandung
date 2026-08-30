@@ -1,9 +1,8 @@
 export const RESULT_REVEAL_TIMING = {
-  targetLandingDurationMs: 4_200,
-  // The first ground contact occurs at 16% of the shared landing keyframes.
-  // Reveal the label shortly afterwards, while the impact rings are still
-  // visible, instead of waiting for every diminishing rebound to finish.
-  targetLabelAfterRevealMs: 900,
+  targetLandingDurationMs: 3_100,
+  // The label follows the first impact, while the diminishing rebounds are
+  // still visible. Pin and badge therefore remain two readable events.
+  targetLabelAfterRevealMs: 800,
   finalStillnessMs: 80
 } as const;
 

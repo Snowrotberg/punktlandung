@@ -4,14 +4,17 @@ import { RESULT_REVEAL_TIMING, remainingResultRevealWaits } from "../lib/globeRe
 
 test("result reveal orders target landing, labels and final stillness", () => {
   assert.ok(RESULT_REVEAL_TIMING.targetLandingDurationMs > 0);
-  assert.ok(RESULT_REVEAL_TIMING.targetLabelAfterRevealMs > RESULT_REVEAL_TIMING.targetLandingDurationMs * 0.16);
+  assert.ok(RESULT_REVEAL_TIMING.targetLandingDurationMs >= 3_000);
+  assert.ok(RESULT_REVEAL_TIMING.targetLandingDurationMs <= 3_200);
+  assert.ok(RESULT_REVEAL_TIMING.targetLabelAfterRevealMs >= 700);
+  assert.ok(RESULT_REVEAL_TIMING.targetLabelAfterRevealMs <= 900);
   assert.ok(RESULT_REVEAL_TIMING.targetLabelAfterRevealMs < RESULT_REVEAL_TIMING.targetLandingDurationMs);
   assert.ok(RESULT_REVEAL_TIMING.finalStillnessMs > 0);
 });
 
 test("result reveal waits clamp elapsed milestones without restarting them", () => {
-  assert.deepEqual(remainingResultRevealWaits(1_000, 1_250), { landingMs: 3_950, labelMs: 650 });
-  assert.deepEqual(remainingResultRevealWaits(1_000, 1_900), { landingMs: 3_300, labelMs: 0 });
+  assert.deepEqual(remainingResultRevealWaits(1_000, 1_250), { landingMs: 2_850, labelMs: 550 });
+  assert.deepEqual(remainingResultRevealWaits(1_000, 1_800), { landingMs: 2_300, labelMs: 0 });
   assert.deepEqual(remainingResultRevealWaits(1_000, 6_000), { landingMs: 0, labelMs: 0 });
 });
 

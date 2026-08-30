@@ -9,7 +9,15 @@
   --pl-game-map-panel-background:
     linear-gradient(135deg, rgb(94 231 189 / 0.08), transparent 48%, rgb(147 140 255 / 0.08)),
     rgb(12 22 38 / 0.9);
+  --pl-game-desktop-hud-safe-top: 5.25rem;
   font-family: var(--font-inter);
+}
+
+@media (min-width: 64.001rem) {
+  .redesign :global(.punktlandung-guess-map-panel--full) {
+    top: var(--pl-game-desktop-hud-safe-top) !important;
+    height: auto !important;
+  }
 }
 
 .redesign :global(.punktlandung-game-stat),
@@ -187,6 +195,9 @@
 }
 
 @media (min-width: 150rem) {
+  .redesign {
+    --pl-game-desktop-hud-safe-top: 8.75rem;
+  }
   .redesign :global(.punktlandung-game-hud) {
     inset-inline: 2rem !important;
     top: 2rem !important;

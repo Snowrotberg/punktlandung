@@ -407,9 +407,13 @@ export function GameApp({
     // Warm the result-map code and style while the player is still looking at
     // the round image. The visible transition can then begin with the map,
     // rather than with an implementation-facing loading state.
-    void import("./GlobeMapLab").then((module) => module.prewarmGlobeResultMap());
-    void fetch(punktlandungMapStyleUrl("globe"), { cache: "force-cache" }).catch(() => undefined);
-  }, [room?.location?.id, room?.players.length, room?.status]);
+    performance.mark("punktlandung-result-prewarm-start");
+    router.prefetch("/aufloesung");
+    void Promise.all([
+      import("./GlobeMapLab").then((module) => module.prewarmGlobeResultMap()),
+      fetch(punktlandungMapStyleUrl("globe"), { cache: "force-cache" }).catch(() => undefined)
+    ]).then(() => performance.mark("punktlandung-result-prewarm-ready"));
+  }, [room?.location?.id, room?.players.length, room?.status, router]);
 
   useEffect(() => {
     if (pathname === gameplayRoute) {

@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import {
   buildResultCameraPlan,
   distanceBetweenCoordinatesKm,
+  MAX_GREAT_CIRCLE_DISTANCE_KM,
   RESULT_MAP_MIN_ZOOM,
+  TARGET_ONLY_END_DISTANCE_KM,
   routeLineCoordinates,
   withResultCameraEndFrame
 } from "../lib/globeResultCamera";
@@ -19,6 +21,21 @@ test("result camera keeps exact antipodes finite and drawable", () => {
   assert.ok(plan.keyframes.every((frame) => [frame.center[0], frame.center[1], frame.zoom, frame.bearing, frame.pitch].every(Number.isFinite)));
   assert.ok(route.length > 20);
   assert.ok(route.every(([longitude, latitude]) => Number.isFinite(longitude) && Number.isFinite(latitude)));
+  assert.equal(plan.targetOnlyEndComposition, true);
+  assert.deepEqual(plan.keyframes.at(-1)!.center, target);
+});
+
+test("target-only end composition switches exactly at eighty percent of the maximum great-circle distance", () => {
+  assert.ok(Math.abs(MAX_GREAT_CIRCLE_DISTANCE_KM - Math.PI * 6_371.0088) < 1e-9);
+  assert.ok(Math.abs(TARGET_ONLY_END_DISTANCE_KM - MAX_GREAT_CIRCLE_DISTANCE_KM * 0.8) < 1e-9);
+  const below = buildResultCameraPlan([0, 0], [143.9, 0]);
+  const above = buildResultCameraPlan([0, 0], [144.1, 0]);
+  assert.equal(below.targetOnlyEndComposition, false);
+  assert.equal(below.guessHideProgress, null);
+  assert.equal(above.targetOnlyEndComposition, true);
+  assert.equal(above.guessHideProgress, 0.88);
+  assert.deepEqual(above.keyframes[0].center, [0, 0]);
+  assert.deepEqual(above.keyframes.at(-1)!.center, [144.1, 0]);
 });
 
 test("compact result plans reveal the line immediately and the target before the final approach", () => {

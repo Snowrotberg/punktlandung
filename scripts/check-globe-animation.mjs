@@ -218,7 +218,7 @@ try {
           && finalState.markerCount === 2
           && finalState.labelCount === 2
           && !finalState.targetLanding
-          && finalState.targetAnimation === "none"
+          && (testCase.name === "reduced-motion" ? finalState.targetAnimation === "none" : finalState.targetAnimation !== "none")
           && finalState.routePresent
           && finalState.routeSettled
           && (testCase.name === "reduced-motion" ? finalState.routeAnimation === "none" : finalState.routeAnimation !== "none")
