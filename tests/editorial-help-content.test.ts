@@ -70,6 +70,7 @@ test("score diagram reuses the production result marker and route primitives", a
   assert.doesNotMatch(scoreDiagram, /<MapPin/);
   assert.match(primitives, /resultMarkerGraphicMarkup/);
   assert.match(primitives, /resultRouteLineClassName/);
+  assert.match(primitives, /d="M0 10H160"/);
   assert.match(globe, /resultMarkerGraphicMarkup\(kind, \{ pin: styles\.markerPin, rings: styles\.markerRings \}\)/);
   assert.match(globe, /resultRouteLineClassName/);
 });
@@ -111,6 +112,7 @@ test("all consolidated help detail pages provide a shared return path", async ()
   ]);
 
   for (const page of [rules, catalog, party, infos]) assert.match(page, /<HelpBackLink \/>/);
+  for (const page of [rules, catalog, party, infos]) assert.match(page, /titleAction=\{<HelpBackLink \/>\}/);
   assert.match(backLink, /href="\/faq"/);
   assert.match(backLink, /Zurück zu Hilfe &amp; Infos/);
   assert.doesNotMatch(rules, /Inhaltlich geprüft/);
@@ -126,8 +128,26 @@ test("editorial cards use visual signposts and the current target badge", async 
   ]);
 
   for (const icon of ["SlidersHorizontal", "ListOrdered", "Clock3", "Gauge", "UserRound", "UsersRound", "Globe2"]) assert.match(rules, new RegExp(icon));
-  for (const icon of ["Building2", "Crown", "Landmark", "Mountain", "Flag"]) assert.match(catalog, new RegExp(icon));
-  for (const icon of ["UsersRound", "SlidersHorizontal", "ListChecks", "Target", "Tv", "Globe2"]) assert.match(party, new RegExp(icon));
+  for (const icon of ["Building2", "Crown", "Landmark", "Mountain", "Flag", "SignalLow", "SignalMedium", "SignalHigh"]) assert.match(catalog, new RegExp(icon));
+  for (const icon of ["UsersRound", "SlidersHorizontal", "ListChecks", "Target", "Globe2"]) assert.match(party, new RegExp(icon));
+  assert.doesNotMatch(party, /\bTv\b/);
   assert.match(explainers, /styles\.targetLabel/);
   assert.match(explainerStyles, /\.targetLabel::before \{ display: none !important; \}/);
+});
+
+test("help modes link directly to their matching setup pages", async () => {
+  const rules = await readSource("../app/so-funktioniert-punktlandung/page.tsx");
+
+  for (const href of ["/solo-modus", "/party-modus", "/online-modus"]) {
+    assert.ok(rules.includes(`href: "${href}"`), href);
+  }
+  assert.match(rules, /punktlandung-help-card/);
+});
+
+test("the info shell keeps its footer in the scrollable content flow", async () => {
+  const shell = await readSource("../components/InfoPageShell.tsx");
+  const body = shell.slice(shell.indexOf(`<div className={styles.body}>`), shell.indexOf(`</RedesignShell>`));
+
+  assert.match(body, /<RedesignFooter/);
+  assert.match(shell, /titleAction/);
 });

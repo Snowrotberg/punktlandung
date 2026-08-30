@@ -6,7 +6,7 @@ import { builtInLocations, catalogInventoryLocations } from "@/data/locations";
 import { buildCatalogStatistics, catalogCategoryLabels, catalogCategoryOrder } from "@/lib/catalogStatistics";
 import { absoluteUrl } from "@/lib/seo";
 import { HelpBackLink } from "@/components/HelpBackLink";
-import { Building2, Crown, Flag, Landmark, Mountain } from "lucide-react";
+import { Building2, Crown, Flag, Landmark, Mountain, SignalHigh, SignalLow, SignalMedium } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Welche Orte und Aufgaben gibt es bei Punktlandung?",
@@ -57,9 +57,8 @@ export default function OrtskatalogPage() {
         eyebrow="Spielinhalte und Quellen"
         title="Welche Orte und Aufgaben gibt es bei Punktlandung?"
         intro={`Diese Seite zeigt, welche Inhalte im Spiel vorkommen: aktuell ${builtInLocations.length.toLocaleString("de-DE")} spielbare Aufgaben mit Städten, Hauptstädten, Wahrzeichen, Landschaften und Flaggen. Außerdem erklären wir, wie die Motive ausgewählt und geprüft werden.`}
+        titleAction={<HelpBackLink />}
       >
-      <HelpBackLink />
-
       <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <div className="punktlandung-info-static-card rounded-md p-5">
           <p className="text-4xl font-black text-emerald-300">{builtInLocations.length.toLocaleString("de-DE")}</p>
@@ -136,12 +135,12 @@ export default function OrtskatalogPage() {
         <h2 className="text-[22px] font-black leading-tight text-white">Wie verändert sich die Schwierigkeit?</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {[
-            ["Leicht", "Bekannte oder besonders eindeutige Motive eignen sich zum Einstieg und für entspannte Runden."],
-            ["Mittel", "Vertraute Hinweise helfen weiter, der genaue Ort ist aber nicht immer sofort erkennbar."],
-            ["Schwer", "Weniger offensichtliche Perspektiven und anspruchsvollere Orte fordern genaues Hinsehen und geografisches Wissen."]
-          ].map(([title, body]) => (
+            { title: "Leicht", body: "Bekannte oder besonders eindeutige Motive eignen sich zum Einstieg und für entspannte Runden.", Icon: SignalLow },
+            { title: "Mittel", body: "Vertraute Hinweise helfen weiter, der genaue Ort ist aber nicht immer sofort erkennbar.", Icon: SignalMedium },
+            { title: "Schwer", body: "Weniger offensichtliche Perspektiven und anspruchsvollere Orte fordern genaues Hinsehen und geografisches Wissen.", Icon: SignalHigh }
+          ].map(({ title, body, Icon }) => (
             <article key={title} className="punktlandung-info-static-card rounded-md p-5">
-              <h3 className="text-lg font-black text-white">{title}</h3>
+              <h3 className="flex items-center gap-3 text-lg font-black text-white"><Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />{title}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
             </article>
           ))}

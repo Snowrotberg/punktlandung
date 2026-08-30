@@ -34,12 +34,12 @@ export default function InfosPage() {
       eyebrow="Über das Projekt"
       title="Was ist Punktlandung?"
       intro="Punktlandung ist ein eigenständig entwickeltes Geografie-Spiel für den Browser. Hier erklären wir, was das Projekt anbietet, wie die Inhalte gepflegt werden und wie die Web-Version weiterentwickelt wird."
+      titleAction={<HelpBackLink />}
     >
-      <HelpBackLink />
       <p className="mt-3 text-sm text-slate-400">Zuletzt aktualisiert: 30. August 2026</p>
 
-      <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
-      <section>
+      <div className="mt-6 grid items-stretch gap-4 md:grid-cols-2">
+      <section className="punktlandung-info-static-card rounded-xl p-5">
         <IconHeading Icon={Waypoints}>Die Spielidee</IconHeading>
         <p className="mt-3 max-w-4xl leading-7 text-slate-300">
           Statt eine vorgegebene Antwort auszuwählen, setzt du selbst einen Pin auf die Weltkarte. Die Entfernung zum
@@ -49,7 +49,7 @@ export default function InfosPage() {
         </p>
       </section>
 
-      <section>
+      <section className="punktlandung-info-static-card rounded-xl p-5">
         <IconHeading Icon={ShieldCheck}>Wie werden die Inhalte gepflegt?</IconHeading>
         <p className="mt-3 max-w-4xl leading-7 text-slate-300">
           Der aktive Aufgabenkatalog wird im Projekt gepflegt und vor der Veröffentlichung redaktionell sowie technisch
@@ -58,9 +58,6 @@ export default function InfosPage() {
           umgangen werden können.
         </p>
       </section>
-      </div>
-
-      <section className="mt-8 grid gap-4 md:grid-cols-2">
         <article className="punktlandung-info-static-card rounded-xl p-5">
           <IconHeading Icon={Globe2}>Web-Version</IconHeading>
           <p className="mt-3 text-sm leading-6 text-slate-300">
@@ -76,7 +73,7 @@ export default function InfosPage() {
             davon im Vordergrund.
           </p>
         </article>
-      </section>
+      </div>
 
       <section className="mt-8 border-t border-slate-800 pt-6">
         <h2 className="text-[22px] leading-tight text-white">Transparenz und Orientierung</h2>

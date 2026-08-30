@@ -4,7 +4,7 @@ import { InfoPageShell } from "@/components/InfoPageShell";
 import { RedesignButtonLink } from "@/components/redesign";
 import { absoluteUrl } from "@/lib/seo";
 import { HelpBackLink } from "@/components/HelpBackLink";
-import { Globe2, ListChecks, SlidersHorizontal, Target, Tv, UsersRound } from "lucide-react";
+import { Globe2, ListChecks, SlidersHorizontal, Target, UsersRound } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Geografie-Partyspiel für gemeinsame Runden",
@@ -29,9 +29,8 @@ export default function PartyspielGeografiePage() {
       eyebrow="Gemeinsam am selben Bildschirm"
       title="Punktlandung als Geografie-Partyspiel"
       intro="Im Party-Modus spielen zwei bis zehn Personen an einem Gerät. Jede Aufgabe ist für alle gleich, die Tipps werden reihum abgegeben und anschließend gemeinsam aufgelöst."
+      titleAction={<HelpBackLink />}
     >
-      <HelpBackLink />
-
       <section className="mt-6">
         <h2 className="text-[22px] leading-tight text-white">So bereitet ihr eine Partie vor</h2>
         <ol className="mt-4 grid gap-4 md:grid-cols-2">
@@ -49,7 +48,7 @@ export default function PartyspielGeografiePage() {
         <h2 className="text-[22px] leading-tight text-white">Party-Modus oder Online-Raum?</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <article className="punktlandung-info-static-card rounded-xl p-5">
-            <h3 className="flex items-center gap-3 text-lg font-bold text-white"><Tv aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />Party-Modus: gemeinsam an einem Bildschirm</h3>
+            <h3 className="flex items-center gap-3 text-lg font-bold text-white"><UsersRound aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />Party-Modus: gemeinsam an einem Bildschirm</h3>
             <p className="mt-2 text-sm leading-6 text-slate-300">
               Ideal für Sofa, Unterricht oder Spieleabend. Ihr spielt an einem gemeinsamen Handy, Tablet, Notebook oder Fernseher. Jede Person ist nacheinander mit ihrem Tipp an der Reihe; die Auflösung seht ihr gemeinsam.
             </p>

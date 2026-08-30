@@ -42,10 +42,10 @@
 .playLink:hover { color: var(--pl-mint-ink); }
 
 .body {
-  display: grid;
+  display: flex;
   min-height: 0;
   flex: 1;
-  grid-template-rows: auto auto;
+  flex-direction: column;
   gap: 1rem;
   padding: 1rem var(--pl-content-inset) var(--pl-content-inset);
   overflow: auto;
@@ -72,9 +72,16 @@
 }
 
 .titlePanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1.5rem;
   padding: 1rem 0 0.5rem;
   background: transparent;
 }
+
+.titleCopy { min-width: 0; }
+.titleAction { padding-top: .15rem; }
 
 .eyebrow {
   margin: 0;
@@ -98,7 +105,8 @@
 .contentGrid {
   display: grid;
   min-width: 0;
-  min-height: 0;
+  min-height: max-content;
+  flex: 0 0 auto;
   align-items: start;
   gap: 1rem;
 }
@@ -117,17 +125,20 @@
 .footer {
   min-height: 3.5rem;
   flex: 0 0 auto;
+  margin-top: auto;
   padding-block: .75rem;
 }
 
 .compact .body {
-  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
 }
 
 .compact .contentGrid,
 .compact .article {
   min-height: 0;
 }
+
+.compact .contentGrid { flex: 1 1 auto; }
 
 @media (min-width: 80rem) and (max-height: 55rem) {
   .compact .body {
@@ -391,8 +402,12 @@
   }
 
   .titlePanel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .75rem;
     padding: 1rem 0;
   }
+
+  .titleAction { padding-top: 0; }
 
   .footer { margin-top: 0; padding-inline: 1rem; }
 }

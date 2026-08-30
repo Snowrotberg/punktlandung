@@ -58,14 +58,14 @@ export function ResultRouteGraphic({ label }: { label: string }) {
       <span>{label}</span>
       <svg viewBox="0 0 160 20" preserveAspectRatio="none">
         <defs>
-          <linearGradient id={gradientId} gradientUnits="userSpaceOnUse" x1="4" y1="10" x2="156" y2="10">
+          <linearGradient id={gradientId} gradientUnits="userSpaceOnUse" x1="0" y1="10" x2="160" y2="10">
             <stop offset="0" stopColor="#f43f7a" />
             <stop offset="0.52" stopColor="#a78bfa" />
             <stop offset="1" stopColor="#5ee7bd" />
           </linearGradient>
         </defs>
-        <path className={styles.routeShadow} d="M4 10H156" />
-        <path className={styles.routeLine} d="M4 10H156" style={{ stroke: `url(#${gradientId})` } as CSSProperties} />
+        <path className={styles.routeShadow} d="M0 10H160" />
+        <path className={styles.routeLine} d="M0 10H160" style={{ stroke: `url(#${gradientId})` } as CSSProperties} />
       </svg>
     </span>
   );

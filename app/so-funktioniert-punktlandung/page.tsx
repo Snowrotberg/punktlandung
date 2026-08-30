@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { RedesignButtonLink } from "@/components/redesign";
 import { InfoPageShell } from "@/components/InfoPageShell";
 import { JsonLd } from "@/components/StructuredData";
@@ -72,9 +73,8 @@ export default function SoFunktioniertPunktlandungPage() {
         eyebrow="Spielregeln und Methodik"
         title="Wie funktioniert Punktlandung?"
         intro="Punktlandung zeigt dir einen Ort, ein Wahrzeichen, eine Landschaft, eine Stadt oder eine Flagge. Du setzt deinen Tipp auf der Weltkarte. Je kleiner die Entfernung zum Ziel, desto mehr der maximal 5.000 Punkte erhältst du."
+        titleAction={<HelpBackLink />}
       >
-      <HelpBackLink />
-
       <section id="spielablauf" className="scroll-mt-24">
         <GameFlowDiagram />
       </section>
@@ -151,14 +151,15 @@ export default function SoFunktioniertPunktlandungPage() {
         <h2 className="text-[22px] font-black leading-tight text-white">Welche Spielmodi gibt es?</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {[
-            { title: "Solo", body: "Du spielst allein und setzt alle Tipps selbst. Ideal zum Üben und für persönliche Bestwerte.", Icon: UserRound },
-            { title: "Party", body: "Zwei bis zehn Personen spielen reihum am selben Gerät und vergleichen jede Auflösung gemeinsam.", Icon: UsersRound },
-            { title: "Online-Raum", body: "Bis zu zehn Personen treten über einen gemeinsamen Raumcode auf ihren eigenen Geräten an.", Icon: Globe2 }
-          ].map(({ title, body, Icon }) => (
-            <article key={title} className="punktlandung-info-static-card rounded-xl p-5">
+            { title: "Solo", body: "Du spielst allein und setzt alle Tipps selbst. Ideal zum Üben und für persönliche Bestwerte.", Icon: UserRound, href: "/solo-modus" },
+            { title: "Party", body: "Zwei bis zehn Personen spielen reihum am selben Gerät und vergleichen jede Auflösung gemeinsam.", Icon: UsersRound, href: "/party-modus" },
+            { title: "Online-Raum", body: "Bis zu zehn Personen treten über einen gemeinsamen Raumcode auf ihren eigenen Geräten an.", Icon: Globe2, href: "/online-modus" }
+          ].map(({ title, body, Icon, href }) => (
+            <Link key={title} href={href} className="punktlandung-help-card rounded-xl p-5 no-underline">
               <h3 className="flex items-center gap-3 text-lg font-black text-white"><Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />{title}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
-            </article>
+              <i aria-hidden="true" className="punktlandung-card-arrow">›</i>
+            </Link>
           ))}
         </div>
         <p className="mt-3 text-sm leading-6 text-slate-400">

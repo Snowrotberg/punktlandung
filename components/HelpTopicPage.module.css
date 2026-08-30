@@ -1,4 +1,3 @@
 .content { display: grid; gap: .75rem; }
-.content > :global(.punktlandung-back-link) { justify-self: start; }
 .cards { display: grid; gap: .75rem; }
 @media (min-width: 48rem) { .cards { grid-template-columns: repeat(2,minmax(0,1fr)); } }

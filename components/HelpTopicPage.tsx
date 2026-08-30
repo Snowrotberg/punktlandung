@@ -1,7 +1,7 @@
 import { InfoPageShell } from "@/components/InfoPageShell";
 import { AccountFlowDiagram } from "@/components/EditorialExplainers";
 import { RedesignButtonLink } from "@/components/redesign";
-import { CircleUserRound, Gauge, History, ShieldCheck, Target, Trophy, type LucideIcon } from "lucide-react";
+import { CircleUserRound, Gauge, History, Medal, ShieldAlert, ShieldCheck, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import styles from "./HelpTopicPage.module.css";
 import { HelpBackLink } from "./HelpBackLink";
@@ -23,8 +23,8 @@ const topicContent: Record<HelpTopic, {
       { title: "Gespeichert ist nicht automatisch öffentlich", text: "Der persönliche Verlauf enthält deine gespeicherten Partien. In Rankings erscheint nur ein Ergebnis, das zusätzlich alle öffentlichen Rankingbedingungen erfüllt.", Icon: History },
       { title: "Welche Partien öffentlich zählen", text: "Gewertet werden vollständig abgeschlossene und technisch geprüfte Partien mit 15, 30 oder 60 Sekunden Zeitlimit. Freie Rundenzeit zählt nicht öffentlich. Sichtbar wirst du nur mit aktivem öffentlichem Profil und öffentlichem Namen.", Icon: ShieldCheck },
       { title: "Warum fehlt eine gespeicherte Partie?", text: "Eine Partie kann im persönlichen Verlauf stehen, ohne für Rankings freigegeben zu sein – etwa bei freier Rundenzeit, unvollständigem Abschluss oder ausstehender technischer Prüfung.", Icon: Gauge },
-      { title: "So entsteht die Platzierung", text: "Je Zeitraum und Kategorie zählt dein bester gültiger Wert. Grundlage sind die durchschnittlichen Punkte pro Runde; Zeitlimit, Schwierigkeit und aktive Einschränkungen werden mit den auf der Rankingseite veröffentlichten Faktoren gewichtet.", Icon: Target, href: "/rankings#ranking-berechnung", hrefLabel: "Berechnung und aktuelle Faktoren ansehen" },
-      { title: "Prüfung gegen Missbrauch", text: "Ergebnisse werden technisch geprüft. Auffällige Partien können überprüft und nachträglich aus öffentlichen Rankings entfernt werden. Die Kriterien bleiben bewusst allgemein, damit die Prüfung nicht umgangen werden kann.", Icon: Trophy }
+      { title: "So entsteht die Platzierung", text: "Je Zeitraum und Kategorie zählt dein bester gültiger Wert. Grundlage sind die durchschnittlichen Punkte pro Runde; Zeitlimit, Schwierigkeit und aktive Einschränkungen werden mit den auf der Rankingseite veröffentlichten Faktoren gewichtet.", Icon: Medal, href: "/rankings#ranking-berechnung", hrefLabel: "Berechnung und aktuelle Faktoren ansehen" },
+      { title: "Prüfung gegen Missbrauch", text: "Ergebnisse werden technisch geprüft. Auffällige Partien können überprüft und nachträglich aus öffentlichen Rankings entfernt werden. Die Kriterien bleiben bewusst allgemein, damit die Prüfung nicht umgangen werden kann.", Icon: ShieldAlert }
     ]
   }
 };
@@ -32,9 +32,8 @@ const topicContent: Record<HelpTopic, {
 export function HelpTopicPage({ topic }: { topic: HelpTopic }) {
   const content = topicContent[topic];
   return (
-    <InfoPageShell fillDesktop plainContent eyebrow={content.eyebrow} title={content.title} intro={content.intro}>
+    <InfoPageShell fillDesktop plainContent eyebrow={content.eyebrow} title={content.title} intro={content.intro} titleAction={<HelpBackLink />}>
       <div className={styles.content}>
-        <HelpBackLink />
         <AccountFlowDiagram />
         <div className={styles.cards}>
           {content.sections.map((section) => (

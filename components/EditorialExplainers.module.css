@@ -11,10 +11,10 @@
 .flow strong { color: #f8fafc; font-size: .82rem; }
 .flow small { color: #94a3b8; font-size: .68rem; line-height: 1.4; }
 .stepNumberInline { margin-right: .3em; }
-.scoreVisual { position: relative; display: grid; min-height: 10rem; grid-template-columns: auto minmax(5rem,1fr) auto; align-items: center; column-gap: .45rem; padding: 1.25rem clamp(1rem,5vw,3rem); background: radial-gradient(circle at 50% 50%, rgba(94,231,189,.08), transparent 48%); }
-.mapPoint { position: relative; z-index: 1; display: grid; justify-items: center; gap: .85rem; }
+.scoreVisual { position: relative; display: grid; min-height: 10rem; grid-template-columns: 3.625rem minmax(5rem,1fr) 3.625rem; align-items: center; column-gap: .4rem; padding: 1.25rem clamp(1rem,5vw,3rem); background: radial-gradient(circle at 50% 50%, rgba(94,231,189,.08), transparent 48%); }
+.mapPoint { position: relative; z-index: 1; display: grid; width: 3.625rem; justify-items: center; gap: .45rem; }
 .scoreMarker { position: relative; }
-.mapPoint > :global(.punktlandung-map-label) { max-width: 8.5rem !important; justify-content: center; font-size: .72rem !important; padding: .4rem .65rem !important; }
+.mapPoint > :global(.punktlandung-map-label) { width: max-content; max-width: 8.5rem !important; justify-content: center; font-size: .72rem !important; padding: .4rem .65rem !important; }
 .mapPoint > .targetLabel { border-color: var(--pl-mint) !important; color: var(--pl-mint-ink) !important; background: var(--pl-mint) !important; box-shadow: 0 .65rem 1.5rem rgb(2 6 23 / .3), 0 0 1.2rem rgb(94 231 189 / .28) !important; }
 .mapPoint > .targetLabel::before { display: none !important; }
 .scoreFacts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin: 0; border-top: 1px solid rgba(148,163,184,.16); }
@@ -23,9 +23,9 @@
 .scoreFacts dt { color: #94a3b8; font-size: .64rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .scoreFacts dd { margin: .22rem 0 0; color: #dbe5f2; font-size: .74rem; line-height: 1.45; }
 .scoreFacts strong { color: var(--pl-mint); }
-.accountFlow { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); list-style: none; margin: 0; padding: 1rem; }
-.accountFlow li { position: relative; display: grid; min-width: 0; grid-template-columns: auto minmax(0,1fr); align-items: start; gap: .55rem; padding: .7rem; }
-.accountFlow li:not(:last-child)::after { content: "›"; position: absolute; top: 50%; right: -.25rem; color: var(--pl-mint); font-size: 1.25rem; translate: 0 -50%; }
+.accountFlow { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); column-gap: 1.5rem; list-style: none; margin: 0; padding: 1rem; }
+.accountFlow li { position: relative; display: grid; min-width: 0; grid-template-columns: auto minmax(0,1fr); align-items: start; gap: .55rem; padding: .7rem 0; }
+.accountFlow li:not(:last-child)::after { content: "›"; position: absolute; top: 50%; right: -.95rem; color: var(--pl-mint); font-size: 1.25rem; translate: 50% -50%; }
 .accountFlow svg { width: 1.35rem; height: 1.35rem; color: var(--pl-mint); }
 .accountFlow strong,.accountFlow small { display: block; }
 .accountFlow strong { color: #f8fafc; font-size: .76rem; }
@@ -57,7 +57,7 @@
 @media (max-width: 34rem) {
   .caption { padding: .85rem; }
   .flow,.accountFlow,.modeGrid { padding: .75rem; }
-  .scoreVisual { min-height: 8rem; grid-template-columns: auto minmax(3.5rem,1fr) auto; column-gap: .25rem; padding-inline: .75rem; }
+  .scoreVisual { min-height: 8rem; grid-template-columns: 3.625rem minmax(3.5rem,1fr) 3.625rem; column-gap: .3rem; padding-inline: .75rem; }
   .mapPoint span { font-size: .64rem; }
   .scoreFacts { grid-template-columns: 1fr; }
   .scoreFacts div + div { border-top: 1px solid rgba(148,163,184,.16); border-left: 0; }

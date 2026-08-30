@@ -11,6 +11,7 @@ type InfoPageShellProps = {
   eyebrow?: string;
   title: string;
   intro?: string;
+  titleAction?: ReactNode;
   children: ReactNode;
   showImportantPages?: boolean;
   contentClassName?: string;
@@ -24,6 +25,7 @@ export async function InfoPageShell({
   eyebrow,
   title,
   intro,
+  titleAction,
   children,
   contentClassName = "",
   fillDesktop = false,
@@ -48,11 +50,12 @@ export async function InfoPageShell({
 
           <div className={styles.body}>
           <section className={styles.titlePanel}>
-            <div className="min-w-0">
+            <div className={styles.titleCopy}>
               {eyebrow && <p className={styles.eyebrow}>{eyebrow}</p>}
               <h1 className="mt-1 break-words text-3xl font-black leading-tight text-white md:text-4xl">{title}</h1>
               {intro && <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 md:text-base">{intro}</p>}
             </div>
+            {titleAction && <div className={styles.titleAction}>{titleAction}</div>}
           </section>
 
           <div className={styles.contentGrid}>
@@ -60,8 +63,8 @@ export async function InfoPageShell({
               {children}
             </article>
           </div>
-          </div>
           <RedesignFooter className={styles.footer}><LegalLinks includeInfos align="end" /></RedesignFooter>
+          </div>
         </RedesignShell>
         <AdContainer placement="home-right-rail" variant="rail" label="Anzeige" className={styles.rail} fullWidthResponsive />
       </div>
