@@ -26,6 +26,7 @@ import {
   expandResultRect,
   RESULT_MAP_CONTROL_LABELS,
   RESULT_ROUTE_DASH_GAP_PX,
+  RESULT_ROUTE_DASH_LENGTH_PX,
   resultLabelHorizontalPlacement,
   resultLabelPairVerticalPlacement,
   resultMarkerCollisionOffsets,
@@ -172,6 +173,7 @@ export function GlobeMapLab({
   const routeOverlayRef = useRef<SVGSVGElement | null>(null);
   const routeShadowRef = useRef<SVGPathElement | null>(null);
   const routeLineRef = useRef<SVGPathElement | null>(null);
+  const routeEndpointRef = useRef<SVGPathElement | null>(null);
   const routeClipRef = useRef<SVGPathElement | null>(null);
   const routeGradientRef = useRef<SVGLinearGradientElement | null>(null);
   const routeVisibleRef = useRef(false);
@@ -234,10 +236,11 @@ export function GlobeMapLab({
     const map = mapRef.current;
     const overlay = routeOverlayRef.current;
     const route = routeLineRef.current;
+    const endpoints = routeEndpointRef.current;
     const shadow = routeShadowRef.current;
     const clip = routeClipRef.current;
     const gradient = routeGradientRef.current;
-    if (!map || !overlay || !route || !shadow || !clip || !gradient) return;
+    if (!map || !overlay || !route || !endpoints || !shadow || !clip || !gradient) return;
     const scenario = activeScenarioRef.current;
     const coordinates = routeLineCoordinates(scenario.guess, scenario.target);
     let points: Array<{ x: number; y: number }> = coordinates.map((coordinate) => {
@@ -324,7 +327,7 @@ export function GlobeMapLab({
     });
     const d = commands.join(" ");
     if (!d) {
-      route.setAttribute("d", ""); shadow.setAttribute("d", ""); clip.setAttribute("d", "");
+      route.setAttribute("d", ""); endpoints.setAttribute("d", ""); shadow.setAttribute("d", ""); clip.setAttribute("d", "");
       return;
     }
     route.setAttribute("d", d); shadow.setAttribute("d", d); clip.setAttribute("d", d);
@@ -333,6 +336,12 @@ export function GlobeMapLab({
     gradient.setAttribute("x1", String(firstRoutePoint.x)); gradient.setAttribute("y1", String(firstRoutePoint.y));
     gradient.setAttribute("x2", String(lastRoutePoint.x)); gradient.setAttribute("y2", String(lastRoutePoint.y));
     const length = route.getTotalLength();
+    const endpointDash = Math.min(RESULT_ROUTE_DASH_LENGTH_PX, length / 2);
+    const start = route.getPointAtLength(0);
+    const startDashEnd = route.getPointAtLength(endpointDash);
+    const endDashStart = route.getPointAtLength(Math.max(0, length - endpointDash));
+    const end = route.getPointAtLength(length);
+    endpoints.setAttribute("d", `M${start.x.toFixed(2)} ${start.y.toFixed(2)}L${startDashEnd.x.toFixed(2)} ${startDashEnd.y.toFixed(2)} M${endDashStart.x.toFixed(2)} ${endDashStart.y.toFixed(2)}L${end.x.toFixed(2)} ${end.y.toFixed(2)}`);
     const drawn = Math.max(0.001, length * routeProgressRef.current);
     clip.setAttribute("stroke-dasharray", `${drawn} ${Math.max(0.001, length)}`);
     overlay.dataset.visible = routeVisibleRef.current ? "true" : "false";
@@ -1406,6 +1415,7 @@ export function GlobeMapLab({
           </defs>
             <path ref={routeShadowRef} className={styles.routeShadow} mask="url(#kartenlabor-result-reveal)" />
             <path ref={routeLineRef} className={`${styles.routeLine} ${resultRouteLineClassName}`} data-result-route="connection" mask="url(#kartenlabor-result-reveal)" />
+            <path ref={routeEndpointRef} className={styles.routeEndpoints} mask="url(#kartenlabor-result-reveal)" />
           </svg>
         {!embedded ? <div className={styles.mapPresets} aria-label="Globe-Kamerapresets">
           {Object.values(CAMERA_PRESETS).map((preset) => (

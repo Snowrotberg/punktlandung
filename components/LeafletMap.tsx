@@ -13,7 +13,7 @@ import { PLAYER_PALETTE, playerColorAt, playerColorForId } from "@/lib/playerPal
 import { MapLibreBaseLayer } from "@/components/MapLibreBaseLayer";
 import { MapAttributionBadge } from "@/components/MapAttributionBadge";
 import { resultWorldMinimumZoom } from "@/lib/resultMapViewport";
-import { RESULT_LABEL_VISUAL_GAP_PX, RESULT_ROUTE_DASH_GAP_PX } from "@/lib/globeResultLayout";
+import { RESULT_LABEL_VISUAL_GAP_PX, RESULT_ROUTE_DASH_GAP_PX, RESULT_ROUTE_DASH_LENGTH_PX } from "@/lib/globeResultLayout";
 
 type LeafletMapProps = {
   mode: "guess" | "results";
@@ -1794,13 +1794,32 @@ function FlowingResultConnector({ color, animate = true, positions }: FlowingRes
   ]);
   const requiredLength = playerEllipseRadius + targetEllipseRadius + connectorGap * 2;
   const visiblePositions: LatLngExpression[] = directionLength > requiredLength ? [visiblePlayer, visibleTarget] : [];
+  const visibleLength = Math.max(0, directionLength - requiredLength);
+  const endpointDash = Math.min(RESULT_ROUTE_DASH_LENGTH_PX, visibleLength / 2);
+  const visiblePlayerDashEnd = map.containerPointToLatLng([
+    playerEllipseCenter.x + unitDirection.x * (playerEllipseRadius + connectorGap + endpointDash),
+    playerEllipseCenter.y + unitDirection.y * (playerEllipseRadius + connectorGap + endpointDash)
+  ]);
+  const visibleTargetDashStart = map.containerPointToLatLng([
+    targetEllipseCenter.x - unitDirection.x * (targetEllipseRadius + connectorGap + endpointDash),
+    targetEllipseCenter.y - unitDirection.y * (targetEllipseRadius + connectorGap + endpointDash)
+  ]);
+
   return (
-    <Polyline
-      className={`punktlandung-result-connector${animate ? " is-flowing" : ""}`}
-      positions={visiblePositions}
-      interactive={false}
-      pathOptions={{ color, opacity: 0.82, weight: 1.375, dashArray: "6 9", lineCap: "round" }}
-    />
+    <>
+      <Polyline
+        className={`punktlandung-result-connector${animate ? " is-flowing" : ""}`}
+        positions={visiblePositions}
+        interactive={false}
+        pathOptions={{ color, opacity: 0.82, weight: 1.375, dashArray: "6 9", lineCap: "round" }}
+      />
+      {visiblePositions.length ? <>
+        <Polyline className="punktlandung-result-connector-endpoint" positions={[visiblePlayer, visiblePlayerDashEnd]} interactive={false}
+          pathOptions={{ color, opacity: 0.82, weight: 1.375, lineCap: "round" }} />
+        <Polyline className="punktlandung-result-connector-endpoint" positions={[visibleTargetDashStart, visibleTarget]} interactive={false}
+          pathOptions={{ color, opacity: 0.82, weight: 1.375, lineCap: "round" }} />
+      </> : null}
+    </>
   );
 }
 

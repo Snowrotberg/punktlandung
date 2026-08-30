@@ -6,6 +6,7 @@ import {
   RESULT_LABEL_VISUAL_GAP_PX,
   RESULT_MAP_CONTROL_LABELS,
   RESULT_ROUTE_DASH_GAP_PX,
+  RESULT_ROUTE_DASH_LENGTH_PX,
   resultLabelHorizontalPlacement,
   resultLabelPairVerticalPlacement,
   resultMarkerCollisionOffsets,
@@ -73,13 +74,14 @@ test("phone portrait and phone landscape use the centered target-information ove
 
 test("result routes use the same endpoint clearance as the shared dash gap", () => {
   assert.equal(RESULT_LABEL_VISUAL_GAP_PX, 10);
+  assert.equal(RESULT_ROUTE_DASH_LENGTH_PX, 6);
   assert.equal(RESULT_ROUTE_DASH_GAP_PX, 9);
   const route = trimProjectedRoute([{ x: 0, y: 0 }, { x: 100, y: 0 }], 20 + RESULT_ROUTE_DASH_GAP_PX, 30 + RESULT_ROUTE_DASH_GAP_PX);
   assert.ok(Math.abs(route[0].x - 29) < 1e-9);
   assert.ok(Math.abs(route.at(-1)!.x - 61) < 1e-9);
 });
 
-test("flowing result routes use one uninterrupted dash pattern without fixed endpoint strokes", async () => {
+test("flowing result routes keep fixed endpoint dashes outside the animated dash phase", async () => {
   const [globe, leaflet, primitivesCss, globals] = await Promise.all([
     readFile(new URL("../components/GlobeMapLab.tsx", import.meta.url), "utf8"),
     readFile(new URL("../components/LeafletMap.tsx", import.meta.url), "utf8"),
@@ -87,9 +89,8 @@ test("flowing result routes use one uninterrupted dash pattern without fixed end
     readFile(new URL("../app/globals.css", import.meta.url), "utf8")
   ]);
 
-  assert.doesNotMatch(globe, /routeEndpointRef|routeEndpoints/);
-  assert.doesNotMatch(leaflet, /punktlandung-result-connector-endpoint/);
-  assert.doesNotMatch(globals, /punktlandung-result-connector-endpoint/);
+  assert.match(globe, /routeEndpointRef[\s\S]*?RESULT_ROUTE_DASH_LENGTH_PX[\s\S]*?className=\{styles\.routeEndpoints\}/);
+  assert.match(leaflet, /punktlandung-result-connector-endpoint/);
   assert.match(primitivesCss, /@keyframes routeFlow\s*\{\s*to\s*\{\s*stroke-dashoffset:\s*-15;/);
   assert.match(globals, /@keyframes punktlandung-result-connector-flow\s*\{\s*to\s*\{\s*stroke-dashoffset:\s*-15;/);
 });
