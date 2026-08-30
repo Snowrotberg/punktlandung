@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import { GameplayRouteHost } from "@/components/GameplayRouteHost";
+import { GameplayRestoringView } from "@/components/GameplayRestoringView";
 import { accountNavigationState } from "@/lib/accountNavigation.server";
 
 export default async function GameplayLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const account = await accountNavigationState();
   return (
-    <Suspense fallback={<main className="min-h-dvh bg-slate-950" />}>
+    <Suspense fallback={<GameplayRestoringView />}>
       <GameplayRouteHost
         accountsEnabled={account.enabled}
         rankedGamesEnabled={account.rankedGamesEnabled}

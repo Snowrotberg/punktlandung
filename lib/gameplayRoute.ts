@@ -53,3 +53,15 @@ export function shouldShowGameplayStateGuard(input: {
       && !input.intentionalExitPending
   );
 }
+
+export function shouldShowGameplayRestoration(input: {
+  requiredStatus: Exclude<RoundStatus, "lobby"> | null | undefined;
+  currentStatus?: RoundStatus;
+  restorationPending: boolean;
+}): boolean {
+  return Boolean(
+    input.requiredStatus
+      && input.restorationPending
+      && input.currentStatus !== input.requiredStatus
+  );
+}

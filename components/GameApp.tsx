@@ -20,6 +20,7 @@ import { clearSetupResumeRequest, clearVisibleResumeSetup, markResumeSetupVisibl
 import {
   gameplayRouteForStatus,
   gameplayStatusForRoute,
+  shouldShowGameplayRestoration,
   shouldShowGameplayStateGuard,
   shouldSynchronizeGameplayRoute
 } from "@/lib/gameplayRoute";
@@ -31,6 +32,7 @@ import type { GameSettings, LatLng, RoomState, RoundStatus, TeamId } from "@/typ
 import { AdContainer } from "./AdContainer";
 import { ENABLE_FULLSCREEN_INTRO, FullscreenIntro } from "./FullscreenIntro";
 import { HomeMapPreview } from "./HomeMapPreview";
+import { GameplayRestoringView } from "./GameplayRestoringView";
 import { ResultsView } from "./ResultsView";
 import { LegalLinks } from "./LegalLinks";
 import { LobbyView } from "./LobbyView";
@@ -879,6 +881,14 @@ export function GameApp({
     // This exists only for the first client render while the route-owned room
     // is initialized. Do not turn it into a visible loading interstitial.
     return <main className="min-h-dvh bg-slate-950" />;
+  }
+
+  if (routeRequiredStatus && shouldShowGameplayRestoration({
+    requiredStatus: routeRequiredStatus,
+    currentStatus: room?.status,
+    restorationPending
+  })) {
+    return <GameplayRestoringView requiredStatus={routeRequiredStatus} />;
   }
 
   if (routeRequiredStatus && shouldShowGameplayStateGuard({

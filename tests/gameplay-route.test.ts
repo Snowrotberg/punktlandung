@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   gameplayRouteForStatus,
   gameplayStatusForRoute,
+  shouldShowGameplayRestoration,
   shouldShowGameplayStateGuard,
   shouldSynchronizeGameplayRoute
 } from "../lib/gameplayRoute";
@@ -38,6 +39,34 @@ test("intentional final-screen exits never expose the state guard between route 
 
   assert.equal(shouldShowGameplayStateGuard({ ...base, intentionalExitPending: false }), true);
   assert.equal(shouldShowGameplayStateGuard({ ...base, intentionalExitPending: true }), false);
+});
+
+test("gameplay restoration never falls through to a previous or setup surface", () => {
+  assert.equal(shouldShowGameplayRestoration({
+    requiredStatus: "results",
+    currentStatus: undefined,
+    restorationPending: true
+  }), true);
+  assert.equal(shouldShowGameplayRestoration({
+    requiredStatus: "results",
+    currentStatus: "lobby",
+    restorationPending: true
+  }), true);
+  assert.equal(shouldShowGameplayRestoration({
+    requiredStatus: "results",
+    currentStatus: "results",
+    restorationPending: true
+  }), false);
+  assert.equal(shouldShowGameplayRestoration({
+    requiredStatus: "results",
+    currentStatus: undefined,
+    restorationPending: false
+  }), false);
+  assert.equal(shouldShowGameplayRestoration({
+    requiredStatus: null,
+    currentStatus: undefined,
+    restorationPending: true
+  }), false);
 });
 
 test("route synchronization enters gameplay from setup and repairs later transitions", () => {
