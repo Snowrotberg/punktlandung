@@ -719,17 +719,20 @@ export function GlobeMapLab({
     const touchTooltipButtons: HTMLButtonElement[] = [];
     const dismissTouchControlTooltip = (event: PointerEvent) => {
       const button = event.currentTarget as HTMLButtonElement;
-      const coarsePointer = window.matchMedia("(hover: none), (pointer: coarse)").matches;
-      if (event.pointerType === "mouse" && !coarsePointer) return;
-      button.removeAttribute("data-tooltip");
+      const touchInput = event.pointerType !== "mouse";
+      if (!touchInput) return;
+      button.dataset.touchInput = "true";
       window.setTimeout(() => {
         button.blur();
-        const label = button.getAttribute("aria-label");
-        if (label) button.dataset.tooltip = label;
       }, 0);
+    };
+    const restoreKeyboardControlTooltip = (event: KeyboardEvent) => {
+      const button = event.currentTarget as HTMLButtonElement;
+      delete button.dataset.touchInput;
     };
     const makeControlTouchSafe = (button: HTMLButtonElement) => {
       button.addEventListener("pointerdown", dismissTouchControlTooltip, { capture: true });
+      button.addEventListener("keydown", restoreKeyboardControlTooltip, { capture: true });
       touchTooltipButtons.push(button);
     };
     const decorateNavigationControl = () => {
@@ -1020,6 +1023,7 @@ export function GlobeMapLab({
       if (compassButton && toggleCompass) compassButton.removeEventListener("click", toggleCompass, { capture: true });
       for (const button of touchTooltipButtons) {
         button.removeEventListener("pointerdown", dismissTouchControlTooltip, { capture: true });
+        button.removeEventListener("keydown", restoreKeyboardControlTooltip, { capture: true });
       }
       resizeObserver.disconnect();
       map.off("style.load", configureGlobe); map.off("load", reportReady); map.off("move", updateCamera); map.off("error", reportError);
@@ -1155,6 +1159,7 @@ export function GlobeMapLab({
     let targetRevealed = false;
     let targetLabelRevealed = false;
     let targetRevealedAt: number | null = null;
+    let targetLabelTimer: number | undefined;
     let lastRouteUpdate = 0;
     map.getContainer().dataset.resultComposition = "pending";
     setJourneyRunning(true); updateResultGeometry(scenario); map.jumpTo(plan.keyframes[0]);
@@ -1174,6 +1179,12 @@ export function GlobeMapLab({
       setRouteSettled(false);
       setResultRevealPhase("route");
     };
+    const revealTargetLabel = () => {
+      if (targetLabelRevealed) return;
+      targetLabelRevealed = true;
+      setMarkerLabelVisibility("target", true);
+      setResultRevealPhase("labels");
+    };
     const revealTarget = () => {
       if (targetRevealed) return;
       targetRevealed = true;
@@ -1182,12 +1193,9 @@ export function GlobeMapLab({
       setMarkerLabelVisibility("target", false);
       setTargetLanding(true);
       setResultRevealPhase("landing");
-    };
-    const revealTargetLabel = () => {
-      if (targetLabelRevealed) return;
-      targetLabelRevealed = true;
-      setMarkerLabelVisibility("target", true);
-      setResultRevealPhase("labels");
+      targetLabelTimer = window.setTimeout(() => {
+        if (run === journeyRunRef.current) revealTargetLabel();
+      }, RESULT_REVEAL_TIMING.targetLabelAfterRevealMs);
     };
     try {
       if (reducedMotionRef.current) {
@@ -1208,7 +1216,7 @@ export function GlobeMapLab({
             lastRouteUpdate = progress;
             setRouteDrawProgress((progress - plan.revealProgress) / Math.max(0.001, 1 - plan.revealProgress));
           }
-        }, previewMode ? 0.14 : 0);
+        }, previewMode ? 0.035 : 0);
         if (run === journeyRunRef.current && metrics.completed) {
           setStatus(`Ergebnis sichtbar · ${formatDistance(plan.distanceKm)} · Pitch ${plan.keyframes.at(-1)?.pitch ?? 0}° · Terrain ${terrainLevelRef.current && terrainLevelRef.current > 0.05 ? "aktiv" : "aus"} · ${formatTimelineMetrics(metrics)}`);
         }
@@ -1216,13 +1224,13 @@ export function GlobeMapLab({
         revealRoute(); setRouteDrawProgress(1);
         if (!targetRevealed) revealTarget();
         const revealWaits = remainingResultRevealWaits(targetRevealedAt ?? performance.now(), performance.now());
+        if (!targetLabelRevealed && revealWaits.labelMs === 0) revealTargetLabel();
         if (revealWaits.landingMs > 0) await pause(revealWaits.landingMs);
         if (run !== journeyRunRef.current) return;
+        if (targetLabelTimer !== undefined) window.clearTimeout(targetLabelTimer);
+        revealTargetLabel();
         setTargetLanding(false);
         setResultRevealPhase("landed");
-        if (revealWaits.postLandingLabelMs > 0) await pause(revealWaits.postLandingLabelMs);
-        if (run !== journeyRunRef.current) return;
-        revealTargetLabel();
         setRouteSettled(true);
         await pause(RESULT_REVEAL_TIMING.finalStillnessMs);
         if (run !== journeyRunRef.current) return;
@@ -1235,13 +1243,19 @@ export function GlobeMapLab({
         if (!reducedMotionRef.current) setResultRevealPhase("settled");
         await pause(20);
         if (run !== journeyRunRef.current) return;
-        await stabilizeResultComposition(24);
+        // preloadCameraViews has already measured and fitted this exact final
+        // composition behind the initial surface. A second visible refit here
+        // causes the end-frame camera jump on wide result cards.
+        updateResultGeometry(scenario);
         map.getContainer().dataset.resultComposition = "ready";
         if (reducedMotionRef.current) setStatus(`Ergebnis sichtbar · ${formatDistance(plan.distanceKm)} · Reduced-Motion-Ease · Terrain ${terrainLevelRef.current && terrainLevelRef.current > 0.05 ? "aktiv" : "aus"}`);
         onAnimationCompleteRef.current?.();
       }
-    } finally { if (run === journeyRunRef.current) setJourneyRunning(false); }
-  }, [mapReady, preloadCameraViews, preloadTerrain, previewMode, resultScenario, runTimeline, selectedScenarioId, setMarkerLabelVisibility, setMarkerVisibility, setResultRevealPhase, setRouteDrawProgress, setRouteSettled, setRouteVisibility, setTargetLanding, stabilizeResultComposition, stopCurrentJourney, targetFitsResultSafeArea, updateResultGeometry]);
+    } finally {
+      if (targetLabelTimer !== undefined) window.clearTimeout(targetLabelTimer);
+      if (run === journeyRunRef.current) setJourneyRunning(false);
+    }
+  }, [mapReady, preloadCameraViews, preloadTerrain, previewMode, resultScenario, runTimeline, selectedScenarioId, setMarkerLabelVisibility, setMarkerVisibility, setResultRevealPhase, setRouteDrawProgress, setRouteSettled, setRouteVisibility, setTargetLanding, stopCurrentJourney, targetFitsResultSafeArea, updateResultGeometry]);
 
   useEffect(() => {
     if (!autoPlay || !mapReady || journeyRunning || terrainPreparing || cameraPreparing) return;
@@ -1336,7 +1350,7 @@ export function GlobeMapLab({
         data-terrain-active={terrainActive ? "true" : "false"}
         data-terrain-exaggeration={terrainActive ? terrainStrength.toFixed(2) : "0"}
         data-target-landing-duration-ms={RESULT_REVEAL_TIMING.targetLandingDurationMs}
-        data-target-label-gap-ms={RESULT_REVEAL_TIMING.targetLabelAfterLandingGapMs}
+        data-target-label-delay-ms={RESULT_REVEAL_TIMING.targetLabelAfterRevealMs}
       >
         <div ref={containerRef} className={styles.map} aria-label="Interaktiver Punktlandung-Globe" />
         {!embedded && (cameraPreparing || terrainPreparing) ? <div className={styles.preloadVeil}>Zielregion und Kartendaten werden vorbereitet …</div> : null}

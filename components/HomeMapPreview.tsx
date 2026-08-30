@@ -147,14 +147,14 @@ export function HomeMapPreview() {
 
     // Wait for the actual, currently selected poster to finish fading. A short
     // settled frame after transitionend keeps the first camera movement clearly
-    // separated from the handoff; the timeout also covers Reduced Motion.
+    // separated from the handoff without making the already-live map feel idle.
     let settledTimer: number | undefined;
     let fallbackTimer: number | undefined;
     let finished = false;
     const beginAfterSettledFrame = () => {
       if (finished) return;
       finished = true;
-      settledTimer = window.setTimeout(() => setAnimationStarted(true), 600);
+      settledTimer = window.setTimeout(() => setAnimationStarted(true), 140);
     };
     const handleTransitionEnd = (event: TransitionEvent) => {
       if (event.target === visiblePoster && event.propertyName === "opacity") beginAfterSettledFrame();

@@ -408,6 +408,25 @@ function globePhaseOneState(testCase) {
   };
 }
 
+function globeRoundState(testCase, roundNumber) {
+  const phaseOne = globePhaseOneState(testCase);
+  const roundSummary = {
+    ...phaseOne.summaries[0],
+    roundNumber,
+    completedAt: Date.now() + roundNumber
+  };
+  return {
+    ...phaseOne,
+    settings: { ...phaseOne.settings, rounds: 10 },
+    currentRound: roundNumber,
+    summaries: Array.from({ length: roundNumber }, (_, index) => ({
+      ...roundSummary,
+      roundNumber: index + 1,
+      completedAt: roundSummary.completedAt - (roundNumber - index) * 1_000
+    }))
+  };
+}
+
 const finalTableSummary = {
   ...summary,
   results: finalTablePlayers.map((player, index) => ({
@@ -497,6 +516,7 @@ const targets = [
     readySelector: ".punktlandung-home-map-preview .kartenlabor-result-popup, .punktlandung-home-map-preview .punktlandung-globe-info-overlay",
     readyTimeoutMs: 40000,
     expectGlobeInfoOverlay: true,
+    expectActiveRoute: true,
     expectCloseAndReopen: true,
     expectHomeInfoTopLayer: true,
     note: "Geöffnete Zielinformation der animierten Startseitenkarte oberhalb aller Karteninhalte"
@@ -639,6 +659,42 @@ const targets = [
     readyTimeoutMs: 40000,
     note: "Solo-Auflösung mit echter Globe-Ergebnisanimation"
   },
+  ...[1, 2, 3].map((roundNumber) => ({
+    name: `aufloesung-globe-runde-${roundNumber}`,
+    access: "state",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: globeRoundState(globePhaseOneCases[0], roundNumber),
+    expectedText: `RUNDE ${roundNumber} VON 10`,
+    readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [data-result-composition='ready'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
+    expectGlobeSafeArea: true,
+    expectStableGlobeLabelTypography: true,
+    readyTimeoutMs: 40000,
+    note: `Identische Globe-Labeltypografie in deterministischer Runde ${roundNumber}`
+  })),
+  {
+    name: "aufloesung-globe-kartenquellen",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: globeRoundState(globePhaseOneCases[0], 3),
+    clickSelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [aria-label='Kartenquellen anzeigen']",
+    expectedText: "OpenStreetMap-Mitwirkende",
+    readySelector: ".punktlandung-map-attribution-panel",
+    expectMapAttributionSafe: true,
+    note: "Gemeinsame Kartenquellen bleiben in der mobilen Auflösung vollständig innerhalb der Karte"
+  },
+  {
+    name: "spielen-kartenquellen",
+    access: "state-click",
+    path: "/spielen",
+    status: "guessing",
+    clickSelector: ".punktlandung-guess-map-panel [aria-label='Kartenquellen anzeigen']",
+    expectedText: "OpenStreetMap-Mitwirkende",
+    readySelector: ".punktlandung-map-attribution-panel",
+    expectMapAttributionSafe: true,
+    note: "Gemeinsame Kartenquellen bleiben in der mobilen Spielkarte vollständig innerhalb der Karte"
+  },
   ...globePhaseOneCases.map((testCase) => ({
     name: `aufloesung-globe-${testCase.id}`,
     access: "state",
@@ -680,6 +736,7 @@ const targets = [
     expectedText: globePhaseOneCases[0].location.shortDescription,
     readySelector: ".punktlandung-globe-info-overlay, .kartenlabor-result-popup",
     expectGlobeInfoOverlay: true,
+    expectActiveRoute: true,
     expectCloseAndReopen: true,
     expectTargetInfoReservation: true,
     note: "Mobile Zielinformation als zentriertes Overlay ohne erneute Kamerabewegung"
@@ -1623,6 +1680,10 @@ async function collectLayoutMetrics(page, readySelector = null) {
     const globeInfoOverlayRect = globeInfoOverlay?.getBoundingClientRect() ?? null;
     const navigationRect = globeFrame?.querySelector(".maplibregl-ctrl-top-right")?.getBoundingClientRect() ?? null;
     const attributionRect = globeFrame?.querySelector(".punktlandung-map-attribution")?.getBoundingClientRect() ?? null;
+    const attributionPanel = document.querySelector(".punktlandung-map-attribution-panel");
+    const attributionPanelRect = attributionPanel?.getBoundingClientRect() ?? null;
+    const attributionCloseRect = attributionPanel?.querySelector("button[aria-label='Kartenquellen schließen']")?.getBoundingClientRect() ?? null;
+    const attributionMapRect = attributionPanel?.closest(".punktlandung-map-shell, [aria-label='Interaktive 3D-Ergebniskarte']")?.getBoundingClientRect() ?? null;
     const overlaps = (first, second) => Boolean(first && second
       && Math.min(first.right, second.right) > Math.max(first.left, second.left)
       && Math.min(first.bottom, second.bottom) > Math.max(first.top, second.top));
@@ -1823,6 +1884,34 @@ async function collectLayoutMetrics(page, readySelector = null) {
           controlsAboveContent: stackingLevel(globeControlContainer) > globeContentStacking
         }
       } : null,
+      globeLabelTypography: markerKinds.map((marker) => {
+        const label = marker.querySelector("[data-marker-label]");
+        const rect = label?.getBoundingClientRect() ?? null;
+        const style = label ? getComputedStyle(label) : null;
+        return {
+          kind: marker.getAttribute("data-result-marker-kind"),
+          fontSize: style ? Number.parseFloat(style.fontSize) : null,
+          paddingTop: style ? Number.parseFloat(style.paddingTop) : null,
+          paddingBottom: style ? Number.parseFloat(style.paddingBottom) : null,
+          height: rect?.height ?? null
+        };
+      }),
+      mapAttributionSafety: attributionPanelRect && attributionMapRect && attributionCloseRect ? {
+        panelInsideMap: attributionPanelRect.left >= attributionMapRect.left - .25
+          && attributionPanelRect.right <= attributionMapRect.right + .25
+          && attributionPanelRect.top >= attributionMapRect.top - .25
+          && attributionPanelRect.bottom <= attributionMapRect.bottom + .25,
+        closeInsidePanel: attributionCloseRect.left >= attributionPanelRect.left
+          && attributionCloseRect.right <= attributionPanelRect.right
+          && attributionCloseRect.top >= attributionPanelRect.top
+          && attributionCloseRect.bottom <= attributionPanelRect.bottom,
+        closeWidth: attributionCloseRect.width,
+        closeHeight: attributionCloseRect.height,
+        scrollWidth: attributionPanel.scrollWidth,
+        clientWidth: attributionPanel.clientWidth,
+        panelRect: { left: attributionPanelRect.left, right: attributionPanelRect.right, top: attributionPanelRect.top, bottom: attributionPanelRect.bottom },
+        mapRect: { left: attributionMapRect.left, right: attributionMapRect.right, top: attributionMapRect.top, bottom: attributionMapRect.bottom }
+      } : null,
       globeInfoOverlaySafety: globeInfoOverlayRect && globeFrameRect ? {
         inside: globeInfoOverlayRect.left >= globeFrameRect.left + 12
           && globeInfoOverlayRect.right <= globeFrameRect.right - 66
@@ -1994,7 +2083,7 @@ async function runTargetViewport(browser, target, viewport) {
           targetLanding: target?.getAttribute("data-landing") === "true",
           targetLabelVisible: target?.getAttribute("data-label-visible") === "true",
           landingDurationMs: Number(frame?.getAttribute("data-target-landing-duration-ms") ?? "0"),
-          targetLabelGapMs: Number(frame?.getAttribute("data-target-label-gap-ms") ?? "0")
+          targetLabelDelayMs: Number(frame?.getAttribute("data-target-label-delay-ms") ?? "0")
         });
         previousRevealPhase = phase;
       }
@@ -2450,6 +2539,10 @@ async function runTargetViewport(browser, target, viewport) {
             ariaLabel: button.getAttribute("aria-label"),
             title: button.getAttribute("title"),
             tooltip: button.getAttribute("data-tooltip"),
+            pseudoTooltipVisible: (() => {
+              const style = getComputedStyle(button, "::after");
+              return style.display !== "none" && style.visibility !== "hidden" && Number.parseFloat(style.opacity) > 0;
+            })(),
             visibleSharedTooltip: [...document.querySelectorAll(".punktlandung-unified-tooltip")]
               .some((element) => {
                 const style = getComputedStyle(element);
@@ -2457,7 +2550,7 @@ async function runTargetViewport(browser, target, viewport) {
                 return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
               })
           }));
-          if (touchState.focused || touchState.visibleSharedTooltip || touchState.title || !touchState.ariaLabel || !touchState.tooltip) {
+          if (touchState.focused || touchState.pseudoTooltipVisible || touchState.visibleSharedTooltip || touchState.title || !touchState.ariaLabel || !touchState.tooltip) {
             problems.push(`Touch-Kartensteuerung ${index + 1} hinterlässt Fokus/Tooltip oder verliert ihren zugänglichen Namen (${JSON.stringify(touchState)}).`);
           }
         }
@@ -2730,7 +2823,7 @@ async function runTargetViewport(browser, target, viewport) {
     if (target.name === "home" && metrics.homeMapStability && (
       !metrics.homeMapStability.intendedMotion?.routePresent
       || !metrics.homeMapStability.intendedMotion?.targetPinPresent
-      || metrics.homeMapStability.intendedMotion?.connectorAnimation !== "none"
+      || metrics.homeMapStability.intendedMotion?.connectorAnimation === "none"
       || metrics.homeMapStability.intendedMotion?.targetPinAnimation !== "none"
       || !metrics.homeMapStability.intendedMotion?.routeSettled
       || metrics.homeMapStability.intendedMotion?.targetLanding
@@ -2794,7 +2887,7 @@ async function runTargetViewport(browser, target, viewport) {
       || !metrics.globeResultSafety.allInside
       || !metrics.globeResultSafety.controlsGerman
       || metrics.globeResultSafety.targetPinAnimations.some((animationName) => animationName !== "none")
-      || metrics.globeResultSafety.routeAnimations.some((animationName) => animationName !== "none")
+      || metrics.globeResultSafety.routeAnimations.some((animationName) => animationName === "none")
       || !metrics.globeResultSafety.routeSettled
       || metrics.globeResultSafety.targetLanding
       || metrics.globeResultSafety.visibleLabelCount !== 2
@@ -2807,6 +2900,30 @@ async function runTargetViewport(browser, target, viewport) {
       || metrics.globeCompositionStability.maxMovementPx > 1
     )) {
       problems.push(`Globe-Ergebnis verletzt Safe Area, eindeutige Linienzeichnung, Ellipsenabstand oder deutsche Steuerungslogik (${JSON.stringify(metrics.globeResultSafety)}).`);
+    }
+    if (target.expectActiveRoute && (
+      metrics.globeResultSafety?.routeCount !== 1
+      || metrics.globeResultSafety.routeAnimations.some((animationName) => animationName === "none")
+    )) {
+      problems.push(`Die gesetzte Ergebnisroute bewegt sich im geöffneten Informationszustand nicht weiter (${JSON.stringify(metrics.globeResultSafety?.routeAnimations)}).`);
+    }
+    if (target.expectStableGlobeLabelTypography && (
+      metrics.globeLabelTypography.length !== 2
+      || metrics.globeLabelTypography.some((label) => label.fontSize !== 12
+        || label.paddingTop < 6
+        || label.paddingBottom < 6
+        || label.height < 26)
+    )) {
+      problems.push(`Globe-Labeltypografie ist zwischen den Runden zu klein oder flach (${JSON.stringify(metrics.globeLabelTypography)}).`);
+    }
+    if (target.expectMapAttributionSafe && (
+      !metrics.mapAttributionSafety?.panelInsideMap
+      || !metrics.mapAttributionSafety?.closeInsidePanel
+      || metrics.mapAttributionSafety.scrollWidth > metrics.mapAttributionSafety.clientWidth + 1
+      || metrics.mapAttributionSafety.closeWidth < 40
+      || metrics.mapAttributionSafety.closeHeight < 40
+    )) {
+      problems.push(`Kartenquellen oder Schließen-Aktion verlassen die Kartenfläche (${JSON.stringify(metrics.mapAttributionSafety)}).`);
     }
     if (target.expectTerrainExaggeration && Math.abs((metrics.globeResultSafety?.terrainExaggeration ?? 0) - target.expectTerrainExaggeration) > 0.01) {
       problems.push(`Globe-Terrain ist ${(metrics.globeResultSafety?.terrainExaggeration ?? 0)}× statt ${target.expectTerrainExaggeration.toFixed(1)}× aktiv.`);

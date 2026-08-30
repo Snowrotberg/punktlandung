@@ -18,6 +18,9 @@ const cases = [
   { name: "slow-tiles", profiles: ["laptop"] },
   { name: "terrain-failure", profiles: ["laptop"] }
 ];
+const requestedCases = new Set((process.env.GLOBE_ANIMATION_CASE ?? "").split(",").map((value) => value.trim()).filter(Boolean));
+const requestedProfiles = new Set((process.env.GLOBE_ANIMATION_PROFILE ?? "").split(",").map((value) => value.trim()).filter(Boolean));
+const selectedCases = requestedCases.size ? cases.filter((testCase) => requestedCases.has(testCase.name)) : cases;
 const wait = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
 async function readFinalState(page) {
@@ -46,7 +49,7 @@ async function readFinalState(page) {
       terrain: Number(frame?.getAttribute("data-terrain-exaggeration") ?? "0"),
       revealTiming: frame ? {
         landingDurationMs: Number(frame.getAttribute("data-target-landing-duration-ms") ?? "0"),
-        targetLabelGapMs: Number(frame.getAttribute("data-target-label-gap-ms") ?? "0")
+        targetLabelDelayMs: Number(frame.getAttribute("data-target-label-delay-ms") ?? "0")
       } : null,
       canvasMounted: Boolean(preview?.querySelector(".maplibregl-canvas")),
       fallbackVisible: Boolean(preview?.querySelector("[data-home-map-fallback='true']"))
@@ -58,8 +61,8 @@ await fs.mkdir(outDir, { recursive: true });
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const results = [];
 try {
-  for (const testCase of cases) {
-    for (const profile of profiles.filter((candidate) => testCase.profiles.includes(candidate.name))) {
+  for (const testCase of selectedCases) {
+    for (const profile of profiles.filter((candidate) => testCase.profiles.includes(candidate.name) && (!requestedProfiles.size || requestedProfiles.has(candidate.name)))) {
       const context = await browser.newContext({
         viewport: { width: profile.width, height: profile.height },
         deviceScaleFactor: profile.deviceScaleFactor,
@@ -154,15 +157,14 @@ try {
             screenshots.push(phasePath);
           }
         }
-        await page.waitForFunction(() => document.querySelector("[data-result-reveal-phase]")?.getAttribute("data-result-reveal-phase") === "landed", null, { timeout: 30_000 });
-        const landedPath = path.join(outDir, `${testCase.name}-${profile.name}-landed.png`);
-        await preview.screenshot({ path: landedPath });
-        screenshots.push(landedPath);
         await page.waitForFunction(() => (window.__punktlandungRevealPhases ?? []).some((entry) => entry.phase === "labels"), null, { timeout: 10_000 });
-        await page.waitForTimeout(350);
         const labelsPath = path.join(outDir, `${testCase.name}-${profile.name}-labels.png`);
         await preview.screenshot({ path: labelsPath });
         screenshots.push(labelsPath);
+        await page.waitForFunction(() => (window.__punktlandungRevealPhases ?? []).some((entry) => entry.phase === "landed"), null, { timeout: 30_000 });
+        const landedPath = path.join(outDir, `${testCase.name}-${profile.name}-landed.png`);
+        await preview.screenshot({ path: landedPath });
+        screenshots.push(landedPath);
         await page.locator(".punktlandung-home-map-preview[data-animation-complete='true']").waitFor({ state: "visible", timeout: 40_000 });
       } else {
         await page.locator(".punktlandung-home-map-preview[data-animation-complete='true']").waitFor({ state: "visible", timeout: 40_000 });
@@ -186,7 +188,7 @@ try {
       const landingDirectionChanges = Math.max(0, landingDirections.length - 1);
       const landingMotionPassed = landingSamples.length >= 30 && landingRangePx >= 20 && landingDirectionChanges >= 4;
       const phaseNames = phaseTrace.map((entry) => entry.phase);
-      const normalSequencePassed = ["prepared", "route", "landing", "landed", "labels", "settled"]
+      const normalSequencePassed = ["prepared", "route", "landing", "labels", "landed", "settled"]
         .every((phase, index, expected) => phaseNames.indexOf(phase) > (index === 0 ? -1 : phaseNames.indexOf(expected[index - 1])));
       const phaseEntry = (phase) => phaseTrace.find((entry) => entry.phase === phase);
       const landingEntry = phaseEntry("landing");
@@ -198,12 +200,13 @@ try {
         && !landingEntry?.targetLabelVisible
         && landedEntry?.targetVisible
         && !landedEntry?.targetLanding
-        && !landedEntry?.targetLabelVisible
+        && landedEntry?.targetLabelVisible
         && labelsEntry?.targetVisible
-        && !labelsEntry?.targetLanding
+        && labelsEntry?.targetLanding
         && labelsEntry?.targetLabelVisible
         && landedEntry.at - landingEntry.at >= (finalState.revealTiming?.landingDurationMs ?? Number.POSITIVE_INFINITY) - 120
-        && labelsEntry.at - landedEntry.at >= (finalState.revealTiming?.targetLabelGapMs ?? Number.POSITIVE_INFINITY) - 40
+        && labelsEntry.at - landingEntry.at >= (finalState.revealTiming?.targetLabelDelayMs ?? Number.POSITIVE_INFINITY) - 80
+        && labelsEntry.at - landingEntry.at <= (finalState.revealTiming?.targetLabelDelayMs ?? 0) + 180
       );
       const expectedPhase = testCase.name === "reduced-motion" ? "reduced-settled" : "settled";
       const passed = testCase.name === "webgl-failure"
@@ -218,7 +221,7 @@ try {
           && finalState.targetAnimation === "none"
           && finalState.routePresent
           && finalState.routeSettled
-          && finalState.routeAnimation === "none"
+          && (testCase.name === "reduced-motion" ? finalState.routeAnimation === "none" : finalState.routeAnimation !== "none")
           && (testCase.name === "terrain-failure" ? finalState.terrain === 0 && abortedTerrainRequests > 0 : finalState.terrain === 1)
           && (testCase.name === "slow-tiles" ? delayedRequests > 0 : true)
           && (testCase.name !== "normal-sequence" || (normalSequencePassed && revealOrderPassed && landingMotionPassed))
@@ -241,7 +244,7 @@ try {
         revealOrder: {
           passed: testCase.name === "normal-sequence" ? revealOrderPassed : null,
           landingToLandedMs: landingEntry && landedEntry ? landedEntry.at - landingEntry.at : null,
-          landedToLabelsMs: landedEntry && labelsEntry ? labelsEntry.at - landedEntry.at : null,
+          landingToLabelsMs: landingEntry && labelsEntry ? labelsEntry.at - landingEntry.at : null,
           contract: finalState.revealTiming
         },
         landingMotion: {

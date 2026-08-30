@@ -216,11 +216,6 @@
   stroke: url(#kartenlabor-result-gradient);
 }
 
-.routeOverlay[data-settled="true"] .routeLine {
-  animation: none;
-  stroke-dashoffset: 0;
-}
-
 .mapFrame :global(.maplibregl-ctrl-top-right) {
   z-index: 10;
   top: 0.75rem;
@@ -287,7 +282,7 @@
   white-space: normal !important;
 }
 
-.mapFrame :global(.maplibregl-ctrl-group button[data-tooltip]:focus-visible::after) {
+.mapFrame :global(.maplibregl-ctrl-group button[data-tooltip]:not([data-touch-input="true"]):focus-visible::after) {
   opacity: 1;
   transform: translateY(-50%) translateX(0);
   visibility: visible;
@@ -513,8 +508,8 @@
 @container (max-width: 440px) {
   .mapFrame[data-preview-mode="false"] .markerLabel {
     max-width: min(12.5rem, calc(100cqw - 5.5rem)) !important;
-    padding: 0.05rem 0.65rem 0.05rem 0.72rem !important;
-    font-size: 11px !important;
+    padding: 0.42rem 0.68rem 0.42rem 0.78rem !important;
+    font-size: 12px !important;
   }
 
   .mapFrame[data-preview-mode="false"] .targetMarker .markerLabel {
@@ -531,11 +526,6 @@
 
   .mapFrame[data-preview-mode="false"] .resultMarker[data-label-vertical="below"] .markerLabel {
     top: calc(100% + 0.825rem);
-  }
-
-  :global(.punktlandung-image-replay) .mapFrame[data-preview-mode="false"] .markerLabel {
-    padding-top: 0.05rem !important;
-    padding-bottom: 0.05rem !important;
   }
 
   :global(.punktlandung-image-replay) .mapFrame[data-preview-mode="false"] .resultMarker[data-label-vertical="above"] .markerLabel {
@@ -594,7 +584,7 @@
   min-height: 2.25rem;
   border-radius: 999px;
   color: #cbd5e1;
-  font-size: 1.15rem;
+  font-size: 0.9rem;
   outline: none;
   box-shadow: none;
 }
@@ -688,7 +678,7 @@
   background: rgba(30, 41, 59, 0.9);
   padding: 0;
   color: #e8fff7;
-  font-size: 1.35rem;
+  font-size: 0.9rem;
   font-weight: 500;
   line-height: 1;
 }
@@ -710,7 +700,7 @@
 
 .mobileInfoDialog .mobileInfoClose span {
   color: inherit;
-  font-size: 1.35rem;
+  font-size: 0.9rem;
   line-height: 1;
 }
 

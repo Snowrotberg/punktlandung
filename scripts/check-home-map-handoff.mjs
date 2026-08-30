@@ -292,8 +292,10 @@ try {
       && surfaceReadyAt <= posterHiddenAt
       && posterHiddenAt < animationStartedAt
       && animationStartedAt <= movementAt
-      && hiddenToAnimationMs >= 500
-      && animationToMovementMs >= 120;
+      && hiddenToAnimationMs >= 80
+      && hiddenToAnimationMs <= 260
+      && animationToMovementMs >= 0
+      && animationToMovementMs <= 420;
     const visualPassed = comparison.perceptualMeanDifference <= 3.5
       && comparison.perceptualChangedPixelRatio <= 0.07
       && comparison.structuralMeanDifference <= 1.5
@@ -313,7 +315,13 @@ try {
       && Math.abs(sample.bearing - cameraReference.bearing) <= 0.01
       && Math.abs(sample.pitch - cameraReference.pitch) <= 0.01
     )));
-    const cameraPassed = pausedState.animationStarted === false
+    const pausedMatchesInitialCamera = Boolean(cameraReference
+      && Math.abs(pausedState.zoom - cameraReference.zoom) <= 0.01
+      && Math.abs(pausedState.lng - cameraReference.lng) <= 0.00001
+      && Math.abs(pausedState.lat - cameraReference.lat) <= 0.00001
+      && Math.abs(pausedState.bearing - cameraReference.bearing) <= 0.01
+      && Math.abs(pausedState.pitch - cameraReference.pitch) <= 0.01);
+    const cameraPassed = pausedMatchesInitialCamera
       && [pausedState.zoom, pausedState.lng, pausedState.lat, pausedState.bearing, pausedState.pitch].every(Number.isFinite)
       && pausedState.terrain === 1
       && cameraStableBeforeAnimation;
@@ -337,6 +345,7 @@ try {
       stableCanvasPassed,
       cameraPassed,
       cameraStableBeforeAnimation,
+      pausedMatchesInitialCamera,
       geometryPassed,
       motionContinuityPassed,
       firstMovementDelta,
