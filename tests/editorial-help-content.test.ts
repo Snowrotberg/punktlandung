@@ -136,12 +136,43 @@ test("editorial cards use visual signposts and the current target badge", async 
 });
 
 test("help modes link directly to their matching setup pages", async () => {
-  const rules = await readSource("../app/so-funktioniert-punktlandung/page.tsx");
+  const [rules, party] = await Promise.all([
+    readSource("../app/so-funktioniert-punktlandung/page.tsx"),
+    readSource("../app/partyspiel-geografie/page.tsx")
+  ]);
 
   for (const href of ["/solo-modus", "/party-modus", "/online-modus"]) {
     assert.ok(rules.includes(`href: "${href}"`), href);
   }
   assert.match(rules, /punktlandung-help-card/);
+  assert.match(party, /<Link href="\/party-modus" className="punktlandung-help-card/);
+  assert.match(party, /<Link href="\/online-modus" className="punktlandung-help-card/);
+});
+
+test("content panels and action cards use the shared opacity rule", async () => {
+  const [tokens, shellStyles, explainerStyles, faqCards] = await Promise.all([
+    readSource("../components/redesign/RedesignPrimitives.module.css"),
+    readSource("../components/InfoPageShell.module.css"),
+    readSource("../components/EditorialExplainers.module.css"),
+    readSource("../components/SeoContent.tsx")
+  ]);
+
+  assert.match(tokens, /--pl-content-surface: rgb\(14 21 39 \/ 0\.5\)/);
+  assert.match(tokens, /--pl-action-surface: #0e1527/);
+  assert.match(shellStyles, /punktlandung-help-card[\s\S]*background: var\(--pl-action-surface/);
+  assert.match(shellStyles, /punktlandung-static-card[\s\S]*background: var\(--pl-content-surface/);
+  assert.match(explainerStyles, /\.frame[\s\S]*background: var\(--pl-content-surface/);
+  assert.match(faqCards, /punktlandung-info-static-card/);
+});
+
+test("setup controls have compact group signposts and one-line party editing", async () => {
+  const setup = await readSource("../components/redesign/RedesignSetupView.tsx");
+  const playerSection = setup.slice(setup.indexOf("{isParty &&"), setup.indexOf("{isOnline &&"));
+
+  assert.match(setup, /<label>Spielmodi<\/label>/);
+  for (const icon of ["Clock3", "ListOrdered", "Gauge", "ZoomOut"]) assert.match(setup, new RegExp(icon));
+  assert.match(playerSection, /controlGroupHeader[\s\S]*Spieleranzahl[\s\S]*Namen bearbeiten[\s\S]*playerCount/);
+  assert.equal((playerSection.match(/Namen bearbeiten/g) ?? []).length, 1);
 });
 
 test("the info shell keeps its footer in the scrollable content flow", async () => {

@@ -16,6 +16,7 @@ Die erste technische Redesign-Schicht liegt isoliert unter `components/redesign`
 
 - Mint kennzeichnet primäre Aktionen und aktive Auswahlzustände.
 - Flächen bleiben dunkel und ruhig; Konturen bilden die Hierarchie statt zusätzlicher Effekte.
+- Reine Inhaltsflächen verwenden `--pl-content-surface` mit 50 Prozent Deckkraft. Interaktive Karten, Auswahlfelder und Buttons verwenden eine vollständig deckende Aktionsfläche (`--pl-action-surface` beziehungsweise `--pl-button-surface`). Tabellenköpfe und verschachtelte Bedienelemente dürfen sich ebenfalls mit einer deckenden Fläche abheben.
 - Das Grid hat 56 Pixel Abstand. Mint- und Violett-Verläufe driften langsam und werden bei `prefers-reduced-motion` angehalten.
 - Buttons haben dieselbe Grundgeometrie. Die Wichtigkeit entsteht über Fläche und Farbe, nicht über unterschiedliche Radien.
 - Spieler 1 ist Rot, Spieler 2 Blau. Die weiteren acht Farben sind stabil definiert.

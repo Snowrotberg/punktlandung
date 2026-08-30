@@ -14,7 +14,7 @@ export function FaqCards({ limit, columns = false, headingLevel = "h2" }: FaqCar
   return (
     <div className={`grid gap-4 ${columns ? "md:grid-cols-2" : ""}`}>
       {items.map((item) => (
-        <article key={item.question} className="rounded-md bg-slate-900/76 p-5 ring-1 ring-slate-700">
+        <article key={item.question} className="punktlandung-info-static-card rounded-xl p-5">
           <Heading className="text-[22px] font-black leading-tight text-white">{item.question}</Heading>
           <p className="mt-3 leading-7 text-slate-300">{item.answer}</p>
         </article>

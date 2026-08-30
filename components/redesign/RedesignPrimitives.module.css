@@ -4,6 +4,8 @@
   --pl-surface: #0e1527;
   --pl-surface-strong: #162236;
   --pl-surface-soft: #0e1527;
+  --pl-content-surface: rgb(14 21 39 / 0.5);
+  --pl-action-surface: #0e1527;
   --pl-button-surface: #162236;
   --pl-text: #f7fafc;
   --pl-muted: #a9b5c7;

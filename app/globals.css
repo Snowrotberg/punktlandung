@@ -6788,10 +6788,6 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   opacity: 1;
 }
 
-.punktlandung-home-map-static-connector .punktlandung-result-connector-endpoint {
-  stroke-dasharray: none;
-}
-
 .punktlandung-home-map-static-pin,
 .punktlandung-home-map-static-ellipse,
 .punktlandung-home-map-static-label {

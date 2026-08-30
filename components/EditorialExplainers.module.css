@@ -1,4 +1,4 @@
-.frame { margin: 1rem 0 0; overflow: hidden; border: 1px solid rgba(94,231,189,.3); border-radius: 1rem; background: linear-gradient(145deg, rgba(14,21,39,.96), rgba(10,16,28,.84)); box-shadow: 0 .9rem 2.4rem rgb(0 0 0 / .16); }
+.frame { margin: 1rem 0 0; overflow: hidden; border: 1px solid rgba(94,231,189,.3); border-radius: 1rem; background: var(--pl-content-surface, rgb(14 21 39 / .5)); box-shadow: 0 .9rem 2.4rem rgb(0 0 0 / .16); }
 .caption { padding: 1rem 1.1rem .85rem; border-bottom: 1px solid rgba(148,163,184,.16); }
 .caption h2 { margin: 0; color: #f8fafc; font-size: 1.15rem; font-weight: 750 !important; }
 .caption p { max-width: 54rem; margin: .3rem 0 0; color: #a8b4c6; font-size: .78rem; line-height: 1.55; }

@@ -58,7 +58,7 @@
   min-width: 0;
   border: 1px solid var(--pl-line) !important;
   border-radius: var(--pl-radius-panel) !important;
-  background: #0e1527 !important;
+  background: var(--pl-action-surface, #0e1527) !important;
   box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.2) !important;
 }
 
@@ -230,7 +230,7 @@
   display: block;
   border: 1px solid var(--pl-line) !important;
   border-radius: 0.75rem;
-  background: #0e1527 !important;
+  background: var(--pl-action-surface, #0e1527) !important;
   box-shadow: 0 0.8rem 2rem rgb(0 0 0 / 0.14);
   cursor: pointer;
   padding-right: 2.75rem !important;
@@ -272,13 +272,13 @@
 .app :global(.punktlandung-info-static-card--translucent) {
   border: 1px solid var(--pl-line) !important;
   border-radius: 0.75rem !important;
-  background: rgb(14 21 39 / .58) !important;
+  background: var(--pl-content-surface, rgb(14 21 39 / .5)) !important;
   box-shadow: 0 .8rem 2rem rgb(0 0 0 / .1);
   cursor: default;
 }
 
 .app :global(.punktlandung-legal-panel) {
-  background: rgb(14 21 39 / .58) !important;
+  background: var(--pl-content-surface, rgb(14 21 39 / .5)) !important;
   box-shadow: 0 .8rem 2rem rgb(0 0 0 / .1) !important;
 }
 
@@ -286,7 +286,7 @@
   overflow-x: auto;
   border: 1px solid var(--pl-line) !important;
   border-radius: 0.75rem !important;
-  background: rgb(14 21 39 / .58) !important;
+  background: var(--pl-content-surface, rgb(14 21 39 / .5)) !important;
   box-shadow: 0 .8rem 2rem rgb(0 0 0 / .1);
 }
 

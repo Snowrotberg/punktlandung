@@ -32,13 +32,16 @@
 .workspace{padding-inline:var(--pl-content-inset)}
 .settingsColumn,.categoriesColumn{display:grid;min-width:0;min-height:0;grid-template-rows:auto minmax(0,1fr);gap:.55rem}
 .columnHeading{display:flex;min-height:1.2rem;align-items:center;color:var(--pl-mint);font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
-.settingsPanel{overflow:auto;border-color:var(--pl-line);background:rgb(14 21 39/.58)}
+.settingsPanel{overflow:auto;border-color:var(--pl-line);background:var(--pl-content-surface)}
 .resetButton{justify-content:flex-start;width:fit-content;margin-top:auto;padding-inline:0;font-size:.72rem}
 .resetButton svg{width:.9rem}
 .modeTabs a,.categoryIcon{border:1px solid var(--pl-line);background:var(--pl-surface-strong)}
 .modeTabs a[data-active]{background:color-mix(in srgb,var(--pl-mint) 7%,var(--pl-surface-strong))}
 .modeTabs a:hover,.modeTabs a:focus-visible,.controlGroup button:hover:not(:disabled),.controlGroup button:focus-visible,.categories>button:hover:not(:disabled),.categories>button:focus-visible{border-color:var(--pl-mint);background:color-mix(in srgb,var(--pl-surface-strong) 88%,var(--pl-mint) 12%);outline:none}
 .introActions svg{width:.82rem;height:.82rem;flex:0 0 auto}
+.controlGroupHeader{display:flex;min-width:0;align-items:center;justify-content:space-between;gap:.75rem}
+.controlLabel{display:flex;align-items:center;gap:.4rem}
+.controlLabel svg{width:.85rem;height:.85rem;flex:0 0 auto;color:var(--pl-mint)}
 .namesButton{width:fit-content!important;min-height:auto!important;justify-content:flex-start!important;padding:.1rem 0!important;border:0!important;color:var(--pl-mint)!important;background:transparent!important;font-size:.72rem!important}
 .namesButton::before{content:"▸";margin-right:.3rem}
 .nameEditorBackdrop{position:fixed;z-index:150;inset:0;display:grid;place-items:center;padding:1rem;background:rgb(2 6 23/.78);backdrop-filter:blur(12px)}
@@ -49,7 +52,7 @@
 .categories>button:disabled{opacity:.58;border-color:color-mix(in srgb,var(--pl-line) 78%,transparent);background:rgb(14 21 39/.58);cursor:not-allowed}
 .playerCount button{border-bottom:1px solid transparent}
 .setupLegal{width:100%}
-@media(min-width:80rem){.frame{height:calc(100dvh - clamp(1.5rem,2vw,4rem));grid-template-columns:minmax(0,1fr)}}
+@media(min-width:80rem){.frame{height:calc(100dvh - clamp(1.5rem,2vw,4rem));grid-template-columns:minmax(0,1fr)}.settingsPanel{overflow:hidden}}
 @media(min-width:80rem) and (max-width:99.999rem) and (max-height:52rem){.settingsPanel{gap:.4rem;padding:.65rem;overflow:hidden}.controlGroup{gap:.25rem}.modeTabs a,.controlGroup button,.customRounds{min-height:2rem}.resetButton{min-height:1.8rem;margin-top:.1rem}.intro{padding-block:.85rem .65rem}.footer{min-height:2.5rem;padding-block:.3rem}}
 @media(max-width:52rem){
   /* The action bar is fixed to the viewport. Reserve its full height in the
@@ -216,6 +219,11 @@
   .resetButton,
   .namesButton {
     font-size: .58rem !important;
+  }
+
+  .controlGroupHeader .namesButton {
+    min-height: 2.75rem !important;
+    padding-inline: .25rem !important;
   }
 
   .modeTabs,
@@ -636,6 +644,11 @@
 }
 
 @media (orientation: portrait) and (max-width: 25rem) {
+  .controlGroupHeader .namesButton {
+    min-height: 2.75rem !important;
+    padding-inline: .25rem !important;
+  }
+
   .modeTabs a {
     font-size: .7rem;
   }
