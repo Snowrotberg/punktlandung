@@ -498,7 +498,28 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               />
             </div>
           </section>
-          <section className={`${styles.panel} ${styles.gameplayPanel}`}><AdminSectionTitle icon={Gamepad2}>{`Gespielte Spielweisen · ${periodHeading}`}</AdminSectionTitle><ul className={`${styles.list} ${styles.gameplayList}`}>{gameplayTypes.map((row) => <li key={row.key}><span>{row.label}</span><span className={styles.gameplayMetric}><strong>{row.count}</strong><small>{row.share === null ? "Noch keine Starts" : `${row.share} % der Starts`}</small></span></li>)}</ul><p className={styles.muted}>Gezählt wird die beim tatsächlichen Start aktive Spielweise. Seitenaufrufe der Einstellungen zählen nicht als Partie.</p></section>
+          <section className={`${styles.panel} ${styles.gameplayPanel}`}>
+            <AdminSectionTitle icon={Gamepad2}>{`Gespielte Spielweisen · ${periodHeading}`}</AdminSectionTitle>
+            <ul className={`${styles.list} ${styles.gameplayList}`}>
+              {gameplayTypes.map((row) => (
+                <li key={row.key}>
+                  <span>{row.label}</span>
+                  <span className={styles.gameplayMetric}>
+                    <strong>{row.count}</strong>
+                    {row.share === null ? (
+                      <small>Noch keine Starts</small>
+                    ) : (
+                      <>
+                        <i aria-hidden="true">·</i>
+                        <small>{row.share} % der Starts</small>
+                      </>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className={styles.muted}>Gezählt wird die beim tatsächlichen Start aktive Spielweise. Seitenaufrufe der Einstellungen zählen nicht als Partie.</p>
+          </section>
           <section className={`${styles.panel} ${styles.usagePanel}`}><AdminSectionTitle icon={Activity}>{`Nutzung · ${periodHeading}`}</AdminSectionTitle><ul className={styles.list}><li><span>Seitenaufrufe</span><AdminMetricValue tone="neutral">{pageViews}</AdminMetricValue></li><li><span>Besuche</span><AdminMetricValue tone="neutral">{visits}</AdminMetricValue></li><li><span>Ø Seiten pro Besuch</span><AdminMetricValue tone="neutral">{visits ? (pageViews / visits).toLocaleString("de-DE", { maximumFractionDigits: 1 }) : "Noch keine Daten"}</AdminMetricValue></li><li><span>Spielstarts</span><AdminMetricValue tone="neutral">{starts}</AdminMetricValue></li><li><span>Spielabschlüsse</span><AdminMetricValue tone="neutral">{finishes}</AdminMetricValue></li><li><span>Abschlussquote</span><AdminMetricValue tone={higherIsBetter(completionRate, 60, 25)} recommendation={completionRate === null ? "Noch keine Spielstarts im gewählten Zeitraum; die Quote kann noch nicht bewertet werden." : completionRate < 25 ? "Kritisch: Weniger als ein Viertel der gestarteten Partien wird beendet. Abbruchstellen im Spielablauf prüfen." : completionRate < 60 ? "Beobachten: Viele gestartete Partien werden nicht abgeschlossen. Den Verlauf nach Geräten und Spielschritten untersuchen." : "Unauffällig: Mindestens 60 % der gestarteten Partien werden abgeschlossen."}>{completionRate === null ? "–" : `${completionRate} %`}</AdminMetricValue></li><li><span>Erstellte Onlineräume</span><AdminMetricValue tone="neutral">{count("room_created")}</AdminMetricValue></li></ul><p className={styles.muted}>Anonyme Erfassung ohne Query-Parameter, Nutzerkennung oder persistente Besuchs-ID. Ein Besuch gilt jeweils für einen geöffneten Browser-Tab.</p></section>
           <section className={`${styles.panel} ${styles.operationsPanel}`}><AdminSectionTitle icon={Server}>Raumserver &amp; Synchronisierung</AdminSectionTitle><ul className={styles.list}>
             <li><span>Live-Status</span><AdminMetricValue tone={roomServerHealth.status === "ok" ? "good" : roomServerHealth.status === "warning" ? "warning" : "critical"} recommendation={roomServerHealth.status === "ok" ? "Unauffällig: Der Healthcheck meldet einen betriebsbereiten Server." : roomServerHealth.status === "warning" ? "Beobachten: Die Kapazität nähert sich dem Limit. Verbindungen und Räume im Blick behalten." : roomServerHealth.status === "full" ? "Kritisch: Der Server ist ausgelastet. Kapazität erhöhen oder neue Räume vorübergehend begrenzen." : "Kritisch: Der Healthcheck ist nicht erreichbar. Raumserver und Health-URL prüfen."}>{roomServerHealth.status === "ok" ? "Betriebsbereit" : roomServerHealth.status === "warning" ? "Hohe Auslastung" : roomServerHealth.status === "full" ? "Ausgelastet" : "Nicht erreichbar"}</AdminMetricValue></li>

@@ -29,7 +29,7 @@
 .welcomePanel { grid-column: span 7; }
 .accountHub { grid-column: span 7; }
 .accountSummaryColumn { align-self: start; display: grid; gap: .7rem; grid-column: span 5; }
-.overviewDashboard { align-items: stretch; display: grid; gap: .75rem; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, 8.2rem); width: 100%; }
+.overviewDashboard { align-items: stretch; display: grid; gap: .75rem; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(8.2rem, auto)); width: 100%; }
 .dashboardCard { background: rgb(14 21 39 / .58); border: 1px solid rgba(148, 163, 184, .2); border-radius: .9rem; display: flex; flex-direction: column; min-height: 0; padding: .9rem 1rem; }
 .cardEyebrow { color: var(--pl-mint); font-size: .66rem; font-weight: 850; letter-spacing: .11em; margin-bottom: .48rem; text-transform: uppercase; }
 .dashboardCard > strong { color: #f8fafc; font-size: 1.02rem; line-height: 1.25; }
@@ -125,9 +125,10 @@
 .historyControlGroup { display: grid; gap: .38rem; min-width: 0; }
 .historyControlLabel { color: #94a3b8; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .historyFilterLinks { display: flex; flex-wrap: wrap; gap: .4rem; }
-.historyFilterLinks a { align-items: center; background: #162236; border: 1px solid #26354a; border-radius: .62rem; color: #cbd5e1; display: inline-flex; font-size: .72rem; font-weight: 800; min-height: 2.75rem; padding: .45rem .68rem; text-decoration: none; transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease; }
-.historyFilterLinks a[data-active="true"], .historyFilterLinks a:hover { background: #12382f; border-color: var(--pl-mint); color: #f7fafc; }
-.historyFilterLinks a:focus-visible { outline: 2px solid var(--pl-mint); outline-offset: 3px; }
+.historyFilterLinks a { align-items: center; background: var(--pl-choice-surface); border: 1px solid var(--pl-choice-border); border-radius: .62rem; color: #cbd5e1; display: inline-flex; font-size: .72rem; font-weight: 800; min-height: 2.75rem; padding: .45rem .68rem; text-decoration: none; transition: var(--pl-choice-transition); }
+.historyFilterLinks a[data-active="true"] { background: var(--pl-choice-active-surface); border-color: var(--pl-choice-active-border); color: #f7fafc; }
+.historyFilterLinks a:hover { background: var(--pl-choice-hover-surface); border-color: var(--pl-choice-active-border); color: #f7fafc; transform: var(--pl-choice-hover-transform); }
+.historyFilterLinks a:focus-visible { background: var(--pl-choice-hover-surface); border-color: var(--pl-choice-active-border); outline: var(--pl-choice-focus-outline); outline-offset: var(--pl-choice-focus-offset); }
 .historyResultMeta { color: #718198; font-size: .68rem; margin: 0 0 .45rem; }
 .gameList { display: grid; gap: .45rem; list-style: none; margin: 0; padding: 0; }
 .game { background: rgba(2, 6, 23, .45); border: 1px solid transparent; border-radius: .65rem; transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease; }

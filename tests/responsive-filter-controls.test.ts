@@ -20,6 +20,44 @@ test("selected filter states do not add decorative bullets", async () => {
   assert.doesNotMatch(rankingStyles, /filterOptions a\[aria-current="page"\]::before/);
 });
 
+test("shared mobile selectors use a mint outline with only a restrained active tint", async () => {
+  const primitives = await read("components/redesign/RedesignPrimitives.module.css");
+  const sharedStyles = await read("components/ResponsiveRouteSelect.module.css");
+  assert.match(primitives, /--pl-choice-active-surface: color-mix\([^;]*8%/);
+  assert.match(primitives, /--pl-choice-hover-surface: color-mix\([^;]*12%/);
+  assert.match(primitives, /prefers-reduced-motion:[^)]+\)[\s\S]*--pl-choice-hover-transform: none/);
+  assert.match(sharedStyles, /\.select summary \{[^}]*background:var\(--pl-choice-active-surface\)[^}]*border:1px solid var\(--pl-choice-active-border\)/);
+  assert.match(sharedStyles, /a\[aria-current="page"\] \{[^}]*background:var\(--pl-choice-active-surface\)[^}]*border-color:var\(--pl-choice-active-border\)/);
+  assert.doesNotMatch(sharedStyles, /background:#12382f/);
+});
+
+test("account and admin choice surfaces consume the same active, hover and focus tokens", async () => {
+  const files = await Promise.all([
+    read("components/SectionNavigation.module.css"),
+    read("components/AccountMenu.module.css"),
+    read("components/ProfileVisibilitySelect.module.css"),
+    read("app/konto/dashboard.module.css"),
+    read("app/rankings/page.module.css"),
+    read("app/admin/page.module.css")
+  ]);
+  for (const styles of files) {
+    assert.match(styles, /var\(--pl-choice-active-surface\)/);
+    assert.match(styles, /var\(--pl-choice-hover-surface\)/);
+    assert.match(styles, /var\(--pl-choice-focus-outline\)/);
+  }
+  assert.match(files[1], /\.logout:hover[^}]*var\(--pl-red/);
+});
+
+test("the account header flyout exposes the current account destination", async () => {
+  const source = await read("components/AccountMenu.tsx");
+  assert.match(source, /usePathname/);
+  assert.match(source, /href="\/konto" aria-current=/);
+  assert.match(source, /href="\/konto\/verlauf" aria-current=/);
+  assert.match(source, /href="\/rankings" aria-current=/);
+  assert.match(source, /href="\/konto\/einstellungen" aria-current=/);
+  assert.match(source, /href="\/admin" aria-current=/);
+});
+
 test("history names points-per-round and total-score sorting unambiguously", async () => {
   const source = await read("app/konto/verlauf/page.tsx");
   assert.match(source, /Beste Punkte pro Runde/);

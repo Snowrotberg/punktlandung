@@ -11,6 +11,15 @@
   --pl-mint: #5ee7bd;
   --pl-mint-ink: #06231c;
   --pl-mint-soft: #12382f;
+  --pl-choice-surface: var(--pl-surface-strong);
+  --pl-choice-border: var(--pl-line);
+  --pl-choice-active-border: var(--pl-mint);
+  --pl-choice-active-surface: color-mix(in srgb, var(--pl-mint) 8%, var(--pl-choice-surface));
+  --pl-choice-hover-surface: color-mix(in srgb, var(--pl-mint) 12%, var(--pl-choice-surface));
+  --pl-choice-focus-outline: 2px solid var(--pl-mint);
+  --pl-choice-focus-offset: 2px;
+  --pl-choice-hover-transform: translateY(-1px);
+  --pl-choice-transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
   --pl-violet: #938cff;
   --pl-blue: #4e8eff;
   --pl-red: #ff4775;
@@ -40,6 +49,13 @@
   --pl-radius-shell: 1.5rem;
 
   color: var(--pl-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    --pl-choice-hover-transform: none;
+    --pl-choice-transition: none;
+  }
 }
 
 .shell {

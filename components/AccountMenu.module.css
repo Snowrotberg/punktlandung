@@ -5,12 +5,14 @@
 .icon svg { height: 1.15rem; width: 1.15rem; }
 .dropdown { background: #0a101c; border: 1px solid #26354a; border-radius: .9rem; box-shadow: 0 .9rem 2.4rem rgb(0 0 0 / .4); display: grid; gap: .2rem; min-width: 12rem; opacity: 0; padding: .55rem; pointer-events: none; position: absolute; right: 0; top: calc(100% + .6rem); transform: translateY(-.25rem); transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease; visibility: hidden; z-index: 300; }
 .menu:hover .dropdown, .menu:focus-within .dropdown { opacity: 1; pointer-events: auto; transform: translateY(0); visibility: visible; }
-.dropdown a { border-radius: .55rem; color: #dbe5f2; font-size: .82rem; font-weight: 700; padding: .6rem .7rem; text-decoration: none; }
-.dropdown a:hover, .dropdown a:focus-visible { background: #162236; color: #fff; outline: none; }
+.dropdown a { border: 1px solid transparent; border-radius: .55rem; color: #dbe5f2; font-size: .82rem; font-weight: 700; padding: .6rem .7rem; text-decoration: none; transition: var(--pl-choice-transition); }
+.dropdown a:hover { background: var(--pl-choice-hover-surface); border-color: var(--pl-choice-active-border); color: #fff; transform: var(--pl-choice-hover-transform); }
+.dropdown a:focus-visible { background: var(--pl-choice-hover-surface); border-color: var(--pl-choice-active-border); color: #fff; outline: var(--pl-choice-focus-outline); outline-offset: var(--pl-choice-focus-offset); }
+.dropdown a[aria-current="page"] { background: var(--pl-choice-active-surface); border-color: var(--pl-choice-active-border); color: #fff; }
 .label { color: #5ee7bd; font-size: .67rem; font-weight: 900; letter-spacing: .16em; margin: .25rem .7rem .35rem; text-transform: uppercase; }
 .play { border-top: 1px solid #26354a; margin-top: .25rem; padding-top: .7rem !important; }
 .logout { background: transparent; border: 0; border-top: 1px solid #26354a; color: #fda4af; cursor: pointer; font: inherit; font-size: .82rem; font-weight: 700; margin-top: .25rem; padding: .7rem; text-align: left; width: 100%; }
-.logout:hover, .logout:focus-visible { color: #fecdd3; outline: none; }
+.logout:hover, .logout:focus-visible { color: #fecdd3; background: rgb(255 71 117 / .08); outline: 2px solid var(--pl-red, #ff4775); outline-offset: 2px; }
 
 @media (min-width: 150rem) {
   .icon {

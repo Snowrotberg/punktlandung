@@ -24,9 +24,10 @@
 .filterHeading strong { color:#f8fafc; font-size:.78rem; }
 .filterHeading span { color:#718198; font-size:.68rem; line-height:1.35; }
 .filterOptions { display:flex; min-width:0; gap:.45rem; overflow-x:auto; padding:.12rem .12rem .3rem; scrollbar-width:thin; scrollbar-color:#334155 transparent; }
-.filterOptions a { flex:0 0 auto; min-height:2.55rem; display:inline-flex; align-items:center; justify-content:center; padding:.58rem .78rem; border:1px solid #26354a; border-radius:.72rem; color:#cbd5e1; background:#162236; font-size:.78rem; font-weight:800; text-decoration:none; white-space:nowrap; transition:border-color 160ms ease,background-color 160ms ease,color 160ms ease; }
-.filterOptions a[aria-current="page"],.filterOptions a:hover { border-color:#5ee7bd; color:#f7fafc; background:#12382f; }
-.filterOptions a:focus-visible { outline:2px solid #5ee7bd; outline-offset:2px; }
+.filterOptions a { flex:0 0 auto; min-height:2.55rem; display:inline-flex; align-items:center; justify-content:center; padding:.58rem .78rem; border:1px solid var(--pl-choice-border); border-radius:.72rem; color:#cbd5e1; background:var(--pl-choice-surface); font-size:.78rem; font-weight:800; text-decoration:none; white-space:nowrap; transition:var(--pl-choice-transition); }
+.filterOptions a[aria-current="page"] { border-color:var(--pl-choice-active-border); color:#f7fafc; background:var(--pl-choice-active-surface); }
+.filterOptions a:hover { border-color:var(--pl-choice-active-border); color:#f7fafc; background:var(--pl-choice-hover-surface); transform:var(--pl-choice-hover-transform); }
+.filterOptions a:focus-visible { border-color:var(--pl-choice-active-border); background:var(--pl-choice-hover-surface); outline:var(--pl-choice-focus-outline); outline-offset:var(--pl-choice-focus-offset); }
 .panel { background:rgb(14 21 39 / .58); border:1px solid #26354a; border-radius:1rem; margin-top:1rem; padding:clamp(1rem,2.5vw,1.5rem); position:relative; }
 .panelHead { align-items:end; display:flex; justify-content:space-between; gap:1rem; }
 .panelHead h2 { font-size:1.35rem; margin:0; }.panelHead span { color:#5ee7bd; font-size:.8rem; font-weight:800; }
