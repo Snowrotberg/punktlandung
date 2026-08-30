@@ -34,10 +34,13 @@ test("AdSense is limited to substantial editorial routes", () => {
   }
 });
 
-test("sitemap contains every public FAQ detail page", () => {
+test("sitemap contains only the canonical help and info pages", () => {
   const urls = new Set(sitemap().map((entry) => entry.url));
-  for (const pathname of ["/faq", "/faq/spielablauf", "/faq/punkte", "/faq/konten", "/faq/rankings"]) {
+  for (const pathname of ["/faq", "/faq/rankings", "/infos", "/so-funktioniert-punktlandung", "/ortskatalog", "/partyspiel-geografie"]) {
     assert.equal(urls.has(absoluteUrl(pathname)), true, pathname);
+  }
+  for (const pathname of ["/faq/spielablauf", "/faq/punkte", "/faq/konten"]) {
+    assert.equal(urls.has(absoluteUrl(pathname)), false, pathname);
   }
 });
 

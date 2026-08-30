@@ -63,7 +63,7 @@ export default function OrtskatalogPage() {
           <p className="text-4xl font-black text-emerald-300">{builtInLocations.length.toLocaleString("de-DE")}</p>
           <h2 className="mt-2 text-lg font-black text-white">spielbare Aufgaben</h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">
-            Aus {catalogStatistics.sourceTasks.toLocaleString("de-DE")} geprüften Quellen nach Qualitäts-, Lizenz- und Motivfiltern.
+            Aus dem aktiv gepflegten Katalog mit nachvollziehbaren Quellen und Lizenzen.
           </p>
         </div>
         <div className="punktlandung-info-static-card rounded-md p-5">
@@ -149,13 +149,17 @@ export default function OrtskatalogPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-[22px] font-black leading-tight text-white">Wie kommt ein Motiv in den spielbaren Katalog?</h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <h2 className="text-[22px] font-black leading-tight text-white">Wie bleibt der Katalog verlässlich?</h2>
+        <p className="mt-3 max-w-4xl leading-7 text-slate-300">
+          Vor der Veröffentlichung werden Aufgaben redaktionell und technisch geprüft. Die öffentliche Beschreibung
+          bleibt bewusst bei den für Spieler wichtigen Grundsätzen; interne Auswahl- und Missbrauchsprüfungen werden
+          nicht im Detail offengelegt.
+        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
           {[
-            ["1. Quelle und Lizenz", "Die aktiven Bildaufgaben verwenden Wikimedia-Commons-Motive. Quellen und Lizenzangaben werden im Projektkatalog mitgeführt."],
-            ["2. Eindeutiger Ort", "Jeder Eintrag enthält Koordinaten sowie Angaben zu Land, Kontinent und Kategorie, damit Tipp und Ziel vergleichbar sind."],
-            ["3. Erkennbares und faires Motiv", "Aktiv bleiben Fotografien, die zur Aufgabe passen und einen fairen geografischen Tipp ermöglichen. Irreführende oder künstlich zusammengesetzte Motive werden ausgeschlossen."],
-            ["4. Technische Qualität", "Bilder werden auf Schärfe, Format und eine verlässliche Darstellung geprüft, damit dieselbe Aufgabe auf Handy, Laptop und großen Bildschirmen funktioniert."]
+            ["Nachvollziehbare Quellen", "Aktive Bildaufgaben verwenden Motive mit öffentlich nachgewiesener Herkunft und Lizenz."],
+            ["Faire Aufgaben", "Motive und Zielangaben müssen zur Kategorie passen und einen nachvollziehbaren geografischen Tipp ermöglichen."],
+            ["Verlässliche Darstellung", "Aufgaben werden so ausgeliefert, dass Bild, Ziel und Quellenhinweis auf unterstützten Geräten nutzbar bleiben."]
           ].map(([title, body]) => (
             <article key={title} className="punktlandung-info-static-card rounded-md p-5">
               <h3 className="text-lg font-black text-white">{title}</h3>

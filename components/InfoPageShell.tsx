@@ -17,6 +17,7 @@ type InfoPageShellProps = {
   fillDesktop?: boolean;
   compact?: boolean;
   plainContent?: boolean;
+  showSectionNavigation?: boolean;
 };
 
 export async function InfoPageShell({
@@ -27,7 +28,8 @@ export async function InfoPageShell({
   contentClassName = "",
   fillDesktop = false,
   compact = false,
-  plainContent = false
+  plainContent = false,
+  showSectionNavigation = true
 }: InfoPageShellProps) {
   const accountContext = await getSupabaseAccountContext();
   return (
@@ -42,11 +44,12 @@ export async function InfoPageShell({
               <AccountHeaderControls authenticated={Boolean(accountContext)} />
             </div>
           </RedesignHeader>
-          <SectionNavigation />
+          {showSectionNavigation && <SectionNavigation />}
 
           <div className={styles.body}>
           <section className={styles.titlePanel}>
             <div className="min-w-0">
+              {eyebrow && <p className={styles.eyebrow}>{eyebrow}</p>}
               <h1 className="mt-1 break-words text-3xl font-black leading-tight text-white md:text-4xl">{title}</h1>
               {intro && <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 md:text-base">{intro}</p>}
             </div>

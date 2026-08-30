@@ -15,8 +15,7 @@ type LegalLinksProps = {
 };
 
 const links = [
-  { href: "/faq", label: "Hilfe" },
-  { href: "/infos", label: "Infos" },
+  { href: "/faq", label: "Hilfe & Infos" },
   { href: "/feedback", label: "Feedback" },
   { href: "/datenschutz", label: "Datenschutz" }
 ];
@@ -35,7 +34,7 @@ export function LegalLinks({ className = "", includeInfos = true, align = "start
     onNavigate?.();
   };
 
-  const visibleLinks = links.filter((link) => includeInfos || link.href !== "/infos");
+  const visibleLinks = links.filter((link) => includeInfos || link.href !== "/faq");
 
   if (layout === "grouped") {
     return (

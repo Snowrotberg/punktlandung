@@ -4,15 +4,30 @@ import test from "node:test";
 
 const readSource = (path: string) => readFile(new URL(path, import.meta.url), "utf8");
 
-test("all help topics provide one unambiguous route back to the FAQ overview", async () => {
+test("the consolidated account and ranking help returns to the shared overview", async () => {
   const source = await readSource("../components/HelpTopicPage.tsx");
 
   assert.match(source, /href="\/faq"/);
-  assert.match(source, /Zurück zur Hilfe-Übersicht/);
-  assert.deepEqual(
-    ["spielablauf", "punkte", "konten", "rankings"].filter((topic) => source.includes(`${topic}:`)),
-    ["spielablauf", "punkte", "konten", "rankings"]
-  );
+  assert.match(source, /Zurück zu Hilfe &amp; Infos/);
+  assert.match(source, /rankings:/);
+  for (const retiredTopic of ["spielablauf:", "punkte:", "konten:"]) {
+    assert.doesNotMatch(source, new RegExp(retiredTopic));
+  }
+  assert.match(source, /AccountFlowDiagram/);
+  assert.match(source, /Berechnung und aktuelle Faktoren ansehen/);
+  assert.match(source, /Prüfung gegen Missbrauch/);
+});
+
+test("retired help detail routes permanently redirect to their consolidated destinations", async () => {
+  const [flow, score, account] = await Promise.all([
+    readSource("../app/faq/spielablauf/page.tsx"),
+    readSource("../app/faq/punkte/page.tsx"),
+    readSource("../app/faq/konten/page.tsx")
+  ]);
+
+  assert.match(flow, /permanentRedirect\("\/so-funktioniert-punktlandung#spielablauf"\)/);
+  assert.match(score, /permanentRedirect\("\/so-funktioniert-punktlandung#punkte"\)/);
+  assert.match(account, /permanentRedirect\("\/faq\/rankings#konto-verlauf"\)/);
 });
 
 test("editorial diagrams are semantic code-native explanations", async () => {
@@ -60,19 +75,28 @@ test("score diagram reuses the production result marker and route primitives", a
   assert.match(globe, /resultRouteLineClassName/);
 });
 
-test("FAQ keeps a compact, complete set of next steps and info pages use the shared diagrams", async () => {
-  const [faq, infos, rules] = await Promise.all([
+test("FAQ is the shared help and info hub while feedback stays independent", async () => {
+  const [faq, infos, rules, navigation, footer] = await Promise.all([
     readSource("../app/faq/page.tsx"),
     readSource("../app/infos/page.tsx"),
-    readSource("../app/so-funktioniert-punktlandung/page.tsx")
+    readSource("../app/so-funktioniert-punktlandung/page.tsx"),
+    readSource("../components/SectionNavigation.tsx"),
+    readSource("../components/LegalLinks.tsx")
   ]);
 
-  assert.match(faq, /Hilfe · Übersicht/);
-  for (const href of ["/infos", "/feedback", "/community#vorschlagen"]) {
-    assert.ok(faq.includes(`["${href}"`), href);
+  assert.match(faq, /eyebrow="Hilfe & Infos"/);
+  for (const href of ["/so-funktioniert-punktlandung", "/faq/rankings", "/ortskatalog", "/partyspiel-geografie", "/infos"]) {
+    assert.ok(faq.includes(`"${href}"`), href);
   }
-  assert.doesNotMatch(faq, /ContributionPaths/);
-  assert.match(infos, /ModesAndContentDiagram/);
+  assert.doesNotMatch(faq, /\/feedback|community#vorschlagen/);
+  assert.doesNotMatch(infos, /ModesAndContentDiagram|ContributionPaths/);
+  assert.match(navigation, /label: "Spielen & Punkte"/);
+  assert.match(navigation, /label: "Konto & Rankings"/);
+  assert.match(navigation, /label: "Orte & Quellen"/);
+  assert.match(navigation, /label: "Mit Freunden spielen"/);
+  assert.doesNotMatch(navigation, /href: "\/feedback"/);
+  assert.match(footer, /href: "\/faq", label: "Hilfe & Infos"/);
+  assert.match(footer, /href: "\/feedback", label: "Feedback"/);
   assert.match(rules, /GameFlowDiagram/);
   assert.match(rules, /ScoreDiagram/);
 });

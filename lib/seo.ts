@@ -27,50 +27,26 @@ export const seoRoutes = [
   },
   {
     path: "/infos",
-    title: "Punktlandung Infos - Geo-Quiz, FAQ und wichtige Seiten",
+    title: "Über Punktlandung - Spielidee, Inhalte und Web-Version",
     description:
-      "Informationen zu Punktlandung: kostenloses Geo-Guessing-Spiel, FAQ, Kategorien und wichtige Seiten zum deutschsprachigen Geo-Quiz.",
+      "Hintergründe zu Punktlandung: Spielidee, redaktionell gepflegte Inhalte, kostenlose Web-Version und Finanzierung des Projekts.",
     priority: 0.75,
     changeFrequency: "monthly"
   },
   {
     path: "/faq",
-    title: "Punktlandung FAQ - Fragen zum kostenlosen Geo-Quiz",
+    title: "Hilfe & Infos zu Punktlandung - Spiel, Konto und Aufgaben",
     description:
-      "Antworten zu Punktlandung: kostenlos spielen, ohne Anmeldung starten, Kategorien waehlen und als Geo-Quiz oder Partyspiel nutzen.",
+      "Hilfe und Informationen zu Punktlandung: Spielablauf, Punkte, Konto, Rankings, Orte, Quellen und gemeinsame Partien verständlich erklärt.",
     priority: 0.7,
     changeFrequency: "monthly"
   },
   {
-    path: "/faq/spielablauf",
-    title: "Punktlandung Spielablauf - Partie starten und Orte erraten",
-    description:
-      "So läuft eine Partie Punktlandung ab: Modus und Kategorie wählen, Aufgabe ansehen, Tipp auf der Karte setzen und die Auflösung auswerten.",
-    priority: 0.65,
-    changeFrequency: "monthly"
-  },
-  {
-    path: "/faq/punkte",
-    title: "Punktlandung Punkte - Entfernung und Wertung erklärt",
-    description:
-      "Wie die Punkte bei Punktlandung berechnet werden: Entfernung zum Ziel, bis zu 5.000 Punkte pro Runde und Tippzeit bei Punktgleichheit.",
-    priority: 0.65,
-    changeFrequency: "monthly"
-  },
-  {
-    path: "/faq/konten",
-    title: "Punktlandung Konto - Spielen und Spielstände speichern",
-    description:
-      "Punktlandung funktioniert ohne Anmeldung. Erfahre, wann ein Konto nötig ist und wie abgeschlossene Partien dauerhaft gespeichert werden.",
-    priority: 0.65,
-    changeFrequency: "monthly"
-  },
-  {
     path: "/faq/rankings",
-    title: "Punktlandung Rankings - gewertete Partien erklärt",
+    title: "Punktlandung Konto, Spielverlauf und Rankings erklärt",
     description:
-      "Welche Partien bei Punktlandung in öffentlichen Rankings zählen und wie Kategorien, Zeitlimit, Profil und technische Prüfung zusammenspielen.",
-    priority: 0.65,
+      "Ohne Anmeldung spielen, Partien im Konto speichern und nachvollziehen, welche Ergebnisse bei Punktlandung öffentlich gewertet werden.",
+    priority: 0.7,
     changeFrequency: "monthly"
   },
   {

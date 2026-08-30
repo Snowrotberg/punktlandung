@@ -18,6 +18,7 @@ export default function FeedbackPage() {
       fillDesktop
       compact
       plainContent
+      showSectionNavigation={false}
       eyebrow="Punktlandung verbessern"
       title="Feedback zu Punktlandung"
       intro="Sag uns, was gut funktioniert, wo etwas hakt oder was du dir für Punktlandung wünschst."

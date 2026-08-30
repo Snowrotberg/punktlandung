@@ -3,8 +3,8 @@ import { HelpTopicPage } from "@/components/HelpTopicPage";
 import { absoluteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Punktlandung Rankings - gewertete Partien erklärt",
-  description: "Welche Partien bei Punktlandung in öffentlichen Rankings zählen und wie Zeitlimit, Profil und technische Prüfung zusammenspielen.",
+  title: "Punktlandung Konto, Spielverlauf und Rankings erklärt",
+  description: "Ohne Anmeldung spielen, Partien im Konto speichern und nachvollziehen, welche Ergebnisse bei Punktlandung öffentlich gewertet werden.",
   alternates: { canonical: absoluteUrl("/faq/rankings") }
 };
 

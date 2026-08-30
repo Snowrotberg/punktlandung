@@ -17,17 +17,9 @@ const accountItems: NavigationItem[] = [
 
 const helpItems: NavigationItem[] = [
   { href: "/faq", label: "Übersicht", exact: true },
-  { href: "/faq/spielablauf", label: "Spielablauf" },
-  { href: "/faq/punkte", label: "Punkte" },
-  { href: "/faq/konten", label: "Konten" },
-  { href: "/faq/rankings", label: "Rankings" },
-  { href: "/feedback", label: "Feedback" }
-];
-
-const infoItems: NavigationItem[] = [
-  { href: "/infos", label: "Übersicht", exact: true },
-  { href: "/so-funktioniert-punktlandung", label: "Spielprinzip" },
-  { href: "/ortskatalog", label: "Orte & Aufgaben" },
+  { href: "/so-funktioniert-punktlandung", label: "Spielen & Punkte" },
+  { href: "/faq/rankings", label: "Konto & Rankings" },
+  { href: "/ortskatalog", label: "Orte & Quellen" },
   { href: "/partyspiel-geografie", label: "Mit Freunden spielen" }
 ];
 
@@ -42,8 +34,9 @@ const communityItems: NavigationItem[] = [
   { href: "/community/meine-vorschlaege", label: "Meine Vorschläge" }
 ];
 
-const infoPaths = new Set([
-  ...infoItems.map((item) => item.href)
+const helpPaths = new Set([
+  "/infos",
+  ...helpItems.map((item) => item.href)
 ]);
 const legalPaths = new Set(legalItems.map((item) => item.href));
 
@@ -51,7 +44,7 @@ function isActive(pathname: string, item: NavigationItem) {
   return item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
-export function SectionNavigation({ section, admin = false }: { section?: "account" | "help" | "infos" | "legal" | "community"; admin?: boolean }) {
+export function SectionNavigation({ section, admin = false }: { section?: "account" | "help" | "legal" | "community"; admin?: boolean }) {
   const pathname = usePathname() ?? "";
   const linksRef = useRef<HTMLElement>(null);
   const [pendingNavigation, setPendingNavigation] = useState<{ from: string; to: string } | null>(null);
@@ -61,14 +54,13 @@ export function SectionNavigation({ section, admin = false }: { section?: "accou
     setPendingNavigation({ from: pathname, to: href });
   };
   const currentSection = section ?? (
-    pathname === "/faq" || pathname.startsWith("/faq/") || pathname === "/feedback" ? "help" :
-    infoPaths.has(pathname) ? "infos" :
+    pathname === "/faq" || pathname.startsWith("/faq/") || helpPaths.has(pathname) ? "help" :
     legalPaths.has(pathname) ? "legal" : pathname === "/community" || pathname.startsWith("/community/") ? "community" : "account"
   );
   const items = currentSection === "account"
     ? (admin ? [...accountItems, { href: "/admin", label: "Admin" }] : accountItems)
-    : currentSection === "help" ? helpItems : currentSection === "infos" ? infoItems : currentSection === "community" ? communityItems : legalItems;
-  const label = currentSection === "account" ? "Spielerkonto" : currentSection === "help" ? "Hilfe" : currentSection === "infos" ? "Infos" : currentSection === "community" ? "Community" : "Service & Rechtliches";
+    : currentSection === "help" ? helpItems : currentSection === "community" ? communityItems : legalItems;
+  const label = currentSection === "account" ? "Spielerkonto" : currentSection === "help" ? "Hilfe & Infos" : currentSection === "community" ? "Community" : "Service & Rechtliches";
   const itemCount = items.length + (currentSection === "legal" ? 1 : 0);
   const mobileColumns = itemCount === 3 || itemCount >= 5 ? "3" : "2";
 

@@ -73,9 +73,11 @@ export default function SoFunktioniertPunktlandungPage() {
       >
       <p className="text-sm text-slate-400">Inhaltlich geprüft: 27. August 2026</p>
 
-      <GameFlowDiagram />
+      <section id="spielablauf" className="scroll-mt-24">
+        <GameFlowDiagram />
+      </section>
 
-      <section className="mt-8">
+      <section id="punkte" className="mt-8 scroll-mt-24">
         <h2 className="text-[22px] font-black leading-tight text-white">Wie werden die Punkte berechnet?</h2>
         <p className="mt-3 leading-7 text-slate-300">
           Eine exakte Punktlandung ergibt 5.000 Punkte. Danach sinkt die Punktzahl mit der Entfernung exponentiell.

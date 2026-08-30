@@ -11,7 +11,7 @@ const seoLinks = [
 ];
 
 const legalLinks = [
-  { href: "/infos", label: "Infos" },
+  { href: "/faq", label: "Hilfe & Infos" },
   { href: "/feedback", label: "Feedback" },
   { href: "/impressum", label: "Impressum" },
   { href: "/datenschutz", label: "Datenschutz" },
@@ -54,7 +54,6 @@ export function ImportantPages({ className = "" }: ImportantPagesProps) {
             <NavigationLink key={link.href} {...link} pathname={pathname} />
           ))}
           <CookieSettingsButton className={buttonClassName("ghost", navigationLinkClass)} />
-          <NavigationLink href="/faq" label="FAQ" pathname={pathname} />
         </div>
 
         <p className="punktlandung-info-navigation-label mt-5">Rund um Punktlandung</p>

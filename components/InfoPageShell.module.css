@@ -76,6 +76,15 @@
   background: transparent;
 }
 
+.eyebrow {
+  margin: 0;
+  color: var(--pl-mint);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
 .titlePanel h1,
 .navigation h2,
 .article h2,

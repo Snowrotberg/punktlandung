@@ -1,36 +1,25 @@
 import type { Metadata } from "next";
 import {
-  BookOpenCheck,
-  CircleHelp,
   Globe2,
-  Images,
   Megaphone,
   ShieldCheck,
-  Users
+  Waypoints
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ContributionPaths } from "@/components/ContributionPaths";
-import { ModesAndContentDiagram } from "@/components/EditorialExplainers";
 import { InfoPageShell } from "@/components/InfoPageShell";
+import { RedesignButtonLink } from "@/components/redesign";
 import { absoluteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Über Punktlandung – Spielidee, Inhalte und Web-Version",
   description:
-    "Hintergründe zu Punktlandung: Spielidee, redaktionell gepflegter Aufgabenkatalog, Web-Version, Finanzierung und Kontaktmöglichkeiten.",
+    "Hintergründe zu Punktlandung: Spielidee, redaktionell gepflegte Inhalte, kostenlose Web-Version und Finanzierung des Projekts.",
   alternates: {
     canonical: absoluteUrl("/infos")
   }
 };
-
-const infoLinks = [
-  ["/so-funktioniert-punktlandung", "Spielregeln und Wertung", "Der vollständige Ablauf, die Punkteformel und konkrete Entfernungsbeispiele.", BookOpenCheck],
-  ["/ortskatalog", "Aufgabenkatalog und Quellen", "Aktuelle Bestandszahlen, Kategorien, Länderabdeckung, Auswahl und Bildquellen.", Images],
-  ["/partyspiel-geografie", "Mit Freunden spielen", "Vorbereitung, Einstellungen und faire Regeln für gemeinsame Partien.", Users],
-  ["/faq", "Hilfe und häufige Fragen", "Antworten zu Spielablauf, Konten, gespeicherten Partien und Rankings.", CircleHelp]
-] as const;
 
 function IconHeading({ Icon, children }: { Icon: LucideIcon; children: ReactNode }) {
   return <h2 className="flex items-center gap-3 text-[22px] leading-tight text-white"><Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />{children}</h2>;
@@ -45,26 +34,25 @@ export default function InfosPage() {
       title="Was ist Punktlandung?"
       intro="Punktlandung ist ein eigenständig entwickeltes Geografie-Spiel für den Browser. Hier erklären wir, was das Projekt anbietet, wie die Inhalte gepflegt werden und wie die Web-Version weiterentwickelt wird."
     >
-      <p className="text-sm text-slate-400">Zuletzt aktualisiert: 27. August 2026</p>
+      <p className="text-sm text-slate-400">Zuletzt aktualisiert: 30. August 2026</p>
 
       <section className="mt-6">
-        <h2 className="text-[22px] leading-tight text-white">Spielidee und Spielarten</h2>
+        <IconHeading Icon={Waypoints}>Die Spielidee</IconHeading>
         <p className="mt-3 max-w-4xl leading-7 text-slate-300">
-          Statt eine vorgegebene Antwort auszuwählen, setzt du selbst einen Pin auf die Weltkarte. Bilder, Flaggen,
-          Städte, Hauptstädte, Landschaften und Wahrzeichen verlangen unterschiedliche Arten von geografischem
-          Wissen. Punktlandung eignet sich für Einzelspieler, Familien und Freundesgruppen; Gastpartien starten ohne Konto.
+          Statt eine vorgegebene Antwort auszuwählen, setzt du selbst einen Pin auf die Weltkarte. Die Entfernung zum
+          tatsächlichen Ziel entscheidet über die Punkte. So wird geografisches Wissen nicht nur als richtig oder
+          falsch bewertet, sondern räumlich nachvollziehbar. Punktlandung lässt sich allein oder gemeinsam und ohne
+          vorherige Anmeldung ausprobieren.
         </p>
-        <ModesAndContentDiagram />
       </section>
 
       <section className="mt-8">
         <IconHeading Icon={ShieldCheck}>Wie werden die Inhalte gepflegt?</IconHeading>
         <p className="mt-3 max-w-4xl leading-7 text-slate-300">
-          Die Aufgaben werden nicht automatisch aus beliebigen Webseiten übernommen. Der aktive Katalog wird im
-          Projekt gepflegt und vor der Veröffentlichung auf eindeutige Koordinaten, doppelte Einträge, Kategorie,
-          Länderzuordnung und bekannte Lizenzprobleme geprüft. Bilder stammen aus Wikimedia Commons; die zugehörigen
-          Quellen und Lizenzen werden im öffentlichen Lizenzverzeichnis nachgewiesen. Katalogzahlen auf der
-          Übersichtsseite werden direkt aus dem aktiven Spieldatenbestand berechnet.
+          Der aktive Aufgabenkatalog wird im Projekt gepflegt und vor der Veröffentlichung redaktionell sowie technisch
+          geprüft. Öffentlich nachvollziehbar bleiben Kategorien, Bestandszahlen, Bildquellen und Lizenzen. Interne
+          Auswahl-, Sicherheits- und Missbrauchsprüfungen werden nur in ihren Grundsätzen beschrieben, damit sie nicht
+          umgangen werden können.
         </p>
       </section>
 
@@ -73,7 +61,7 @@ export default function InfosPage() {
           <IconHeading Icon={Globe2}>Web-Version</IconHeading>
           <p className="mt-3 text-sm leading-6 text-slate-300">
             Das Spiel ist vollständig im Browser nutzbar und wird laufend weiterentwickelt. Funktionen, Aufgaben
-            und Balancing werden anhand echter Spielrunden verbessert. Eine native App kann später ergänzend folgen.
+            und Darstellung werden schrittweise verbessert, ohne dass für den Einstieg eine Installation nötig ist.
           </p>
         </article>
         <article className="punktlandung-info-static-card rounded-xl p-5">
@@ -81,29 +69,23 @@ export default function InfosPage() {
           <p className="mt-3 text-sm leading-6 text-slate-300">
             Punktlandung kann kostenlos gespielt werden. Perspektivisch soll Werbung einen Teil der laufenden Kosten
             für Hosting, Karten- und Bildauslieferung decken. Informations-, Hilfe- und Rechtstexte stehen unabhängig
-            davon im Vordergrund und werden nicht von Anzeigen unterbrochen.
+            davon im Vordergrund.
           </p>
         </article>
       </section>
 
-      <nav className="mt-8 grid gap-3 md:grid-cols-2" aria-label="Weiterführende Informationen">
-        {infoLinks.map(([href, title, text, Icon]) => (
-          <Link key={href} href={href} className="punktlandung-help-card rounded-xl border p-4 no-underline">
-            <h2 className="flex items-center gap-3 text-lg text-white"><Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-300" />{title}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-300">{text}</p>
-            <i className="punktlandung-card-arrow" aria-hidden="true">›</i>
-          </Link>
-        ))}
-      </nav>
-
       <section className="mt-8 border-t border-slate-800 pt-6">
-        <IconHeading Icon={CircleHelp}>Fehler melden und Kontakt</IconHeading>
+        <h2 className="text-[22px] leading-tight text-white">Transparenz und Orientierung</h2>
         <p className="mt-3 max-w-4xl leading-7 text-slate-300">
-          Falsche Zielorte, ungeeignete Bilder und technische Probleme kannst du direkt an das Punktlandung-Team melden.
-          Verantwortliche Stelle und Kontaktadresse stehen im {" "}
+          Ausführliche Regeln stehen nicht doppelt auf dieser Projektseite, sondern gesammelt unter Hilfe &amp; Infos.
+          Verwendete Bild- und Datenquellen bleiben über den öffentlichen Lizenzbereich nachvollziehbar. Betreiber- und
+          Kontaktangaben findest du im {" "}
           <Link href="/impressum" className="font-bold text-emerald-300 underline underline-offset-4">Impressum</Link>.
         </p>
-        <ContributionPaths mode="feedback" />
+        <div className="mt-4 flex flex-wrap gap-3">
+          <RedesignButtonLink href="/faq" tone="primary" className="w-fit">Zu Hilfe &amp; Infos</RedesignButtonLink>
+          <RedesignButtonLink href="/lizenzen" tone="secondary" className="w-fit">Quellen und Lizenzen</RedesignButtonLink>
+        </div>
       </section>
     </InfoPageShell>
   );

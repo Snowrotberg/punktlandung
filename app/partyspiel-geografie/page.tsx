@@ -102,15 +102,11 @@ export default function PartyspielGeografiePage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-[22px] leading-tight text-white">Was passiert nach einem Tipp?</h2>
+        <h2 className="text-[22px] leading-tight text-white">Auflösung und Punkte nachschlagen</h2>
         <p className="mt-3 max-w-4xl leading-7 text-slate-300">
-          Die Auflösung verbindet den gesetzten Pin mit dem tatsächlichen Ziel und nennt die Entfernung. Eine exakte
-          Punktlandung ergibt 5.000 Punkte; mit wachsender Entfernung sinkt die Wertung. Bei Flaggen zählt das korrekt
-          getroffene Land. Die Gesamtwertung addiert die Punkte aller abgeschlossenen Runden.
-        </p>
-        <p className="mt-3 text-sm leading-6 text-slate-400">
-          Die genaue Formel und mehrere Entfernungsbeispiele stehen auf der Seite zum {" "}
-          <Link href="/so-funktioniert-punktlandung" className="font-bold text-emerald-300 underline underline-offset-4">Spielablauf und Punktesystem</Link>.
+          Nach jedem Durchgang vergleicht ihr Ziel, Entfernung und Punkte. Den vollständigen Ablauf, die aktuelle
+          Ergebnisdarstellung und die genaue Wertung findet ihr gesammelt unter {" "}
+          <Link href="/so-funktioniert-punktlandung" className="font-bold text-emerald-300 underline underline-offset-4">Spielen &amp; Punkte</Link>.
         </p>
       </section>
 
