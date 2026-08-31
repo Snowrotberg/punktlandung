@@ -282,6 +282,26 @@ test("expired round is closed by server time and scores zero", async () => {
   assert.equal(completed.totalResponseTimeMs, 60_000);
 });
 
+test("ranked guess endpoint rejects a client-supplied interaction timestamp", async () => {
+  const { api, setNow } = harness();
+  const startedResponse = await api.start(post("/api/v1/ranked-games", { requestId: "request-client-time" }));
+  const cookie = cookieFrom(startedResponse);
+  const started = (await startedResponse.json()).data;
+  setNow(61_001);
+  const response = await api.submitGuess(post(
+    `/api/v1/ranked-games/${started.gameId}/guesses`,
+    {
+      roundId: started.activeRound.roundId,
+      guessId: "guess-client-time",
+      lat: 48,
+      lng: 9,
+      submittedAt: 60_999
+    },
+    { cookie }
+  ), started.gameId);
+  assert.equal(response.status, 400);
+});
+
 test("transport rejects unknown fields, oversized bodies and missing guest authority", async () => {
   const { api } = harness();
   const unknown = await api.start(post("/api/v1/ranked-games", { requestId: "request-0001", score: 99_999 }));

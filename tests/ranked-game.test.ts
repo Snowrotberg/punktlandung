@@ -139,6 +139,23 @@ test("invalid coordinates, wrong rounds and late guesses are rejected", () => {
   }));
 });
 
+test("ranked deadline is inclusive at the exact server boundary and rejects the next millisecond", () => {
+  const atBoundary = submitRankedGuess(game(1), {
+    guessId: "boundary",
+    roundId: "round-1",
+    point: { lat: 48, lng: 9 },
+    now: 61_000
+  });
+  assert.equal(atBoundary.rounds[0].guess?.createdAt, 61_000);
+
+  expectCode("round_expired", () => submitRankedGuess(game(1), {
+    guessId: "one-ms-late",
+    roundId: "round-1",
+    point: { lat: 48, lng: 9 },
+    now: 61_001
+  }));
+});
+
 test("expired rounds score zero and leave the next round waiting for its image", () => {
   const expired = expireOpenRound(game(), 61_001);
   assert.equal(expired.rounds[0].result?.points, 0);
