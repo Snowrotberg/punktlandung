@@ -401,49 +401,34 @@ export function GameApp({
       : localGame.restoring;
   const gameplayRoute = gameplayRouteForStatus(room?.status, Boolean(resumePending));
   const pathnameGameplayStatus = gameplayStatusForRoute(pathname ?? "");
+  const gameplayRouteMismatch = Boolean(pathnameGameplayStatus && gameplayRoute && pathname !== gameplayRoute);
   const routeRequiredStatus = pathname ? pathnameGameplayStatus : requiredStatus;
   const requestedGameplayRouteRef = useRef<string | null>(null);
-  const resultPreparationKeyRef = useRef<string | null>(null);
-  const [resultExperienceReady, setResultExperienceReady] = useState(false);
 
   useEffect(() => {
-    if (!room || room.status === "lobby") {
-      resultPreparationKeyRef.current = null;
-      setResultExperienceReady(false);
-      return;
-    }
-    const preparationKey = `${room.code}:${room.currentRound}:${room.location?.id ?? "resolved"}`;
-    if (resultPreparationKeyRef.current === preparationKey) return;
-    resultPreparationKeyRef.current = preparationKey;
-    setResultExperienceReady(false);
-    void prepareResultExperience().then(() => {
-      if (resultPreparationKeyRef.current === preparationKey) setResultExperienceReady(true);
-    });
+    if (!room || room.status === "lobby") return;
+    void prepareResultExperience();
   }, [room?.code, room?.currentRound, room?.location?.id, room?.status]);
 
-  const resultTransitionPending = Boolean(
-    room && (room.status === "results" || room.status === "finished") && !resultExperienceReady
-  );
-  const synchronizedGameplayRoute = resultTransitionPending && pathname === "/spielen" ? "/spielen" : gameplayRoute;
-  const gameplayRouteMismatch = Boolean(pathnameGameplayStatus && synchronizedGameplayRoute && pathname !== synchronizedGameplayRoute);
-
   useEffect(() => {
-    if (pathname === synchronizedGameplayRoute) {
+    if (pathname === gameplayRoute) {
       requestedGameplayRouteRef.current = null;
       return;
     }
-    if (!synchronizedGameplayRoute || !shouldSynchronizeGameplayRoute({
+    if (!gameplayRoute || !shouldSynchronizeGameplayRoute({
       pathname: pathname ?? "",
-      targetRoute: synchronizedGameplayRoute,
+      targetRoute: gameplayRoute,
       restorationPending,
       intentionalExitPending: Boolean(pendingGameplayExit)
     })) return;
-    if (requestedGameplayRouteRef.current === synchronizedGameplayRoute) return;
-    requestedGameplayRouteRef.current = synchronizedGameplayRoute;
-    // All three routes share the persistent gameplay layout, so this URL
-    // change no longer remounts GameApp or exposes an empty transition frame.
-    router.replace(synchronizedGameplayRoute);
-  }, [pathname, pendingGameplayExit, restorationPending, router, synchronizedGameplayRoute]);
+    if (requestedGameplayRouteRef.current === gameplayRoute) return;
+    requestedGameplayRouteRef.current = gameplayRoute;
+    // All three routes share the persistent gameplay layout and render no
+    // route-owned surface. Keep that mounted surface while synchronizing the
+    // address bar; an App Router navigation can briefly reveal its Suspense
+    // fallback while the destination route is prepared.
+    window.history.replaceState(window.history.state, "", gameplayRoute);
+  }, [gameplayRoute, pathname, pendingGameplayExit, restorationPending]);
 
   useEffect(() => {
     if (!room || room.status === "lobby" || resumePending || restorationPending || pathname !== gameplayRoute) return;
@@ -988,10 +973,6 @@ export function GameApp({
         pendingUploadCount={rankedSoloContext ? rankedSoloGame.pendingUploadCount : 0}
       />
     );
-  }
-
-  if (resultTransitionPending && !resumePending) {
-    return <GameplayRestoringView requiredStatus="results" preparing />;
   }
 
   if ((room?.status === "results" || room?.status === "finished") && !resumePending) {

@@ -8,16 +8,16 @@ const restoringHeadings: Record<GameplayStatus, string> = {
   finished: "Endergebnis wird wiederhergestellt"
 };
 
-export function GameplayRestoringView({ requiredStatus, preparing = false }: { requiredStatus?: GameplayStatus; preparing?: boolean }) {
+export function GameplayRestoringView({ requiredStatus }: { requiredStatus?: GameplayStatus }) {
   return (
     <main className="grid min-h-dvh place-items-center bg-slate-950 p-4 text-slate-50" data-gameplay-restoring={requiredStatus ?? "pending"}>
       <section className="arcade-panel w-full max-w-md rounded-xl border-slate-700/80 p-5" role="status" aria-live="polite">
         <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Punktlandung</p>
         <h1 className="mt-2 text-3xl font-black leading-tight">
-          {preparing ? "Rundenauswertung wird vorbereitet" : requiredStatus ? restoringHeadings[requiredStatus] : "Spielstand wird geladen"}
+          {requiredStatus ? restoringHeadings[requiredStatus] : "Spielstand wird geladen"}
         </h1>
         <p className="mt-2 text-sm leading-6 text-slate-300">
-          {preparing ? "Karte und Ergebnisdarstellung werden für den direkten Übergang bereitgestellt." : "Der gespeicherte Spielstand wird für diese Seite geladen."}
+          Der gespeicherte Spielstand wird für diese Seite geladen.
         </p>
       </section>
     </main>

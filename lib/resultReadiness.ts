@@ -3,6 +3,12 @@ export type ResultExperienceReadiness = {
   mapStyle: "ready" | "degraded";
 };
 
+export type ResultExperienceReadinessStatus = "ready" | "degraded";
+
+export function resultExperienceReadinessStatus(readiness: ResultExperienceReadiness): ResultExperienceReadinessStatus {
+  return readiness.mapRuntime === "ready" && readiness.mapStyle === "ready" ? "ready" : "degraded";
+}
+
 export const resultPreparationTimeoutMs = 3_000;
 
 function settlePreparation(prepare: () => Promise<void>, timeoutMs: number): Promise<"ready" | "degraded"> {

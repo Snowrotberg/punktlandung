@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { createResultReadinessCoordinator } from "../lib/resultReadiness";
+import { createResultReadinessCoordinator, resultExperienceReadinessStatus } from "../lib/resultReadiness";
 
 test("result readiness starts runtime and style once and shares the in-flight contract", async () => {
   let runtimeCalls = 0;
@@ -34,9 +34,22 @@ test("a hanging runtime or style preparation degrades after the finite timeout",
   assert.ok(Date.now() - startedAt < 1_000, "the coordinator must not inherit the hanging promise lifetime");
 });
 
-test("GameApp holds the play route until the explicit result contract is ready", async () => {
-  const source = await readFile(new URL("../components/GameApp.tsx", import.meta.url), "utf8");
-  assert.match(source, /prepareResultExperience\(\)/);
-  assert.match(source, /resultTransitionPending && pathname === "\/spielen" \? "\/spielen" : gameplayRoute/);
-  assert.match(source, /<GameplayRestoringView requiredStatus="results" preparing \/>/);
+test("readiness distinguishes a complete prewarm from an explicitly degraded one", () => {
+  assert.equal(resultExperienceReadinessStatus({ mapRuntime: "ready", mapStyle: "ready" }), "ready");
+  assert.equal(resultExperienceReadinessStatus({ mapRuntime: "degraded", mapStyle: "ready" }), "degraded");
+  assert.equal(resultExperienceReadinessStatus({ mapRuntime: "ready", mapStyle: "degraded" }), "degraded");
+});
+
+test("GameApp prewarms without replacing the active transition surface", async () => {
+  const [game, readiness] = await Promise.all([
+    readFile(new URL("../components/GameApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/resultReadiness.client.ts", import.meta.url), "utf8")
+  ]);
+  assert.match(game, /prepareResultExperience\(\)/);
+  assert.doesNotMatch(game, /resultTransitionPending|synchronizedGameplayRoute/);
+  assert.doesNotMatch(game, /<GameplayRestoringView requiredStatus="results" preparing \/>/);
+  assert.match(game, /window\.history\.replaceState\(window\.history\.state, "", gameplayRoute\)/);
+  assert.doesNotMatch(game, /router\.replace\(gameplayRoute\)/);
+  assert.match(readiness, /punktlandung-result-prewarm-\$\{status\}/);
+  assert.match(readiness, /punktlandung-result-prewarm-settled/);
 });
