@@ -53,12 +53,14 @@ test("no-guess result keeps the production globe target-only contract and labell
 });
 
 test("result handoff starts motion on the frame after the prepared surface becomes visible", async () => {
-  const [game, globe] = await Promise.all([
+  const [game, readiness, globe] = await Promise.all([
     readFile(new URL("../components/GameApp.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/resultReadiness.client.ts", import.meta.url), "utf8"),
     readFile(new URL("../components/GlobeMapLab.tsx", import.meta.url), "utf8")
   ]);
-  assert.match(game, /prewarmGlobeResultMap/);
-  assert.match(game, /fetch\(punktlandungMapStyleUrl\("globe"\), \{ cache: "force-cache" \}\)/);
+  assert.match(game, /prepareResultExperience/);
+  assert.match(readiness, /prewarmGlobeResultMap/);
+  assert.match(readiness, /fetch\(punktlandungMapStyleUrl\("globe"\), \{ cache: "force-cache" \}\)/);
   assert.match(globe, /container\.dataset\.resultSurfaceReady = "true"/);
   assert.match(globe, /window\.requestAnimationFrame\(\(\) => void runResultJourneyRef\.current\(\)\)/);
   assert.match(globe, /dataset\.resultMotionStarted = "true"/);
