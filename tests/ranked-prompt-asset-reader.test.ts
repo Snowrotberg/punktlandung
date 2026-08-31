@@ -71,6 +71,35 @@ test("original Wikimedia uploads are requested as bounded thumbnails", async () 
   assert.equal(requestedUrl.searchParams.get("width"), "1200");
 });
 
+test("official Wikimedia thumbnail redirects remain valid prompt sources", async () => {
+  const requested: string[] = [];
+  const responses = [
+    new Response(null, {
+      status: 301,
+      headers: {
+        location: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/example.jpg/1280px-example.jpg"
+      }
+    }),
+    new Response(new Uint8Array([1, 2, 3]), {
+      status: 200,
+      headers: { "content-type": "image/jpeg", "content-length": "3" }
+    })
+  ];
+  const fetchImpl = (async (input: string | URL | Request) => {
+    requested.push(input.toString());
+    const response = responses.shift();
+    if (!response) throw new Error("Unexpected fetch");
+    return response;
+  }) as typeof fetch;
+  const assetReader = new SafeRankedPromptAssetReader({ fetchImpl });
+
+  const asset = await assetReader.read("https://commons.wikimedia.org/wiki/Special:FilePath/Example.jpg");
+
+  assert.equal(asset?.contentType, "image/jpeg");
+  assert.equal(requested.length, 2);
+  assert.equal(new URL(requested[1]).hostname, "thumb.wikimedia.org");
+});
+
 test("safe prompt reader rejects untrusted hosts before network access", async () => {
   const { assetReader, calls } = reader([]);
   assert.equal(await assetReader.read("http://127.0.0.1/private"), null);

@@ -29,6 +29,18 @@ test("slow or data-saving connections avoid oversized prefetches", () => {
   assert.equal(gameplayImageWidth(1280, 2, { effectiveType: "4g", saveData: true }), 800);
 });
 
+test("slow connections still request panoramas large enough to pass the image gate", () => {
+  const panorama = {
+    viewportHeight: 292.5,
+    sourceWidth: 14_896,
+    sourceHeight: 5_127
+  };
+
+  assert.equal(gameplayImageWidth(390, 2, { effectiveType: "3g" }, panorama), 1400);
+  assert.equal(gameplayImageWidth(390, 2, { effectiveType: "2g" }, panorama), 1400);
+  assert.equal(gameplayImageWidth(390, 2, { effectiveType: "4g", saveData: true }, panorama), 1400);
+});
+
 test("direct fallback waits longer when a slow connection is still making progress", () => {
   assert.equal(directImageFallbackDelayMs("4g"), 3200);
   assert.equal(directImageFallbackDelayMs("3g"), 5000);

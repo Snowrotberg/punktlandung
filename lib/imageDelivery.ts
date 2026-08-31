@@ -39,10 +39,23 @@ export function gameplayImageWidth(
   const roundedWidth = imageWidthSteps.find((width) => width >= desiredWidth) ?? imageWidthSteps.at(-1)!;
   const effectiveType = normalizeEffectiveConnectionType(connection.effectiveType);
 
+  // The browser rejects non-flag images below 760x420 / 420k pixels after
+  // loading. A fixed 800/1000 px data-saving cap can never satisfy that
+  // contract for wide panoramas, causing valid images to be downloaded and
+  // then discarded. Keep the network cap for ordinary images, but raise it to
+  // the smallest existing thumbnail step that can pass the same quality gate.
+  const minimumQualityWidth = sourceAspectRatio > 0
+    ? Math.max(760, 420 * sourceAspectRatio, Math.sqrt(420_000 * sourceAspectRatio))
+    : 0;
+  const qualityWidth = minimumQualityWidth > 0
+    ? imageWidthSteps.find((width) => width >= minimumQualityWidth) ?? imageWidthSteps.at(-1)!
+    : 0;
+  const networkBoundedWidth = (cap: number) => Math.max(Math.min(roundedWidth, cap), qualityWidth);
+
   if (connection.saveData || effectiveType === "slow-2g" || effectiveType === "2g") {
-    return Math.min(roundedWidth, 800);
+    return networkBoundedWidth(800);
   }
-  if (effectiveType === "3g") return Math.min(roundedWidth, 1000);
+  if (effectiveType === "3g") return networkBoundedWidth(1000);
   return roundedWidth;
 }
 

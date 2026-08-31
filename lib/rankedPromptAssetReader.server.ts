@@ -1,6 +1,6 @@
 import type { RankedPromptAsset, RankedPromptAssetReader } from "./rankedGameHttp.server";
 
-const defaultHosts = ["commons.wikimedia.org", "upload.wikimedia.org"];
+const defaultHosts = ["commons.wikimedia.org", "upload.wikimedia.org", "thumb.wikimedia.org"];
 const allowedImageTypes = new Set(["image/avif", "image/gif", "image/jpeg", "image/png", "image/webp"]);
 const rankedPromptWidth = 1200;
 
