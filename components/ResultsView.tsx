@@ -450,23 +450,29 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   const globeScenario = useMemo<ResultCameraScenario | null>(() => {
     if (!summary || !location) return null;
     if (room.kind !== "solo" || room.settings.localMode !== "solo" || room.settings.localPlayerCount !== 1) return null;
-    const submittedResults = ranked.filter((result) => result.guess);
-    if (submittedResults.length !== 1) return null;
-    const primaryResult = submittedResults.find((result) => result.playerId === meId) ?? submittedResults[0];
-    if (!primaryResult?.guess) return null;
+    if (ranked.length !== 1) return null;
+    const primaryResult = ranked.find((result) => result.playerId === meId) ?? ranked[0];
+    if (!primaryResult) return null;
     const player = playerFor(canonicalPlayers, primaryResult.playerId);
     const rankIndex = ranked.findIndex((result) => result.playerId === primaryResult.playerId);
+    const targetOnly = !primaryResult.guess;
     return {
       id: `result-${summary.roundNumber}-${summary.completedAt}-${primaryResult.playerId}`,
       label: `${player?.name ?? "Spieler"} → ${location.title}`,
       description: "Echte Tipp- und Zielkoordinaten dieser Runde",
-      playerName: `#${Math.max(0, rankIndex) + 1} ${player?.name ?? "Spieler"}`,
+      playerName: targetOnly ? "Kein Tipp" : `#${Math.max(0, rankIndex) + 1} ${player?.name ?? "Spieler"}`,
       targetName: location.title,
       targetDescription: location.shortDescription ?? `${location.countryName} · ${location.continent}`,
-      guess: [primaryResult.guess.lng, primaryResult.guess.lat],
-      target: [location.lng, location.lat]
+      guess: primaryResult.guess ? [primaryResult.guess.lng, primaryResult.guess.lat] : [location.lng, location.lat],
+      target: [location.lng, location.lat],
+      targetOnly
     };
   }, [canonicalPlayers, location, meId, ranked, room.kind, room.settings.localMode, room.settings.localPlayerCount, summary]);
+  const [resultSurfaceReady, setResultSurfaceReady] = useState(false);
+
+  useEffect(() => {
+    setResultSurfaceReady(!globeScenario);
+  }, [globeScenario]);
   const sortedPlayers = [...canonicalPlayers].sort((a, b) => b.score - a.score);
   const finalStats = useMemo(() => buildFinalStats(canonicalPlayers, room.summaries ?? []), [canonicalPlayers, room.summaries]);
   const finalHighlights = useMemo(() => buildFinalHighlights(finalStats, room.summaries ?? [], canonicalPlayers), [canonicalPlayers, finalStats, room.summaries]);
@@ -768,6 +774,17 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
 
   return (
     <main className={`punktlandung-results-shell h-dvh overflow-x-hidden overflow-y-auto bg-slate-950 p-2 text-slate-50 md:p-4 xl:overflow-hidden ${redesign ? redesignStyles.redesign : ""}`}>
+      {!showImageReplay && (!finished || !showFinalStandings) && globeScenario && !globeUnavailable && !resultSurfaceReady ? (
+        <div className="punktlandung-result-preparing-surface" aria-label="Kartenauflösung wird vorbereitet" aria-busy="true">
+          <PanoramaViewer
+            location={location}
+            settings={room.settings}
+            isHost={isHost}
+            onSkipLocation={() => undefined}
+            chromeHidden
+          />
+        </div>
+      ) : null}
       {showLanding && landingHits.length > 0 && (
         <div
           aria-live="polite"
@@ -924,7 +941,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                         event.stopPropagation();
                         setReplayMapSize((value) => (value === "full" ? (isReplayMobilePortrait ? "closed" : "open") : "full"));
                       }}
-                      title={replayMapFull ? "Karte verkleinern" : "Karte maximieren"}
+                      aria-label={replayMapFull ? "Karte verkleinern" : "Karte maximieren"}
                     >
                       {replayMapFull ? "Minimieren" : "Maximieren"}
                     </Button>
@@ -1020,7 +1037,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
       {finished && showFinalStandings && !showImageReplay && (
         <div
           className={`punktlandung-final-standings-grid mx-auto grid min-h-full max-w-[132rem] gap-3 transition-opacity duration-300 xl:h-full xl:min-h-0 xl:grid-cols-[minmax(0,0.96fr)_minmax(35rem,1.04fr)] xl:overflow-hidden ${
-            revealed ? "opacity-100" : "opacity-0"
+            revealed && (resultSurfaceReady || !globeScenario || globeUnavailable) ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
         >
           <section className="punktlandung-final-left grid min-h-0 gap-3 xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
@@ -1297,9 +1314,11 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
               <GlobeResultMap
                 key={globeScenario.id}
                 scenario={globeScenario}
+                onSurfaceReady={() => setResultSurfaceReady(true)}
                 onAnimationComplete={() => setResultAnimationComplete(true)}
                 onUnavailable={() => {
                   setGlobeUnavailable(true);
+                  setResultSurfaceReady(true);
                   setResultAnimationComplete(true);
                 }}
               />
@@ -1361,9 +1380,6 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                         <span className="punktlandung-results-rank shrink-0 font-black">#{index + 1}</span>
                         <div className="punktlandung-results-identity min-w-0">
                           <span className="punktlandung-results-player min-w-0 font-black">{player?.name ?? "Spieler"}</span>
-                          <span className="punktlandung-results-distance text-xs text-slate-300">
-                            · {isFlagRound && result.countryCorrect ? "richtiges Land" : `${formatDistance(result.distanceKm)} entfernt`}
-                          </span>
                           {guessTime ? (
                             <span
                               className="punktlandung-results-secondary-metrics"
@@ -1375,6 +1391,13 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                         </div>
                       </div>
                       <div className="punktlandung-results-scoreline min-w-0">
+                        <span className="punktlandung-results-distance-primary">
+                          {result.guess
+                            ? isFlagRound && result.countryCorrect
+                              ? "Richtiges Land"
+                              : `${formatDistance(result.distanceKm)} entfernt`
+                            : "Kein Tipp"}
+                        </span>
                         <div className="punktlandung-results-scorebar h-2 min-w-[64px] overflow-hidden rounded-sm bg-slate-800">
                           <div
                             className="h-full rounded-sm"
@@ -1386,7 +1409,10 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                             }}
                           />
                         </div>
-                        <span className="punktlandung-results-points shrink-0 text-right font-black text-slate-200">{result.points}</span>
+                        <span className="punktlandung-results-points shrink-0 text-right text-slate-200">
+                          <strong>{result.points}</strong>
+                          <small>Punkte</small>
+                        </span>
                       </div>
                     </div>
                   </div>

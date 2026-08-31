@@ -125,7 +125,7 @@
   stroke-linecap: round;
 }
 
-.routeShadow { stroke: rgba(2, 6, 23, 0.18); stroke-width: 2.4; filter: blur(0.6px); }
+.routeShadow { stroke: rgba(2, 6, 23, 0.08); stroke-width: 1.8; filter: blur(0.45px); }
 .routeLine { stroke-width: 1.6; stroke-dasharray: 6 9; animation: routeFlow 900ms linear infinite; }
 
 @keyframes routeFlow { to { stroke-dashoffset: -15; } }

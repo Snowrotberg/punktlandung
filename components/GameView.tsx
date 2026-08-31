@@ -189,8 +189,11 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   const submitCurrentGuess = async () => {
     if (!guess || !targetPlayerId) return;
     performance.clearMarks("punktlandung-result-submit");
+    performance.clearMarks("punktlandung-result-surface");
+    performance.clearMarks("punktlandung-result-motion");
     performance.clearMeasures("punktlandung-submit-to-result-surface");
     performance.clearMeasures("punktlandung-submit-to-result-motion");
+    performance.clearMeasures("punktlandung-result-visible-to-motion");
     performance.mark("punktlandung-result-submit");
     if (isLocalRoom) {
       const nextPendingPlayer = activePlayerList.find(
@@ -366,7 +369,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
                     event.stopPropagation();
                     toggleMapSize();
                   }}
-                  title={fullMap ? "Karte verkleinern" : "Karte maximieren"}
+                  aria-label={fullMap ? "Karte verkleinern" : "Karte maximieren"}
                 >
                   {fullMap ? "Minimieren" : "Maximieren"}
                 </Button>
@@ -391,7 +394,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
                     event.stopPropagation();
                     setMapSize("closed");
                   }}
-                  title="Tippkarte minimieren"
+                  aria-label="Tippkarte minimieren"
                 >
                   X
                 </Button>

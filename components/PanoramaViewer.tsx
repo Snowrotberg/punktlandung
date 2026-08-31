@@ -717,6 +717,7 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
     <section
       ref={viewportRef}
       tabIndex={0}
+      data-image-category={location.category}
       className={`punktlandung-panorama-viewport absolute inset-0 overflow-hidden bg-slate-950 outline-none ${canPanImage ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -779,7 +780,9 @@ export function PanoramaViewer({ location, settings, isHost, onSkipLocation, onI
             key={`${location.id}-${imageIndex}`}
             src={displayedImageUrl}
             alt="Ort zum Erraten"
-            className="absolute inset-0 h-full w-full select-none object-cover"
+            className={`punktlandung-panorama-image absolute inset-0 h-full w-full select-none ${
+              location.category === "flags" ? "punktlandung-panorama-image--flag object-contain" : "object-cover"
+            }`}
             loading="eager"
             decoding="async"
             fetchPriority="high"

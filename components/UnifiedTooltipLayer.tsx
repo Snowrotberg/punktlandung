@@ -71,12 +71,31 @@ export function UnifiedTooltipLayer() {
       setTooltip(null);
     };
 
+    const isCoarseMapControl = (target: Element | null) => Boolean(
+      target
+      && window.matchMedia("(hover: none), (pointer: coarse)").matches
+      && target.closest(".punktlandung-guess-map-panel, .maplibregl-control-container, [aria-label='Interaktive 3D-Ergebniskarte']")
+    );
+    const onPointerDown = (event: PointerEvent) => {
+      const target = tooltipTarget(event.target);
+      if (event.pointerType === "mouse" || !isCoarseMapControl(target)) return;
+      activeTarget.current = null;
+      setTooltip(null);
+    };
     const onPointerOver = (event: PointerEvent) => {
       if (event.pointerType === "touch") return;
       show(tooltipTarget(event.target));
     };
     const onPointerOut = (event: PointerEvent) => hide(tooltipTarget(event.target), event.relatedTarget);
-    const onFocusIn = (event: FocusEvent) => show(tooltipTarget(event.target));
+    const onFocusIn = (event: FocusEvent) => {
+      const target = tooltipTarget(event.target);
+      if (isCoarseMapControl(target)) {
+        activeTarget.current = null;
+        setTooltip(null);
+        return;
+      }
+      show(target);
+    };
     const onFocusOut = (event: FocusEvent) => hide(tooltipTarget(event.target), event.relatedTarget);
     const reposition = () => {
       const target = activeTarget.current;
@@ -88,6 +107,7 @@ export function UnifiedTooltipLayer() {
       setTooltip((current) => current ? { ...current, ...tooltipPosition(target) } : null);
     };
 
+    document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("pointerover", onPointerOver, true);
     document.addEventListener("pointerout", onPointerOut, true);
     document.addEventListener("focusin", onFocusIn, true);
@@ -97,6 +117,7 @@ export function UnifiedTooltipLayer() {
 
     return () => {
       delete document.documentElement.dataset.unifiedTooltips;
+      document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("pointerover", onPointerOver, true);
       document.removeEventListener("pointerout", onPointerOut, true);
       document.removeEventListener("focusin", onFocusIn, true);

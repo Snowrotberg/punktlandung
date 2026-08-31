@@ -83,7 +83,7 @@ function HomeMapSourcePreview() {
         animate={false}
         initialView="start"
         previewMode
-        targetInfoIndicator="?"
+        targetInfoIndicator="i"
         terrainExaggeration={RESULT_CAMERA_CONFIG.terrainExaggeration.homePreview}
         onSurfaceReady={() => setMapReady(true)}
       />
@@ -253,7 +253,7 @@ export function HomeMapPreview() {
             scenario={homeResultScenario}
             startPaused={!animationStarted}
             previewMode
-            targetInfoIndicator="?"
+            targetInfoIndicator="i"
             terrainExaggeration={RESULT_CAMERA_CONFIG.terrainExaggeration.homePreview}
             onSurfaceReady={() => setLiveSurfaceReady(true)}
             onAnimationComplete={() => setAnimationComplete(true)}

@@ -74,8 +74,14 @@ const blockedThirdPartyHosts = [
 ];
 
 const viewports = [
+  { name: "phone-short-360", width: 360, height: 640, category: "mobile" },
+  { name: "phone-mid-393", width: 393, height: 740, category: "mobile" },
+  { name: "phone-mid-412", width: 412, height: 732, category: "mobile" },
   { name: "phone-small", width: 360, height: 800, category: "mobile" },
   { name: "phone-large", width: 430, height: 932, category: "mobile" },
+  { name: "phone-landscape-640", width: 640, height: 360, category: "mobile" },
+  { name: "phone-landscape-720", width: 720, height: 360, category: "mobile" },
+  { name: "phone-landscape-800", width: 800, height: 384, category: "mobile" },
   { name: "phone-landscape-compact", width: 760, height: 360, category: "mobile" },
   { name: "phone-landscape", width: 932, height: 430, category: "mobile" },
   { name: "laptop", width: 1366, height: 768, category: "desktop" },
@@ -354,6 +360,24 @@ const globePhaseOneCases = [
     guess: { lat: 0, lng: 0 },
     distanceKm: 18903,
     targetOnlyEnd: true
+  },
+  {
+    id: "ruapehu-18669",
+    location: {
+      ...sampleLocation,
+      id: "landscapes-ruapehu-qa",
+      title: "Ruapehu",
+      countryCode: "NZ",
+      countryName: "Neuseeland",
+      continent: "Oceania",
+      category: "landscapes",
+      lat: -39.28167,
+      lng: 175.56861,
+      shortDescription: "Der Mount Ruapehu ist der höchste Vulkan Neuseelands."
+    },
+    guess: { lat: 40, lng: 11.3 },
+    distanceKm: 18_669,
+    targetOnlyEnd: true
   }
 ];
 
@@ -523,6 +547,16 @@ function onlineWaitingRoomState() {
 }
 
 const targets = [
+  {
+    name: "karte",
+    access: "route",
+    path: "/karte",
+    expectedText: "Karte testen",
+    readySelector: ".punktlandung-map-test-map .leaflet-container",
+    expectGuessMapCamera: true,
+    expectNoMobileMapTooltip: true,
+    note: "Oeffentliche noindex-Testseite verwendet die produktive interaktive Spielkarte"
+  },
   { name: "home", access: "route", path: "/", resetSession: true, expectGlobeLabelOrder: true, note: "echter URL-Pfad" },
   {
     name: "home-zielinfo",
@@ -619,6 +653,7 @@ const targets = [
     readySelector: ".punktlandung-guess-map-panel--full",
     readyImageSelector: ".punktlandung-panorama-viewport img",
     expectGameHudSafeArea: true,
+    expectNoMobileMapTooltip: true,
     note: "Maximierte Tippkarte wahrt auf Desktop die gemeinsame Runde-/Zeit-Safe-Area"
   },
   {
@@ -634,7 +669,37 @@ const targets = [
     readySelector: ".punktlandung-game-shell",
     readyImageSelector: ".punktlandung-panorama-viewport img",
     expectLandscapeGameHud: true,
-    note: "Phone-Landscape mit langer Suchkategorie, Bild-Overlay fuer Runde/Zeit, verborgenem Zurueck und hochgezogener Karte"
+    note: "Phone-Landscape mit langer Suchkategorie, kollisionsfreiem Bild-HUD, erreichbarem Zurueck und rechter Karte"
+  },
+  {
+    name: "spielen-flagge-mobile",
+    access: "state",
+    path: "/spielen",
+    status: "guessing",
+    stateOverrides: {
+      settings: { category: "flags" },
+      location: cambodiaFlagLocation
+    },
+    expectedText: "Flagge",
+    readySelector: ".punktlandung-game-shell",
+    readyImageSelector: ".punktlandung-panorama-image--flag",
+    expectFlagFullyVisible: true,
+    note: "Flaggenrunde nutzt die vollstaendige, unbeschnittene Bildflaeche"
+  },
+  {
+    name: "spielen-runde-20",
+    access: "state",
+    path: "/spielen",
+    status: "guessing",
+    stateOverrides: {
+      currentRound: 20,
+      settings: { rounds: 20 }
+    },
+    expectedText: "20/20",
+    readySelector: ".punktlandung-game-shell",
+    readyImageSelector: ".punktlandung-panorama-viewport img",
+    expectRoundHudCapacity: true,
+    note: "Zweistellige Rundenwerte behalten eine stabile mobile HUD-Breite"
   },
   { name: "bild-laden", access: "state", path: "/spielen", status: "guessing", forceImageLoader: true, readySelector: ".punktlandung-image-loader", note: "erster Bildladezustand mit kontinuierlichem Suchscheinwerfer und drei beleuchteten Ellipsensegmenten" },
   {
@@ -675,7 +740,29 @@ const targets = [
     readySelector: ".punktlandung-results-grid",
     note: "abgelaufene Runde wechselt automatisch und ohne weitere Eingabe zur Auflösung"
   },
-  { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", readySelector: ".punktlandung-results-grid", note: "echter URL-Pfad mit QA-Session" },
+  { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", readySelector: ".punktlandung-results-grid", expectResultRankMetrics: true, note: "echter URL-Pfad mit QA-Session" },
+  {
+    name: "aufloesung-globe-ohne-tipp",
+    access: "state",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: {
+      settings: { localMode: "solo", localPlayerCount: 1 },
+      players: [hostPlayer],
+      guesses: [],
+      summaries: [{
+        ...summary,
+        results: [{ ...summary.results[0], guess: undefined, distanceKm: 20_015, points: 0 }]
+      }]
+    },
+    expectedText: "Kein Tipp",
+    readySelector: "[aria-label='Interaktive 3D-Ergebniskarte'] [data-surface-ready='true']:has([data-result-composition='ready'])",
+    expectResultNavigationControls: true,
+    expectNoMobileMapTooltip: true,
+    expectResultRankMetrics: true,
+    readyTimeoutMs: 40000,
+    note: "Solo-Aufloesung ohne gesetzten Tipp behaelt Globe, Terrain, Pitch und Navigation"
+  },
   {
     name: "aufloesung-globe",
     access: "state",
@@ -772,6 +859,7 @@ const targets = [
     expectActiveRoute: true,
     expectCloseAndReopen: true,
     expectTargetInfoReservation: true,
+    readyTimeoutMs: 40000,
     note: "Mobile Zielinformation als zentriertes Overlay ohne erneute Kamerabewegung"
   },
   {
@@ -880,6 +968,18 @@ const targets = [
     note: "Ergebniszustand der letzten Runde mit erreichbarer Abschlussaktion"
   },
   { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", readySelector: ".punktlandung-image-replay", readyImageSelector: ".punktlandung-panorama-viewport img", note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
+  {
+    name: "nochmal-ansehen-karte-maximiert",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    buttonText: "Bild nochmal ansehen",
+    secondaryButtonText: "Maximieren",
+    readySelector: ".punktlandung-image-replay .punktlandung-guess-map-panel--full",
+    readyImageSelector: ".punktlandung-panorama-viewport img",
+    expectNoMobileMapTooltip: true,
+    note: "Maximierte Replay-Karte bleibt im Viewport und behaelt eine erreichbare Minimieren-Aktion"
+  },
   {
     name: "nochmal-ansehen-ranked",
     access: "state-click",
@@ -1332,7 +1432,7 @@ async function openTarget(page, target) {
       }
       const clickTarget = target.clickSelector ? page.locator(target.clickSelector).first() : null;
       if (clickTarget) {
-        await clickTarget.waitFor({ state: "visible", timeout: 15000 });
+        await clickTarget.waitFor({ state: "visible", timeout: target.readyTimeoutMs ?? 15000 });
         await clickTarget.scrollIntoViewIfNeeded();
         if (target.expectGlobeInfoOverlay) {
           await page.locator("[data-result-composition='ready']").first().waitFor({ state: "visible", timeout: 15000 });
@@ -1651,6 +1751,9 @@ async function collectLayoutMetrics(page, readySelector = null) {
         ))
       : [];
     const globeVisualRects = globeVisualElements.map((element) => element.getBoundingClientRect());
+    const globeMarkerVisualRects = globeVisualElements
+      .filter((element) => element.getAttribute("data-result-route") !== "connection")
+      .map((element) => element.getBoundingClientRect());
     const globeVisualBounds = globeVisualElements.map((element, index) => {
       const rect = globeVisualRects[index];
       return {
@@ -1785,6 +1888,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
       resultPerformance: {
         submitToSurfaceMs: performance.getEntriesByName("punktlandung-submit-to-result-surface", "measure").at(-1)?.duration ?? null,
         submitToMotionMs: performance.getEntriesByName("punktlandung-submit-to-result-motion", "measure").at(-1)?.duration ?? null,
+        visibleToMotionMs: performance.getEntriesByName("punktlandung-result-visible-to-motion", "measure").at(-1)?.duration ?? null,
         prewarmReady: performance.getEntriesByName("punktlandung-result-prewarm-ready", "mark").length > 0
       },
       gameHudSafeArea: (() => {
@@ -1912,6 +2016,12 @@ async function collectLayoutMetrics(page, readySelector = null) {
           && rect.right <= globeFrameRect.right - 66 + 0.25
           // Account for the frame border and sub-pixel MapLibre projection.
           // The product camera still targets the stricter 20 px safe rect.
+          && rect.top >= globeFrameRect.top + 14 - 0.5
+          && rect.bottom <= globeFrameRect.bottom - 16 + 0.25
+        ),
+        markersInside: globeMarkerVisualRects.length >= 3 && globeMarkerVisualRects.every((rect) =>
+          rect.left >= globeFrameRect.left + 16 - 0.25
+          && rect.right <= globeFrameRect.right - 66 + 0.25
           && rect.top >= globeFrameRect.top + 14 - 0.5
           && rect.bottom <= globeFrameRect.bottom - 16 + 0.25
         ),
@@ -2511,6 +2621,7 @@ async function runTargetViewport(browser, target, viewport) {
           viewer: box(".punktlandung-game-viewer"),
           mapPanel: box(".punktlandung-guess-map-panel"),
           stats,
+          back: box(".punktlandung-game-back-button"),
           backDisplay: back ? getComputedStyle(back).display : "missing"
         };
       });
@@ -2523,11 +2634,127 @@ async function runTargetViewport(browser, target, viewport) {
       if (!landscapeHud.stats.length || landscapeHud.stats.some((stat) => !inside(stat, landscapeHud.viewer))) {
         problems.push(`Runde/Zeit liegen im Landscape nicht vollstaendig auf dem Bild (${JSON.stringify(landscapeHud)}).`);
       }
-      if (landscapeHud.backDisplay !== "none") {
-        problems.push(`Der Zurueck-Button ist im Phone-Landscape noch sichtbar (${landscapeHud.backDisplay}).`);
+      if (landscapeHud.backDisplay === "none" || !inside(landscapeHud.back, landscapeHud.viewer)) {
+        problems.push(`Der Zurueck-Button ist im Phone-Landscape nicht erreichbar (${JSON.stringify(landscapeHud)}).`);
       }
-      if (!landscapeHud.mapPanel || !landscapeHud.task || landscapeHud.mapPanel.top > landscapeHud.task.bottom + 14) {
-        problems.push(`Die Landscape-Karte nutzt die freigewordene Meta-Zeile nicht (${JSON.stringify(landscapeHud)}).`);
+      if (!landscapeHud.mapPanel || !landscapeHud.viewer || landscapeHud.mapPanel.left < landscapeHud.viewer.right - 2) {
+        problems.push(`Die Landscape-Karte liegt nicht rechts neben der Bildflaeche (${JSON.stringify(landscapeHud)}).`);
+      }
+    }
+
+    if (target.expectFlagFullyVisible) {
+      const flagFit = await page.locator(".punktlandung-panorama-image--flag").first().evaluate((image) => {
+        const rect = image.getBoundingClientRect();
+        const viewport = image.closest(".punktlandung-panorama-viewport")?.getBoundingClientRect();
+        return {
+          objectFit: getComputedStyle(image).objectFit,
+          inside: Boolean(viewport)
+            && rect.left >= viewport.left - 1
+            && rect.top >= viewport.top - 1
+            && rect.right <= viewport.right + 1
+            && rect.bottom <= viewport.bottom + 1
+        };
+      });
+      if (flagFit.objectFit !== "contain" || !flagFit.inside) {
+        problems.push(`Die Flagge wird beschnitten (${JSON.stringify(flagFit)}).`);
+      }
+    }
+
+    if (target.expectNoMobileMapTooltip && viewport.category === "mobile") {
+      const tooltipState = await page.evaluate(() => {
+        const unified = [...document.querySelectorAll(".punktlandung-unified-tooltip")]
+          .some((element) => getComputedStyle(element).display !== "none" && element.getBoundingClientRect().width > 0);
+        const controls = [...document.querySelectorAll(".punktlandung-guess-map-panel button, .maplibregl-ctrl-group button")];
+        const pseudoVisible = controls.some((control) => {
+          const style = getComputedStyle(control, "::after");
+          const content = style.content;
+          return content !== "none" && content !== "normal" && content !== '""'
+            && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 0) > 0;
+        });
+        return { unified, pseudoVisible, active: document.activeElement?.getAttribute("aria-label") ?? document.activeElement?.textContent?.trim() ?? "" };
+      });
+      if (tooltipState.unified || tooltipState.pseudoVisible) {
+        problems.push(`Mobiler Kartenhinweis bleibt nach der Bedienung sichtbar (${JSON.stringify(tooltipState)}).`);
+      }
+    }
+
+    if (target.expectResultNavigationControls) {
+      const controls = await page.evaluate(() => {
+        const frame = document.querySelector("[aria-label='Interaktive 3D-Ergebniskarte'] [data-current-pitch]");
+        return {
+          zoomIn: Boolean(document.querySelector(".maplibregl-ctrl-zoom-in")),
+          zoomOut: Boolean(document.querySelector(".maplibregl-ctrl-zoom-out")),
+          compass: Boolean(document.querySelector(".maplibregl-ctrl-compass")),
+          pitch: Number(frame?.getAttribute("data-current-pitch")),
+          terrain: Number(frame?.getAttribute("data-terrain-exaggeration")),
+          guessVisible: document.querySelector("[data-result-marker-kind='guess']")?.getAttribute("data-visible")
+        };
+      });
+      if (!controls.zoomIn || !controls.zoomOut || !controls.compass || controls.pitch < 30 || controls.terrain < 1 || controls.guessVisible === "true") {
+        problems.push(`No-Guess-Aufloesung hat keinen vollwertigen Ergebnis-Globe (${JSON.stringify(controls)}).`);
+      }
+    }
+
+    if (target.expectResultRankMetrics) {
+      const ranking = await page.evaluate(() => {
+        const row = document.querySelector(".punktlandung-results-row");
+        const distance = row?.querySelector(".punktlandung-results-distance-primary")?.textContent?.trim() ?? "";
+        const points = row?.querySelector(".punktlandung-results-points")?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+        const rowRect = row?.getBoundingClientRect();
+        const distanceRect = row?.querySelector(".punktlandung-results-distance-primary")?.getBoundingClientRect();
+        const pointsRect = row?.querySelector(".punktlandung-results-points")?.getBoundingClientRect();
+        const inside = (rect) => Boolean(rect && rowRect && rect.left >= rowRect.left - 1 && rect.right <= rowRect.right + 1 && rect.top >= rowRect.top - 1 && rect.bottom <= rowRect.bottom + 1);
+        return { distance, points, distanceInside: inside(distanceRect), pointsInside: inside(pointsRect) };
+      });
+      if (!ranking.distance || !ranking.points.includes("Punkte") || !ranking.distanceInside || !ranking.pointsInside) {
+        problems.push(`Rundenrang trennt Entfernung und Punkte nicht eindeutig (${JSON.stringify(ranking)}).`);
+      }
+    }
+
+    if (target.expectGuessMapCamera) {
+      const map = page.locator(".punktlandung-map-test-map .leaflet-container").first();
+      const readCamera = () => map.evaluate((element) => ({
+        zoom: Number(element.getAttribute("data-current-zoom")),
+        lat: Number(element.getAttribute("data-current-lat")),
+        lng: Number(element.getAttribute("data-current-lng")),
+        zoomSnap: Number(element.getAttribute("data-zoom-snap")),
+        zoomDelta: Number(element.getAttribute("data-zoom-delta"))
+      }));
+      const initial = await readCamera();
+      await page.locator(".punktlandung-map-test-map .leaflet-control-zoom-in").click();
+      await page.waitForTimeout(350);
+      const zoomed = await readCamera();
+      await page.getByRole("button", { name: "Karte zurücksetzen" }).click();
+      await page.waitForTimeout(350);
+      const reset = await readCamera();
+      if (
+        Math.abs(initial.zoom - 1.5) > 0.01
+        || Math.abs(zoomed.zoom - initial.zoom - 0.5) > 0.01
+        || Math.abs(reset.zoom - 1.5) > 0.01
+        || initial.zoomSnap !== 0.5
+        || initial.zoomDelta !== 0.5
+        || Math.abs(reset.lat - 20) > 0.01
+        || Math.abs(reset.lng) > 0.01
+      ) {
+        problems.push(`Produktive Kartenstartkamera oder Halbzoom ist instabil (${JSON.stringify({ initial, zoomed, reset })}).`);
+      }
+    }
+
+    if (target.expectRoundHudCapacity) {
+      const roundHud = await page.evaluate(() => {
+        const value = document.querySelector(".punktlandung-game-stat-value-round");
+        const box = value?.closest(".punktlandung-game-stat");
+        const rect = box?.getBoundingClientRect();
+        return {
+          value: value?.textContent?.trim() ?? "",
+          clipped: Boolean(value && value.scrollWidth > value.clientWidth + 1),
+          boxWidth: rect?.width ?? 0,
+          nowrap: value ? getComputedStyle(value).whiteSpace === "nowrap" : false,
+          tabular: value ? getComputedStyle(value).fontVariantNumeric.includes("tabular-nums") : false
+        };
+      });
+      if (roundHud.value !== "20/20" || roundHud.clipped || roundHud.boxWidth < 50 || !roundHud.nowrap || !roundHud.tabular) {
+        problems.push(`Zweistelliger Rundenzähler passt nicht stabil ins HUD (${JSON.stringify(roundHud)}).`);
       }
     }
 
@@ -2602,7 +2829,9 @@ async function runTargetViewport(browser, target, viewport) {
             tooltip: button.getAttribute("data-tooltip"),
             pseudoTooltipVisible: (() => {
               const style = getComputedStyle(button, "::after");
-              return style.display !== "none" && style.visibility !== "hidden" && Number.parseFloat(style.opacity) > 0;
+              const content = style.content;
+              return content !== "none" && content !== "normal" && content !== '""'
+                && style.display !== "none" && style.visibility !== "hidden" && Number.parseFloat(style.opacity) > 0;
             })(),
             visibleSharedTooltip: [...document.querySelectorAll(".punktlandung-unified-tooltip")]
               .some((element) => {
@@ -2950,11 +3179,11 @@ async function runTargetViewport(browser, target, viewport) {
       !metrics.globeResultSafety
       || metrics.globeResultSafety.markerCount !== (target.expectTargetOnlyEnd ? 1 : 2)
       || (target.expectTargetOnlyEnd
-        ? metrics.globeResultSafety.routeCount !== 0
+        ? metrics.globeResultSafety.routeCount !== 1
         : target.allowOmittedGlobeRoute
         ? ![0, 1].includes(metrics.globeResultSafety.routeCount)
         : metrics.globeResultSafety.routeCount !== 1)
-      || !metrics.globeResultSafety.allInside
+      || !(target.expectTargetOnlyEnd ? metrics.globeResultSafety.markersInside : metrics.globeResultSafety.allInside)
       || !metrics.globeResultSafety.controlsGerman
       || metrics.globeResultSafety.targetPinAnimations.some((animationName) => !animationName.includes("targetIdle"))
       || (!target.expectTargetOnlyEnd && metrics.globeResultSafety.routeAnimations.some((animationName) => animationName === "none"))
@@ -2964,7 +3193,9 @@ async function runTargetViewport(browser, target, viewport) {
       || !["settled", "reduced-settled"].includes(metrics.globeResultSafety.revealPhase)
       || !metrics.globeResultSafety.controlStacking?.controlsAboveContent
       || (metrics.globeResultSafety.routeCount === 1
-        && !metrics.globeResultSafety.routeEndpointClearances?.every((clearance) => clearance >= 4))
+        && (target.expectTargetOnlyEnd
+          ? (metrics.globeResultSafety.routeEndpointClearances?.at(-1) ?? Number.NEGATIVE_INFINITY) < 4
+          : !metrics.globeResultSafety.routeEndpointClearances?.every((clearance) => clearance >= 4)))
       || !metrics.globeCompositionStability
       || metrics.globeCompositionStability.markerCount !== (target.expectTargetOnlyEnd ? 1 : 2)
       || metrics.globeCompositionStability.maxMovementPx > 1

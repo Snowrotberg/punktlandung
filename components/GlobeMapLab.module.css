@@ -206,14 +206,19 @@
 }
 
 .routeShadow {
-  stroke: rgba(2, 6, 23, 0.18);
-  stroke-width: 2.4;
+  stroke: rgba(2, 6, 23, 0.08);
+  stroke-width: 1.8;
   stroke-linecap: round;
-  filter: blur(0.6px);
+  filter: blur(0.45px);
+  vector-effect: non-scaling-stroke;
 }
 
 .routeLine {
   stroke: url(#kartenlabor-result-gradient);
+}
+
+.routeShadow[data-target-only-end="true"] {
+  opacity: 0;
 }
 
 .routeEndpoints {
@@ -423,6 +428,12 @@
   border-color: var(--marker-color) !important;
 }
 
+@media (hover: none), (pointer: coarse) {
+  .mapFrame :global(.maplibregl-ctrl-group button[data-tooltip]::after) {
+    display: none !important;
+  }
+}
+
 .guessMarker {
   --result-label-above-offset: 1rem;
   --result-label-below-offset: 1.025rem;
@@ -460,11 +471,14 @@
   place-items: center;
   border: 0;
   border-radius: 999px;
-  background: rgba(6, 35, 28, 0.12);
-  color: #064e3b;
-  box-shadow: none;
-  font-size: 0.65rem;
-  font-weight: 800;
+  background: rgba(6, 35, 28, 0.18);
+  color: #043b2d;
+  box-shadow: inset 0 0 0 1px rgba(4, 78, 59, 0.28);
+  font-family: Arial, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 0.01px currentColor;
   opacity: 0;
   transform: translateY(-50%) scale(0.72);
   transition: opacity 140ms ease, transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -581,24 +595,54 @@
 }
 
 .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button) {
-  top: 0.35rem;
-  right: 0.35rem;
-  min-width: 2.25rem;
-  min-height: 2.25rem;
+  top: 0.2rem;
+  right: 0.2rem;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  place-items: center;
+  padding: 0;
+  border: 0;
   border-radius: 999px;
+  background: transparent;
   color: #cbd5e1;
-  font-size: 0.9rem;
+  font-size: 0;
   outline: none;
   box-shadow: none;
 }
 
+.mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button::after) {
+  content: "×";
+  display: grid;
+  width: 2.475rem;
+  height: 2.475rem;
+  place-items: center;
+  border: 1px solid rgba(94, 231, 189, 0.66);
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.9);
+  color: #e8fff7;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button:hover) {
   color: #f8fafc;
+  background: transparent;
+}
+
+.mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button:hover::after) {
   background: rgba(51, 65, 85, 0.72);
 }
 
 .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button:focus-visible) {
   color: #f8fafc;
+  background: transparent;
+}
+
+.mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button:focus-visible::after) {
   background: rgba(51, 65, 85, 0.72);
   outline: 2px solid rgba(94, 231, 189, 0.72);
   outline-offset: 1px;
@@ -633,6 +677,14 @@
   display: grid;
   place-items: center;
   pointer-events: none;
+}
+
+.mobileInfoLayer[data-target-label-vertical="below"] .mobileInfoDialog {
+  transform: translateY(-1rem);
+}
+
+.mobileInfoLayer[data-target-label-vertical="above"] .mobileInfoDialog {
+  transform: translateY(1rem);
 }
 
 .mobileInfoDialog {
@@ -676,9 +728,9 @@
   width: 2.75rem;
   min-height: 2.75rem;
   place-items: center;
-  border: 1px solid rgba(94, 231, 189, 0.66);
+  border: 0;
   border-radius: 999px;
-  background: rgba(30, 41, 59, 0.9);
+  background: transparent;
   padding: 0;
   color: #e8fff7;
   font-size: 0.9rem;
@@ -688,7 +740,7 @@
 
 .mobileInfoDialog .mobileInfoClose:hover,
 .mobileInfoDialog .mobileInfoClose:focus-visible {
-  background: rgba(16, 185, 129, 0.2);
+  background: transparent;
 }
 
 .mobileInfoDialog .mobileInfoClose:focus-visible {
@@ -702,9 +754,22 @@
 }
 
 .mobileInfoDialog .mobileInfoClose span {
+  display: grid;
+  width: 2.475rem;
+  height: 2.475rem;
+  place-items: center;
+  border: 1px solid rgba(94, 231, 189, 0.66);
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.9);
   color: inherit;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 700;
   line-height: 1;
+}
+
+.mobileInfoDialog .mobileInfoClose:hover span,
+.mobileInfoDialog .mobileInfoClose:focus-visible span {
+  background: rgba(16, 185, 129, 0.2);
 }
 
 @media (max-width: 1050px) {

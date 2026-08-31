@@ -87,6 +87,8 @@ type PixelSegment = {
 const PLAYER_ELLIPSE_SIZE = { width: 46, height: 14 };
 const ACTUAL_ELLIPSE_SIZE = { width: 58, height: 18 };
 const RESULT_MAX_ZOOM = 17;
+export const GUESS_OVERVIEW_ZOOM = 1.5;
+export const GUESS_ZOOM_STEP = 0.5;
 const SINGLE_WORLD_BOUNDS = latLngBounds([
   [-85, -180],
   [85, 180]
@@ -223,7 +225,7 @@ function labelIcon(
   const edgeAnchorStyle = edgeAnchorStyles.length ? ` style="${edgeAnchorStyles.join(";")}"` : "";
   return divIcon({
     className: `punktlandung-map-label-marker${homeAnchorClass}${interactive ? " is-interactive" : ""}`,
-    html: `<span class="${className}"${edgeAnchorStyle}>${labelHtml ?? escapeHtml(label)}</span>`,
+    html: `<span class="${className}"${edgeAnchorStyle}>${labelHtml ?? escapeHtml(label)}${interactive ? '<span class="punktlandung-map-label-info" aria-hidden="true">i</span>' : ""}</span>`,
     iconSize: [width, height],
     iconAnchor: [width / 2 - dx, height / 2 - dy],
     // Interactive target labels own their information popover. Anchor the
@@ -1216,9 +1218,10 @@ function ResultMarker({
       if (popupElement && popupTipElement && targetLabelElement) {
         const popupTipRect = popupTipElement.getBoundingClientRect();
         const targetLabelRect = targetLabelElement.getBoundingClientRect();
+        const labelPopupGap = 10;
         const alignmentDelta = openBelowLabel
-          ? targetLabelRect.bottom - popupTipRect.top
-          : targetLabelRect.top - popupTipRect.bottom;
+          ? targetLabelRect.bottom + labelPopupGap - popupTipRect.top
+          : targetLabelRect.top - labelPopupGap - popupTipRect.bottom;
         if (Math.abs(alignmentDelta) > 0.5) {
           popupTranslateRef.current += alignmentDelta;
           popupElement.style.translate = `0 ${popupTranslateRef.current}px`;
@@ -1823,6 +1826,29 @@ function FlowingResultConnector({ color, animate = true, positions }: FlowingRes
   );
 }
 
+function GuessViewportTelemetry() {
+  const map = useMap();
+
+  useEffect(() => {
+    const update = () => {
+      const container = map.getContainer();
+      const center = map.getCenter();
+      container.dataset.currentZoom = map.getZoom().toFixed(2);
+      container.dataset.currentLat = center.lat.toFixed(4);
+      container.dataset.currentLng = center.lng.toFixed(4);
+      container.dataset.zoomSnap = String(map.options.zoomSnap ?? 1);
+      container.dataset.zoomDelta = String(map.options.zoomDelta ?? 1);
+    };
+    update();
+    map.on("zoomend moveend", update);
+    return () => {
+      map.off("zoomend moveend", update);
+    };
+  }, [map]);
+
+  return null;
+}
+
 export function LeafletMap({
   mode,
   center = { lat: 20, lng: 0 },
@@ -1850,7 +1876,7 @@ export function LeafletMap({
   const initialResultPoints = mode === "results" ? resultPoints(summary) : [];
   const initialBounds = initialResultPoints.length > 1 ? latLngBounds(initialResultPoints) : null;
   const maxZoom = mode === "results" ? RESULT_MAX_ZOOM : 14;
-  const guessOverviewZoom = 2;
+  const guessOverviewZoom = GUESS_OVERVIEW_ZOOM;
   const guessColorIndex = playerColorIndexByColor(currentPlayerColor);
   const isGuessMap = mode === "guess";
 
@@ -1862,6 +1888,8 @@ export function LeafletMap({
         : { center: mapCenter, zoom: mode === "results" ? 10 : guessOverviewZoom })}
       minZoom={mode === "results" && resultLabelLayout === "account-history" ? 0 : 1}
       maxZoom={maxZoom}
+      zoomSnap={isGuessMap ? GUESS_ZOOM_STEP : 1}
+      zoomDelta={isGuessMap ? GUESS_ZOOM_STEP : 1}
       zoomControl={false}
       attributionControl={false}
       scrollWheelZoom={false}
@@ -1873,6 +1901,7 @@ export function LeafletMap({
       worldCopyJump={false}
       >
       <MapInteractionState noPan={noPan} noZoom={noZoom} />
+      {mode === "guess" && <GuessViewportTelemetry />}
       <MapResizer resizeSignal={resizeSignal} />
       {mode === "guess" && <GuessViewportReset center={center} zoom={guessOverviewZoom} resetSignal={resetSignal} />}
       {mode === "results" && (

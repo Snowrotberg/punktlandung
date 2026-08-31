@@ -11,6 +11,7 @@ export type ResultCameraScenario = {
   targetDescription: string;
   guess: GlobeCoordinates;
   target: GlobeCoordinates;
+  targetOnly?: boolean;
   kind?: "production" | "experiment";
 };
 
@@ -109,6 +110,10 @@ export const RESULT_CAMERA_SCENARIOS: ResultCameraScenario[] = [
 export const EARTH_RADIUS_KM = 6_371.0088;
 export const MAX_GREAT_CIRCLE_DISTANCE_KM = Math.PI * EARTH_RADIUS_KM;
 export const TARGET_ONLY_END_DISTANCE_KM = MAX_GREAT_CIRCLE_DISTANCE_KM * 0.8;
+
+export function usesTargetOnlyEndComposition(distanceKm: number): boolean {
+  return distanceKm >= TARGET_ONLY_END_DISTANCE_KM;
+}
 
 function toRadians(value: number): number {
   return value * Math.PI / 180;
@@ -258,7 +263,7 @@ export function buildResultCameraPlan(
 ): ResultCameraPlan {
   const distanceKm = distanceBetweenCoordinatesKm(guess, target);
   const distanceClass = classifyResultDistance(distanceKm);
-  const targetOnlyEndComposition = distanceKm >= TARGET_ONLY_END_DISTANCE_KM;
+  const targetOnlyEndComposition = usesTargetOnlyEndComposition(distanceKm);
   // Compact result maps need additional breathing room for the two badges
   // and the target information card, not just for the geographic points.
   const compactAdjustment = options.compactViewport

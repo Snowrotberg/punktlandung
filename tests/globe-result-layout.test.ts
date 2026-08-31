@@ -93,6 +93,8 @@ test("flowing result routes keep fixed endpoint dashes outside the animated dash
   assert.match(leaflet, /punktlandung-result-connector-endpoint/);
   assert.match(primitivesCss, /@keyframes routeFlow\s*\{\s*to\s*\{\s*stroke-dashoffset:\s*-15;/);
   assert.match(globals, /@keyframes punktlandung-result-connector-flow\s*\{\s*to\s*\{\s*stroke-dashoffset:\s*-15;/);
+  assert.match(primitivesCss, /\.routeShadow\s*\{[^}]*rgba\(2, 6, 23, 0\.08\)[^}]*stroke-width:\s*1\.8/);
+  assert.match(globe, /!targetOnlyEndComposition\s*\?\s*\[routeLineRef\.current\]/);
 });
 
 test("target landing decays into the shared idle hop while reduced motion stays still", async () => {

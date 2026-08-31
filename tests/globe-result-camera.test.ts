@@ -6,6 +6,7 @@ import {
   MAX_GREAT_CIRCLE_DISTANCE_KM,
   RESULT_MAP_MIN_ZOOM,
   TARGET_ONLY_END_DISTANCE_KM,
+  usesTargetOnlyEndComposition,
   routeLineCoordinates,
   withResultCameraEndFrame
 } from "../lib/globeResultCamera";
@@ -36,6 +37,26 @@ test("target-only end composition switches exactly at eighty percent of the maxi
   assert.equal(above.guessHideProgress, 0.88);
   assert.deepEqual(above.keyframes[0].center, [0, 0]);
   assert.deepEqual(above.keyframes.at(-1)!.center, [144.1, 0]);
+});
+
+test("target-only transition is stable immediately below, at and above the established threshold", () => {
+  assert.equal(usesTargetOnlyEndComposition(TARGET_ONLY_END_DISTANCE_KM - 0.001), false);
+  assert.equal(usesTargetOnlyEndComposition(TARGET_ONLY_END_DISTANCE_KM), true);
+  assert.equal(usesTargetOnlyEndComposition(TARGET_ONLY_END_DISTANCE_KM + 0.001), true);
+});
+
+test("18,669 km Ruapehu result finishes on the target camera", () => {
+  const guess: [number, number] = [11.3, 40];
+  const ruapehu: [number, number] = [175.56861, -39.28167];
+  const plan = buildResultCameraPlan(guess, ruapehu, { compactViewport: true });
+  const end = plan.keyframes.at(-1)!;
+
+  assert.ok(plan.distanceKm > 18_650 && plan.distanceKm < 18_690);
+  assert.equal(plan.targetOnlyEndComposition, true);
+  assert.equal(plan.guessHideProgress, 0.88);
+  assert.deepEqual(end.center, ruapehu);
+  assert.equal(end.pitch, 38);
+  assert.ok(end.zoom >= 3.7);
 });
 
 test("compact result plans reveal the line immediately and the target before the final approach", () => {
