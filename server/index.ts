@@ -7,7 +7,7 @@ import { averageGuess, countryCodeFromGuess, haversineDistanceKm, scoreDistance 
 import { filterLocationsByDifficulty } from "../lib/locationDifficulty";
 import { PLAYER_PALETTE } from "../lib/playerPalette";
 import { evaluatePlayerGuess } from "../lib/roundEvaluation";
-import { captureMatchesRoom, guessFromCapture, serverObservedCaptureBeforeDeadline, type GuessCapture } from "../lib/guessCapture";
+import { captureMatchesRoom, guessFromCapture, onlineSubmissionAuthorized, serverObservedCaptureBeforeDeadline, type GuessCapture } from "../lib/guessCapture";
 import type {
   ClientMessage,
   Cosmetic,
@@ -729,7 +729,7 @@ function submitGuess(client: Client, room: InternalRoom, input: { lat: number; l
   const pending = room.pendingGuesses.get(targetPlayerId);
   const validPending = pending && captureMatchesRoom(room, pending, targetPlayerId) ? pending : null;
   const guessedAt = Date.now();
-  if (room.roundEndsAt !== null && guessedAt > room.roundEndsAt && !validPending) return;
+  if (!onlineSubmissionAuthorized(room.roundEndsAt, guessedAt, Boolean(validPending))) return;
   const guess: Guess = validPending
     ? guessFromCapture({ ...validPending, point: { ...validPending.point, countryCode: countryCode ?? validPending.point.countryCode } })
     : {

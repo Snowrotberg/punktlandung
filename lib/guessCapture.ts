@@ -40,3 +40,7 @@ export function guessFromCapture(capture: GuessCapture): Guess {
 export function serverObservedCaptureBeforeDeadline(roundStartedAt: number, roundEndsAt: number | null, receivedAt: number): boolean {
   return receivedAt >= roundStartedAt && (roundEndsAt === null || receivedAt <= roundEndsAt);
 }
+
+export function onlineSubmissionAuthorized(roundEndsAt: number | null, receivedAt: number, hasServerCapture: boolean): boolean {
+  return roundEndsAt === null || receivedAt <= roundEndsAt || hasServerCapture;
+}

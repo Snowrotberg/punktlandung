@@ -4,6 +4,7 @@ import {
   captureIsWithinDeadline,
   captureMatchesRoom,
   guessFromCapture,
+  onlineSubmissionAuthorized,
   serverObservedCaptureBeforeDeadline,
   type GuessCapture
 } from "../lib/guessCapture";
@@ -60,4 +61,10 @@ test("online authorization uses only the server receive time", () => {
   assert.equal(serverObservedCaptureBeforeDeadline(startedAt, deadlineAt, deadlineAt), true, "the exact server deadline is inclusive");
   assert.equal(serverObservedCaptureBeforeDeadline(startedAt, deadlineAt, deadlineAt + 1), false, "a late frame is rejected regardless of any client timestamp");
   assert.equal(serverObservedCaptureBeforeDeadline(startedAt, deadlineAt, startedAt - 1), false);
+});
+
+test("late online submit requires a capture already observed by the server", () => {
+  assert.equal(onlineSubmissionAuthorized(deadlineAt, deadlineAt, false), true);
+  assert.equal(onlineSubmissionAuthorized(deadlineAt, deadlineAt + 1, false), false, "an ordinary late submit is rejected");
+  assert.equal(onlineSubmissionAuthorized(deadlineAt, deadlineAt + 3_000, true), true, "only a stored server capture survives delayed submit delivery");
 });
