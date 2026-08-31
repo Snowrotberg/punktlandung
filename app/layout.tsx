@@ -6,7 +6,7 @@ import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { StructuredData } from "@/components/StructuredData";
 import { UnifiedTooltipLayer } from "@/components/UnifiedTooltipLayer";
 import { adConfig } from "@/lib/ads";
-import { absoluteUrl, defaultDescription, ogImage, siteName, siteUrl } from "@/lib/seo";
+import { absoluteUrl, defaultDescription, ogImage, siteName, siteUrl, socialDescription, socialTitle } from "@/lib/seo";
 import { mobileAppleWebApp, mobileViewport } from "@/lib/mobileMetadata";
 import "./globals.css";
 
@@ -46,21 +46,21 @@ export const metadata: Metadata = {
     locale: "de_DE",
     url: absoluteUrl("/"),
     siteName,
-    title: `${siteName} - kostenloses Geo-Guessing-Spiel auf Deutsch`,
-    description: defaultDescription,
+    title: socialTitle,
+    description: socialDescription,
     images: [
       {
         url: ogImage,
         width: 1200,
         height: 630,
-        alt: "Punktlandung Geo-Quiz mit Karte und Pin"
+        alt: "Punktlandung mit aktueller 3D-Karte und Spielpin"
       }
     ]
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteName} - kostenloses Geo-Guessing-Spiel auf Deutsch`,
-    description: defaultDescription,
+    title: socialTitle,
+    description: socialDescription,
     images: [ogImage]
   },
   robots: {

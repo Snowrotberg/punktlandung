@@ -23,6 +23,7 @@
     "catalog:sample": "tsx scripts/render-catalog-quality-sample.mjs",
     "catalog:quarantine-images": "tsx scripts/quarantine-image-delivery.ts",
     "assets:optimize-ui": "node scripts/optimize-ui-images.mjs",
+    "assets:social-preview": "node scripts/generate-social-preview.mjs",
     "licenses:generate": "tsx scripts/generate-image-licenses.ts",
     "boundaries:generate": "node scripts/generate-location-boundaries.mjs",
     "boundaries:fetch": "node scripts/generate-location-boundaries.mjs --fetch-osm",

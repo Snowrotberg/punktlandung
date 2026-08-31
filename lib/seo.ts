@@ -1,4 +1,4 @@
-import type { MetadataRoute } from "next";
+import type { Metadata, MetadataRoute } from "next";
 
 export const siteUrl = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://punktlandung.app").replace(/\/$/, "");
 
@@ -7,7 +7,45 @@ export const siteName = "Punktlandung";
 export const defaultDescription =
   "Punktlandung ist ein kostenloses deutschsprachiges Geografie-Partyspiel im Browser. Errate Städte, Hauptstädte, Wahrzeichen, Landschaften und Flaggen - solo oder gemeinsam mit Freunden, ohne Anmeldung.";
 
-export const ogImage = "/og-punktlandung.jpg";
+export const socialTitle = "Punktlandung – Orte erkennen. Punktgenau landen.";
+
+export const socialDescription =
+  "Das kostenlose Geo-Spiel im Browser: Spiele solo, im Party-Modus oder gemeinsam im Online-Raum.";
+
+export const ogImagePath = "/punktlandung-share-v2.jpg";
+export const ogImage = new URL(ogImagePath, siteUrl).toString();
+
+export const onlineRoomMetadata: Metadata = {
+  title: "Online-Raum – gemeinsam Orte erraten",
+  description: "Tritt dem Online-Raum bei und landet gemeinsam möglichst nah am gesuchten Ort.",
+  alternates: {
+    canonical: absoluteUrl("/online-modus")
+  },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: absoluteUrl("/online-modus"),
+    siteName,
+    title: "Punktlandung Online-Raum – gemeinsam Orte erraten",
+    description: "Tritt dem Online-Raum bei und landet gemeinsam möglichst nah am gesuchten Ort.",
+    images: [{ url: ogImage, width: 1200, height: 630, alt: "Punktlandung mit aktueller 3D-Karte und Spielpin" }]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Punktlandung Online-Raum – gemeinsam Orte erraten",
+    description: "Tritt dem Online-Raum bei und landet gemeinsam möglichst nah am gesuchten Ort.",
+    images: [ogImage]
+  },
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false }
+  }
+};
+
+export function metadataForRoomInvite(room: string | undefined): Metadata {
+  return room ? onlineRoomMetadata : {};
+}
 
 export const seoRoutes = [
   {

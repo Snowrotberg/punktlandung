@@ -1,12 +1,19 @@
+import type { Metadata } from "next";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { HomeApp } from "@/components/HomeApp";
 import { SoundProvider } from "@/components/SoundProvider";
 import { accountNavigationState } from "@/lib/accountNavigation.server";
+import { metadataForRoomInvite } from "@/lib/seo";
 import { redirect } from "next/navigation";
 
 type HomeProps = {
-  searchParams: Promise<{ code?: string; error?: string; error_code?: string; error_description?: string }>;
+  searchParams: Promise<{ code?: string; error?: string; error_code?: string; error_description?: string; room?: string }>;
 };
+
+export async function generateMetadata({ searchParams }: HomeProps): Promise<Metadata> {
+  const params = await searchParams;
+  return metadataForRoomInvite(params.room);
+}
 
 export default async function Home({ searchParams }: HomeProps) {
   const authParams = await searchParams;
