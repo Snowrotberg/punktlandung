@@ -15,10 +15,11 @@
 .mineHero p { margin: 0; color: #aebbd0; font-size: .92rem; line-height: 1.55; }
 .mineHero > a, .emptyAction { display: inline-flex; min-height: 2.55rem; flex: 0 0 auto; align-items: center; justify-content: center; padding: 0 .9rem; border: 1px solid var(--pl-mint); border-radius: .7rem; color: var(--pl-mint-ink); background: var(--pl-mint); font-size: .76rem; font-weight: 800; text-decoration: none; }
 .process { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; }
-.process span { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(2em, auto); align-content: start; justify-items: start; gap: .18rem; padding: .7rem; border: 1px solid rgba(148,163,184,.2); border-radius: .75rem; color: #9aabc1; background: rgb(14 21 39 / .55); font-size: .66rem; line-height: 1.25; text-align: left; }
-.process svg { width: 1rem; height: 1rem; color: var(--pl-mint); }
-.process b { color: #dffcf1; }
-.process span :last-child { grid-column: 1; }
+.processMetric { display: grid; min-width: 0; min-height: 4.4rem; grid-template-columns: 1.25rem minmax(0, 1fr); align-items: center; gap: .6rem; padding: .7rem; border: 1px solid rgba(148,163,184,.2); border-radius: .75rem; color: #9aabc1; background: rgb(14 21 39 / .55); font-size: .66rem; line-height: 1.25; text-align: left; }
+.processMetric > svg { width: 1.15rem; height: 1.15rem; color: var(--pl-mint); }
+.processMetricCopy { display: grid; min-width: 0; align-content: center; gap: .12rem; }
+.processMetricCopy b { color: #dffcf1; font-size: 1rem; line-height: 1; }
+.processMetricCopy > span { display: block; overflow-wrap: normal; }
 .composer, .ideas { border: 1px solid rgba(148,163,184,.22); border-radius: 1rem; background: rgb(14 21 39 / .66); box-shadow: 0 1rem 2.6rem rgb(0 0 0 / .14); }
 .composer { padding: clamp(1rem, 2vw, 1.35rem); }
 .composerIntro { display: flex; align-items: center; gap: .8rem; }
@@ -184,7 +185,9 @@
   .mineHero { align-items: stretch; flex-direction: column; }
   .mineHero > a { width: 100%; }
   .process { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; }
-  .process span { align-content: start; padding: .6rem .5rem; font-size: .6rem; }
+  .processMetric { min-height: 4.2rem; grid-template-columns: 1.15rem minmax(0, 1fr); gap: .4rem; padding: .6rem .5rem; font-size: .6rem; }
+  .processMetric > svg { width: 1.05rem; height: 1.05rem; }
+  .processMetricCopy b { font-size: .9rem; }
   .formFooter, .signInPrompt { align-items: stretch; flex-direction: column; }
   .formFooter button, .signInPrompt a { width: 100%; }
   .ideaCard { grid-template-columns: minmax(0, 1fr) 4.35rem; padding-inline: .85rem; }

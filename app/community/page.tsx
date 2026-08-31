@@ -97,9 +97,18 @@ export default async function CommunityPage({ searchParams }: CommunityPageProps
                 <p>Schlage Funktionen vor, stimme für gute Ideen ab und sieh, woran als Nächstes gearbeitet wird.</p>
               </div>
               <div className={styles.process} id="ablauf">
-                <span><Lightbulb aria-hidden="true" /><b>{metrics.ideasInVoting}</b> {metrics.ideasInVoting === 1 ? "Idee im Voting" : "Ideen im Voting"}</span>
-                <span><CalendarCheck2 aria-hidden="true" /><b>{metrics.plannedIdeas}</b> Geplant</span>
-                <span><ArrowBigUp aria-hidden="true" /><b>{metrics.votesCast}</b> {metrics.votesCast === 1 ? "Stimme abgegeben" : "Stimmen abgegeben"}</span>
+                <span className={styles.processMetric}>
+                  <Lightbulb aria-hidden="true" />
+                  <span className={styles.processMetricCopy}><b>{metrics.ideasInVoting}</b><span>{metrics.ideasInVoting === 1 ? "Idee im Voting" : "Ideen im Voting"}</span></span>
+                </span>
+                <span className={styles.processMetric}>
+                  <CalendarCheck2 aria-hidden="true" />
+                  <span className={styles.processMetricCopy}><b>{metrics.plannedIdeas}</b><span>Geplant</span></span>
+                </span>
+                <span className={styles.processMetric}>
+                  <ArrowBigUp aria-hidden="true" />
+                  <span className={styles.processMetricCopy}><b>{metrics.votesCast}</b><span>{metrics.votesCast === 1 ? "Stimme abgegeben" : "Stimmen abgegeben"}</span></span>
+                </span>
               </div>
             </section>
 
