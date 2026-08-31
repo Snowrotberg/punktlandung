@@ -40,6 +40,15 @@ test("mobile section navigation keeps its divider visible around smaller route p
   assert.doesNotMatch(styles, /min-height: 2\.75rem !important/);
 });
 
+test("shared section navigation never changes chip geometry on hover, press or focus", async () => {
+  const source = await read("components/SectionNavigation.module.css");
+
+  assert.match(source, /\.links a,[\s\S]*?transform:\s*none;[\s\S]*?transition:\s*background-color/);
+  assert.match(source, /\.links a:active,[\s\S]*?\.cookieButton:active\s*\{\s*transform:\s*none;/);
+  assert.match(source, /\.links a:focus-visible,[\s\S]*?outline-offset:\s*-3px;/);
+  assert.doesNotMatch(source, /transform:\s*var\(--pl-choice-hover-transform\)/);
+});
+
 test("account and admin choice surfaces consume the same active, hover and focus tokens", async () => {
   const files = await Promise.all([
     read("components/SectionNavigation.module.css"),

@@ -42,9 +42,11 @@
   font: inherit;
   font-size: .72rem;
   font-weight: 750;
+  line-height: 1;
   text-decoration: none;
   white-space: nowrap;
-  transition: var(--pl-choice-transition);
+  transform: none;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 .itemSlot {
@@ -58,14 +60,19 @@
   border-color: var(--pl-choice-active-border);
   color: var(--pl-text);
   background: var(--pl-choice-hover-surface);
-  transform: var(--pl-choice-hover-transform);
+  transform: none;
   outline: none;
 }
 
 .links a:focus-visible,
 .cookieButton:focus-visible {
   outline: var(--pl-choice-focus-outline);
-  outline-offset: var(--pl-choice-focus-offset);
+  outline-offset: -3px;
+}
+
+.links a:active,
+.cookieButton:active {
+  transform: none;
 }
 
 .links a[aria-current="page"] {
