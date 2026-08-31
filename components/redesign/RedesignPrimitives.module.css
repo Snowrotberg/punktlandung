@@ -815,6 +815,11 @@
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
   }
+
+  .shell > .header .button {
+    min-height: 2.5rem;
+    padding-block: .5rem;
+  }
 }
 
 /* Laptop: wordmark and WEB +10%; pin remains unchanged. */

@@ -25,6 +25,34 @@ test("public map test route reuses GuessMap and stays noindex", async () => {
   assert.doesNotMatch(client, /new\s+Leaflet|MapContainer/);
 });
 
+test("short landscape map test reserves a real visible basemap surface", async () => {
+  const [globals, responsive] = await Promise.all([
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/responsive-check.mjs", import.meta.url), "utf8")
+  ]);
+  assert.match(globals, /@media \(max-width: 879px\) and \(max-height: 520px\) and \(orientation: landscape\)[\s\S]*?\.punktlandung-map-test-page > div\s*\{[\s\S]*?height:\s*100%;[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\);[\s\S]*?\.punktlandung-map-test-stage\s*\{\s*height:\s*auto;/);
+  assert.match(responsive, /mapSurface\.width < 240 \|\| mapSurface\.height < 180/);
+});
+
+test("round counters keep the nowrap and tabular contract outside breakpoint-specific sizing", async () => {
+  const [globals, responsive] = await Promise.all([
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/responsive-check.mjs", import.meta.url), "utf8")
+  ]);
+  assert.match(globals, /body \.punktlandung-game-shell \.punktlandung-game-stat-value-round\s*\{\s*font-variant-numeric:\s*tabular-nums;\s*white-space:\s*nowrap;\s*\}/);
+  assert.match(responsive, /!roundHud\.nowrap \|\| !roundHud\.tabular/);
+});
+
+test("short portrait image recovery reclaims viewer space without overlapping the map", async () => {
+  const [globals, responsive] = await Promise.all([
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/responsive-check.mjs", import.meta.url), "utf8")
+  ]);
+  assert.match(globals, /@media \(max-width: 879px\) and \(max-height: 700px\) and \(orientation: portrait\)[\s\S]*?\.punktlandung-game-shell:has\(\.punktlandung-image-loader--recovery\)[\s\S]*?--mobile-game-map-closed-h:\s*clamp\(16\.5rem, 44dvh, 18rem\)/);
+  assert.match(responsive, /!metrics\.imageRecoverySafety\.avoidsMap/);
+  assert.match(responsive, /!metrics\.imageRecoverySafety\.receivesPointer/);
+});
+
 test("coarse map controls suppress visible tooltips without losing accessible labels", async () => {
   const [tooltip, globe, globals, game, results] = await Promise.all([
     readFile(new URL("../components/UnifiedTooltipLayer.tsx", import.meta.url), "utf8"),

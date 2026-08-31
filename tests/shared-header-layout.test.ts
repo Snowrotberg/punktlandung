@@ -23,6 +23,7 @@ test("the shared shell owns a full-width content raster outside the header no-go
   assert.match(shared, /\.shell::before\s*\{[\s\S]*?background-repeat:\s*repeat-y;[\s\S]*?background-size:\s*100% var\(--pl-grid-size\);/);
   assert.match(shared, /@media \(max-width: 30rem\)[\s\S]*?--pl-header-height:\s*4rem;[\s\S]*?--pl-horizontal-grid-start:\s*var\(--pl-header-height\);/);
   assert.match(shared, /@media \(orientation: landscape\)[\s\S]*?--pl-header-height:\s*4rem;[\s\S]*?--pl-horizontal-grid-start:\s*var\(--pl-header-height\);/);
+  assert.match(shared, /@media \(orientation: landscape\)[\s\S]*?\.shell > \.header \.button\s*\{[\s\S]*?min-height:\s*2\.5rem;[\s\S]*?padding-block:\s*\.5rem;/);
   assert.doesNotMatch(home, /background-position:\s*0 0, 0 0, 0 0, 0 4rem;/);
 });
 

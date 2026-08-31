@@ -21122,6 +21122,15 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
   }
 }
 
+/* A short portrait viewport cannot hold the full recovery message and the
+ * normal 21rem map rail simultaneously. Reclaim only the space needed while
+ * recovery is active so its action stays inside the viewer and above the map. */
+@media (max-width: 879px) and (max-height: 700px) and (orientation: portrait) {
+  body .punktlandung-game-shell:has(.punktlandung-image-loader--recovery) {
+    --mobile-game-map-closed-h: clamp(16.5rem, 44dvh, 18rem);
+  }
+}
+
 /* Final mobile map-control cascade: keep the full-map header below the game
  * HUD and use the same three-action ordering in replay. */
 @media (max-width: 879px) and (orientation: portrait),
@@ -21354,6 +21363,14 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
   }
 }
 
+/* Round values keep their digit rhythm at every viewport. The width reservation
+ * remains viewport-specific below, but the value itself must never wrap or
+ * fall back to proportional figures while responsive layouts are switching. */
+body .punktlandung-game-shell .punktlandung-game-stat-value-round {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* Round counters reserve the widest supported two-digit fraction so 9/10,
  * 10/10 and 20/20 never reflow the mobile HUD. */
 @media (max-width: 879px) and (orientation: portrait) {
@@ -21451,5 +21468,24 @@ body :is(.punktlandung-back-button, .punktlandung-back-link, .punktlandung-route
 
   .punktlandung-map-test-actions > button {
     flex: 1 1 8.5rem;
+  }
+}
+
+@media (max-width: 879px) and (max-height: 520px) and (orientation: landscape) {
+  .punktlandung-map-test-page {
+    padding-block: 0.5rem !important;
+  }
+
+  .punktlandung-map-test-page > div {
+    height: 100%;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .punktlandung-map-test-page header {
+    padding-block: 0.5rem;
+  }
+
+  .punktlandung-map-test-stage {
+    height: auto;
   }
 }
