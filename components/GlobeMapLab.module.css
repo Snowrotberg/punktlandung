@@ -616,8 +616,8 @@
 .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button::after) {
   content: "×";
   display: grid;
-  width: 2.475rem;
-  height: 2.475rem;
+  width: 2rem;
+  height: 2rem;
   place-items: center;
   border: 1px solid rgba(94, 231, 189, 0.66);
   border-radius: 999px;
@@ -755,8 +755,8 @@
 
 .mobileInfoDialog .mobileInfoClose span {
   display: grid;
-  width: 2.475rem;
-  height: 2.475rem;
+  width: 2rem;
+  height: 2rem;
   place-items: center;
   border: 1px solid rgba(94, 231, 189, 0.66);
   border-radius: 999px;

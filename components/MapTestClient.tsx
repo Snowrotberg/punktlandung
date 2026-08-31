@@ -9,6 +9,7 @@ export function MapTestClient() {
   const [guess, setGuess] = useState<LatLng | null>(null);
   const [maximized, setMaximized] = useState(false);
   const [resetNonce, setResetNonce] = useState(0);
+  const [baseMapReady, setBaseMapReady] = useState(false);
 
   const resetMap = () => {
     setGuess(null);
@@ -37,12 +38,17 @@ export function MapTestClient() {
           Karte zurücksetzen
         </Button>
       </div>
-      <div className="punktlandung-map-test-map pin-cursor">
+      <div
+        className="punktlandung-map-test-map pin-cursor"
+        data-map-ready={baseMapReady}
+        aria-busy={!baseMapReady}
+      >
         <GuessMap
           guess={guess}
           onGuess={setGuess}
           resetSignal={resetNonce}
           resizeSignal={maximized ? "maximized" : "embedded"}
+          onBaseMapReady={() => setBaseMapReady(true)}
         />
       </div>
     </section>

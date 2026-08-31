@@ -6602,12 +6602,6 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   opacity: 0;
 }
 
-@media (hover: none), (pointer: coarse) {
-  .punktlandung-unified-tooltip {
-    display: none !important;
-  }
-}
-
 .punktlandung-home-map-live-layer.is-ready {
   z-index: 3;
   opacity: 1;
@@ -8677,8 +8671,8 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 .punktlandung-location-info-popup .leaflet-popup-close-button::after {
   content: "×";
   display: grid;
-  width: 2.025rem;
-  height: 2.025rem;
+  width: 2rem;
+  height: 2rem;
   place-items: center;
   border: 1px solid rgba(94, 231, 189, 0.66);
   border-radius: 999px;

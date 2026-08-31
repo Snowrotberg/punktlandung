@@ -362,7 +362,7 @@ const globePhaseOneCases = [
     targetOnlyEnd: true
   },
   {
-    id: "ruapehu-18669",
+    id: "extreme-target-route-tail-18669",
     location: {
       ...sampleLocation,
       id: "landscapes-ruapehu-qa",
@@ -377,7 +377,8 @@ const globePhaseOneCases = [
     },
     guess: { lat: 40, lng: 11.3 },
     distanceKm: 18_669,
-    targetOnlyEnd: true
+    targetOnlyEnd: true,
+    routeEntrySide: "left"
   }
 ];
 
@@ -552,7 +553,7 @@ const targets = [
     access: "route",
     path: "/karte",
     expectedText: "Karte testen",
-    readySelector: ".punktlandung-map-test-map .leaflet-container",
+    readySelector: ".punktlandung-map-test-map[data-map-ready='true'] .leaflet-container",
     expectGuessMapCamera: true,
     expectNoMobileMapTooltip: true,
     note: "Oeffentliche noindex-Testseite verwendet die produktive interaktive Spielkarte"
@@ -829,7 +830,8 @@ const targets = [
     expectedBearingSign: testCase.expectedBearingSign,
     expectTouchControlDismissal: testCase.expectTouchControlDismissal,
     allowOmittedGlobeRoute: testCase.allowOmittedRoute === true,
-    expectTargetOnlyEnd: testCase.targetOnlyEnd === true,
+    expectExtremeTargetRouteTail: testCase.targetOnlyEnd === true,
+    expectedRouteEntrySide: testCase.routeEntrySide,
     expectRevealSequence: testCase.id === "salzburg",
     readyTimeoutMs: testCase.id === "salzburg" ? 40000 : 30000,
     note: `Dynamische Solo-Auflösung für Phase-1-Globe-Fall ${testCase.location.title}`
@@ -1815,6 +1817,55 @@ async function collectLayoutMetrics(page, readySelector = null) {
         return centerDistance - ellipseRadius;
       });
     })();
+    const routeVisibleEntry = (() => {
+      const route = globeRoutes[0];
+      if (!(route instanceof SVGPathElement) || !globeFrameRect) return null;
+      const length = route.getTotalLength();
+      const matrix = route.getScreenCTM();
+      if (length <= 0 || !matrix) return null;
+      const screenPoint = (distance) => {
+        const point = route.getPointAtLength(distance).matrixTransform(matrix);
+        return { x: point.x, y: point.y };
+      };
+      const inside = (point) => point.x >= globeFrameRect.left
+        && point.x <= globeFrameRect.right
+        && point.y >= globeFrameRect.top
+        && point.y <= globeFrameRect.bottom;
+      let entry = null;
+      for (let index = 0; index <= 480; index += 1) {
+        const point = screenPoint((length * index) / 480);
+        if (inside(point)) {
+          entry = point;
+          break;
+        }
+      }
+      if (!entry) return null;
+      const edgeDistances = {
+        left: Math.abs(entry.x - globeFrameRect.left),
+        right: Math.abs(globeFrameRect.right - entry.x),
+        top: Math.abs(entry.y - globeFrameRect.top),
+        bottom: Math.abs(globeFrameRect.bottom - entry.y)
+      };
+      const side = Object.entries(edgeDistances).sort((first, second) => first[1] - second[1])[0][0];
+      return { x: entry.x, y: entry.y, side, edgeInset: edgeDistances[side] };
+    })();
+    const targetInfoCloseControl = (() => {
+      const button = [...document.querySelectorAll("button[aria-label='Zusatzinformationen schließen']")].find(visible);
+      if (!(button instanceof HTMLElement)) return null;
+      const hitRect = button.getBoundingClientRect();
+      const inner = [...button.children].find(visible);
+      const visualRect = inner?.getBoundingClientRect() ?? null;
+      const pseudo = getComputedStyle(button, "::after");
+      const pseudoWidth = Number.parseFloat(pseudo.width);
+      const pseudoHeight = Number.parseFloat(pseudo.height);
+      return {
+        hitWidth: hitRect.width,
+        hitHeight: hitRect.height,
+        visualWidth: visualRect?.width ?? pseudoWidth,
+        visualHeight: visualRect?.height ?? pseudoHeight,
+        glyph: (inner?.textContent ?? pseudo.content).replaceAll('"', "")
+      };
+    })();
     const globeInfoOverlay = globeFrame?.querySelector(".punktlandung-globe-info-overlay") ?? null;
     const globeInfoOverlayRect = globeInfoOverlay?.getBoundingClientRect() ?? null;
     const navigationRect = globeFrame?.querySelector(".maplibregl-ctrl-top-right")?.getBoundingClientRect() ?? null;
@@ -2026,6 +2077,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
           && rect.bottom <= globeFrameRect.bottom - 16 + 0.25
         ),
         routeEndpointClearances,
+        routeVisibleEntry,
         terrainExaggeration: Number(
           globeFrame.getAttribute("data-terrain-exaggeration")
           ?? globeFrame.querySelector("[data-terrain-exaggeration]")?.getAttribute("data-terrain-exaggeration")
@@ -2083,6 +2135,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
         avoidsNavigation: !overlaps(globeInfoOverlayRect, navigationRect),
         avoidsAttribution: !overlaps(globeInfoOverlayRect, attributionRect)
       } : null,
+      targetInfoCloseControl,
       imageRecoverySafety: recoveryButtonRect && recoveryViewerRect ? {
         insideViewer: recoveryButtonRect.left >= recoveryViewerRect.left
           && recoveryButtonRect.right <= recoveryViewerRect.right
@@ -2713,6 +2766,13 @@ async function runTargetViewport(browser, target, viewport) {
 
     if (target.expectGuessMapCamera) {
       const map = page.locator(".punktlandung-map-test-map .leaflet-container").first();
+      const mapSurface = await page.locator(".punktlandung-map-test-map[data-map-ready='true'] .maplibregl-canvas").first().evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      });
+      if (mapSurface.width < 240 || mapSurface.height < 180) {
+        problems.push(`Die produktive Testkarte meldet Ready ohne sichtbare MapLibre-Flaeche (${JSON.stringify(mapSurface)}).`);
+      }
       const readCamera = () => map.evaluate((element) => ({
         zoom: Number(element.getAttribute("data-current-zoom")),
         lat: Number(element.getAttribute("data-current-lat")),
@@ -3175,29 +3235,46 @@ async function runTargetViewport(browser, target, viewport) {
     )) {
       problems.push("Zielinfo, beide Pins und beide Labels liegen nicht vollständig und richtungsrichtig innerhalb der Auflösungskarte.");
     }
+    if (target.expectCloseAndReopen && (
+      !metrics.targetInfoCloseControl
+      || metrics.targetInfoCloseControl.hitWidth < 44
+      || metrics.targetInfoCloseControl.hitHeight < 44
+      || metrics.targetInfoCloseControl.visualWidth < 30
+      || metrics.targetInfoCloseControl.visualWidth > 33
+      || metrics.targetInfoCloseControl.visualHeight < 30
+      || metrics.targetInfoCloseControl.visualHeight > 33
+      || metrics.targetInfoCloseControl.glyph !== "×"
+    )) {
+      problems.push(`Das Zielinfo-X hat keine getrennte 44-px-Hitbox und kompakte sichtbare Kreisform (${JSON.stringify(metrics.targetInfoCloseControl)}).`);
+    }
     if (target.expectGlobeSafeArea && (
       !metrics.globeResultSafety
-      || metrics.globeResultSafety.markerCount !== (target.expectTargetOnlyEnd ? 1 : 2)
-      || (target.expectTargetOnlyEnd
+      || metrics.globeResultSafety.markerCount !== (target.expectExtremeTargetRouteTail ? 1 : 2)
+      || (target.expectExtremeTargetRouteTail
         ? metrics.globeResultSafety.routeCount !== 1
         : target.allowOmittedGlobeRoute
         ? ![0, 1].includes(metrics.globeResultSafety.routeCount)
         : metrics.globeResultSafety.routeCount !== 1)
-      || !(target.expectTargetOnlyEnd ? metrics.globeResultSafety.markersInside : metrics.globeResultSafety.allInside)
+      || !(target.expectExtremeTargetRouteTail ? metrics.globeResultSafety.markersInside : metrics.globeResultSafety.allInside)
       || !metrics.globeResultSafety.controlsGerman
       || metrics.globeResultSafety.targetPinAnimations.some((animationName) => !animationName.includes("targetIdle"))
-      || (!target.expectTargetOnlyEnd && metrics.globeResultSafety.routeAnimations.some((animationName) => animationName === "none"))
+      || (!target.expectExtremeTargetRouteTail && metrics.globeResultSafety.routeAnimations.some((animationName) => animationName === "none"))
       || !metrics.globeResultSafety.routeSettled
       || metrics.globeResultSafety.targetLanding
-      || metrics.globeResultSafety.visibleLabelCount !== (target.expectTargetOnlyEnd ? 1 : 2)
+      || metrics.globeResultSafety.visibleLabelCount !== (target.expectExtremeTargetRouteTail ? 1 : 2)
       || !["settled", "reduced-settled"].includes(metrics.globeResultSafety.revealPhase)
       || !metrics.globeResultSafety.controlStacking?.controlsAboveContent
       || (metrics.globeResultSafety.routeCount === 1
-        && (target.expectTargetOnlyEnd
+        && (target.expectExtremeTargetRouteTail
           ? (metrics.globeResultSafety.routeEndpointClearances?.at(-1) ?? Number.NEGATIVE_INFINITY) < 4
           : !metrics.globeResultSafety.routeEndpointClearances?.every((clearance) => clearance >= 4)))
+      || (target.expectExtremeTargetRouteTail && (
+        !metrics.globeResultSafety.routeVisibleEntry
+        || metrics.globeResultSafety.routeVisibleEntry.edgeInset > 12
+        || (target.expectedRouteEntrySide && metrics.globeResultSafety.routeVisibleEntry.side !== target.expectedRouteEntrySide)
+      ))
       || !metrics.globeCompositionStability
-      || metrics.globeCompositionStability.markerCount !== (target.expectTargetOnlyEnd ? 1 : 2)
+      || metrics.globeCompositionStability.markerCount !== (target.expectExtremeTargetRouteTail ? 1 : 2)
       || metrics.globeCompositionStability.maxMovementPx > 1
     )) {
       problems.push(`Globe-Ergebnis verletzt Safe Area, eindeutige Linienzeichnung, Ellipsenabstand oder deutsche Steuerungslogik (${JSON.stringify(metrics.globeResultSafety)}).`);

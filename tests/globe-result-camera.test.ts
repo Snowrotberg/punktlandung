@@ -45,7 +45,7 @@ test("target-only transition is stable immediately below, at and above the estab
   assert.equal(usesTargetOnlyEndComposition(TARGET_ONLY_END_DISTANCE_KM + 0.001), true);
 });
 
-test("18,669 km Ruapehu result finishes on the target camera", () => {
+test("extreme target-only result keeps its target camera while the route tail remains drawable", () => {
   const guess: [number, number] = [11.3, 40];
   const ruapehu: [number, number] = [175.56861, -39.28167];
   const plan = buildResultCameraPlan(guess, ruapehu, { compactViewport: true });
