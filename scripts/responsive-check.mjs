@@ -565,7 +565,7 @@ const targets = [
     path: "/",
     resetSession: true,
     clickSelector: ".punktlandung-home-map-preview [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']",
-    expectedText: "Das Brandenburger Tor ist eines der bekanntesten Wahrzeichen Berlins.",
+    expectedText: "Das Brandenburger Tor wurde zwischen 1788 und 1791 als Abschluss der Straße Unter den Linden errichtet.",
     readySelector: ".punktlandung-home-map-preview .kartenlabor-result-popup, .punktlandung-home-map-preview .punktlandung-globe-info-overlay",
     readyTimeoutMs: 40000,
     expectGlobeInfoOverlay: true,
