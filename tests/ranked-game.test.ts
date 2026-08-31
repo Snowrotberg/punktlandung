@@ -132,15 +132,20 @@ test("invalid coordinates, wrong rounds and late captures are rejected", () => {
 });
 
 test("ranked deadline is inclusive at the exact server boundary and rejects the next millisecond", () => {
-  const atBoundary = submitRankedGuess(game(1), {
+  const capturedAtBoundary = captureRankedGuess(game(1), {
     guessId: "boundary",
     roundId: "round-1",
     point: { lat: 48, lng: 9 },
     now: 61_000
   });
+  const atBoundary = submitRankedGuess(capturedAtBoundary, {
+    guessId: "boundary",
+    roundId: "round-1",
+    now: 61_000
+  });
   assert.equal(atBoundary.rounds[0].guess?.createdAt, 61_000);
 
-  expectCode("round_expired", () => submitRankedGuess(game(1), {
+  expectCode("round_expired", () => captureRankedGuess(game(1), {
     guessId: "one-ms-late",
     roundId: "round-1",
     point: { lat: 48, lng: 9 },
