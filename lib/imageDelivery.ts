@@ -1,4 +1,6 @@
 const imageWidthSteps = [800, 1000, 1200, 1400, 1600, 1800, 2200, 2600, 3200, 3840] as const;
+export const maximumQualityGateOverrideWidth = 1600;
+const maximumAcceptedGameplayAspectRatio = 3.4;
 
 export type GameplayImageGeometry = {
   viewportHeight?: number;
@@ -28,11 +30,14 @@ export function gameplayImageWidth(
     && geometry.sourceHeight! > 0
     ? geometry.sourceWidth! / geometry.sourceHeight!
     : 0;
+  // The downstream image gate rejects ratios above 3.4. Do not request a
+  // multi-megapixel object-cover crop for a source that cannot pass that gate.
+  const sizingAspectRatio = Math.min(sourceAspectRatio, maximumAcceptedGameplayAspectRatio);
   // object-cover can render an image wider than its CSS box when a panoramic
   // source is cropped vertically. Account for that rendered width instead of
   // sizing only from the container width.
-  const coveredCssWidth = sourceAspectRatio > 0 && safeViewportHeight > 0
-    ? Math.max(safeViewportWidth, safeViewportHeight * sourceAspectRatio)
+  const coveredCssWidth = sizingAspectRatio > 0 && safeViewportHeight > 0
+    ? Math.max(safeViewportWidth, safeViewportHeight * sizingAspectRatio)
     : safeViewportWidth;
   const safePixelRatio = Math.min(Math.max(Number.isFinite(devicePixelRatio) ? devicePixelRatio : 1, 1), 2.5);
   const desiredWidth = coveredCssWidth * safePixelRatio * 1.08;
@@ -44,11 +49,14 @@ export function gameplayImageWidth(
   // contract for wide panoramas, causing valid images to be downloaded and
   // then discarded. Keep the network cap for ordinary images, but raise it to
   // the smallest existing thumbnail step that can pass the same quality gate.
-  const minimumQualityWidth = sourceAspectRatio > 0
-    ? Math.max(760, 420 * sourceAspectRatio, Math.sqrt(420_000 * sourceAspectRatio))
+  const minimumQualityWidth = sizingAspectRatio > 0
+    ? Math.max(760, 420 * sizingAspectRatio, Math.sqrt(420_000 * sizingAspectRatio))
     : 0;
   const qualityWidth = minimumQualityWidth > 0
-    ? imageWidthSteps.find((width) => width >= minimumQualityWidth) ?? imageWidthSteps.at(-1)!
+    ? Math.min(
+        imageWidthSteps.find((width) => width >= minimumQualityWidth) ?? maximumQualityGateOverrideWidth,
+        maximumQualityGateOverrideWidth
+      )
     : 0;
   const networkBoundedWidth = (cap: number) => Math.max(Math.min(roundedWidth, cap), qualityWidth);
 
@@ -56,7 +64,7 @@ export function gameplayImageWidth(
     return networkBoundedWidth(800);
   }
   if (effectiveType === "3g") return networkBoundedWidth(1000);
-  return roundedWidth;
+  return Math.max(roundedWidth, qualityWidth);
 }
 
 export function directImageFallbackDelayMs(effectiveType?: string): number {

@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { directImageFallbackDelayMs, gameplayImageWidth, normalizeEffectiveConnectionType } from "../lib/imageDelivery";
+import {
+  directImageFallbackDelayMs,
+  gameplayImageWidth,
+  maximumQualityGateOverrideWidth,
+  normalizeEffectiveConnectionType
+} from "../lib/imageDelivery";
 
 test("gameplay images match the viewport while remaining bounded", () => {
   assert.equal(gameplayImageWidth(390, 2, { effectiveType: "4g" }), 1000);
@@ -39,6 +44,27 @@ test("slow connections still request panoramas large enough to pass the image ga
   assert.equal(gameplayImageWidth(390, 2, { effectiveType: "3g" }, panorama), 1400);
   assert.equal(gameplayImageWidth(390, 2, { effectiveType: "2g" }, panorama), 1400);
   assert.equal(gameplayImageWidth(390, 2, { effectiveType: "4g", saveData: true }, panorama), 1400);
+});
+
+test("the image gate applies to 4g and unknown connections even at DPR 1", () => {
+  const panorama = {
+    viewportHeight: 292.5,
+    sourceWidth: 14_896,
+    sourceHeight: 5_127
+  };
+
+  assert.equal(gameplayImageWidth(390, 1, { effectiveType: "4g" }, panorama), 1400);
+  assert.equal(gameplayImageWidth(390, 1, {}, panorama), 1400);
+});
+
+test("quality-gate overrides stay bounded for pathological source geometry", () => {
+  const width = gameplayImageWidth(390, 1, { effectiveType: "4g" }, {
+    viewportHeight: 292.5,
+    sourceWidth: 20_000,
+    sourceHeight: 1_000
+  });
+
+  assert.equal(width, maximumQualityGateOverrideWidth);
 });
 
 test("direct fallback waits longer when a slow connection is still making progress", () => {
