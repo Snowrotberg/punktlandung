@@ -101,6 +101,15 @@ try {
   await invalid.getByRole("button", { name: "Beitreten" }).click();
   await invalid.getByText("Diesen Raum gibt es nicht mehr.").waitFor();
 
+  const invalidQueryContext = await contextFor({ width: 360, height: 800 });
+  const invalidQuery = await invalidQueryContext.newPage();
+  watch(invalidQuery, "invalid-query");
+  await invalidQuery.goto(`${baseUrl}/online-modus?room=ABC`, { waitUntil: "domcontentloaded" });
+  await invalidQuery.getByRole("heading", { name: "Passt eure Partie an" }).waitFor();
+  await invalidQuery.getByText("Ein Raumcode besteht aus 6 Zeichen.").waitFor();
+  assert.equal(await invalidQuery.getByLabel("Raum beitreten").inputValue(), "ABC");
+  await invalidQuery.screenshot({ path: path.join(artifactDir, "04-invalid-query-phone.png"), fullPage: true, caret: "initial" });
+
   for (const { name, viewport } of [
     { name: "phone-small", viewport: { width: 360, height: 800 } },
     { name: "phone-large", viewport: { width: 430, height: 932 } },

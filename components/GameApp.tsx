@@ -512,6 +512,7 @@ export function GameApp({
     setJoinCodeInput(roomCode);
     const validationMessage = onlineRoomCodeValidationMessage(roomCode);
     if (validationMessage) {
+      setPendingJoinCode(null);
       setJoinCodeError(validationMessage);
       return;
     }
@@ -570,7 +571,8 @@ export function GameApp({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (rankedRestoring || localGame.restoring) return;
-    if (params.get("room")) return;
+    const requestedRoomCode = params.get("room");
+    if (requestedRoomCode && !onlineRoomCodeValidationMessage(normalizeOnlineRoomCode(requestedRoomCode))) return;
     const queryMode = params.get("mode");
     const pathMode = modeFromPathname(window.location.pathname);
     const routeMode = initialMode === "home" ? pathMode : initialMode;

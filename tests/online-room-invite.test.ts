@@ -23,13 +23,15 @@ test("new invitation links use the canonical online route", () => {
   );
 });
 
-test("legacy root invitations redirect and pending joins bypass the empty route guard", () => {
+test("legacy root invitations redirect while invalid query codes still initialize setup", () => {
   const home = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
   const gameApp = readFileSync(new URL("../components/GameApp.tsx", import.meta.url), "utf8");
   const setup = readFileSync(new URL("../components/redesign/RedesignSetupView.tsx", import.meta.url), "utf8");
   assert.match(home, /redirect\(onlineRoomPath\(authParams\.room\)\)/);
   assert.match(gameApp, /initialMode !== "home" && !room && !pendingJoinCode/);
   assert.match(gameApp, /if \(pendingJoinCode && !onlineGame\.room\)/);
+  assert.match(gameApp, /requestedRoomCode && !onlineRoomCodeValidationMessage\(normalizeOnlineRoomCode\(requestedRoomCode\)\)/);
+  assert.match(gameApp, /setPendingJoinCode\(null\);\s+setJoinCodeError\(validationMessage\)/);
   assert.match(setup, /<form action="\/online-modus" method="get"/);
   assert.match(setup, /name="room"[^>]*required minLength=\{6\} maxLength=\{6\}/);
 });
