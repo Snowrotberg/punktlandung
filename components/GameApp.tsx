@@ -26,6 +26,7 @@ import {
 } from "@/lib/gameplayRoute";
 import { punktlandungMapStyleUrl } from "@/lib/mapStyle";
 import { normalizeOnlineRoomCode, onlineRoomCodeValidationMessage, onlineRoomPath } from "@/lib/onlineRoomInvite";
+import type { GuessCapture } from "@/lib/guessCapture";
 import { useRankedSoloGame } from "@/hooks/useRankedSoloGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
 import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
@@ -463,6 +464,7 @@ export function GameApp({
     return () => window.removeEventListener("popstate", handleGameHistoryReturn);
   }, [gameplayRoute, pathname, rankedSoloContext, restorationPending, resumePending, room]);
   const markLocationReady = "markLocationReady" in activeGame ? activeGame.markLocationReady : undefined;
+  const captureGuess = "captureGuess" in activeGame ? activeGame.captureGuess : undefined;
 
   useEffect(() => {
     if (!room) return;
@@ -741,7 +743,7 @@ export function GameApp({
     freshStartAfterResumeRef.current = false;
     void handleStartRound();
   }, [resumePending, room?.status]);
-  const handleSubmitGuess = (guess: LatLng & { countryCode?: string }, targetPlayerId?: string) => submitGuess(guess, targetPlayerId);
+  const handleSubmitGuess = (guess: LatLng & { countryCode?: string }, targetPlayerId?: string, capture?: GuessCapture) => submitGuess(guess, targetPlayerId, capture);
   const handleSetTeam = (team: TeamId) => setTeam(team);
   const handleCancelRound = () => {
     const resultRouteTarget = requiredStatus
@@ -965,6 +967,7 @@ export function GameApp({
         me={me}
         isHost={isHost}
         onGuess={handleSubmitGuess}
+        onGuessCapture={captureGuess}
         onCancelRound={handleCancelRound}
         onSkipLocation={skipLocation}
         onImageReady={markLocationReady}

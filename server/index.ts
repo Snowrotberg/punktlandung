@@ -7,6 +7,7 @@ import { averageGuess, countryCodeFromGuess, haversineDistanceKm, scoreDistance 
 import { filterLocationsByDifficulty } from "../lib/locationDifficulty";
 import { PLAYER_PALETTE } from "../lib/playerPalette";
 import { evaluatePlayerGuess } from "../lib/roundEvaluation";
+import { captureMatchesRoom, guessFromCapture, onlineCaptureReachedServerInTime, trustedOnlineCaptureAt, type GuessCapture } from "../lib/guessCapture";
 import type {
   ClientMessage,
   Cosmetic,
@@ -45,6 +46,7 @@ type InternalRoom = RoomState & {
   nextRoundPromptToken: string | null;
   nextRoundPromptLocationId: string | null;
   activePromptToken: string | null;
+  pendingGuesses: Map<string, GuessCapture>;
 };
 
 type PromptAsset = {
@@ -365,6 +367,7 @@ function syncLocalPlayers(room: InternalRoom): void {
   const nextPlayerIds = new Set(nextPlayers.map((player) => player.id));
   room.players = nextPlayers;
   room.guesses = room.guesses.filter((guess) => nextPlayerIds.has(guess.playerId));
+  room.pendingGuesses = new Map([...room.pendingGuesses].filter(([playerId]) => nextPlayerIds.has(playerId)));
   room.timedOutPlayerIds = room.timedOutPlayerIds.filter((id) => nextPlayerIds.has(id));
 }
 
@@ -412,7 +415,8 @@ function createRoom(client: Client, playerName: string | undefined, kind: RoomKi
     resumeTokens: new Map([[client.id, client.resumeToken]]),
     nextRoundPromptToken: null,
     nextRoundPromptLocationId: null,
-    activePromptToken: null
+    activePromptToken: null,
+    pendingGuesses: new Map()
   };
   syncLocalPlayers(room);
   rooms.set(code, room);
@@ -455,6 +459,9 @@ function replacePlayerId(room: InternalRoom, previousPlayerId: string, nextPlaye
     player.connected = true;
   }
   room.guesses = room.guesses.map((guess) => (guess.playerId === previousPlayerId ? { ...guess, playerId: nextPlayerId } : guess));
+  const pendingGuess = room.pendingGuesses.get(previousPlayerId);
+  room.pendingGuesses.delete(previousPlayerId);
+  if (pendingGuess) room.pendingGuesses.set(nextPlayerId, { ...pendingGuess, playerId: nextPlayerId });
   room.timedOutPlayerIds = room.timedOutPlayerIds.map((id) => (id === previousPlayerId ? nextPlayerId : id));
   room.nextRoundReadyPlayerIds = room.nextRoundReadyPlayerIds.map((id) => (id === previousPlayerId ? nextPlayerId : id));
   room.summaries = room.summaries.map((summary) => ({
@@ -505,6 +512,7 @@ function leaveRoom(client: Client): void {
   room.players = room.players.filter((player) => player.id !== client.id);
   room.resumeTokens.delete(client.id);
   room.guesses = room.guesses.filter((guess) => guess.playerId !== client.id);
+  room.pendingGuesses.delete(client.id);
   room.nextRoundReadyPlayerIds = room.nextRoundReadyPlayerIds.filter((playerId) => playerId !== client.id);
   client.roomCode = null;
   send(client, { type: "left_room" });
@@ -531,6 +539,7 @@ function leaveRoom(client: Client): void {
     room.roundEndsAt = null;
     room.roundStartedAt = null;
     room.guesses = [];
+    room.pendingGuesses.clear();
     room.timedOutPlayerIds = [];
     resetNextRoundGate(room);
   }
@@ -577,6 +586,7 @@ function startRoundNow(room: InternalRoom): void {
   room.nextRoundPromptToken = null;
   room.nextRoundPromptLocationId = null;
   room.guesses = [];
+  room.pendingGuesses.clear();
   room.timedOutPlayerIds = [];
   room.emojiEvents = [];
   // The host starts the clock with image_ready only after the prompt has
@@ -611,6 +621,7 @@ function skipLocation(client: Client, room: InternalRoom, locationId?: string): 
   room.location = nextLocation(room);
   room.activePromptToken = null;
   room.guesses = [];
+  room.pendingGuesses.clear();
   room.timedOutPlayerIds = [];
   room.emojiEvents = [];
   room.roundEndsAt = null;
@@ -637,6 +648,11 @@ function markLocationReady(client: Client, room: InternalRoom, locationId: strin
 
 function evaluateRound(room: InternalRoom): void {
   if (!room.location || room.status !== "guessing") return;
+  for (const capture of room.pendingGuesses.values()) {
+    if (!captureMatchesRoom(room, capture)) continue;
+    room.guesses = room.guesses.filter((guess) => guess.playerId !== capture.playerId).concat(guessFromCapture(capture));
+  }
+  room.pendingGuesses.clear();
   const location = room.location;
   const guessesByPlayer = new Map(room.guesses.map((guess) => [guess.playerId, guess]));
   const contenders = room.players.filter((player) => player.status === "active");
@@ -710,15 +726,19 @@ function submitGuess(client: Client, room: InternalRoom, input: { lat: number; l
   const targetPlayerId = room.kind === "solo" && playerId && requireHost(client, room) ? playerId : client.id;
   const player = room.players.find((candidate) => candidate.id === targetPlayerId);
   if (!player || player.status !== "active" || room.status !== "guessing" || !room.roundStartedAt) return;
+  const pending = room.pendingGuesses.get(targetPlayerId);
   const guessedAt = Date.now();
-  const guess: Guess = {
-    playerId: targetPlayerId,
-    lat: Math.max(-85, Math.min(85, input.lat)),
-    lng: Math.max(-180, Math.min(180, input.lng)),
-    countryCode,
-    createdAt: guessedAt,
-    responseTimeMs: room.roundStartedAt ? Math.max(0, guessedAt - room.roundStartedAt) : undefined
-  };
+  const guess: Guess = pending && captureMatchesRoom(room, pending, targetPlayerId)
+    ? guessFromCapture({ ...pending, point: { ...pending.point, countryCode: countryCode ?? pending.point.countryCode } })
+    : {
+        playerId: targetPlayerId,
+        lat: Math.max(-85, Math.min(85, input.lat)),
+        lng: Math.max(-180, Math.min(180, input.lng)),
+        countryCode,
+        createdAt: guessedAt,
+        responseTimeMs: room.roundStartedAt ? Math.max(0, guessedAt - room.roundStartedAt) : undefined
+      };
+  room.pendingGuesses.delete(targetPlayerId);
   room.guesses = room.guesses.filter((existing) => existing.playerId !== targetPlayerId).concat(guess);
   room.timedOutPlayerIds = room.timedOutPlayerIds.filter((id) => id !== targetPlayerId);
   if (activePlayers(room).every((active) => room.guesses.some((existing) => existing.playerId === active.id) || room.timedOutPlayerIds.includes(active.id))) {
@@ -726,6 +746,20 @@ function submitGuess(client: Client, room: InternalRoom, input: { lat: number; l
   } else {
     broadcast(room);
   }
+}
+
+function captureGuess(client: Client, room: InternalRoom, capture: GuessCapture, receivedAt: number): void {
+  const targetPlayerId = room.kind === "solo" && capture.playerId && requireHost(client, room) ? capture.playerId : client.id;
+  const normalized = { ...capture, playerId: targetPlayerId };
+  const player = room.players.find((candidate) => candidate.id === targetPlayerId);
+  if (!player || player.status !== "active") return;
+  if (!captureMatchesRoom(room, normalized, targetPlayerId)) return;
+  if (!onlineCaptureReachedServerInTime(normalized, receivedAt)) return;
+  // Online scoring never trusts the browser's wall clock. Once the bounded
+  // transport check passes, response time is anchored to server receive time
+  // (or the authoritative deadline for a frame that arrived in the grace).
+  const trustedCapturedAt = trustedOnlineCaptureAt(normalized, receivedAt);
+  room.pendingGuesses.set(targetPlayerId, { ...normalized, capturedAt: trustedCapturedAt });
 }
 
 function updateSettings(client: Client, room: InternalRoom, patch: Partial<GameSettings>): void {
@@ -852,6 +886,26 @@ function validatedClientMessage(value: unknown): ClientMessage | null {
       const settings = validatedSettingsPatch(value.settings);
       return settings ? { type: value.type, settings } : null;
     }
+    case "capture_guess": {
+      if (!isRecord(value.guess) || !isFiniteNumber(value.guess.lat) || !isFiniteNumber(value.guess.lng)) return null;
+      if (value.countryCode !== undefined && !isShortString(value.countryCode, 8)) return null;
+      if (value.playerId !== undefined && !isShortString(value.playerId, 128)) return null;
+      if (!Number.isInteger(value.roundNumber) || !isShortString(value.locationId, 128)) return null;
+      if (!isFiniteNumber(value.roundStartedAt) || !(value.roundEndsAt === null || isFiniteNumber(value.roundEndsAt))) return null;
+      if (!isFiniteNumber(value.capturedAt) || !isFiniteNumber(value.capturedAtMonotonic)) return null;
+      return {
+        type: value.type,
+        guess: { lat: value.guess.lat, lng: value.guess.lng },
+        countryCode: typeof value.countryCode === "string" ? value.countryCode.toUpperCase() : undefined,
+        playerId: value.playerId as string | undefined,
+        roundNumber: value.roundNumber as number,
+        locationId: value.locationId,
+        roundStartedAt: value.roundStartedAt,
+        roundEndsAt: value.roundEndsAt,
+        capturedAt: value.capturedAt,
+        capturedAtMonotonic: value.capturedAtMonotonic
+      };
+    }
     case "submit_guess": {
       if (!isRecord(value.guess) || !isFiniteNumber(value.guess.lat) || !isFiniteNumber(value.guess.lng)) return null;
       if (value.countryCode !== undefined && !isShortString(value.countryCode, 8)) return null;
@@ -949,6 +1003,18 @@ function handleMessage(client: Client, raw: string): void {
     case "ready_next_round":
       readyNextRound(client, room);
       break;
+    case "capture_guess":
+      captureGuess(client, room, {
+        point: { ...message.guess, countryCode: message.countryCode },
+        playerId: message.playerId ?? client.id,
+        roundNumber: message.roundNumber,
+        locationId: message.locationId,
+        roundStartedAt: message.roundStartedAt,
+        roundEndsAt: message.roundEndsAt,
+        capturedAt: message.capturedAt,
+        capturedAtMonotonic: message.capturedAtMonotonic
+      }, Date.now());
+      break;
     case "submit_guess":
       submitGuess(client, room, message.guess, message.countryCode, message.playerId);
       break;
@@ -980,6 +1046,7 @@ function handleMessage(client: Client, raw: string): void {
         room.status = "lobby";
         room.location = null;
         room.guesses = [];
+        room.pendingGuesses.clear();
         room.timedOutPlayerIds = [];
         room.roundEndsAt = null;
         room.roundStartedAt = null;
@@ -1004,6 +1071,7 @@ function handleMessage(client: Client, raw: string): void {
       room.currentRound = 0;
       room.location = null;
       room.guesses = [];
+      room.pendingGuesses.clear();
       room.timedOutPlayerIds = [];
       room.roundEndsAt = null;
       room.roundStartedAt = null;

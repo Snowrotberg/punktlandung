@@ -10,6 +10,7 @@ import { readStoredSetupSettings, writeStoredSetupSettings } from "@/lib/setupSe
 import { consumeSetupResumeRequest, explicitRankedResumeGameId, isResumableGameStatus } from "@/lib/gameResume.client";
 import { enqueueRankedGameClaim, readPendingRankedGameClaims, removeRankedGameClaim } from "@/lib/rankedGameClaimQueue.client";
 import { consumeDirectRankedStart } from "@/lib/directRankedStart.client";
+import type { GuessCapture } from "@/lib/guessCapture";
 
 type ApiPayload = { data?: PublicRankedGame; error?: { message?: string } };
 
@@ -607,7 +608,7 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
     }
   }, [enabled, game, request]);
 
-  const submitGuess = useCallback(async (point: LatLng & { countryCode?: string }) => {
+  const submitGuess = useCallback(async (point: LatLng & { countryCode?: string }, _targetPlayerId?: string, _capture?: GuessCapture) => {
     if (!game?.activeRound || !room || room.status !== "guessing") return;
     const submittedAt = Date.now();
     const guess: Guess = { playerId, lat: point.lat, lng: point.lng, countryCode: point.countryCode, createdAt: submittedAt, responseTimeMs: room.roundStartedAt ? Math.max(0, submittedAt - room.roundStartedAt) : undefined };

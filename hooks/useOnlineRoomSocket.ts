@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ClientMessage, GameSettings, HostParticipation, LatLng, RoomState, ServerMessage, TeamId } from "@/types/game";
+import type { GuessCapture } from "@/lib/guessCapture";
 
 type ConnectionStatus = "connecting" | "open" | "closed";
 const onlineRoomStorageKey = "punktlandung-online-room-v1";
@@ -237,7 +238,19 @@ export function useOnlineRoomSocket() {
     renamePlayer: (_playerIdToRename: string, _name: string) => undefined,
     startRound: () => send({ type: "start_round" }),
     readyNextRound: () => send({ type: "ready_next_round" }),
-    submitGuess: (guess: LatLng & { countryCode?: string }, targetPlayerId?: string) =>
+    captureGuess: (capture: GuessCapture) => send({
+      type: "capture_guess",
+      guess: capture.point,
+      countryCode: capture.point.countryCode,
+      playerId: capture.playerId,
+      roundNumber: capture.roundNumber,
+      locationId: capture.locationId,
+      roundStartedAt: capture.roundStartedAt,
+      roundEndsAt: capture.roundEndsAt,
+      capturedAt: capture.capturedAt,
+      capturedAtMonotonic: capture.capturedAtMonotonic
+    }),
+    submitGuess: (guess: LatLng & { countryCode?: string }, targetPlayerId?: string, _capture?: GuessCapture) =>
       send({ type: "submit_guess", guess, countryCode: guess.countryCode, playerId: targetPlayerId }),
     cancelRound: () => send({ type: "cancel_round" }),
     skipLocation: (locationId?: string) => send({ type: "skip_location", locationId }),

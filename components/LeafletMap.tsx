@@ -5,6 +5,7 @@ import type { MapContainerProps } from "react-leaflet";
 import { LeafletProvider, createLeafletContext } from "@react-leaflet/core";
 import { Map as LeafletMapClass, divIcon, latLngBounds } from "leaflet";
 import type { LatLngExpression, Map as LeafletMapInstance, Marker as LeafletMarkerInstance } from "leaflet";
+import type { GuessPointerTiming } from "./GuessMap";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { GeoLocation, Guess, LatLng, Player, RoundResult, RoundSummary } from "@/types/game";
@@ -41,7 +42,7 @@ type LeafletMapProps = {
   currentPlayerColor?: string;
   resizeSignal?: number | string | boolean;
   resetSignal?: number | string | boolean;
-  onGuess?: (point: LatLng) => void;
+  onGuess?: (point: LatLng, timing: GuessPointerTiming) => void;
   onBaseMapReady?: () => void;
 };
 
@@ -238,10 +239,13 @@ function labelIcon(
 
 const actualPinIcon = pinIcon("#5ee7bd", true);
 
-function ClickHandler({ disabled, onGuess }: { disabled?: boolean; onGuess?: (point: LatLng) => void }) {
+function ClickHandler({ disabled, onGuess }: { disabled?: boolean; onGuess?: (point: LatLng, timing: GuessPointerTiming) => void }) {
   useMapEvents({
     click(event) {
-      if (!disabled) onGuess?.({ lat: event.latlng.lat, lng: normalizeLng(event.latlng.lng) });
+      if (!disabled) onGuess?.(
+        { lat: event.latlng.lat, lng: normalizeLng(event.latlng.lng) },
+        { capturedAt: Date.now(), capturedAtMonotonic: performance.now() }
+      );
     }
   });
   return null;

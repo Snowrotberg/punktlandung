@@ -15,6 +15,8 @@ import { TriangleIcon } from "./TriangleIcon";
 import redesignStyles from "./redesign/RedesignGameView.module.css";
 import type { RankedSyncStatus } from "@/hooks/useRankedSoloGame";
 import { playerColorAt, playerColorForId } from "@/lib/playerPalette";
+import { captureIsWithinDeadline, type GuessCapture } from "@/lib/guessCapture";
+import type { GuessPointerTiming } from "./GuessMap";
 
 const categoryTaskText: Record<LocationCategory, string> = {
   mixed: "Gemischter Ort",
@@ -36,7 +38,8 @@ type GameViewProps = {
   room: RoomState;
   me: Player | null;
   isHost: boolean;
-  onGuess: (point: LatLng & { countryCode?: string }, playerId?: string) => void;
+  onGuess: (point: LatLng & { countryCode?: string }, playerId?: string, capture?: GuessCapture) => void;
+  onGuessCapture?: (capture: GuessCapture) => void;
   onCancelRound: () => void;
   onSkipLocation: (locationId: string) => void;
   onImageReady?: (locationId: string, ready: boolean) => void;
@@ -46,7 +49,7 @@ type GameViewProps = {
   pendingUploadCount?: number;
 };
 
-export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocation, onImageReady, onLeave, redesign = false, rankedSyncStatus, pendingUploadCount = 0 }: GameViewProps) {
+export function GameView({ room, me, isHost, onGuess, onGuessCapture, onCancelRound, onSkipLocation, onImageReady, onLeave, redesign = false, rankedSyncStatus, pendingUploadCount = 0 }: GameViewProps) {
   const { playCountdownTick } = useSound();
   const [guess, setGuess] = useState<Guess | null>(null);
   const [mapSize, setMapSize] = useState<"closed" | "open" | "full">("closed");
@@ -59,6 +62,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
   const [mapResetNonce, setMapResetNonce] = useState(0);
   const mapCloseTimer = useRef<number | null>(null);
   const countdownTimersRef = useRef<number[]>([]);
+  const guessCaptureRef = useRef<GuessCapture | null>(null);
   const expanded = mapSize !== "closed";
   const fullMap = mapSize === "full";
   const isMobileTouchMap = isMobilePortrait || isMobileLandscape;
@@ -68,6 +72,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
 
   useEffect(() => {
     setGuess(null);
+    guessCaptureRef.current = null;
   }, [room.currentRound, room.location?.id]);
 
   useEffect(() => {
@@ -172,11 +177,31 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
     return { ...point, countryCode: await findCountryCodeAtPoint(point) };
   };
 
-  const handleMapGuess = (point: LatLng) => {
-    const draftGuess: Guess = { ...point, playerId: targetPlayerId ?? "pending", createdAt: Date.now() };
+  const handleMapGuess = (point: LatLng, timing: GuessPointerTiming) => {
+    if (!targetPlayerId || !room.location || room.roundStartedAt === null) return;
+    const capture: GuessCapture = {
+      point,
+      playerId: targetPlayerId,
+      roundNumber: room.currentRound,
+      locationId: room.location.id,
+      roundStartedAt: room.roundStartedAt,
+      roundEndsAt: room.roundEndsAt,
+      capturedAt: timing.capturedAt,
+      capturedAtMonotonic: timing.capturedAtMonotonic
+    };
+    if (!captureIsWithinDeadline(capture)) return;
+    guessCaptureRef.current = capture;
+    onGuessCapture?.(capture);
+    const draftGuess: Guess = { ...point, playerId: targetPlayerId, createdAt: timing.capturedAt };
     setGuess(draftGuess);
     if (room.location?.category === "flags") {
       void enrichGuess(point).then((enriched) => {
+        const currentCapture = guessCaptureRef.current;
+        if (currentCapture && currentCapture.capturedAt === capture.capturedAt) {
+          const enrichedCapture = { ...currentCapture, point: { ...currentCapture.point, countryCode: enriched.countryCode } };
+          guessCaptureRef.current = enrichedCapture;
+          onGuessCapture?.(enrichedCapture);
+        }
         setGuess((current) =>
           current && current.lat === point.lat && current.lng === point.lng
             ? { ...current, countryCode: enriched.countryCode }
@@ -195,6 +220,7 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
     performance.clearMeasures("punktlandung-submit-to-result-motion");
     performance.clearMeasures("punktlandung-result-visible-to-motion");
     performance.mark("punktlandung-result-submit");
+    const capture = guessCaptureRef.current;
     if (isLocalRoom) {
       const nextPendingPlayer = activePlayerList.find(
         (player) => player.id !== targetPlayerId && !resolvedPlayerIds.has(player.id)
@@ -202,7 +228,8 @@ export function GameView({ room, me, isHost, onGuess, onCancelRound, onSkipLocat
       setLocalPlayerId(nextPendingPlayer?.id ?? null);
     }
     setGuess(null);
-    onGuess(await enrichGuess(guess), isLocalRoom ? targetPlayerId : undefined);
+    guessCaptureRef.current = null;
+    onGuess(await enrichGuess(guess), isLocalRoom ? targetPlayerId : undefined, capture ?? undefined);
   };
 
   const handlePrimaryMapAction = async () => {

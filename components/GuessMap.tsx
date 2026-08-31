@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import type { Guess, LatLng, Player, RoundSummary } from "@/types/game";
 
+export type GuessPointerTiming = { capturedAt: number; capturedAtMonotonic: number };
+
 const LeafletMap = dynamic(() => import("@/components/LeafletMap").then((module) => module.LeafletMap), {
   ssr: false,
   loading: () => <div className="h-full bg-slate-900" aria-hidden="true" />
@@ -28,7 +30,7 @@ type GuessMapProps = {
   currentPlayerColor?: string;
   resizeSignal?: number | string | boolean;
   resetSignal?: number | string | boolean;
-  onGuess?: (point: LatLng) => void;
+  onGuess?: (point: LatLng, timing: GuessPointerTiming) => void;
   onBaseMapReady?: () => void;
 };
 

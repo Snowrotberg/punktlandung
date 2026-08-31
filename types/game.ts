@@ -154,6 +154,7 @@ export type ClientMessage =
   | { type: "update_settings"; settings: Partial<GameSettings> }
   | { type: "start_round" }
   | { type: "ready_next_round" }
+  | { type: "capture_guess"; guess: LatLng; countryCode?: string; playerId?: string; roundNumber: number; locationId: string; roundStartedAt: number; roundEndsAt: number | null; capturedAt: number; capturedAtMonotonic: number }
   | { type: "submit_guess"; guess: LatLng; countryCode?: string; playerId?: string }
   | { type: "send_emoji"; emoji: string; x: number }
   | { type: "unlock_cosmetic"; cosmetic: Cosmetic }

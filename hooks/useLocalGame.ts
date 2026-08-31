@@ -7,6 +7,7 @@ import { shuffledLocationIds } from "@/lib/locationSelection";
 import { consumeSetupResumeRequest, isResumableGameStatus, shouldRestoreStoredGame, shouldStartTimerAfterImageReady } from "@/lib/gameResume.client";
 import { PLAYER_PALETTE } from "@/lib/playerPalette";
 import { evaluatePlayerGuess } from "@/lib/roundEvaluation";
+import { captureMatchesRoom, guessFromCapture, type GuessCapture } from "@/lib/guessCapture";
 import { readStoredSetupSettings, writeStoredSetupSettings } from "@/lib/setupSettings.client";
 import type {
   Cosmetic,
@@ -536,6 +537,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
   const isRestoringHistoryRef = useRef(false);
   const previousRoomRef = useRef<RoomState | null>(null);
   const roomRef = useRef<RoomState | null>(room);
+  const capturedGuessesRef = useRef(new Map<string, GuessCapture>());
   const resumePendingRef = useRef(false);
   roomRef.current = room;
 
@@ -687,19 +689,39 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
     const reconcileElapsedRound = () => {
       setRoom((current) => {
         if (!current || current.status !== "guessing" || !current.roundEndsAt || Date.now() < current.roundEndsAt) return current;
+        let reconciled = current;
+        let capturedThisDeadline = false;
+        const capturePlayers = isLocalSequentialRoom(current) ? unresolvedPlayers(current).slice(0, 1) : activePlayers(current);
+        for (const player of capturePlayers) {
+          const capture = capturedGuessesRef.current.get(player.id);
+          if (!capture || !captureMatchesRoom(current, capture, player.id)) continue;
+          const capturedGuess = guessFromCapture(capture);
+          reconciled = {
+            ...reconciled,
+            guesses: reconciled.guesses.filter((item) => item.playerId !== player.id).concat(capturedGuess),
+            timedOutPlayerIds: reconciled.timedOutPlayerIds.filter((id) => id !== player.id)
+          };
+          capturedThisDeadline = true;
+          capturedGuessesRef.current.delete(player.id);
+        }
+        if (activePlayers(reconciled).every((player) => hasResolvedPlayer(reconciled, player.id))) return evaluateRound(reconciled);
         if (isLocalSequentialRoom(current)) {
-          const nextTimedOutPlayer = unresolvedPlayers(current)[0];
-          if (!nextTimedOutPlayer) return evaluateRound(current);
+          if (capturedThisDeadline) {
+            const nextTurnStartedAt = Date.now();
+            return { ...reconciled, roundEndsAt: turnEndFrom(nextTurnStartedAt, reconciled.settings), roundStartedAt: nextTurnStartedAt };
+          }
+          const nextTimedOutPlayer = unresolvedPlayers(reconciled)[0];
+          if (!nextTimedOutPlayer) return evaluateRound(reconciled);
           const nextRoom = {
-            ...current,
-            timedOutPlayerIds: uniqueIds([...current.timedOutPlayerIds, nextTimedOutPlayer.id])
+            ...reconciled,
+            timedOutPlayerIds: uniqueIds([...reconciled.timedOutPlayerIds, nextTimedOutPlayer.id])
           };
           const nextTurnStartedAt = Date.now();
           return unresolvedPlayers(nextRoom).length === 0
             ? evaluateRound(nextRoom)
             : { ...nextRoom, roundEndsAt: turnEndFrom(nextTurnStartedAt, nextRoom.settings), roundStartedAt: nextTurnStartedAt };
         }
-        return evaluateRound(current);
+        return evaluateRound(reconciled);
       });
     };
     const handleVisibilityChange = () => {
@@ -985,21 +1007,31 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
     });
   }, [drawLocation, ensureLocationCatalog, recentLocationIds]);
 
-  const submitGuess = useCallback((guess: LatLng & { countryCode?: string }, targetPlayerId?: string) => {
+  const captureGuess = useCallback((capture: GuessCapture) => {
+    const current = roomRef.current;
+    if (!current || !captureMatchesRoom(current, capture)) return;
+    capturedGuessesRef.current.set(capture.playerId, capture);
+  }, []);
+
+  const submitGuess = useCallback((guess: LatLng & { countryCode?: string }, targetPlayerId?: string, capture?: GuessCapture) => {
     setRoom((current) => {
       if (!current || current.status !== "guessing") return current;
       const playerIdForGuess = targetPlayerId ?? playerId;
       const player = current.players.find((candidate) => candidate.id === playerIdForGuess);
       if (!player || player.status !== "active") return current;
-      const guessedAt = Date.now();
-      const nextGuess: Guess = {
-        playerId: playerIdForGuess,
-        lat: Math.max(-85, Math.min(85, guess.lat)),
-        lng: Math.max(-180, Math.min(180, guess.lng)),
-        countryCode: guess.countryCode,
-        createdAt: guessedAt,
-        responseTimeMs: current.roundStartedAt ? Math.max(0, guessedAt - current.roundStartedAt) : undefined
-      };
+      const acceptedCapture = capture && captureMatchesRoom(current, capture, playerIdForGuess) ? capture : null;
+      const guessedAt = acceptedCapture?.capturedAt ?? Date.now();
+      const nextGuess: Guess = acceptedCapture
+        ? guessFromCapture({ ...acceptedCapture, point: { ...acceptedCapture.point, countryCode: guess.countryCode ?? acceptedCapture.point.countryCode } })
+        : {
+            playerId: playerIdForGuess,
+            lat: Math.max(-85, Math.min(85, guess.lat)),
+            lng: Math.max(-180, Math.min(180, guess.lng)),
+            countryCode: guess.countryCode,
+            createdAt: guessedAt,
+            responseTimeMs: current.roundStartedAt ? Math.max(0, guessedAt - current.roundStartedAt) : undefined
+          };
+      capturedGuessesRef.current.delete(playerIdForGuess);
       const nextRoom = {
         ...current,
         guesses: current.guesses.filter((item) => item.playerId !== playerIdForGuess).concat(nextGuess),
@@ -1150,6 +1182,7 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       renamePlayer,
       startRound,
       submitGuess,
+      captureGuess,
       cancelRound,
       skipLocation,
       markLocationReady,
@@ -1163,6 +1196,6 @@ export function useLocalGame(initialMode?: InitialLocalGameMode, restoreStoredSe
       setTeam,
       unlockCosmetic
     }),
-    [cancelRound, createOnlineSetup, createSolo, discardResume, error, leaveRoom, markLocationReady, playerId, renamePlayer, restart, resumePending, resumeRound, restoring, room, setTeam, skipLocation, startRound, submitGuess, unlockCosmetic, updateHostParticipation, updateSettings]
+    [cancelRound, captureGuess, createOnlineSetup, createSolo, discardResume, error, leaveRoom, markLocationReady, playerId, renamePlayer, restart, resumePending, resumeRound, restoring, room, setTeam, skipLocation, startRound, submitGuess, unlockCosmetic, updateHostParticipation, updateSettings]
   );
 }
