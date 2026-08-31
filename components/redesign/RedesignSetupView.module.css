@@ -677,9 +677,88 @@
     align-self: stretch;
   }
 
-  .categories {
+.categories {
     height: 100%;
     align-content: stretch;
     grid-template-rows: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Online entry keeps room creation and joining in one compact setup row. */
+.onlineEntry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, .8fr);
+  align-items: start;
+  gap: var(--setup-field-gap, .5rem);
+}
+
+.joinCodeForm {
+  display: grid;
+  gap: .35rem;
+}
+
+.joinCodeForm > label {
+  color: var(--pl-muted);
+  font-size: .72rem;
+}
+
+.joinCodeField {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.joinCodeField input,
+.joinCodeField button {
+  min-width: 0;
+  min-height: var(--setup-field-height, 2.35rem);
+  border: 1px solid var(--pl-line);
+  color: var(--pl-text);
+  background: var(--pl-surface-strong);
+  font: inherit;
+  font-size: .78rem;
+}
+
+.joinCodeField input {
+  padding-inline: .7rem;
+  border-radius: var(--setup-field-radius, var(--pl-radius-card)) 0 0 var(--setup-field-radius, var(--pl-radius-card));
+  outline: none;
+  text-transform: uppercase;
+}
+
+.joinCodeField input:focus-visible {
+  position: relative;
+  z-index: 1;
+  border-color: var(--pl-mint);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--pl-mint) 28%, transparent);
+}
+
+.joinCodeField button {
+  margin-left: -1px;
+  padding-inline: .7rem;
+  border-radius: 0 var(--setup-field-radius, var(--pl-radius-card)) var(--setup-field-radius, var(--pl-radius-card)) 0;
+  cursor: pointer;
+}
+
+.joinCodeField button:hover,
+.joinCodeField button:focus-visible {
+  border-color: var(--pl-mint);
+  color: var(--pl-mint);
+  outline: none;
+}
+
+.joinCodeForm > small {
+  color: var(--pl-muted);
+  font-size: .68rem;
+  line-height: 1.25;
+}
+
+.joinCodeForm > small[role="alert"] {
+  color: #fecdd3;
+}
+
+@media (max-width: 52rem) {
+  .onlineEntry {
+    grid-template-columns: 1fr;
   }
 }

@@ -25,6 +25,7 @@ import {
   shouldSynchronizeGameplayRoute
 } from "@/lib/gameplayRoute";
 import { punktlandungMapStyleUrl } from "@/lib/mapStyle";
+import { normalizeOnlineRoomCode, onlineRoomCodeValidationMessage, onlineRoomPath } from "@/lib/onlineRoomInvite";
 import { useRankedSoloGame } from "@/hooks/useRankedSoloGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
 import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
@@ -349,6 +350,7 @@ export function GameApp({
   const [password, setPassword] = useState("");
   const [pendingJoinCode, setPendingJoinCode] = useState<string | null>(null);
   const [joinCodeInput, setJoinCodeInput] = useState("");
+  const [joinCodeError, setJoinCodeError] = useState<string | null>(null);
   const [pendingOnlineSettings, setPendingOnlineSettings] = useState<GameSettings | null>(null);
   const [startingRound, setStartingRound] = useState(false);
   const [pendingGameplayExit, setPendingGameplayExit] = useState<{
@@ -493,8 +495,16 @@ export function GameApp({
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const roomCode = params.get("room")?.toUpperCase().replace(/[^A-Z0-9]/g, "") ?? null;
-    if (!roomCode) return;
+    const roomParam = params.get("room");
+    if (roomParam === null) return;
+    const roomCode = normalizeOnlineRoomCode(roomParam);
+    setJoinCodeInput(roomCode);
+    const validationMessage = onlineRoomCodeValidationMessage(roomCode);
+    if (validationMessage) {
+      setJoinCodeError(validationMessage);
+      return;
+    }
+    setJoinCodeError(null);
     setPendingJoinCode(roomCode);
   }, [accountDisplayName]);
 
@@ -633,11 +643,15 @@ export function GameApp({
       playerName: hostParticipation === "host_player" ? localGame.room?.hostPlayerName ?? name : undefined
     });
   };
-  const handleJoinByCode = () => {
-    const roomCode = joinCodeInput.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    if (!roomCode) return;
+  const handleJoinByCode = (codeInput: string) => {
+    const roomCode = normalizeOnlineRoomCode(codeInput);
+    const validationMessage = onlineRoomCodeValidationMessage(roomCode);
+    setJoinCodeInput(roomCode);
+    setJoinCodeError(validationMessage);
+    if (validationMessage) return;
     playSelect();
     setPendingJoinCode(roomCode);
+    router.replace(onlineRoomPath(roomCode));
   };
   const handleJoinOnlineRoom = () => {
     if (!pendingJoinCode) return;
@@ -881,7 +895,7 @@ export function GameApp({
     }
   };
 
-  if (initialMode !== "home" && !room) {
+  if (initialMode !== "home" && !room && !pendingJoinCode) {
     // This exists only for the first client render while the route-owned room
     // is initialized. Do not turn it into a visible loading interstitial.
     return <main className="min-h-dvh bg-slate-950" />;
@@ -1021,6 +1035,8 @@ export function GameApp({
           accountHref={accountsEnabled ? "/konto" : undefined}
           accountAuthenticated={accountAuthenticated}
           error={error}
+          joinCode={joinCodeInput}
+          joinCodeError={joinCodeError}
           canStart={!startingRound && (room.kind === "online" ? onlineGame.status === "open" : isHost && room.players.length > 0)}
           starting={startingRound}
           resumePending={resumePending}
@@ -1289,7 +1305,7 @@ export function GameApp({
                           value={joinCodeInput}
                           onChange={(event) => setJoinCodeInput(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6))}
                           onKeyDown={(event) => {
-                            if (event.key === "Enter") handleJoinByCode();
+                            if (event.key === "Enter") handleJoinByCode(joinCodeInput);
                           }}
                           maxLength={6}
                           placeholder="Raumcode"
@@ -1298,7 +1314,7 @@ export function GameApp({
                         <button
                           type="button"
                           disabled={joinCodeInput.trim().length === 0}
-                          onClick={handleJoinByCode}
+                          onClick={() => handleJoinByCode(joinCodeInput)}
                           className="h-10 rounded-md bg-emerald-400/12 px-3 text-xs font-black uppercase tracking-[0.08em] text-emerald-100 ring-1 ring-emerald-300/50 transition hover:bg-emerald-400/18 hover:ring-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-900/70 disabled:text-slate-500 disabled:ring-slate-700"
                         >
                           Beitreten

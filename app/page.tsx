@@ -4,6 +4,7 @@ import { HomeApp } from "@/components/HomeApp";
 import { SoundProvider } from "@/components/SoundProvider";
 import { accountNavigationState } from "@/lib/accountNavigation.server";
 import { metadataForRoomInvite } from "@/lib/seo";
+import { normalizeOnlineRoomCode, onlineRoomPath } from "@/lib/onlineRoomInvite";
 import { redirect } from "next/navigation";
 
 type HomeProps = {
@@ -26,6 +27,11 @@ export default async function Home({ searchParams }: HomeProps) {
       if (value) callbackParams.set(key, value);
     }
     redirect(`/auth/callback?${callbackParams.toString()}`);
+  }
+  // Invitations created by older releases pointed to /?room=CODE. Keep them
+  // usable while giving every new invitation one canonical route.
+  if (authParams.room && normalizeOnlineRoomCode(authParams.room)) {
+    redirect(onlineRoomPath(authParams.room));
   }
   const account = await accountNavigationState();
   return (

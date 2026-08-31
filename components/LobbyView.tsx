@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { categoryOptions } from "@/lib/categories";
+import { onlineRoomInviteUrl } from "@/lib/onlineRoomInvite";
 import { playerColorForId } from "@/lib/playerPalette";
 import type { GameMode, GameSettings, HostParticipation, Player, RoomKind, TeamId } from "@/types/game";
 import { BackLink } from "./BackButton";
@@ -158,8 +159,7 @@ export function LobbyView({
   const invite = useMemo(() => {
     if (typeof window === "undefined") return { link: "", isMobileReachable: false };
     const configuredOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim();
-    const url = new URL(configuredOrigin || window.location.origin);
-    url.searchParams.set("room", code);
+    const url = onlineRoomInviteUrl(configuredOrigin || window.location.origin, code);
     const isLoopback = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]";
     return { link: url.toString(), isMobileReachable: !isLoopback };
   }, [code]);

@@ -6,6 +6,7 @@ import { Copy, Share2 } from "lucide-react";
 import { LegalLinks } from "@/components/LegalLinks";
 import { TriangleIcon } from "@/components/TriangleIcon";
 import { categoryOptions } from "@/lib/categories";
+import { onlineRoomInviteUrl } from "@/lib/onlineRoomInvite";
 import { playerColorAt } from "@/lib/playerPalette";
 import type { GameSettings, HostParticipation, Player, TeamId } from "@/types/game";
 import {
@@ -40,8 +41,7 @@ type Props = {
 function inviteFor(code: string) {
   if (typeof window === "undefined") return { link: "", reachable: false };
   const configuredOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  const url = new URL(configuredOrigin || window.location.origin);
-  url.searchParams.set("room", code);
+  const url = onlineRoomInviteUrl(configuredOrigin || window.location.origin, code);
   const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   return { link: url.toString(), reachable: !loopback };
 }
