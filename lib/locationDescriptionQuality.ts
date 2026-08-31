@@ -6,6 +6,7 @@ export type LocationDescriptionIssue =
   | "missing-provenance"
   | "overlong"
   | "sentence-fragment"
+  | "artificial-ellipsis"
   | "generic-filler";
 
 const genericFillerPattern = /\b(?:eines der bekanntesten|bekannt(?:e[snr]?)? wahrzeichen|beliebtes reiseziel|touristenattraktion|liegt in diesem land)\b/i;
@@ -43,6 +44,7 @@ export function locationDescriptionIssues(
       || /^(?:Chr\. von|Jahrhundert zurückreichende)\b/i.test(description)
       || /\b(?:bzw|ca|sg)\.$/i.test(description))
   ) issues.push("sentence-fragment");
+  if (/…$/.test(description)) issues.push("artificial-ellipsis");
   if (genericFillerPattern.test(description)) issues.push("generic-filler");
   return issues;
 }

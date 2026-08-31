@@ -26,6 +26,10 @@ test("description guard rejects filler, fragments and missing provenance", () =>
     shortDescription: "Volos (griechisch Βόλος (m. sg.",
     descriptionSourceUrl: undefined
   }), ["missing-provenance", "sentence-fragment"]);
+  assert.deepEqual(locationDescriptionIssues({
+    shortDescription: "Ein künstlich gekürzter Satz…",
+    descriptionSourceUrl: "https://de.wikipedia.org/wiki/Beispiel"
+  }), ["artificial-ellipsis"]);
 });
 
 test("the Brandenburger Tor preview gives a concrete sourced-style fact instead of a fame tautology", () => {

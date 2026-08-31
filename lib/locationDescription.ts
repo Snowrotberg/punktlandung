@@ -61,14 +61,19 @@ export function normalizeLocationDescription(value: string | null | undefined, m
 
   const normalizedSentences = completeSentences(plain).slice(0, 2).join(" ").trim();
   if (!normalizedSentences) return null;
-  const sentences = normalizedSentences;
-  if (sentences.length <= maximumLength) return sentences;
-  const shortened = sentences.slice(0, maximumLength - 1).replace(/\s+\S*$/, "").trim();
-  return `${shortened || sentences.slice(0, maximumLength - 1).trim()}…`;
+  if (/…$/.test(normalizedSentences)) return null;
+  if (normalizedSentences.length <= maximumLength) return normalizedSentences;
+
+  // Keep only complete sentences. An ellipsis would make the label look
+  // concise, but it would leave a factual claim visibly unfinished.
+  const firstSentence = completeSentences(plain)[0]?.trim() ?? "";
+  return firstSentence && firstSentence.length <= maximumLength ? firstSentence : null;
 }
 
 export function locationShortDescription(location: Pick<GeoLocation, "title" | "shortDescription">): string | undefined {
   const description = normalizeLocationDescription(location.shortDescription);
   if (!description) return undefined;
-  return normalizeLocationDescription(factualSentence(location.title, description)) ?? undefined;
+  // A title prefix improves standalone readability, but it must not force an
+  // otherwise complete sourced sentence over the hard length limit.
+  return normalizeLocationDescription(factualSentence(location.title, description)) ?? description;
 }

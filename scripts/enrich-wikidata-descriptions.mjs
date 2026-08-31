@@ -56,9 +56,9 @@ function sentences(value) {
 function shortenedSentence(value, limit = maximumLength) {
   const clean = plainText(value);
   if (!clean) return null;
-  if (clean.length <= limit) return /[.!?…]$/.test(clean) ? clean : `${clean}.`;
-  const shortened = clean.slice(0, limit - 1).replace(/\s+\S*$/, "").trim();
-  return `${shortened || clean.slice(0, limit - 1).trim()}…`;
+  if (/…$/.test(clean)) return null;
+  if (clean.length <= limit) return /[.!?]$/.test(clean) ? clean : `${clean}.`;
+  return null;
 }
 
 function informativeScore(sentence, title, index) {
@@ -83,7 +83,7 @@ export function selectLocationDescription(extract, title) {
     .filter((sentence) => sentence.length >= 35)
     .map((sentence, index) => ({ sentence, score: informativeScore(sentence, title, index), index }))
     .sort((first, second) => second.score - first.score || first.index - second.index);
-  const selected = ranked.find(({ score }) => score >= 4)?.sentence;
+  const selected = ranked.find(({ score, sentence }) => score >= 4 && shortenedSentence(sentence))?.sentence;
   return selected ? shortenedSentence(selected) : null;
 }
 

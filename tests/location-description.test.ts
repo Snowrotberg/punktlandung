@@ -7,10 +7,10 @@ test("normalizes markup and keeps at most two short sentences", () => {
 });
 
 test("limits overly long descriptions", () => {
-  const result = normalizeLocationDescription("Ein sehr langer Ortstext ".repeat(30));
-  assert.ok(result);
-  assert.ok(result.length <= 240);
-  assert.match(result, /…$/);
+  const result = normalizeLocationDescription("Ein kurzer konkreter Satz über diesen Ort. Ein zweiter erklärender Satz.", 50);
+  assert.equal(result, "Ein kurzer konkreter Satz über diesen Ort.");
+  assert.ok((result?.length ?? 0) <= 50);
+  assert.doesNotMatch(result ?? "", /…$/);
 });
 
 test("does not invent a generic fallback when editorial information is missing", () => {
@@ -21,6 +21,13 @@ test("keeps a sourced location fact as a natural sentence", () => {
   assert.equal(
     locationShortDescription({ title: "Avignon", shortDescription: "Da Avignon lange Sitz des Papstes war, trägt die Stadt den Beinamen Stadt der Päpste." }),
     "Da Avignon lange Sitz des Papstes war, trägt die Stadt den Beinamen Stadt der Päpste."
+  );
+  assert.equal(
+    locationShortDescription({
+      title: "Flagge von Belgien",
+      shortDescription: "Die bevölkerungsreichste Stadt ist Antwerpen, gefolgt von Gent, Charleroi, Lüttich und Brüssel, während Brüssel und die umgebenden Gemeinden mit insgesamt ca. 1,25 Millionen Einwohnern den größten Ballungsraum bilden."
+    }),
+    "Die bevölkerungsreichste Stadt ist Antwerpen, gefolgt von Gent, Charleroi, Lüttich und Brüssel, während Brüssel und die umgebenden Gemeinden mit insgesamt ca. 1,25 Millionen Einwohnern den größten Ballungsraum bilden."
   );
 });
 

@@ -93,5 +93,25 @@
     "wikidataId": "Q1150673",
     "description": "Die Insel Penang liegt vor der Westküste der Malaiischen Halbinsel und ist durch die Straße von Penang vom Festland getrennt.",
     "sourceUrl": "https://en.wikipedia.org/wiki/Penang_Island"
+  },
+  {
+    "wikidataId": "Q29999",
+    "description": "Das Königreich der Niederlande besteht aus vier Ländern und mehreren karibischen Inseln.",
+    "sourceUrl": "https://de.wikipedia.org/wiki/K%C3%B6nigreich_der_Niederlande"
+  },
+  {
+    "wikidataId": "Q19053",
+    "description": "Mystras ist eine byzantinische Ruinenstadt nahe Sparta in Griechenland und seit 1989 UNESCO-Weltkulturerbe.",
+    "sourceUrl": "https://de.wikipedia.org/wiki/Mystras"
+  },
+  {
+    "wikidataId": "Q167566",
+    "description": "Der Kultur- und Wissenschaftspalast in Warschau wurde zwischen 1952 und 1955 errichtet und ist 237 Meter hoch.",
+    "sourceUrl": "https://de.wikipedia.org/wiki/Kulturpalast_%28Warschau%29"
+  },
+  {
+    "wikidataId": "Q1026739",
+    "description": "Der Jbel Musa liegt im Norden Marokkos nahe der Straße von Gibraltar und gilt als südliche Säule des Herakles.",
+    "sourceUrl": "https://de.wikipedia.org/wiki/Jbel_Musa"
   }
 ]
