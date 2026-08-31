@@ -118,10 +118,11 @@ export function buildCatalogStatistics(locations: GeoLocation[], inventory: GeoL
   const inventoryLicensedImages = [...inventoryImageFiles].filter((fileName) => licensedFiles.has(fileName)).length;
   const unavailableInventoryImages = [...inventoryImageFiles].filter((fileName) => unavailableFiles.has(fileName)).length;
   const exclusionReasons: Record<CatalogImageIssue, number> = {
-    quarantined: 0,
-    "category-unverified": 0,
-    "quality-score-low": 0,
-    "capture-date-missing": 0,
+      quarantined: 0,
+      "category-unverified": 0,
+      "quality-score-low": 0,
+      "context-unusable": 0,
+      "capture-date-missing": 0,
     "captured-before-2010": 0,
     "dimensions-missing": 0,
     "resolution-below-tv": 0,

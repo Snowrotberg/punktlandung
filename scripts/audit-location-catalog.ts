@@ -2,6 +2,8 @@ import { builtInLocations, catalogInventoryLocations } from "../data/locations";
 import { locationDifficultyMap } from "../lib/locationDifficulty";
 import { catalogImageIssues } from "../lib/catalogImageQuality";
 import { buildCatalogStatistics } from "../lib/catalogStatistics";
+import landscapeContextReviewJson from "../data/generated/landscape-context-review.generated.json";
+import { assessLandscapeContext, landscapeContextCatalogFingerprint } from "../lib/landscapeImageQuality";
 import licenseCatalogJson from "../data/generated/image-licenses.generated.json";
 import {
   imageFileNameForLicense,
@@ -38,6 +40,11 @@ const difficultyById = locationDifficultyMap(builtInLocations);
 const stats = new Map<string, { total: number; base: number; curated: number; easy: number; medium: number; hard: number }>();
 const errors: string[] = [];
 const catalogStatistics = buildCatalogStatistics(builtInLocations, catalogInventoryLocations);
+const landscapeContextAssessments = catalogInventoryLocations
+  .filter((location) => location.category === "landscapes" && catalogImageIssues(location).every((issue) => issue === "context-unusable"))
+  .map(assessLandscapeContext)
+  .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+const activeLandscapeIds = new Set(builtInLocations.filter((location) => location.category === "landscapes").map((location) => location.id));
 
 for (const location of builtInLocations) {
   const row = stats.get(location.category) ?? { total: 0, base: 0, curated: 0, easy: 0, medium: 0, hard: 0 };
@@ -110,9 +117,19 @@ if (unavailableEntries.some((entry) => [...activeImageFiles].some((fileName) => 
 if ((licenseCatalog.unavailableImageCount ?? 0) !== unavailableEntries.length) {
   errors.push(`Nicht-verfügbar-Zählung inkonsistent: JSON=${licenseCatalog.unavailableImageCount ?? "fehlt"}, Einträge=${unavailableEntries.length}`);
 }
+if (landscapeContextReviewJson.catalogFingerprint !== landscapeContextCatalogFingerprint(landscapeContextAssessments)) {
+  errors.push("Landschafts-Review ist veraltet; npm run catalog:audit-landscapes ausführen");
+}
+if (landscapeContextReviewJson.checkedImageCount !== landscapeContextAssessments.length) {
+  errors.push(`Landschafts-Review deckt ${landscapeContextReviewJson.checkedImageCount} statt ${landscapeContextAssessments.length} technisch geeigneten Motiven ab`);
+}
+if (landscapeContextAssessments.some((entry) => entry.status === "excluded" && activeLandscapeIds.has(entry.locationId))) {
+  errors.push("Mindestens ein als kontextlos quarantänisiertes Landschaftsbild ist weiterhin aktiv");
+}
 
 console.table(Object.fromEntries(stats));
 console.log(`Katalogbestand: ${catalogInventoryLocations.length} geprüfte Quellen, ${builtInLocations.length} aktive Bilder, ${catalogInventoryLocations.length - builtInLocations.length} Qualitätsausschlüsse`);
+console.log(`Landschaftskontext: ${landscapeContextReviewJson.checkedImageCount} vollständig geprüft, ${landscapeContextReviewJson.reviewCandidateCount} Review-Kandidaten, ${landscapeContextReviewJson.excludedImageCount} quarantänisiert`);
 
 if (errors.length > 0) {
   console.error(errors.join("\n"));

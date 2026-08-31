@@ -1,0 +1,266 @@
+{
+  "catalogFingerprint": "dfb479ea",
+  "checkedImageCount": 407,
+  "activeImageCount": 406,
+  "passedImageCount": 388,
+  "reviewCandidateCount": 18,
+  "excludedImageCount": 1,
+  "exclusions": [
+    {
+      "locationId": "landscapes-ruapehu-q207284-curated-northern-slope-of-mount-ruapehu-09-jpg",
+      "reason": "Enge Fels- und Wasser-Nahaufnahme ohne erkennbare Ruapehu- oder Landschaftsmerkmale; der mobile Ausschnitt zeigt nahezu das vollständige Quellmotiv.",
+      "sourceFile": "Northern slope of Mount Ruapehu 09.jpg",
+      "evidence": "mobile-review-2026-08-31"
+    }
+  ],
+  "reviewEntries": [
+    {
+      "locationId": "landscapes-ararat-q72303-curated-ararat-2026-jpg",
+      "title": "Ararat",
+      "countryName": "Türkei",
+      "imageFile": "Ararat 2026.jpg",
+      "imageWidth": 5849,
+      "imageHeight": 2349,
+      "mobileVisibleFraction": 0.616,
+      "status": "review",
+      "reasons": [
+        "mobile-extreme-crop"
+      ]
+    },
+    {
+      "locationId": "landscapes-sudinsel-q120755-curated-ahuriri-river-04-jpg",
+      "title": "Südinsel",
+      "countryName": "Neuseeland",
+      "imageFile": "Ahuriri River 04.jpg",
+      "imageWidth": 3803,
+      "imageHeight": 1562,
+      "mobileVisibleFraction": 0.63,
+      "status": "review",
+      "reasons": [
+        "mobile-extreme-crop"
+      ]
+    },
+    {
+      "locationId": "landscapes-bornholm-q769680-curated-yellow-rocks-on-the-baltic-jpg",
+      "title": "Bornholm",
+      "countryName": "Dänemark",
+      "imageFile": "Yellow rocks on the Baltic.jpg",
+      "imageWidth": 3091,
+      "imageHeight": 1739,
+      "mobileVisibleFraction": 0.863,
+      "status": "review",
+      "reasons": [
+        "generic-natural-detail"
+      ]
+    },
+    {
+      "locationId": "landscapes-mount-cook-q5059-curated-mt-sefton-massif-aoraki-mount-cook-national-park",
+      "title": "Mount Cook",
+      "countryName": "Neuseeland",
+      "imageFile": "Mt Sefton massif, Aoraki - Mount Cook National Park, New Zealand.jpg",
+      "imageWidth": 8699,
+      "imageHeight": 3034,
+      "mobileVisibleFraction": 0.535,
+      "status": "review",
+      "reasons": [
+        "mobile-extreme-crop"
+      ]
+    },
+    {
+      "locationId": "landscapes-ngorongoro-q1217726-curated-2019-ngorongoro-crater-jpg",
+      "title": "Ngorongoro",
+      "countryName": "Tansania",
+      "imageFile": "2019 Ngorongoro Crater.jpg",
+      "imageWidth": 8554,
+      "imageHeight": 3127,
+      "mobileVisibleFraction": 0.561,
+      "status": "review",
+      "reasons": [
+        "mobile-extreme-crop"
+      ]
+    },
+    {
+      "locationId": "landscapes-wadi-rum-q40729-curated-wadi-rum-in-flower-jpg",
+      "title": "Wadi Rum",
+      "countryName": "Jordanien",
+      "imageFile": "Wadi Rum in Flower.jpg",
+      "imageWidth": 6000,
+      "imageHeight": 4000,
+      "mobileVisibleFraction": 0.978,
+      "status": "review",
+      "reasons": [
+        "generic-natural-detail"
+      ]
+    },
+    {
+      "locationId": "landscapes-ruapehu-q207284-curated-northern-slope-of-mount-ruapehu-09-jpg",
+      "title": "Ruapehu",
+      "countryName": "Neuseeland",
+      "imageFile": "Northern slope of Mount Ruapehu 09.jpg",
+      "imageWidth": 4500,
+      "imageHeight": 3000,
+      "mobileVisibleFraction": 0.978,
+      "status": "excluded",
+      "reasons": [
+        "context-excluded"
+      ]
+    },
+    {
+      "locationId": "landscapes-chortyzja-q914907-curated-khortytsia-forest-swamps-jpg",
+      "title": "Chortyzja",
+      "countryName": "Ukraine",
+      "imageFile": "Khortytsia forest swamps.jpg",
+      "imageWidth": 4000,
+      "imageHeight": 2250,
+      "mobileVisibleFraction": 0.863,
+      "status": "review",
+      "reasons": [
+        "generic-natural-detail"
+      ]
+    },
+    {
+      "locationId": "landscapes-paektusan-q107635-curated-laika-ac-mt-paekdu-funicular-driver-6900223021-j",
+      "title": "Paektusan",
+      "countryName": "Nordkorea",
+      "imageFile": "Laika ac Mt. Paekdu Funicular Driver (6900223021).jpg",
+      "imageWidth": 4000,
+      "imageHeight": 3000,
+      "mobileVisibleFraction": 0.869,
+      "status": "review",
+      "reasons": [
+        "foreground-subject"
+      ]
+    },
+    {
+      "locationId": "landscapes-zuma-rock-q229624-curated-behind-the-world-famous-zuma-rock-along-abuja-ka",
+      "title": "Zuma Rock",
+      "countryName": "Nigeria",
+      "imageFile": "Behind The World Famous Zuma Rock Along Abuja Kaduna.jpg",
+      "imageWidth": 4128,
+      "imageHeight": 3096,
+      "mobileVisibleFraction": 0.869,
+      "status": "review",
+      "reasons": [
+        "generic-natural-detail"
+      ]
+    },
+    {
+      "locationId": "landscapes-mount-everest-q513-curated-20110810-north-face-of-everest-tibet-china-panor",
+      "title": "Mount Everest",
+      "countryName": "Nepal",
+      "imageFile": "20110810 North Face of Everest Tibet China Panoramic.jpg",
+      "imageWidth": 8533,
+      "imageHeight": 2924,
+      "mobileVisibleFraction": 0.526,
+      "status": "review",
+      "reasons": [
+        "mobile-extreme-crop"
+      ]
+    },
+    {
+      "locationId": "landscapes-titano-q158526-curated-monte-titano-panorama-jpg",
+      "title": "Titano",
+      "countryName": "San Marino",
+      "imageFile": "Monte Titano Panorama.jpg",
+      "imageWidth": 8306,
+      "imageHeight": 3313,
+      "mobileVisibleFraction": 0.612,
+      "status": "review",
+      "reasons": [
+        "mobile-extreme-crop"
+      ]
+    },
+    {
+      "locationId": "landscapes-nationalpark-shete-boka-q1914604-curated-blue-lizard-in-shete-boka-national-park-curacao-",
+      "title": "Nationalpark Shete Boka",
+      "countryName": "Curaçao",
+      "imageFile": "BLUE LIZARD IN SHETE BOKA NATIONAL PARK, CURACAO.jpg",
+      "imageWidth": 3000,
+      "imageHeight": 1991,
+      "mobileVisibleFraction": 0.982,
+      "status": "review",
+      "reasons": [
+        "foreground-subject"
+      ]
+    },
+    {
+      "locationId": "landscapes-doi-inthanon-q1140075-curated-doi-inthanon-vegetation-on-the-slopes-thailand-j",
+      "title": "Doi Inthanon",
+      "countryName": "Thailand",
+      "imageFile": "Doi Inthanon, Vegetation on the slopes, Thailand.jpg",
+      "imageWidth": 4032,
+      "imageHeight": 2688,
+      "mobileVisibleFraction": 0.978,
+      "status": "review",
+      "reasons": [
+        "generic-natural-detail"
+      ]
+    },
+    {
+      "locationId": "landscapes-pielinen-q845891-curated-view-to-pielinen-from-paha-koli-in-lieksa-finlan",
+      "title": "Pielinen",
+      "countryName": "Finnland",
+      "imageFile": "View to Pielinen from Paha-Koli in Lieksa, Finland, 2019 July.jpg",
+      "imageWidth": 5500,
+      "imageHeight": 2287,
+      "mobileVisibleFraction": 0.638,
+      "status": "review",
+      "reasons": [
+        "mobile-extreme-crop"
+      ]
+    },
+    {
+      "locationId": "landscapes-yas-insel-q1274177-curated-heron-on-a-mossy-rock-jpg",
+      "title": "Yas-Insel",
+      "countryName": "Vereinigte Arabische Emirate",
+      "imageFile": "Heron on a mossy rock.jpg",
+      "imageWidth": 6000,
+      "imageHeight": 4000,
+      "mobileVisibleFraction": 0.978,
+      "status": "review",
+      "reasons": [
+        "foreground-subject",
+        "generic-natural-detail"
+      ]
+    },
+    {
+      "locationId": "landscapes-yas-insel-q1274177-curated-gull-lost-in-the-canal-jpg",
+      "title": "Yas-Insel",
+      "countryName": "Vereinigte Arabische Emirate",
+      "imageFile": "Gull lost in the canal.jpg",
+      "imageWidth": 6000,
+      "imageHeight": 4000,
+      "mobileVisibleFraction": 0.978,
+      "status": "review",
+      "reasons": [
+        "foreground-subject"
+      ]
+    },
+    {
+      "locationId": "landscapes-ouzoud-falle-q38212-curated-platform-boat-carrying-tourists-at-the-base-of-o",
+      "title": "Ouzoud-Fälle",
+      "countryName": "Marokko",
+      "imageFile": "Platform boat carrying tourists at the base of Ouzoud Falls (El-Abid River gorge), Morocco.jpg",
+      "imageWidth": 3264,
+      "imageHeight": 2448,
+      "mobileVisibleFraction": 0.869,
+      "status": "review",
+      "reasons": [
+        "foreground-subject"
+      ]
+    },
+    {
+      "locationId": "landscapes-dschabal-hafit-q1261870-curated-hikers-on-jebel-hafeet-jpg",
+      "title": "Dschabal Hafit",
+      "countryName": "Vereinigte Arabische Emirate",
+      "imageFile": "Hikers on Jebel Hafeet.jpg",
+      "imageWidth": 4000,
+      "imageHeight": 3000,
+      "mobileVisibleFraction": 0.869,
+      "status": "review",
+      "reasons": [
+        "foreground-subject"
+      ]
+    }
+  ]
+}

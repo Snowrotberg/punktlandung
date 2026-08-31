@@ -1,4 +1,5 @@
 import type { GeoLocation } from "@/types/game";
+import { isLandscapeContextExcluded } from "@/lib/landscapeImageQuality";
 
 export const catalogMinimumCaptureYear = 2010;
 export const catalogMinimumTvWidth = 2560;
@@ -12,6 +13,7 @@ export type CatalogImageIssue =
   | "quarantined"
   | "category-unverified"
   | "quality-score-low"
+  | "context-unusable"
   | "capture-date-missing"
   | "captured-before-2010"
   | "dimensions-missing"
@@ -58,6 +60,7 @@ export function catalogImageIssues(location: GeoLocation): CatalogImageIssue[] {
 
   const issues: CatalogImageIssue[] = [];
   if (location.imageReviewStatus === "quarantined") issues.push("quarantined");
+  if (isLandscapeContextExcluded(location.id)) issues.push("context-unusable");
   if (!hasVerifiedCategoryFit(location)) issues.push("category-unverified");
   if (location.catalogVariant === "curated-image" && (location.imageQualityScore ?? 0) < catalogMinimumCuratedScore) {
     issues.push("quality-score-low");
