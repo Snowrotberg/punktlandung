@@ -221,14 +221,6 @@
   opacity: 0;
 }
 
-.routeEndpoints {
-  fill: none;
-  stroke: url(#kartenlabor-result-gradient);
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-}
-
 .mapFrame :global(.maplibregl-ctrl-top-right) {
   z-index: 10;
   top: 0.75rem;

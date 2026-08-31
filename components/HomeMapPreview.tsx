@@ -95,8 +95,6 @@ function HomeMapSourcePreview() {
 export function HomeMapPreview() {
   const previewRef = useRef<HTMLDivElement>(null);
   const connectorRef = useRef<SVGLineElement>(null);
-  const connectorStartRef = useRef<SVGLineElement>(null);
-  const connectorEndRef = useRef<SVGLineElement>(null);
   const [previewMode, setPreviewMode] = useState<"animated" | "static" | "legacy" | "source">("animated");
   const [liveSurfaceReady, setLiveSurfaceReady] = useState(false);
   const [liveReady, setLiveReady] = useState(false);
@@ -190,7 +188,6 @@ export function HomeMapPreview() {
       const endInset = ellipseRadius(targetBox) + dashGap;
       const start = { x: playerCenter.x + ux * startInset, y: playerCenter.y + uy * startInset };
       const end = { x: targetCenter.x - ux * endInset, y: targetCenter.y - uy * endInset };
-      const endpointDash = Math.min(6, Math.hypot(end.x - start.x, end.y - start.y) / 2);
       const setLine = (line: SVGLineElement | null, from: { x: number; y: number }, to: { x: number; y: number }) => {
         if (!line) return;
         line.setAttribute("x1", String(from.x));
@@ -200,8 +197,6 @@ export function HomeMapPreview() {
         line.dataset.ready = "true";
       };
       setLine(connector, start, end);
-      setLine(connectorStartRef.current, start, { x: start.x + ux * endpointDash, y: start.y + uy * endpointDash });
-      setLine(connectorEndRef.current, { x: end.x - ux * endpointDash, y: end.y - uy * endpointDash }, end);
     };
 
     positionConnector();
@@ -231,8 +226,6 @@ export function HomeMapPreview() {
         {showCompleteFallback ? (
           <svg className="punktlandung-home-map-static-connector" aria-hidden="true">
             <line ref={connectorRef} className="punktlandung-result-connector is-flowing" />
-            <line ref={connectorStartRef} className="punktlandung-result-connector-endpoint" />
-            <line ref={connectorEndRef} className="punktlandung-result-connector-endpoint" />
           </svg>
         ) : null}
         {showCompleteFallback ? <PreviewEllipse actual /> : null}
