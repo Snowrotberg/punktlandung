@@ -20,7 +20,7 @@ const homeResultScenario: ResultCameraScenario = {
   description: "Kurze Vorschau der Punktlandung-Ergebnisanimation",
   playerName: "#1 Dein Tipp",
   targetName: "Brandenburger Tor",
-  targetDescription: "Das Brandenburger Tor ist eines der bekanntesten Wahrzeichen Berlins.",
+  targetDescription: "Das Brandenburger Tor wurde zwischen 1788 und 1791 als Abschluss der Straße Unter den Linden errichtet.",
   guess: [previewGuess.lng, previewGuess.lat],
   target: [13.3777, 52.5163]
 };

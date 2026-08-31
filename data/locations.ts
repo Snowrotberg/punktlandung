@@ -7,6 +7,7 @@ import generatedLocations from "./generated/locations.generated.json";
 import excludedLicenseImageFiles from "./generated/image-license-exclusions.generated.json";
 import imageHealthExclusions from "./generated/image-health-exclusions.generated.json";
 import imageContentExclusions from "./image-content-exclusions.json";
+import locationDescriptionOverridesJson from "./location-description-overrides.json";
 
 const wikimediaFile = (fileName: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(fileName)}`;
 
@@ -671,9 +672,44 @@ function isDefaultPlayableLocation(location: GeoLocation) {
   return !excludedImagePatterns.some((pattern) => pattern.test(imageFile));
 }
 
+type LocationDescriptionOverride = { wikidataId: string; description: string; sourceUrl: string };
+const locationDescriptionOverrides = new Map(
+  (locationDescriptionOverridesJson as LocationDescriptionOverride[]).map((entry) => [entry.wikidataId, entry])
+);
+
+function descriptionKeys(location: GeoLocation): string[] {
+  return [
+    location.wikidataId ? `wikidata:${location.wikidataId}` : null,
+    location.category === "flags" ? `flag:${location.countryCode}` : null,
+    `title:${location.title}|${location.countryCode}`
+  ].filter((key): key is string => Boolean(key));
+}
+
+const defaultPlayableLocations = dedupeLocations([...rawBuiltInLocations, ...generatedBuiltInLocations])
+  .filter(isDefaultPlayableLocation);
+const sourcedDescriptions = new Map<string, Pick<GeoLocation, "shortDescription" | "descriptionSourceUrl">>();
+for (const location of defaultPlayableLocations) {
+  if (!location.shortDescription || !location.descriptionSourceUrl) continue;
+  for (const key of descriptionKeys(location)) {
+    if (!sourcedDescriptions.has(key)) {
+      sourcedDescriptions.set(key, {
+        shortDescription: location.shortDescription,
+        descriptionSourceUrl: location.descriptionSourceUrl
+      });
+    }
+  }
+}
+
+function withDescriptionCoverage(location: GeoLocation): GeoLocation {
+  const override = location.wikidataId ? locationDescriptionOverrides.get(location.wikidataId) : undefined;
+  if (override) return { ...location, shortDescription: override.description, descriptionSourceUrl: override.sourceUrl };
+  if (location.shortDescription && location.descriptionSourceUrl) return location;
+  const inherited = descriptionKeys(location).map((key) => sourcedDescriptions.get(key)).find(Boolean);
+  return inherited ? { ...location, ...inherited } : location;
+}
+
 export const catalogInventoryLocations: GeoLocation[] = applyInitialCatalogDifficultyBands(
-  dedupeLocations([...rawBuiltInLocations, ...generatedBuiltInLocations])
-    .filter(isDefaultPlayableLocation)
+  defaultPlayableLocations.map(withDescriptionCoverage)
 )
   .map((location) => ({
   ...location,

@@ -23,3 +23,14 @@ test("keeps a sourced location fact as a natural sentence", () => {
     "Da Avignon lange Sitz des Papstes war, trägt die Stadt den Beinamen Stadt der Päpste."
   );
 });
+
+test("does not split abbreviations or parenthetical grammar notes into fragments", () => {
+  assert.equal(normalizeLocationDescription("Volos (griechisch Βόλος (m. sg.)) liegt am Pagasitischen Golf. Der Hafen verbindet Thessalien mit den Sporaden."),
+    "Volos (griechisch Βόλος (m. sg.)) liegt am Pagasitischen Golf. Der Hafen verbindet Thessalien mit den Sporaden.");
+  assert.equal(normalizeLocationDescription("Stockholm blickt auf eine bis ins 13. Jahrhundert zurückreichende Besiedlungsgeschichte."),
+    "Stockholm blickt auf eine bis ins 13. Jahrhundert zurückreichende Besiedlungsgeschichte.");
+});
+
+test("rejects stored fragments instead of presenting them as facts", () => {
+  assert.equal(normalizeLocationDescription("Volos (griechisch Βόλος (m. sg."), null);
+});

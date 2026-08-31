@@ -1,0 +1,14 @@
+{
+  "catalogFingerprint": "338a9c5a",
+  "activeLocationCount": 1767,
+  "completeDescriptionCount": 1767,
+  "completeProvenanceCount": 1767,
+  "violationCount": 0,
+  "sourceHosts": {
+    "commons.wikimedia.org": 4,
+    "de.wikipedia.org": 1733,
+    "en.wikipedia.org": 24,
+    "www.wikidata.org": 6
+  },
+  "entries": []
+}

@@ -21,6 +21,7 @@
     "catalog:augment-images": "node scripts/augment-wikimedia-images.mjs",
     "catalog:audit": "tsx scripts/audit-location-catalog.ts",
     "catalog:audit-landscapes": "tsx scripts/audit-landscape-context.ts",
+    "catalog:audit-descriptions": "tsx scripts/audit-location-descriptions.ts",
     "catalog:render-landscape-review": "tsx scripts/render-landscape-context-review.ts",
     "catalog:sample": "tsx scripts/render-catalog-quality-sample.mjs",
     "catalog:quarantine-images": "tsx scripts/quarantine-image-delivery.ts",

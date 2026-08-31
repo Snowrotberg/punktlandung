@@ -7,7 +7,7 @@ const wikipediaEndpoint = "https://de.wikipedia.org/w/api.php";
 const userAgent = process.env.WIKIDATA_USER_AGENT ?? "Punktlandung/1.0 (location description enrichment; aintartstudio@gmail.com)";
 const wikidataBatchSize = 50;
 const wikipediaBatchSize = 20;
-const maximumLength = 300;
+const maximumLength = 220;
 const sentenceSegmenter = new Intl.Segmenter("de", { granularity: "sentence" });
 
 function plainText(value) {
@@ -18,10 +18,39 @@ function plainText(value) {
     .trim();
 }
 
+function withoutParentheticalAsides(value) {
+  let depth = 0;
+  let result = "";
+  for (const character of String(value ?? "")) {
+    if (character === "(") {
+      depth += 1;
+      continue;
+    }
+    if (character === ")" && depth > 0) {
+      depth -= 1;
+      if (depth === 0) result += " ";
+      continue;
+    }
+    if (depth === 0) result += character;
+  }
+  return plainText(result);
+}
+
 function sentences(value) {
-  return [...sentenceSegmenter.segment(plainText(value))]
-    .map(({ segment }) => segment.trim())
-    .filter((sentence) => sentence.length >= 35);
+  const segments = [...sentenceSegmenter.segment(plainText(value))].map(({ segment }) => segment.trim()).filter(Boolean);
+  const completed = [];
+  let pending = "";
+  for (const [index, segment] of segments.entries()) {
+    pending = `${pending} ${segment}`.trim();
+    const openParentheses = (pending.match(/\(/g) ?? []).length - (pending.match(/\)/g) ?? []).length;
+    const abbreviationFragment = /\b(?:bzw|ca|d|Dr|Jh|Nr|Prof|sg|St|u|v|vgl|z)\.$/i.test(pending);
+    const ordinalContinues = /\b\d{1,2}\.$/.test(pending) && /^(?:Jahr|Jahrhundert|Jh\.)\b/i.test(segments[index + 1] ?? "");
+    if (pending.length < 35 || openParentheses > 0 || abbreviationFragment || ordinalContinues) continue;
+    completed.push(pending);
+    pending = "";
+  }
+  if (pending.length >= 35 && (pending.match(/\(/g) ?? []).length === (pending.match(/\)/g) ?? []).length) completed.push(pending);
+  return completed;
 }
 
 function shortenedSentence(value, limit = maximumLength) {
@@ -38,10 +67,11 @@ function informativeScore(sentence, title, index) {
   if (/punktlandung|wird .* gespielt/.test(lower)) return -100;
   let score = Math.max(0, 7 - index * 0.45);
   if (lower.includes(title.toLocaleLowerCase("de-DE"))) score += 2;
-  if (/unesco|weltkulturerbe|weltnaturerbe|wahrzeichen|ber(?:ü|ue)hmt|bekannt|bedeutend|einzigartig|größte|grösste|älteste|historisch|geschichte|gegründet|erbaut|residenz|zentrum|festival|papst|palast|brücke|burg|schloss|tempel|kathedrale|vulkan|gebirge|nationalpark|naturpark|wasserfall|wüste|fjord|küste|rh[oô]ne|fluss|see\b/.test(lower)) score += 9;
+  if (/unesco|weltkulturerbe|weltnaturerbe|größte|grösste|älteste|historisch|geschichte|gegründet|erbaut|residenz|festival|papst|palast|brücke|burg|schloss|tempel|kathedrale|vulkan|gebirge|nationalpark|naturpark|wasserfall|wüste|fjord|küste|rh[oô]ne|fluss|see\b/.test(lower)) score += 9;
   if (/prägt|zeichnet sich|gilt als|zählt zu|gehört zu|entstand|war zwischen|diente als|überspannt|liegt an|liegt am|liegt auf/.test(lower)) score += 5;
-  if (/einwohner|verwaltungssitz|präfektur|gemeinde im|gemeinde in|departement|provinzhauptstadt|koordinaten|postleitzahl/.test(lower)) score -= 12;
-  if (/^\S+ ist (?:eine|ein|die) (?:stadt|gemeinde|hauptstadt|insel|dorf)\b/.test(lower) && !/bekannt|ber(?:ü|ue)hmt|unesco|wahrzeichen|historisch|fluss|küste|gebirge|see\b/.test(lower)) score -= 6;
+  if (/einwohner|verwaltungssitz|präfektur|gemeinde im|gemeinde in|departement|provinzhauptstadt|koordinaten|postleitzahl/.test(lower)) score -= 3;
+  if (/^\S+ ist (?:eine|ein|die) (?:stadt|gemeinde|hauptstadt|insel|dorf)\b/.test(lower) && !/\d|unesco|historisch|fluss|küste|gebirge|see|pazifik|atlantik|mittelmeer|im (?:norden|osten|süden|westen)|auf der insel\b/.test(lower)) score -= 4;
+  if (/bekannt(?:e[snr]?)? wahrzeichen|eines der bekanntesten|beliebtes reiseziel|touristenattraktion/.test(lower)) score -= 14;
   if (sentence.length > maximumLength + 80) score -= 3;
   return score;
 }
@@ -49,9 +79,11 @@ function informativeScore(sentence, title, index) {
 export function selectLocationDescription(extract, title) {
   const candidates = sentences(extract).slice(0, 14);
   const ranked = candidates
+    .map((sentence, index) => withoutParentheticalAsides(sentence))
+    .filter((sentence) => sentence.length >= 35)
     .map((sentence, index) => ({ sentence, score: informativeScore(sentence, title, index), index }))
     .sort((first, second) => second.score - first.score || first.index - second.index);
-  const selected = ranked.find(({ score }) => score >= 6)?.sentence;
+  const selected = ranked.find(({ score }) => score >= 4)?.sentence;
   return selected ? shortenedSentence(selected) : null;
 }
 
@@ -137,11 +169,12 @@ for (const [id, entity] of metadata) {
   const fallback = isUsefulStoredDescription(entity.wikidataDescription)
     ? shortenedSentence(entity.wikidataDescription)
     : null;
-  const description = articleDescription ?? fallback;
-  if (!description) continue;
+  if (!articleDescription && !fallback) continue;
   descriptions.set(id, {
-    description,
-    sourceUrl: entity.articleTitle ? `https://de.wikipedia.org/wiki/${encodeURIComponent(entity.articleTitle.replace(/ /g, "_"))}` : `https://www.wikidata.org/wiki/${id}`
+    description: articleDescription ?? fallback,
+    sourceUrl: articleDescription
+      ? `https://de.wikipedia.org/wiki/${encodeURIComponent(entity.articleTitle.replace(/ /g, "_"))}`
+      : `https://www.wikidata.org/wiki/${id}`
   });
 }
 

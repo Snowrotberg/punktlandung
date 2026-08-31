@@ -3,7 +3,9 @@ import { locationDifficultyMap } from "../lib/locationDifficulty";
 import { catalogImageIssues } from "../lib/catalogImageQuality";
 import { buildCatalogStatistics } from "../lib/catalogStatistics";
 import landscapeContextReviewJson from "../data/generated/landscape-context-review.generated.json";
+import locationDescriptionAuditJson from "../data/generated/location-description-audit.generated.json";
 import { assessLandscapeContext, landscapeContextCatalogFingerprint } from "../lib/landscapeImageQuality";
+import { locationDescriptionCatalogFingerprint, locationDescriptionIssues } from "../lib/locationDescriptionQuality";
 import licenseCatalogJson from "../data/generated/image-licenses.generated.json";
 import {
   imageFileNameForLicense,
@@ -138,6 +140,16 @@ if (landscapeContextReviewJson.pendingVisualReviewCount !== pendingVisualReviewL
 if (pendingVisualReviewLandscapes.length > 0) {
   errors.push(`${pendingVisualReviewLandscapes.length} automatisch markierte Landschaftsmotive haben noch keine visuelle Entscheidung`);
 }
+const descriptionViolations = builtInLocations.filter((location) => locationDescriptionIssues(location).length > 0);
+if (locationDescriptionAuditJson.catalogFingerprint !== locationDescriptionCatalogFingerprint(builtInLocations)) {
+  errors.push("Zielinfo-Audit ist veraltet; npm run catalog:audit-descriptions ausführen");
+}
+if (locationDescriptionAuditJson.activeLocationCount !== builtInLocations.length) {
+  errors.push("Zielinfo-Audit deckt nicht den vollständigen aktiven Katalog ab");
+}
+if (locationDescriptionAuditJson.violationCount !== descriptionViolations.length || descriptionViolations.length > 0) {
+  errors.push(`${descriptionViolations.length} aktive Zielinfos verletzen Vollständigkeits-, Provenienz- oder Textqualitätsregeln`);
+}
 if (landscapeContextAssessments.some((entry) => entry.status === "excluded" && activeLandscapeIds.has(entry.locationId))) {
   errors.push("Mindestens ein als kontextlos quarantänisiertes Landschaftsbild ist weiterhin aktiv");
 }
@@ -150,6 +162,11 @@ console.log(
   + `${landscapeContextReviewJson.visuallyReviewedImageCount} visuell entschieden, `
   + `${landscapeContextReviewJson.pendingVisualReviewCount} offen, `
   + `${landscapeContextReviewJson.excludedImageCount} quarantänisiert`
+);
+console.log(
+  `Zielinfos: ${locationDescriptionAuditJson.completeDescriptionCount}/${locationDescriptionAuditJson.activeLocationCount} vollständig, `
+  + `${locationDescriptionAuditJson.completeProvenanceCount}/${locationDescriptionAuditJson.activeLocationCount} mit Provenienz, `
+  + `${locationDescriptionAuditJson.violationCount} Verstöße`
 );
 
 if (errors.length > 0) {
