@@ -123,13 +123,34 @@ if (landscapeContextReviewJson.catalogFingerprint !== landscapeContextCatalogFin
 if (landscapeContextReviewJson.checkedImageCount !== landscapeContextAssessments.length) {
   errors.push(`Landschafts-Review deckt ${landscapeContextReviewJson.checkedImageCount} statt ${landscapeContextAssessments.length} technisch geeigneten Motiven ab`);
 }
+const automaticallyFlaggedLandscapes = landscapeContextAssessments.filter((entry) => entry.automaticReviewRequired);
+const visuallyReviewedLandscapes = landscapeContextAssessments.filter((entry) => entry.visualDecision !== null);
+const pendingVisualReviewLandscapes = automaticallyFlaggedLandscapes.filter((entry) => entry.visualDecision === null);
+if (landscapeContextReviewJson.automaticallyFlaggedImageCount !== automaticallyFlaggedLandscapes.length) {
+  errors.push("Automatisch markierte Landschaftszahl ist im generierten Review veraltet");
+}
+if (landscapeContextReviewJson.visuallyReviewedImageCount !== visuallyReviewedLandscapes.length) {
+  errors.push("Visuell entschiedene Landschaftszahl ist im generierten Review veraltet");
+}
+if (landscapeContextReviewJson.pendingVisualReviewCount !== pendingVisualReviewLandscapes.length) {
+  errors.push("Offene visuelle Landschaftsprüfungen sind im generierten Review veraltet");
+}
+if (pendingVisualReviewLandscapes.length > 0) {
+  errors.push(`${pendingVisualReviewLandscapes.length} automatisch markierte Landschaftsmotive haben noch keine visuelle Entscheidung`);
+}
 if (landscapeContextAssessments.some((entry) => entry.status === "excluded" && activeLandscapeIds.has(entry.locationId))) {
   errors.push("Mindestens ein als kontextlos quarantänisiertes Landschaftsbild ist weiterhin aktiv");
 }
 
 console.table(Object.fromEntries(stats));
 console.log(`Katalogbestand: ${catalogInventoryLocations.length} geprüfte Quellen, ${builtInLocations.length} aktive Bilder, ${catalogInventoryLocations.length - builtInLocations.length} Qualitätsausschlüsse`);
-console.log(`Landschaftskontext: ${landscapeContextReviewJson.checkedImageCount} vollständig geprüft, ${landscapeContextReviewJson.reviewCandidateCount} Review-Kandidaten, ${landscapeContextReviewJson.excludedImageCount} quarantänisiert`);
+console.log(
+  `Landschaftskontext: ${landscapeContextReviewJson.checkedImageCount} technisch geprüft, `
+  + `${landscapeContextReviewJson.automaticallyFlaggedImageCount} automatisch markiert, `
+  + `${landscapeContextReviewJson.visuallyReviewedImageCount} visuell entschieden, `
+  + `${landscapeContextReviewJson.pendingVisualReviewCount} offen, `
+  + `${landscapeContextReviewJson.excludedImageCount} quarantänisiert`
+);
 
 if (errors.length > 0) {
   console.error(errors.join("\n"));

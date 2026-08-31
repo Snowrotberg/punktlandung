@@ -5,7 +5,8 @@ import { catalogImageIssues } from "../lib/catalogImageQuality";
 import {
   assessLandscapeContext,
   landscapeContextCatalogFingerprint,
-  landscapeContextExclusions
+  landscapeContextExclusions,
+  landscapeContextVisualReviews
 } from "../lib/landscapeImageQuality";
 
 async function main() {
@@ -17,15 +18,22 @@ async function main() {
     .map(assessLandscapeContext)
     .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   const activeIds = new Set(builtInLocations.filter((location) => location.category === "landscapes").map((location) => location.id));
-  const reviewEntries = assessments.filter((entry) => entry.status !== "pass");
+  const automaticallyFlagged = assessments.filter((entry) => entry.automaticReviewRequired);
+  const pendingVisualReviews = automaticallyFlagged.filter((entry) => entry.visualDecision === null);
+  const reviewEntries = assessments.filter((entry) => entry.automaticReviewRequired || entry.status === "excluded");
   const output = {
     catalogFingerprint: landscapeContextCatalogFingerprint(assessments),
     checkedImageCount: assessments.length,
     activeImageCount: assessments.filter((entry) => activeIds.has(entry.locationId)).length,
     passedImageCount: assessments.filter((entry) => entry.status === "pass").length,
-    reviewCandidateCount: assessments.filter((entry) => entry.status === "review").length,
+    automaticallyFlaggedImageCount: automaticallyFlagged.length,
+    visuallyReviewedImageCount: assessments.filter((entry) => entry.visualDecision !== null).length,
+    visuallyApprovedImageCount: assessments.filter((entry) => entry.visualDecision === "approved").length,
+    visuallyExcludedImageCount: assessments.filter((entry) => entry.visualDecision === "excluded").length,
+    pendingVisualReviewCount: pendingVisualReviews.length,
     excludedImageCount: assessments.filter((entry) => entry.status === "excluded").length,
     exclusions: landscapeContextExclusions,
+    visualReviews: landscapeContextVisualReviews,
     reviewEntries
   };
 
@@ -33,7 +41,8 @@ async function main() {
   await writeFile(outputPath, `${JSON.stringify(output, null, 2)}\n`, "utf8");
   console.log(
     `Landschaftskontext geprüft: ${output.checkedImageCount} technisch geeignete Motive, `
-    + `${output.activeImageCount} aktiv, ${output.reviewCandidateCount} zur Sichtprüfung, ${output.excludedImageCount} quarantänisiert.`
+    + `${output.automaticallyFlaggedImageCount} automatisch markiert, ${output.visuallyReviewedImageCount} visuell entschieden, `
+    + `${output.pendingVisualReviewCount} offen, ${output.excludedImageCount} quarantänisiert, ${output.activeImageCount} aktiv.`
   );
 }
 

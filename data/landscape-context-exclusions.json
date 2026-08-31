@@ -1,8 +1,56 @@
 [
   {
+    "locationId": "landscapes-wadi-rum-q40729-curated-wadi-rum-in-flower-jpg",
+    "reason": "Die scharf abgebildeten Blüten dominieren; die Wadi-Rum-Felslandschaft bleibt nur unscharfer Hintergrund.",
+    "sourceFile": "Wadi Rum in Flower.jpg",
+    "evidence": "catalog:render-landscape-review#06"
+  },
+  {
     "locationId": "landscapes-ruapehu-q207284-curated-northern-slope-of-mount-ruapehu-09-jpg",
     "reason": "Enge Fels- und Wasser-Nahaufnahme ohne erkennbare Ruapehu- oder Landschaftsmerkmale; der mobile Ausschnitt zeigt nahezu das vollständige Quellmotiv.",
     "sourceFile": "Northern slope of Mount Ruapehu 09.jpg",
     "evidence": "mobile-review-2026-08-31"
+  },
+  {
+    "locationId": "landscapes-chortyzja-q914907-curated-khortytsia-forest-swamps-jpg",
+    "reason": "Die Luftaufnahme zeigt generischen Wald ohne lesbare Insel-, Ufer- oder Ortsmerkmale von Chortyzja.",
+    "sourceFile": "Khortytsia forest swamps.jpg",
+    "evidence": "catalog:render-landscape-review#07"
+  },
+  {
+    "locationId": "landscapes-paektusan-q107635-curated-laika-ac-mt-paekdu-funicular-driver-6900223021-j",
+    "reason": "Der Seilbahnmitarbeiter und die Kabine füllen das Motiv; der Paektusan ist nicht als Landschaft erkennbar.",
+    "sourceFile": "Laika ac Mt. Paekdu Funicular Driver (6900223021).jpg",
+    "evidence": "catalog:render-landscape-review#08"
+  },
+  {
+    "locationId": "landscapes-nationalpark-shete-boka-q1914604-curated-blue-lizard-in-shete-boka-national-park-curacao-",
+    "reason": "Die Echse ist das alleinige Hauptmotiv; ein Landschaftskontext des Nationalparks fehlt.",
+    "sourceFile": "BLUE LIZARD IN SHETE BOKA NATIONAL PARK, CURACAO.jpg",
+    "evidence": "catalog:render-landscape-review#12"
+  },
+  {
+    "locationId": "landscapes-doi-inthanon-q1140075-curated-doi-inthanon-vegetation-on-the-slopes-thailand-j",
+    "reason": "Die Aufnahme zeigt austauschbare Vegetation ohne erkennbare Bergform oder geografischen Kontext.",
+    "sourceFile": "Doi Inthanon, Vegetation on the slopes, Thailand.jpg",
+    "evidence": "catalog:render-landscape-review#13"
+  },
+  {
+    "locationId": "landscapes-yas-insel-q1274177-curated-heron-on-a-mossy-rock-jpg",
+    "reason": "Reiher und Felsen dominieren die Nahaufnahme; Yas-Insel ist nicht als Landschaft erkennbar.",
+    "sourceFile": "Heron on a mossy rock.jpg",
+    "evidence": "catalog:render-landscape-review#15"
+  },
+  {
+    "locationId": "landscapes-yas-insel-q1274177-curated-gull-lost-in-the-canal-jpg",
+    "reason": "Die Möwe auf einer generischen Wasserfläche enthält keinen lesbaren Insel- oder Landschaftskontext.",
+    "sourceFile": "Gull lost in the canal.jpg",
+    "evidence": "catalog:render-landscape-review#16"
+  },
+  {
+    "locationId": "landscapes-ouzoud-falle-q38212-curated-platform-boat-carrying-tourists-at-the-base-of-o",
+    "reason": "Boot und Touristen dominieren; die namensgebenden Wasserfälle sind im Motiv nicht sichtbar.",
+    "sourceFile": "Platform boat carrying tourists at the base of Ouzoud Falls (El-Abid River gorge), Morocco.jpg",
+    "evidence": "catalog:render-landscape-review#17"
   }
 ]

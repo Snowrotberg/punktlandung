@@ -6,6 +6,7 @@ import { catalogImageIssues } from "../lib/catalogImageQuality";
 import {
   assessLandscapeContext,
   landscapeContextCatalogFingerprint,
+  landscapeContextVisualReviews,
   mobileLandscapeVisibleFraction
 } from "../lib/landscapeImageQuality";
 import imageLicensesJson from "../data/generated/image-licenses.generated.json";
@@ -30,9 +31,28 @@ test("the generated landscape review covers every technically qualified candidat
   assert.equal(landscapeReviewJson.checkedImageCount, assessments.length);
   assert.equal(landscapeReviewJson.activeImageCount, builtInLocations.filter((location) => location.category === "landscapes").length);
   assert.equal(landscapeReviewJson.catalogFingerprint, landscapeContextCatalogFingerprint(assessments));
-  assert.equal(
-    landscapeReviewJson.reviewEntries.length,
-    landscapeReviewJson.reviewCandidateCount + landscapeReviewJson.excludedImageCount
-  );
+  assert.equal(landscapeReviewJson.automaticallyFlaggedImageCount, 18);
+  assert.equal(landscapeReviewJson.visuallyReviewedImageCount, 19);
+  assert.equal(landscapeReviewJson.visuallyApprovedImageCount, 10);
+  assert.equal(landscapeReviewJson.visuallyExcludedImageCount, 9);
+  assert.equal(landscapeReviewJson.pendingVisualReviewCount, 0);
+  assert.equal(landscapeReviewJson.excludedImageCount, 9);
+  assert.equal(landscapeReviewJson.reviewEntries.length, 19);
   assert.ok(landscapeReviewJson.reviewEntries.every((entry) => entry.reasons.length > 0));
+  assert.ok(assessments.filter((entry) => entry.automaticReviewRequired).every((entry) => entry.visualDecision !== null));
+  assert.ok(assessments.filter((entry) => entry.status === "excluded").every((entry) =>
+    !builtInLocations.some((location) => location.id === entry.locationId)
+  ));
+});
+
+test("visual review records stay bound to exact catalog files and decisions", () => {
+  assert.equal(new Set(landscapeContextVisualReviews.map((entry) => entry.locationId)).size, landscapeContextVisualReviews.length);
+  for (const review of landscapeContextVisualReviews) {
+    const location = catalogInventoryLocations.find((entry) => entry.id === review.locationId);
+    assert.ok(location, review.locationId);
+    assert.equal(location.imageFile, review.sourceFile);
+    assert.ok(review.reason.length >= 40);
+    assert.ok(review.evidence.length > 0);
+    assert.equal(catalogImageIssues(location).includes("context-unusable"), review.decision === "excluded");
+  }
 });

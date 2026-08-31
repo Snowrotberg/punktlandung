@@ -1,0 +1,135 @@
+[
+  {
+    "locationId": "landscapes-ararat-q72303-curated-ararat-2026-jpg",
+    "sourceFile": "Ararat 2026.jpg",
+    "decision": "approved",
+    "reason": "Der Ararat bleibt im mobilen Zuschnitt vollständig und landschaftlich eindeutig erkennbar.",
+    "evidence": "catalog:render-landscape-review#01"
+  },
+  {
+    "locationId": "landscapes-sudinsel-q120755-curated-ahuriri-river-04-jpg",
+    "sourceFile": "Ahuriri River 04.jpg",
+    "decision": "approved",
+    "reason": "Flusslauf, Talebene und Gebirgskette bleiben gemeinsam sichtbar und geben ausreichenden Landschaftskontext.",
+    "evidence": "catalog:render-landscape-review#02"
+  },
+  {
+    "locationId": "landscapes-bornholm-q769680-curated-yellow-rocks-on-the-baltic-jpg",
+    "sourceFile": "Yellow rocks on the Baltic.jpg",
+    "decision": "approved",
+    "reason": "Felsküste, Ostsee und Horizont bilden ein klar lesbares Küstenmotiv; die Felsen sind nicht bloß eine Detailaufnahme.",
+    "evidence": "catalog:render-landscape-review#03"
+  },
+  {
+    "locationId": "landscapes-mount-cook-q5059-curated-mt-sefton-massif-aoraki-mount-cook-national-park",
+    "sourceFile": "Mt Sefton massif, Aoraki - Mount Cook National Park, New Zealand.jpg",
+    "decision": "approved",
+    "reason": "Das vergletscherte Massiv dominiert auch im mobilen Zuschnitt und bleibt als Hochgebirgslandschaft eindeutig.",
+    "evidence": "catalog:render-landscape-review#04"
+  },
+  {
+    "locationId": "landscapes-ngorongoro-q1217726-curated-2019-ngorongoro-crater-jpg",
+    "sourceFile": "2019 Ngorongoro Crater.jpg",
+    "decision": "approved",
+    "reason": "Kraterboden, Rand und Wetterstimmung bleiben zusammen sichtbar und vermitteln die räumliche Struktur.",
+    "evidence": "catalog:render-landscape-review#05"
+  },
+  {
+    "locationId": "landscapes-wadi-rum-q40729-curated-wadi-rum-in-flower-jpg",
+    "sourceFile": "Wadi Rum in Flower.jpg",
+    "decision": "excluded",
+    "reason": "Die scharf abgebildeten Blüten dominieren; die Wadi-Rum-Felslandschaft bleibt nur unscharfer Hintergrund.",
+    "evidence": "catalog:render-landscape-review#06"
+  },
+  {
+    "locationId": "landscapes-ruapehu-q207284-curated-northern-slope-of-mount-ruapehu-09-jpg",
+    "sourceFile": "Northern slope of Mount Ruapehu 09.jpg",
+    "decision": "excluded",
+    "reason": "Enge Fels- und Wasser-Nahaufnahme ohne erkennbare Ruapehu- oder Landschaftsmerkmale.",
+    "evidence": "mobile-review-2026-08-31"
+  },
+  {
+    "locationId": "landscapes-chortyzja-q914907-curated-khortytsia-forest-swamps-jpg",
+    "sourceFile": "Khortytsia forest swamps.jpg",
+    "decision": "excluded",
+    "reason": "Die Luftaufnahme zeigt generischen Wald ohne lesbare Insel-, Ufer- oder Ortsmerkmale von Chortyzja.",
+    "evidence": "catalog:render-landscape-review#07"
+  },
+  {
+    "locationId": "landscapes-paektusan-q107635-curated-laika-ac-mt-paekdu-funicular-driver-6900223021-j",
+    "sourceFile": "Laika ac Mt. Paekdu Funicular Driver (6900223021).jpg",
+    "decision": "excluded",
+    "reason": "Der Seilbahnmitarbeiter und die Kabine füllen das Motiv; der Paektusan ist nicht als Landschaft erkennbar.",
+    "evidence": "catalog:render-landscape-review#08"
+  },
+  {
+    "locationId": "landscapes-zuma-rock-q229624-curated-behind-the-world-famous-zuma-rock-along-abuja-ka",
+    "sourceFile": "Behind The World Famous Zuma Rock Along Abuja Kaduna.jpg",
+    "decision": "approved",
+    "reason": "Der monolithische Zuma Rock ist das eindeutige Hauptmotiv und trotz Vordergrund vollständig lesbar.",
+    "evidence": "catalog:render-landscape-review#09"
+  },
+  {
+    "locationId": "landscapes-mount-everest-q513-curated-20110810-north-face-of-everest-tibet-china-panor",
+    "sourceFile": "20110810 North Face of Everest Tibet China Panoramic.jpg",
+    "decision": "approved",
+    "reason": "Nordwand und umgebendes Hochgebirge bleiben im mobilen Zuschnitt dominant und klar erkennbar.",
+    "evidence": "catalog:render-landscape-review#10"
+  },
+  {
+    "locationId": "landscapes-titano-q158526-curated-monte-titano-panorama-jpg",
+    "sourceFile": "Monte Titano Panorama.jpg",
+    "decision": "approved",
+    "reason": "Bergsilhouette, Felsflanke und Gipfelbebauung bleiben als zusammenhängendes Zielmotiv sichtbar.",
+    "evidence": "catalog:render-landscape-review#11"
+  },
+  {
+    "locationId": "landscapes-nationalpark-shete-boka-q1914604-curated-blue-lizard-in-shete-boka-national-park-curacao-",
+    "sourceFile": "BLUE LIZARD IN SHETE BOKA NATIONAL PARK, CURACAO.jpg",
+    "decision": "excluded",
+    "reason": "Die Echse ist das alleinige Hauptmotiv; ein Landschaftskontext des Nationalparks fehlt.",
+    "evidence": "catalog:render-landscape-review#12"
+  },
+  {
+    "locationId": "landscapes-doi-inthanon-q1140075-curated-doi-inthanon-vegetation-on-the-slopes-thailand-j",
+    "sourceFile": "Doi Inthanon, Vegetation on the slopes, Thailand.jpg",
+    "decision": "excluded",
+    "reason": "Die Aufnahme zeigt austauschbare Vegetation ohne erkennbare Bergform oder geografischen Kontext.",
+    "evidence": "catalog:render-landscape-review#13"
+  },
+  {
+    "locationId": "landscapes-pielinen-q845891-curated-view-to-pielinen-from-paha-koli-in-lieksa-finlan",
+    "sourceFile": "View to Pielinen from Paha-Koli in Lieksa, Finland, 2019 July.jpg",
+    "decision": "approved",
+    "reason": "Die weite Seenplatte mit Inseln und erhöhtem Aussichtspunkt bleibt im mobilen Ausschnitt vollständig lesbar.",
+    "evidence": "catalog:render-landscape-review#14"
+  },
+  {
+    "locationId": "landscapes-yas-insel-q1274177-curated-heron-on-a-mossy-rock-jpg",
+    "sourceFile": "Heron on a mossy rock.jpg",
+    "decision": "excluded",
+    "reason": "Reiher und Felsen dominieren die Nahaufnahme; Yas-Insel ist nicht als Landschaft erkennbar.",
+    "evidence": "catalog:render-landscape-review#15"
+  },
+  {
+    "locationId": "landscapes-yas-insel-q1274177-curated-gull-lost-in-the-canal-jpg",
+    "sourceFile": "Gull lost in the canal.jpg",
+    "decision": "excluded",
+    "reason": "Die Möwe auf einer generischen Wasserfläche enthält keinen lesbaren Insel- oder Landschaftskontext.",
+    "evidence": "catalog:render-landscape-review#16"
+  },
+  {
+    "locationId": "landscapes-ouzoud-falle-q38212-curated-platform-boat-carrying-tourists-at-the-base-of-o",
+    "sourceFile": "Platform boat carrying tourists at the base of Ouzoud Falls (El-Abid River gorge), Morocco.jpg",
+    "decision": "excluded",
+    "reason": "Boot und Touristen dominieren; die namensgebenden Wasserfälle sind im Motiv nicht sichtbar.",
+    "evidence": "catalog:render-landscape-review#17"
+  },
+  {
+    "locationId": "landscapes-dschabal-hafit-q1261870-curated-hikers-on-jebel-hafeet-jpg",
+    "sourceFile": "Hikers on Jebel Hafeet.jpg",
+    "decision": "approved",
+    "reason": "Die Wanderer bleiben klein; Felsflanke, Höhenlage und weite Umgebung bilden das eigentliche Landschaftsmotiv.",
+    "evidence": "catalog:render-landscape-review#18"
+  }
+]
