@@ -26,6 +26,14 @@ test("a failed prewarm degrades explicitly instead of deadlocking result navigat
   assert.deepEqual(await coordinator.prepare(), { mapRuntime: "degraded", mapStyle: "ready" });
 });
 
+test("a hanging runtime or style preparation degrades after the finite timeout", async () => {
+  const never = () => new Promise<void>(() => undefined);
+  const coordinator = createResultReadinessCoordinator(never, never, 10);
+  const startedAt = Date.now();
+  assert.deepEqual(await coordinator.prepare(), { mapRuntime: "degraded", mapStyle: "degraded" });
+  assert.ok(Date.now() - startedAt < 1_000, "the coordinator must not inherit the hanging promise lifetime");
+});
+
 test("GameApp holds the play route until the explicit result contract is ready", async () => {
   const source = await readFile(new URL("../components/GameApp.tsx", import.meta.url), "utf8");
   assert.match(source, /prepareResultExperience\(\)/);
