@@ -25,6 +25,15 @@ test("public map test route reuses GuessMap and stays noindex", async () => {
   assert.doesNotMatch(client, /new\s+Leaflet|MapContainer/);
 });
 
+test("map attribution stays clickable inside an interaction-locked guess map", async () => {
+  const [globals, game] = await Promise.all([
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../components/GameView.tsx", import.meta.url), "utf8")
+  ]);
+  assert.match(game, /mapInteractive \? "pin-cursor h-full" : "pointer-events-none h-full"/);
+  assert.match(globals, /\.punktlandung-map-attribution\s*\{[\s\S]*?z-index:\s*1500;[\s\S]*?pointer-events:\s*auto;/);
+});
+
 test("short landscape map test reserves a real visible basemap surface", async () => {
   const [globals, responsive] = await Promise.all([
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),

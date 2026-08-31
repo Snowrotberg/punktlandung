@@ -7047,6 +7047,7 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   right: 7px;
   bottom: 7px;
   z-index: 1500;
+  pointer-events: auto;
   color: #cbd5e1;
   font-family: inherit;
   font-size: 10px;
