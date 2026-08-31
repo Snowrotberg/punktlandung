@@ -211,9 +211,16 @@ test("HTTP flow starts, submits and claims a guest game without trusting client 
   assert.equal(started.status, "active");
 
   setNow(5_000);
+  const capturedResponse = await api.captureGuess(post(
+    `/api/v1/ranked-games/${started.gameId}/capture`,
+    { roundId: started.activeRound.roundId, guessId: "guess-0001", lat: 48, lng: 9, countryCode: "de" },
+    { cookie }
+  ), started.gameId);
+  assert.equal(capturedResponse.status, 200);
+  setNow(65_000);
   const submittedResponse = await api.submitGuess(post(
     `/api/v1/ranked-games/${started.gameId}/guesses`,
-    { roundId: started.activeRound.roundId, guessId: "guess-0001", lat: 48, lng: 9, countryCode: "de" },
+    { roundId: started.activeRound.roundId, guessId: "guess-0001" },
     { cookie }
   ), started.gameId);
   assert.equal(submittedResponse.status, 200);
@@ -234,6 +241,38 @@ test("HTTP flow starts, submits and claims a guest game without trusting client 
   assert.equal((await claim.json()).data.claimed, true);
 });
 
+test("ranked capture rejects late receipt, forged client time and uncaptured submit tokens", async () => {
+  const { api, setNow } = harness();
+  const startedResponse = await api.start(post("/api/v1/ranked-games", { requestId: "request-capture-abuse" }));
+  const cookie = cookieFrom(startedResponse);
+  const started = (await startedResponse.json()).data;
+  setNow(61_001);
+
+  const late = await api.captureGuess(post(
+    `/api/v1/ranked-games/${started.gameId}/capture`,
+    { roundId: started.activeRound.roundId, guessId: "guess-late", lat: 48, lng: 9 },
+    { cookie }
+  ), started.gameId);
+  assert.equal(late.status, 409);
+  assert.equal((await late.json()).error.code, "round_expired");
+
+  const forgedTime = await api.captureGuess(post(
+    `/api/v1/ranked-games/${started.gameId}/capture`,
+    { roundId: started.activeRound.roundId, guessId: "guess-forged", lat: 48, lng: 9, capturedAt: 5_000 },
+    { cookie }
+  ), started.gameId);
+  assert.equal(forgedTime.status, 400);
+  assert.equal((await forgedTime.json()).error.code, "invalid_request");
+
+  const forgedSubmit = await api.submitGuess(post(
+    `/api/v1/ranked-games/${started.gameId}/guess`,
+    { roundId: started.activeRound.roundId, guessId: "guess-forged" },
+    { cookie }
+  ), started.gameId);
+  assert.equal(forgedSubmit.status, 409);
+  assert.equal((await forgedSubmit.json()).error.code, "capture_required");
+});
+
 test("authenticated ranked flow auto-claims the completed game for the account", async () => {
   const { api, setNow } = harness();
   const startedResponse = await api.start(post("/api/v1/ranked-games", {
@@ -250,9 +289,15 @@ test("authenticated ranked flow auto-claims the completed game for the account",
   assert.equal(started.difficulty, "hard");
   assert.equal(started.noZoom, true);
   setNow(5_000);
+  const capturedResponse = await api.captureGuess(post(
+    `/api/v1/ranked-games/${started.gameId}/capture`,
+    { roundId: started.activeRound.roundId, guessId: "guess-0002", lat: 48, lng: 9 },
+    { cookie, "x-test-account": "account-0002" }
+  ), started.gameId);
+  assert.equal(capturedResponse.status, 200);
   const completedResponse = await api.submitGuess(post(
     `/api/v1/ranked-games/${started.gameId}/guesses`,
-    { roundId: started.activeRound.roundId, guessId: "guess-0002", lat: 48, lng: 9 },
+    { roundId: started.activeRound.roundId, guessId: "guess-0002" },
     { cookie, "x-test-account": "account-0002" }
   ), started.gameId);
   assert.equal(completedResponse.status, 200);

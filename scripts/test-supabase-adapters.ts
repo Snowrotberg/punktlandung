@@ -7,7 +7,7 @@ import { createSupabaseAdminClient } from "../lib/supabase/admin.server";
 import { SupabaseAccountIdentityRepository } from "../lib/supabase/accountIdentityRepository.server";
 import { SupabaseAccountProfileRepository } from "../lib/supabase/accountProfileRepository.server";
 import { SupabaseRankedGameRepository } from "../lib/supabase/rankedGameRepository.server";
-import { activateRankedRound, createRankedGame, expireOpenRound, replaceRankedRoundLocation, submitRankedGuess } from "../lib/rankedGame";
+import { activateRankedRound, captureRankedGuess, createRankedGame, expireOpenRound, replaceRankedRoundLocation, submitRankedGuess } from "../lib/rankedGame";
 import { builtInLocations } from "../data/locations";
 import type { Database } from "../lib/supabase/database.types";
 
@@ -84,11 +84,16 @@ async function main() {
     roundDurationMs: 60_000
   });
   await rankedGames.create(ranked);
-  const completed = await rankedGames.updateAtomically(rankedGameId, (current) => submitRankedGuess(current, {
+  await rankedGames.updateAtomically(rankedGameId, (current) => captureRankedGuess(current, {
     roundId: current.rounds[0].roundId,
     guessId: `guess_test_${suffix}`,
     point: { lat: 0, lng: 0 },
     now: now + 2_000
+  }));
+  const completed = await rankedGames.updateAtomically(rankedGameId, (current) => submitRankedGuess(current, {
+    roundId: current.rounds[0].roundId,
+    guessId: `guess_test_${suffix}`,
+    now: now + 2_500
   }));
   assert.equal(completed.status, "completed");
   assert.equal((await rankedGames.findById(rankedGameId))?.rounds[0].guess?.lat, 0);

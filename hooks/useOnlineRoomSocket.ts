@@ -246,9 +246,7 @@ export function useOnlineRoomSocket() {
       roundNumber: capture.roundNumber,
       locationId: capture.locationId,
       roundStartedAt: capture.roundStartedAt,
-      roundEndsAt: capture.roundEndsAt,
-      capturedAt: capture.capturedAt,
-      capturedAtMonotonic: capture.capturedAtMonotonic
+      roundEndsAt: capture.roundEndsAt
     }),
     submitGuess: (guess: LatLng & { countryCode?: string }, targetPlayerId?: string, _capture?: GuessCapture) =>
       send({ type: "submit_guess", guess, countryCode: guess.countryCode, playerId: targetPlayerId }),

@@ -9,6 +9,7 @@ export type RankedUpload = {
   roundId?: string;
   url: string;
   body?: string;
+  displayGuess?: { lat: number; lng: number; countryCode?: string };
   createdAt: number;
 };
 
@@ -36,6 +37,11 @@ function readQueue(): RankedUpload[] {
         roundId: typeof candidate.roundId === "string" ? candidate.roundId : undefined,
         url: candidate.url,
         body: typeof candidate.body === "string" ? candidate.body : undefined,
+        displayGuess: candidate.displayGuess
+          && typeof candidate.displayGuess.lat === "number"
+          && typeof candidate.displayGuess.lng === "number"
+          ? { lat: candidate.displayGuess.lat, lng: candidate.displayGuess.lng, countryCode: candidate.displayGuess.countryCode }
+          : undefined,
         createdAt: Number.isFinite(candidate.createdAt) ? Number(candidate.createdAt) : Date.now()
       }];
     });

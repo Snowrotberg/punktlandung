@@ -15,6 +15,15 @@ export type RankedGuess = Guess & {
   roundId: string;
 };
 
+export type RankedGuessCapture = {
+  guessId: string;
+  roundId: string;
+  lat: number;
+  lng: number;
+  countryCode?: string;
+  capturedAt: number;
+};
+
 export type RankedRound = {
   roundId: string;
   roundNumber: number;
@@ -24,6 +33,7 @@ export type RankedRound = {
   startedAt: number | null;
   deadlineAt: number | null;
   resolvedAt: number | null;
+  captures?: RankedGuessCapture[];
   guess: RankedGuess | null;
   result: RoundResult | null;
   promptVersion?: number;
@@ -109,6 +119,8 @@ export type RankedGameErrorCode =
   | "round_not_open"
   | "round_mismatch"
   | "round_expired"
+  | "capture_required"
+  | "capture_conflict"
   | "guess_conflict"
   | "game_not_completed"
   | "claim_conflict";
@@ -178,6 +190,7 @@ export function createRankedGame(input: CreateRankedGameInput): RankedGame {
     startedAt: null,
     deadlineAt: null,
     resolvedAt: null,
+    captures: [],
     guess: null,
     result: null,
     promptVersion: 0
@@ -238,6 +251,7 @@ export function replaceRankedRoundLocation(game: RankedGame, roundId: string, lo
     startedAt: null,
     deadlineAt: null,
     resolvedAt: null,
+    captures: [],
     guess: null,
     result: null,
     promptVersion: (round.promptVersion ?? 0) + 1
@@ -276,7 +290,7 @@ function advanceAfterResolution(game: RankedGame, roundIndex: number, resolvedRo
   };
 }
 
-export type SubmitRankedGuessInput = {
+export type CaptureRankedGuessInput = {
   guessId: string;
   roundId: string;
   point: LatLng;
@@ -284,57 +298,88 @@ export type SubmitRankedGuessInput = {
   now: number;
 };
 
-export function submitRankedGuess(game: RankedGame, input: SubmitRankedGuessInput): RankedGame {
-  const existing = game.rounds.find((round) => round.guess?.guessId === input.guessId);
-  if (existing) {
-    const samePayload =
-      existing.roundId === input.roundId &&
-      existing.guess?.lat === input.point.lat &&
-      existing.guess?.lng === input.point.lng &&
-      existing.guess?.countryCode === input.countryCode;
-    if (!samePayload) throw new RankedGameError("guess_conflict", "The guess identifier was already used with different data.");
-    return game;
-  }
+export function captureRankedGuess(game: RankedGame, input: CaptureRankedGuessInput): RankedGame {
   if (game.status === "completed") throw new RankedGameError("game_completed", "The game is already completed.");
   if (!input.guessId || !validCoordinates(input.point) || !Number.isFinite(input.now)) {
     throw new RankedGameError("invalid_guess", "Guess coordinates or identifiers are invalid.");
   }
-
   const roundIndex = activeRoundIndex(game);
   if (roundIndex < 0) throw new RankedGameError("round_not_open", "No round is currently open.");
   const round = game.rounds[roundIndex];
   if (round.roundId !== input.roundId) throw new RankedGameError("round_mismatch", "The guess does not belong to the open round.");
   if (round.startedAt === null || round.deadlineAt === null) throw new RankedGameError("round_not_open", "Round timing is missing.");
   if (input.now > round.deadlineAt) throw new RankedGameError("round_expired", "The round deadline has passed.");
+  const existingCapture = round.captures?.find((capture) => capture.guessId === input.guessId);
+  if (existingCapture) {
+    const samePayload = existingCapture.lat === input.point.lat
+      && existingCapture.lng === input.point.lng
+      && existingCapture.countryCode === input.countryCode;
+    if (!samePayload) throw new RankedGameError("capture_conflict", "The capture identifier was already used with different data.");
+    return game;
+  }
+  const rounds = [...game.rounds];
+  rounds[roundIndex] = {
+    ...round,
+    captures: [...(round.captures ?? []), {
+      guessId: input.guessId,
+      roundId: input.roundId,
+      lat: input.point.lat,
+      lng: input.point.lng,
+      countryCode: input.countryCode,
+      capturedAt: input.now
+    }].slice(-32)
+  };
+  return { ...game, rounds };
+}
 
-  const responseTimeMs = Math.max(0, input.now - round.startedAt);
+export type SubmitRankedGuessInput = {
+  guessId: string;
+  roundId: string;
+  now: number;
+};
+
+function resolveCapturedGuess(game: RankedGame, roundIndex: number, capture: RankedGuessCapture, resolvedAt: number): RankedGame {
+  const round = game.rounds[roundIndex];
+  if (round.startedAt === null) throw new RankedGameError("round_not_open", "Round timing is missing.");
+  const responseTimeMs = Math.max(0, capture.capturedAt - round.startedAt);
   const guess: RankedGuess = {
-    guessId: input.guessId,
-    roundId: input.roundId,
+    guessId: capture.guessId,
+    roundId: capture.roundId,
     playerId: game.accountId ?? "guest",
-    lat: input.point.lat,
-    lng: input.point.lng,
-    countryCode: input.countryCode,
-    createdAt: input.now,
+    lat: capture.lat,
+    lng: capture.lng,
+    countryCode: capture.countryCode,
+    createdAt: capture.capturedAt,
     responseTimeMs
   };
   const result = evaluatePlayerGuess(guess.playerId, round.location, guess);
-  const resolvedRound: RankedRound = {
-    ...round,
-    status: "resolved",
-    resolvedAt: input.now,
-    guess,
-    result
-  };
+  const resolvedRound: RankedRound = { ...round, status: "resolved", resolvedAt, captures: [], guess, result };
   const integrity = result.points === 5000 && responseTimeMs < 750 ? withIntegrityReason(game, "perfect_too_fast") : null;
-  const advanced = advanceAfterResolution(game, roundIndex, resolvedRound, input.now);
+  const advanced = advanceAfterResolution(game, roundIndex, resolvedRound, resolvedAt);
+  return { ...advanced, ...(integrity ?? {}), score: game.score + result.points, totalResponseTimeMs: game.totalResponseTimeMs + responseTimeMs };
+}
 
-  return {
-    ...advanced,
-    ...(integrity ?? {}),
-    score: game.score + result.points,
-    totalResponseTimeMs: game.totalResponseTimeMs + responseTimeMs
-  };
+export function submitRankedGuess(game: RankedGame, input: SubmitRankedGuessInput): RankedGame {
+  const existing = game.rounds.find((round) => round.guess?.guessId === input.guessId);
+  if (existing) {
+    const samePayload =
+      existing.roundId === input.roundId &&
+      existing.guess?.guessId === input.guessId;
+    if (!samePayload) throw new RankedGameError("guess_conflict", "The guess identifier was already used with different data.");
+    return game;
+  }
+  if (game.status === "completed") throw new RankedGameError("game_completed", "The game is already completed.");
+  if (!input.guessId || !Number.isFinite(input.now)) throw new RankedGameError("invalid_guess", "Guess identifiers are invalid.");
+
+  const roundIndex = activeRoundIndex(game);
+  if (roundIndex < 0) throw new RankedGameError("round_not_open", "No round is currently open.");
+  const round = game.rounds[roundIndex];
+  if (round.roundId !== input.roundId) throw new RankedGameError("round_mismatch", "The guess does not belong to the open round.");
+  const capture = round.captures?.find((candidate) => candidate.guessId === input.guessId);
+  if (!capture) {
+    throw new RankedGameError("capture_required", "The guess was not captured by the server before the deadline.");
+  }
+  return resolveCapturedGuess(game, roundIndex, capture, input.now);
 }
 
 export function expireOpenRound(game: RankedGame, now: number): RankedGame {
@@ -345,6 +390,11 @@ export function expireOpenRound(game: RankedGame, now: number): RankedGame {
   if (round.deadlineAt === null || now <= round.deadlineAt) {
     throw new RankedGameError("round_not_open", "The open round has not expired.");
   }
+  const latestCapture = round.captures?.reduce<RankedGuessCapture | null>(
+    (latest, capture) => !latest || capture.capturedAt >= latest.capturedAt ? capture : latest,
+    null
+  );
+  if (latestCapture) return resolveCapturedGuess(game, roundIndex, latestCapture, now);
   const result = evaluatePlayerGuess(game.accountId ?? "guest", round.location, null);
   const advanced = advanceAfterResolution(game, roundIndex, {
     ...round,

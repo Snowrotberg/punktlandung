@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Json } from "./database.types";
-import type { RankedGame, RankedRound } from "@/lib/rankedGame";
+import type { RankedGame, RankedGuessCapture, RankedRound } from "@/lib/rankedGame";
 import type { RankedGameRepository } from "@/lib/rankedGameRepository";
 import type { GeoLocation, RoundResult } from "@/types/game";
 import { evaluatePlayerGuess } from "@/lib/roundEvaluation";
@@ -10,7 +10,7 @@ import type { Database } from "./database.types";
 type GameRow = Database["public"]["Tables"]["ranked_games"]["Row"];
 type RoundRow = Database["public"]["Tables"]["ranked_rounds"]["Row"];
 type GuessRow = Database["public"]["Tables"]["ranked_guesses"]["Row"];
-type PersistedRankedLocation = GeoLocation & { __rankedPromptVersion?: number };
+type PersistedRankedLocation = GeoLocation & { __rankedPromptVersion?: number; __rankedCaptures?: RankedGuessCapture[] };
 
 function timestamp(value: string | null): number | null {
   if (value === null) return null;
@@ -28,7 +28,7 @@ function jsonObject<T>(value: Json, label: string): T {
 
 function mapRound(round: RoundRow, guess: GuessRow | undefined, playerId: string): RankedRound {
   const storedLocation = jsonObject<PersistedRankedLocation>(round.location_snapshot, "ranked location");
-  const { __rankedPromptVersion, ...location } = storedLocation;
+  const { __rankedPromptVersion, __rankedCaptures, ...location } = storedLocation;
   const result = guess
     ? jsonObject<RoundResult>(guess.result_snapshot, "ranked result")
     : round.status === "resolved"
@@ -42,6 +42,7 @@ function mapRound(round: RoundRow, guess: GuessRow | undefined, playerId: string
     startedAt: timestamp(round.started_at),
     deadlineAt: timestamp(round.deadline_at),
     resolvedAt: timestamp(round.resolved_at),
+    captures: Array.isArray(__rankedCaptures) ? __rankedCaptures : [],
     guess: guess ? {
       guessId: guess.guess_id,
       roundId: guess.round_id,
@@ -119,7 +120,7 @@ function statePayload(game: RankedGame) {
     round_number: round.roundNumber,
     status: round.status,
     location_id: round.location.id,
-    location_snapshot: { ...round.location, __rankedPromptVersion: round.promptVersion ?? 0 },
+    location_snapshot: { ...round.location, __rankedPromptVersion: round.promptVersion ?? 0, __rankedCaptures: round.captures ?? [] },
     started_at: iso(round.startedAt),
     deadline_at: iso(round.deadlineAt),
     resolved_at: iso(round.resolvedAt)

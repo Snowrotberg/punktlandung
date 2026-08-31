@@ -1,7 +1,5 @@
 import type { Guess, LatLng, RoomState } from "../types/game";
 
-export const onlineGuessCaptureGraceMs = 750;
-
 export type GuessCapture = {
   point: LatLng & { countryCode?: string };
   playerId: string;
@@ -39,14 +37,6 @@ export function guessFromCapture(capture: GuessCapture): Guess {
   };
 }
 
-export function onlineCaptureReachedServerInTime(capture: GuessCapture, receivedAt: number): boolean {
-  if (!captureIsWithinDeadline(capture) || receivedAt < capture.roundStartedAt) return false;
-  if (capture.roundEndsAt === null) return true;
-  if (receivedAt <= capture.roundEndsAt) return true;
-  return receivedAt - capture.roundEndsAt <= onlineGuessCaptureGraceMs
-    && receivedAt - capture.capturedAt <= onlineGuessCaptureGraceMs;
-}
-
-export function trustedOnlineCaptureAt(capture: GuessCapture, receivedAt: number): number {
-  return capture.roundEndsAt === null ? receivedAt : Math.min(receivedAt, capture.roundEndsAt);
+export function serverObservedCaptureBeforeDeadline(roundStartedAt: number, roundEndsAt: number | null, receivedAt: number): boolean {
+  return receivedAt >= roundStartedAt && (roundEndsAt === null || receivedAt <= roundEndsAt);
 }

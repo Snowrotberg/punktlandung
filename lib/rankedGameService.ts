@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import {
   claimRankedGame,
+  captureRankedGuess,
   activateRankedRound,
   createRankedGame,
   expireOpenRound,
@@ -9,6 +10,7 @@ import {
   submitRankedGuess,
   toPublicRankedGame,
   type PublicRankedGame,
+  type CaptureRankedGuessInput,
   type SubmitRankedGuessInput
 } from "./rankedGame";
 import type { RankedGameRepository } from "./rankedGameRepository";
@@ -142,6 +144,14 @@ export class RankedGameService {
       this.assertAccess(current, guestIdHash, accountId);
       const next = submitRankedGuess(current, command);
       return accountId && next.status === "completed" ? claimRankedGame(next, accountId) : next;
+    });
+    return toPublicRankedGame(updated);
+  }
+
+  async capture(gameId: string, guestIdHash: string, command: CaptureRankedGuessInput, accountId?: string): Promise<PublicRankedGame> {
+    const updated = await this.repository.updateAtomically(gameId, (current) => {
+      this.assertAccess(current, guestIdHash, accountId);
+      return captureRankedGuess(current, command);
     });
     return toPublicRankedGame(updated);
   }

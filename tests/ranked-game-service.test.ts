@@ -85,10 +85,10 @@ test("local rescue rebinds an active guest game without changing its progress", 
 test("guest plays, completes and claims one game through the application service", async () => {
   const ranked = service();
   const started = await ranked.start({ createRequestId: "request-1", guestIdHash: "guest-a", now: 1_000 });
+  await ranked.capture(started.gameId, "guest-a", { guessId: "guess-1", roundId: "round-1", point: { lat: 47, lng: 8 }, now: 5_000 });
   const completed = await ranked.submit(started.gameId, "guest-a", {
     guessId: "guess-1",
     roundId: "round-1",
-    point: { lat: 47, lng: 8 },
     now: 5_000
   });
   assert.equal(completed.status, "completed");
@@ -101,7 +101,7 @@ test("wrong guest cannot read, submit or claim another guest game", async () => 
   const ranked = service();
   const started = await ranked.start({ createRequestId: "request-1", guestIdHash: "guest-a", now: 1_000 });
   await assert.rejects(ranked.get(started.gameId, "guest-b"), isCode("invalid_game"));
-  await assert.rejects(ranked.submit(started.gameId, "guest-b", {
+  await assert.rejects(ranked.capture(started.gameId, "guest-b", {
     guessId: "guess-1",
     roundId: "round-1",
     point: { lat: 47, lng: 8 },
@@ -117,10 +117,10 @@ test("only authorized prompt sources are available, including the player's resol
   await assert.rejects(ranked.promptSource(started.gameId, "guest-b", "round-1"), isCode("invalid_game"));
   await assert.rejects(ranked.promptSource(started.gameId, "guest-a", "round-2"), isCode("invalid_game"));
 
+  await ranked.capture(started.gameId, "guest-a", { guessId: "guess-1", roundId: "round-1", point: { lat: 47, lng: 8 }, now: 5_000 });
   await ranked.submit(started.gameId, "guest-a", {
     guessId: "guess-1",
     roundId: "round-1",
-    point: { lat: 47, lng: 8 },
     now: 5_000
   });
   assert.equal((await ranked.promptSource(started.gameId, "guest-a", "round-1")).sourceUrl, "https://example.test/1.jpg");
@@ -142,10 +142,10 @@ test("each deferred round starts only after its own prompt is ready", async () =
 
   const firstReady = await ranked.ready(created.gameId, "guest-a", "round-1", 2_000);
   assert.equal(firstReady.activeRound?.startedAt, 2_000);
+  await ranked.capture(created.gameId, "guest-a", { guessId: "guess-first", roundId: "round-1", point: { lat: 48, lng: 9 }, now: 3_000 });
   const afterFirst = await ranked.submit(created.gameId, "guest-a", {
     guessId: "guess-first",
     roundId: "round-1",
-    point: { lat: 48, lng: 9 },
     now: 3_000
   });
 

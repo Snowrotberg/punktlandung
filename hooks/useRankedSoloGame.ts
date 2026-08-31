@@ -14,6 +14,14 @@ import type { GuessCapture } from "@/lib/guessCapture";
 
 type ApiPayload = { data?: PublicRankedGame; error?: { message?: string } };
 
+type RankedCaptureRegistration = {
+  gameId: string;
+  roundId: string;
+  guessId: string;
+  point: LatLng & { countryCode?: string };
+  promise: Promise<void>;
+};
+
 class RankedRequestError extends Error {
   constructor(message: string, readonly status: number) {
     super(message);
@@ -249,6 +257,7 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
   const [resumePending, setResumePending] = useState(false);
   const resumePendingRef = useRef(false);
   const guessRef = useRef<Guess | null>(null);
+  const captureRegistrationRef = useRef<RankedCaptureRegistration | null>(null);
   const expiryAttemptedRef = useRef(new Set<string>());
   const uploadFlushInFlightRef = useRef(false);
   const readyRoundRef = useRef<string | null>(null);
@@ -608,29 +617,68 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
     }
   }, [enabled, game, request]);
 
-  const submitGuess = useCallback(async (point: LatLng & { countryCode?: string }, _targetPlayerId?: string, _capture?: GuessCapture) => {
+  const captureGuess = useCallback((capture: GuessCapture): RankedCaptureRegistration | null => {
+    if (!game?.activeRound || !room || room.status !== "guessing") return null;
+    const roundId = roundIdFromPromptLocationId(capture.locationId);
+    if (roundId !== game.activeRound.roundId) return null;
+    const guessId = browserUuid();
+    const registration: RankedCaptureRegistration = {
+      gameId: game.gameId,
+      roundId,
+      guessId,
+      point: capture.point,
+      promise: request(`/api/v1/ranked-games/${encodeURIComponent(game.gameId)}/capture`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ roundId, guessId, lat: capture.point.lat, lng: capture.point.lng, countryCode: capture.point.countryCode })
+      }).then(() => undefined)
+    };
+    captureRegistrationRef.current = registration;
+    void registration.promise.catch((cause) => {
+      if (captureRegistrationRef.current === registration) {
+        setError(cause instanceof Error ? cause.message : "Der Tipp konnte vor Ablauf der Zeit nicht registriert werden.");
+      }
+    });
+    return registration;
+  }, [game, request, room]);
+
+  const submitGuess = useCallback(async (point: LatLng & { countryCode?: string }, _targetPlayerId?: string, capture?: GuessCapture) => {
     if (!game?.activeRound || !room || room.status !== "guessing") return;
     const submittedAt = Date.now();
     const guess: Guess = { playerId, lat: point.lat, lng: point.lng, countryCode: point.countryCode, createdAt: submittedAt, responseTimeMs: room.roundStartedAt ? Math.max(0, submittedAt - room.roundStartedAt) : undefined };
-    const guessId = browserUuid();
+    let registration = captureRegistrationRef.current;
+    if (!registration || registration.gameId !== game.gameId || registration.roundId !== game.activeRound.roundId) {
+      registration = capture ? captureGuess(capture) : null;
+    }
+    if (!registration) {
+      setError("Der Tipp wurde nicht rechtzeitig vom Spielserver registriert.");
+      return;
+    }
+    const guessId = registration.guessId;
     const uploadId = `guess:${game.gameId}:${game.activeRound.roundId}`;
-    const uploadBody = JSON.stringify({ roundId: game.activeRound.roundId, guessId, lat: point.lat, lng: point.lng, countryCode: point.countryCode });
+    const uploadBody = JSON.stringify({ roundId: game.activeRound.roundId, guessId });
     guessRef.current = guess;
+    let captureConfirmed = false;
     try {
       setError(null);
       setUploading(true);
+      await registration.promise;
+      captureConfirmed = true;
       const next = await request(`/api/v1/ranked-games/${encodeURIComponent(game.gameId)}/guess`, { method: "POST", headers: { "content-type": "application/json" }, body: uploadBody });
       removeRankedUpload(uploadId);
       applyResolved(next, guessRef.current);
       guessRef.current = null;
+      captureRegistrationRef.current = null;
     } catch (cause) {
-      enqueueRankedUpload({ id: uploadId, kind: "guess", gameId: game.gameId, roundId: game.activeRound.roundId, url: `/api/v1/ranked-games/${encodeURIComponent(game.gameId)}/guess`, body: uploadBody });
+      if (captureConfirmed && (!(cause instanceof RankedRequestError) || cause.status >= 500 || cause.status === 408 || cause.status === 429)) {
+        enqueueRankedUpload({ id: uploadId, kind: "guess", gameId: game.gameId, roundId: game.activeRound.roundId, url: `/api/v1/ranked-games/${encodeURIComponent(game.gameId)}/guess`, body: uploadBody, displayGuess: point });
+      }
       setPendingUploadCount(pendingUploadsForGame(activeGameIdRef.current));
       setError(cause instanceof Error ? cause.message : "Der Tipp konnte nicht geprüft werden.");
     } finally {
       setUploading(false);
     }
-  }, [applyResolved, game, request, room]);
+  }, [applyResolved, captureGuess, game, request, room]);
 
   useEffect(() => {
     if (!enabled || !game || !room || room.status !== "guessing" || !room.roundEndsAt) return;
@@ -646,9 +694,11 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
       if (Date.now() <= room.roundEndsAt!) return false;
       try {
         const latest = await request(`/api/v1/ranked-games/${encodeURIComponent(game.gameId)}`);
-        if (!latest.resolvedRounds.some((round) => round.roundNumber === room.currentRound)) return false;
+        const resolved = latest.resolvedRounds.find((round) => round.roundNumber === room.currentRound);
+        if (!resolved) return false;
         removeRankedUpload(`expire:${game.gameId}:${roundId}`);
-        applyResolved(latest, null, true);
+        const capturedGuess = resolvedGuess(resolved);
+        applyResolved(latest, capturedGuess, !capturedGuess);
         return true;
       } catch {
         return false;
@@ -667,16 +717,20 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
           body: uploadBody
         });
         removeRankedUpload(uploadId);
-        applyResolved(next, null, true);
+        const resolved = next.resolvedRounds.find((round) => round.roundNumber === room.currentRound);
+        const capturedGuess = resolved ? resolvedGuess(resolved) : null;
+        applyResolved(next, capturedGuess, !capturedGuess);
       } catch (cause) {
         // The server may have committed the expiry even when the mutation
         // response was interrupted. Re-read the game before queueing a retry
         // so the browser cannot remain on a round that is already resolved.
         try {
           const latest = await request(`/api/v1/ranked-games/${encodeURIComponent(game.gameId)}`);
-          if (latest.resolvedRounds.some((round) => round.roundNumber === room.currentRound)) {
+          const resolved = latest.resolvedRounds.find((round) => round.roundNumber === room.currentRound);
+          if (resolved) {
             removeRankedUpload(uploadId);
-            applyResolved(latest, null, true);
+            const capturedGuess = resolvedGuess(resolved);
+            applyResolved(latest, capturedGuess, !capturedGuess);
             return;
           }
         } catch {
@@ -741,10 +795,12 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
           removeRankedUpload(item.id);
           const belongsToVisibleGame = activeGameIdRef.current === item.gameId;
           if (item.kind === "guess" && belongsToVisibleGame) {
-            const body = JSON.parse(item.body ?? "{}") as { lat?: number; lng?: number; countryCode?: string };
-            applyResolved(next, { playerId, lat: body.lat ?? 0, lng: body.lng ?? 0, countryCode: body.countryCode, createdAt: item.createdAt, responseTimeMs: undefined });
+            const displayGuess = item.displayGuess;
+            applyResolved(next, displayGuess ? { playerId, ...displayGuess, createdAt: item.createdAt, responseTimeMs: undefined } : null, !displayGuess);
           } else if (item.kind === "expire" && belongsToVisibleGame) {
-            applyResolved(next, null, true);
+            const resolved = next.resolvedRounds.find((round) => round.roundId === item.roundId) ?? next.resolvedRounds.at(-1);
+            const capturedGuess = resolved ? resolvedGuess(resolved) : null;
+            applyResolved(next, capturedGuess, !capturedGuess);
           } else if (item.kind === "ready" && belongsToVisibleGame) {
             setGame(next);
             setRoom((value) => value ? { ...value, roundStartedAt: next.activeRound?.startedAt ?? null, roundEndsAt: next.activeRound?.deadlineAt ?? null } : value);
@@ -776,9 +832,9 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
     return () => { window.removeEventListener("online", flushUploads); window.clearInterval(timer); };
   }, [flushUploads]);
 
-  const cancelRound = useCallback(() => { readyRoundRef.current = null; clearStoredRankedSession(activeGameIdRef.current); activeGameIdRef.current = null; setGame(null); setRoom((current) => current ? { ...current, status: "lobby", location: null, guesses: [], roundEndsAt: null, roundStartedAt: null, currentRound: 0, summaries: [] } : current); }, []);
-  const restart = useCallback(() => { clearStoredRankedSession(activeGameIdRef.current); activeGameIdRef.current = null; setGame(null); setRoom((current) => current ? makeRoom(current.players[0]?.name ?? "Spieler 1", current.settings) : current); }, []);
-  const leaveRoom = useCallback(() => { clearStoredRankedSession(activeGameIdRef.current); activeGameIdRef.current = null; setGame(null); setRoom(null); }, []);
+  const cancelRound = useCallback(() => { readyRoundRef.current = null; captureRegistrationRef.current = null; clearStoredRankedSession(activeGameIdRef.current); activeGameIdRef.current = null; setGame(null); setRoom((current) => current ? { ...current, status: "lobby", location: null, guesses: [], roundEndsAt: null, roundStartedAt: null, currentRound: 0, summaries: [] } : current); }, []);
+  const restart = useCallback(() => { captureRegistrationRef.current = null; clearStoredRankedSession(activeGameIdRef.current); activeGameIdRef.current = null; setGame(null); setRoom((current) => current ? makeRoom(current.players[0]?.name ?? "Spieler 1", current.settings) : current); }, []);
+  const leaveRoom = useCallback(() => { captureRegistrationRef.current = null; clearStoredRankedSession(activeGameIdRef.current); activeGameIdRef.current = null; setGame(null); setRoom(null); }, []);
   const renamePlayer = useCallback((target: string, name: string) => setRoom((current) => current ? { ...current, players: current.players.map((player) => player.id === target ? { ...player, name } : player) } : current), []);
   const skipLocation = useCallback(async (locationId: string) => {
     const roundId = roundIdFromPromptLocationId(locationId);
@@ -813,7 +869,7 @@ export function useRankedSoloGame(enabled: boolean, restoreStoredGame = enabled,
     playerId, room, error, status: "open" as const, isHost: Boolean(room), me: room?.players[0] ?? null,
     restoring, gameId: game?.gameId ?? null, pendingUploadCount, syncStatus: (pendingUploadCount > 0 ? (uploading ? "uploading" : "pending") : game?.status === "completed" && game.claimed && game.integrityStatus === "verified" ? "verified" : "secured") as RankedSyncStatus,
     clearError: () => setError(null), createSolo, createOnlineSetup: () => undefined, updateSettings, updateHostParticipation: () => undefined, renamePlayer,
-    startRound, submitGuess, cancelRound, markLocationReady, skipLocation, restart, leaveRoom, setTeam: (_team: TeamId) => undefined,
+    startRound, captureGuess, submitGuess, cancelRound, markLocationReady, skipLocation, restart, leaveRoom, setTeam: (_team: TeamId) => undefined,
     readyNextRound: () => undefined, unlockCosmetic: () => undefined, resumePending, resumeRound, discardResume
-  }), [cancelRound, createSolo, discardResume, error, game, leaveRoom, markLocationReady, pendingUploadCount, renamePlayer, restart, restoring, resumePending, resumeRound, room, skipLocation, startRound, submitGuess, updateSettings, uploading]);
+  }), [cancelRound, captureGuess, createSolo, discardResume, error, game, leaveRoom, markLocationReady, pendingUploadCount, renamePlayer, restart, restoring, resumePending, resumeRound, room, skipLocation, startRound, submitGuess, updateSettings, uploading]);
 }

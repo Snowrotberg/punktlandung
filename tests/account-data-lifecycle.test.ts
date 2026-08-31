@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createAccountDataExport, createAccountDeletionRequest, AccountLifecycleError } from "../lib/accountDataLifecycle";
 import { createPublicProfile, type AccountIdentity } from "../lib/accountProfile";
-import { claimRankedGame, createRankedGame, submitRankedGuess } from "../lib/rankedGame";
+import { captureRankedGuess, claimRankedGame, createRankedGame, submitRankedGuess } from "../lib/rankedGame";
 import type { GeoLocation } from "../types/game";
 
 function claimedGame() {
@@ -15,9 +15,8 @@ function claimedGame() {
     gameId: "game-0001", createRequestId: "request-0001", guestIdHash: "private-guest-hash",
     locations: [location], roundIds: ["round-0001"], now: 1_000, roundDurationMs: 60_000
   });
-  const complete = submitRankedGuess(active, {
-    guessId: "guess-0001", roundId: "round-0001", point: { lat: 52, lng: 13 }, now: 2_000
-  });
+  const captured = captureRankedGuess(active, { guessId: "guess-0001", roundId: "round-0001", point: { lat: 52, lng: 13 }, now: 2_000 });
+  const complete = submitRankedGuess(captured, { guessId: "guess-0001", roundId: "round-0001", now: 2_000 });
   return claimRankedGame(complete, "account-0001");
 }
 

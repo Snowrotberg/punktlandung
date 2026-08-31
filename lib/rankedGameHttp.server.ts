@@ -5,7 +5,7 @@ import { AccountSessionError, validateAccountSession, type AccountSessionReader 
 
 export const rankedGuestCookieName = "pl_ranked_guest";
 
-export type RankedRequestAction = "start" | "read" | "prompt" | "ready" | "reroll" | "guess" | "expire" | "claim";
+export type RankedRequestAction = "start" | "read" | "prompt" | "ready" | "reroll" | "capture" | "guess" | "expire" | "claim";
 
 export interface RankedRequestGuard {
   check(input: {
@@ -101,6 +101,8 @@ function domainError(error: RankedGameError): RankedHttpError {
     case "round_not_open":
     case "round_mismatch":
     case "round_expired":
+    case "capture_required":
+    case "capture_conflict":
     case "guess_conflict":
     case "game_not_completed":
     case "claim_conflict":
@@ -271,23 +273,38 @@ export class RankedGameHttpApi {
       await this.assertAllowed("guess", request, session);
       const account = await this.optionalAccount(request);
       const body = await requestJson(request);
-      if (!onlyKeys(body, ["roundId", "guessId", "lat", "lng", "countryCode"])) {
+      if (!onlyKeys(body, ["roundId", "guessId"])) {
         throw new RankedHttpError(400, "invalid_request", "Unknown request field.");
-      }
-      const lat = body.lat;
-      const lng = body.lng;
-      if (typeof lat !== "number" || typeof lng !== "number") throw new RankedHttpError(400, "invalid_request", "Coordinates are invalid.");
-      let countryCode: string | undefined;
-      if (body.countryCode !== undefined) {
-        if (typeof body.countryCode !== "string" || !/^[A-Za-z]{2}$/.test(body.countryCode)) {
-          throw new RankedHttpError(400, "invalid_request", "countryCode is invalid.");
-        }
-        countryCode = body.countryCode.toUpperCase();
       }
       const game = await this.service.submit(identifier(gameId, "gameId"), session.guestIdHash, {
         roundId: identifier(body.roundId, "roundId"),
         guessId: identifier(body.guessId, "guessId"),
-        point: { lat, lng },
+        now: this.now()
+      }, account?.accountId);
+      return json(200, { data: game });
+    });
+  }
+
+  captureGuess(request: Request, gameId: string): Promise<Response> {
+    return this.respond(async () => {
+      this.assertWriteOrigin(request);
+      const session = this.requireGuest(request);
+      await this.assertAllowed("capture", request, session);
+      const account = await this.optionalAccount(request);
+      const body = await requestJson(request);
+      if (!onlyKeys(body, ["roundId", "guessId", "lat", "lng", "countryCode"])) {
+        throw new RankedHttpError(400, "invalid_request", "Unknown request field.");
+      }
+      if (typeof body.lat !== "number" || typeof body.lng !== "number") throw new RankedHttpError(400, "invalid_request", "Coordinates are invalid.");
+      let countryCode: string | undefined;
+      if (body.countryCode !== undefined) {
+        if (typeof body.countryCode !== "string" || !/^[A-Za-z]{2}$/.test(body.countryCode)) throw new RankedHttpError(400, "invalid_request", "countryCode is invalid.");
+        countryCode = body.countryCode.toUpperCase();
+      }
+      const game = await this.service.capture(identifier(gameId, "gameId"), session.guestIdHash, {
+        roundId: identifier(body.roundId, "roundId"),
+        guessId: identifier(body.guessId, "guessId"),
+        point: { lat: body.lat, lng: body.lng },
         countryCode,
         now: this.now()
       }, account?.accountId);

@@ -19,7 +19,7 @@ import {
 
 type RateBucket = { count: number; resetAt: number };
 const buckets = new Map<string, RateBucket>();
-const limits: Record<RankedRequestAction, number> = { start: 8, read: 120, prompt: 80, ready: 40, reroll: 20, guess: 30, expire: 20, claim: 8 };
+const limits: Record<RankedRequestAction, number> = { start: 8, read: 120, prompt: 80, ready: 40, reroll: 20, capture: 120, guess: 30, expire: 20, claim: 8 };
 
 class MemoryRankedRequestGuard implements RankedRequestGuard {
   async check(input: { action: RankedRequestAction; request: Request; guestIdHash: string }) {

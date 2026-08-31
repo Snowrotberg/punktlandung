@@ -7,7 +7,7 @@ import { averageGuess, countryCodeFromGuess, haversineDistanceKm, scoreDistance 
 import { filterLocationsByDifficulty } from "../lib/locationDifficulty";
 import { PLAYER_PALETTE } from "../lib/playerPalette";
 import { evaluatePlayerGuess } from "../lib/roundEvaluation";
-import { captureMatchesRoom, guessFromCapture, onlineCaptureReachedServerInTime, trustedOnlineCaptureAt, type GuessCapture } from "../lib/guessCapture";
+import { captureMatchesRoom, guessFromCapture, serverObservedCaptureBeforeDeadline, type GuessCapture } from "../lib/guessCapture";
 import type {
   ClientMessage,
   Cosmetic,
@@ -727,9 +727,11 @@ function submitGuess(client: Client, room: InternalRoom, input: { lat: number; l
   const player = room.players.find((candidate) => candidate.id === targetPlayerId);
   if (!player || player.status !== "active" || room.status !== "guessing" || !room.roundStartedAt) return;
   const pending = room.pendingGuesses.get(targetPlayerId);
+  const validPending = pending && captureMatchesRoom(room, pending, targetPlayerId) ? pending : null;
   const guessedAt = Date.now();
-  const guess: Guess = pending && captureMatchesRoom(room, pending, targetPlayerId)
-    ? guessFromCapture({ ...pending, point: { ...pending.point, countryCode: countryCode ?? pending.point.countryCode } })
+  if (room.roundEndsAt !== null && guessedAt > room.roundEndsAt && !validPending) return;
+  const guess: Guess = validPending
+    ? guessFromCapture({ ...validPending, point: { ...validPending.point, countryCode: countryCode ?? validPending.point.countryCode } })
     : {
         playerId: targetPlayerId,
         lat: Math.max(-85, Math.min(85, input.lat)),
@@ -754,12 +756,8 @@ function captureGuess(client: Client, room: InternalRoom, capture: GuessCapture,
   const player = room.players.find((candidate) => candidate.id === targetPlayerId);
   if (!player || player.status !== "active") return;
   if (!captureMatchesRoom(room, normalized, targetPlayerId)) return;
-  if (!onlineCaptureReachedServerInTime(normalized, receivedAt)) return;
-  // Online scoring never trusts the browser's wall clock. Once the bounded
-  // transport check passes, response time is anchored to server receive time
-  // (or the authoritative deadline for a frame that arrived in the grace).
-  const trustedCapturedAt = trustedOnlineCaptureAt(normalized, receivedAt);
-  room.pendingGuesses.set(targetPlayerId, { ...normalized, capturedAt: trustedCapturedAt });
+  if (!serverObservedCaptureBeforeDeadline(normalized.roundStartedAt, normalized.roundEndsAt, receivedAt)) return;
+  room.pendingGuesses.set(targetPlayerId, { ...normalized, capturedAt: receivedAt, capturedAtMonotonic: receivedAt });
 }
 
 function updateSettings(client: Client, room: InternalRoom, patch: Partial<GameSettings>): void {
@@ -805,6 +803,10 @@ const unlockableCosmetics = new Set<Cosmetic>(["crown", "visor", "halo", "neon-f
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
+  return Object.keys(value).every((key) => allowed.includes(key));
 }
 
 function isShortString(value: unknown, maxLength: number): value is string {
@@ -887,12 +889,12 @@ function validatedClientMessage(value: unknown): ClientMessage | null {
       return settings ? { type: value.type, settings } : null;
     }
     case "capture_guess": {
+      if (!hasOnlyKeys(value, ["type", "guess", "countryCode", "playerId", "roundNumber", "locationId", "roundStartedAt", "roundEndsAt"])) return null;
       if (!isRecord(value.guess) || !isFiniteNumber(value.guess.lat) || !isFiniteNumber(value.guess.lng)) return null;
       if (value.countryCode !== undefined && !isShortString(value.countryCode, 8)) return null;
       if (value.playerId !== undefined && !isShortString(value.playerId, 128)) return null;
       if (!Number.isInteger(value.roundNumber) || !isShortString(value.locationId, 128)) return null;
       if (!isFiniteNumber(value.roundStartedAt) || !(value.roundEndsAt === null || isFiniteNumber(value.roundEndsAt))) return null;
-      if (!isFiniteNumber(value.capturedAt) || !isFiniteNumber(value.capturedAtMonotonic)) return null;
       return {
         type: value.type,
         guess: { lat: value.guess.lat, lng: value.guess.lng },
@@ -901,9 +903,7 @@ function validatedClientMessage(value: unknown): ClientMessage | null {
         roundNumber: value.roundNumber as number,
         locationId: value.locationId,
         roundStartedAt: value.roundStartedAt,
-        roundEndsAt: value.roundEndsAt,
-        capturedAt: value.capturedAt,
-        capturedAtMonotonic: value.capturedAtMonotonic
+        roundEndsAt: value.roundEndsAt
       };
     }
     case "submit_guess": {
@@ -1003,7 +1003,8 @@ function handleMessage(client: Client, raw: string): void {
     case "ready_next_round":
       readyNextRound(client, room);
       break;
-    case "capture_guess":
+    case "capture_guess": {
+      const receivedAt = Date.now();
       captureGuess(client, room, {
         point: { ...message.guess, countryCode: message.countryCode },
         playerId: message.playerId ?? client.id,
@@ -1011,10 +1012,11 @@ function handleMessage(client: Client, raw: string): void {
         locationId: message.locationId,
         roundStartedAt: message.roundStartedAt,
         roundEndsAt: message.roundEndsAt,
-        capturedAt: message.capturedAt,
-        capturedAtMonotonic: message.capturedAtMonotonic
-      }, Date.now());
+        capturedAt: receivedAt,
+        capturedAtMonotonic: 0
+      }, receivedAt);
       break;
+    }
     case "submit_guess":
       submitGuess(client, room, message.guess, message.countryCode, message.playerId);
       break;

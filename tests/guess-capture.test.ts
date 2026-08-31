@@ -4,8 +4,7 @@ import {
   captureIsWithinDeadline,
   captureMatchesRoom,
   guessFromCapture,
-  onlineCaptureReachedServerInTime,
-  trustedOnlineCaptureAt,
+  serverObservedCaptureBeforeDeadline,
   type GuessCapture
 } from "../lib/guessCapture";
 import type { RoomState } from "../types/game";
@@ -56,12 +55,9 @@ test("the last valid capture can be evaluated after a throttled 3 second callbac
   assert.deepEqual({ lat: evaluatedThreeSecondsLater.lat, lng: evaluatedThreeSecondsLater.lng }, last.point);
 });
 
-test("online accepts ordinary transit delay but not a late tap or post-hoc replay", () => {
-  assert.equal(onlineCaptureReachedServerInTime(capture(-500), deadlineAt + 200), true, "700ms transit remains inside the bounded grace");
-  assert.equal(onlineCaptureReachedServerInTime(capture(-50), deadlineAt + 500), true, "550ms transit remains inside the bounded grace");
-  assert.equal(onlineCaptureReachedServerInTime(capture(50), deadlineAt + 100), false, "a tap after the deadline is never accepted");
-  assert.equal(onlineCaptureReachedServerInTime(capture(-50), deadlineAt + 3_000), false, "a delayed replay cannot claim the old round");
-  assert.equal(onlineCaptureReachedServerInTime(capture(-50, { capturedAt: deadlineAt - 5_000 }), deadlineAt + 500), false, "large client/server drift cannot use the grace window");
-  assert.equal(trustedOnlineCaptureAt(capture(-500), deadlineAt - 300), deadlineAt - 300, "server receipt wins before the deadline");
-  assert.equal(trustedOnlineCaptureAt(capture(-50), deadlineAt + 500), deadlineAt, "grace traffic is scored at the server deadline, never at a claimed client time");
+test("online authorization uses only the server receive time", () => {
+  assert.equal(serverObservedCaptureBeforeDeadline(startedAt, deadlineAt, deadlineAt - 500), true);
+  assert.equal(serverObservedCaptureBeforeDeadline(startedAt, deadlineAt, deadlineAt), true, "the exact server deadline is inclusive");
+  assert.equal(serverObservedCaptureBeforeDeadline(startedAt, deadlineAt, deadlineAt + 1), false, "a late frame is rejected regardless of any client timestamp");
+  assert.equal(serverObservedCaptureBeforeDeadline(startedAt, deadlineAt, startedAt - 1), false);
 });

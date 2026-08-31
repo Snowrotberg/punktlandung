@@ -204,11 +204,26 @@ try {
     { type: "start_round" },
     (message) => message.type === "room_state" && message.state.status === "guessing"
   );
-  await sendAndWait(
+  const readyRound = await sendAndWait(
     resumedHost.socket,
     { type: "image_ready", locationId: startedRound.state.location.id, ready: true },
     (message) => message.type === "room_state" && Boolean(message.state.roundStartedAt)
   );
+  const forgedCapture = await sendAndWait(
+    players[0].socket,
+    {
+      type: "capture_guess",
+      guess: { lat: 0, lng: 0 },
+      roundNumber: readyRound.state.currentRound,
+      locationId: readyRound.state.location.id,
+      roundStartedAt: readyRound.state.roundStartedAt,
+      roundEndsAt: readyRound.state.roundEndsAt,
+      capturedAt: 0,
+      capturedAtMonotonic: 0
+    },
+    (message) => message.type === "error"
+  );
+  assert.match(forgedCapture.message, /kein gültiges Format/);
   const resultStatePromise = waitForMessage(
     resumedHost.socket,
     (message) => message.type === "room_state" && message.state.status === "results"
