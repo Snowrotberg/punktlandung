@@ -59,25 +59,16 @@
   background: rgba(9, 16, 31, .97);
   border: 1px solid rgba(100, 116, 139, .62);
   border-radius: .7rem;
-  bottom: calc(100% + .5rem);
   box-shadow: 0 14px 34px rgba(2, 6, 23, .52);
   color: #aebbd0;
   display: grid;
   gap: .45rem;
-  left: 50%;
   line-height: 1.45;
   padding: .7rem;
-  position: absolute;
+  position: fixed;
   text-align: left;
-  transform: translateX(-50%);
   width: min(18rem, calc(100vw - 2rem));
-  z-index: 40;
-}
-
-.alignRight .panel {
-  left: auto;
-  right: 0;
-  transform: none;
+  z-index: 400;
 }
 
 .heading {
@@ -125,10 +116,11 @@
   .panel,
   .alignRight .panel {
     position: fixed;
-    z-index: 200;
+    z-index: 400;
     right: 1rem;
     bottom: max(1rem, env(safe-area-inset-bottom));
     left: 1rem;
+    top: auto;
     width: auto;
     max-height: calc(100dvh - 2rem);
     overflow: auto;

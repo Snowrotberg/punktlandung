@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { categoryOptions } from "@/lib/categories";
 import { onlineRoomInviteUrl } from "@/lib/onlineRoomInvite";
 import { playerColorForId } from "@/lib/playerPalette";
+import { PLAYER_NAME_MAX_LENGTH } from "@/lib/playerName";
 import type { GameMode, GameSettings, HostParticipation, Player, RoomKind, TeamId } from "@/types/game";
 import { BackLink } from "./BackButton";
 import { Button, ButtonLink } from "./Button";
@@ -601,7 +602,7 @@ export function LobbyView({
                           <input
                             type="text"
                             value={hostPlayerName}
-                            maxLength={18}
+                            maxLength={PLAYER_NAME_MAX_LENGTH}
                             disabled={!isHost || !onHostParticipationChange}
                             onChange={(event) => onHostParticipationChange?.("host_player", event.target.value)}
                             className="mt-1.5 h-10 w-full rounded-md border-0 bg-slate-950/70 px-3 text-sm font-black text-white outline-none ring-1 ring-slate-700 transition focus:ring-2 focus:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
@@ -989,7 +990,7 @@ export function LobbyView({
                     <input
                       type="text"
                       value={player.name}
-                      maxLength={18}
+                      maxLength={PLAYER_NAME_MAX_LENGTH}
                       disabled={!isHost}
                       onChange={(event) => onRenamePlayer(player.id, event.target.value)}
                       onBlur={(event) => {

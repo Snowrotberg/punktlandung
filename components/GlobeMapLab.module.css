@@ -431,6 +431,10 @@
   --result-label-below-offset: 1.025rem;
 }
 
+.mapFrame[data-preview-mode="true"] .guessMarker {
+  --result-label-above-offset: 0.5rem;
+}
+
 .targetMarker .markerLabel {
   border-color: #5ee7bd !important;
   background: #5ee7bd !important;
@@ -605,6 +609,11 @@
   box-shadow: none;
 }
 
+.mapFrame[data-preview-mode="true"] :global(.kartenlabor-result-popup .maplibregl-popup-close-button) {
+  top: 0.05rem;
+  right: 0.05rem;
+}
+
 .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button::after) {
   content: "×";
   display: grid;
@@ -677,6 +686,19 @@
 
 .mobileInfoLayer[data-target-label-vertical="above"] .mobileInfoDialog {
   transform: translateY(1rem);
+}
+
+.mobileInfoLayer[data-preview-align-target="true"] .mobileInfoDialog {
+  justify-self: start;
+  margin-left: clamp(12rem, var(--preview-info-anchor-x), calc(100% - 12rem));
+}
+
+.mobileInfoLayer[data-preview-align-target="true"][data-target-label-vertical="below"] .mobileInfoDialog {
+  transform: translate(-50%, -1rem);
+}
+
+.mobileInfoLayer[data-preview-align-target="true"][data-target-label-vertical="above"] .mobileInfoDialog {
+  transform: translate(-50%, 1rem);
 }
 
 .mobileInfoDialog {

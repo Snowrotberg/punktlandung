@@ -1,7 +1,7 @@
 "use client";
 
 import maplibregl from "maplibre-gl";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { MapAttributionBadge } from "@/components/MapAttributionBadge";
 import {
   resultMarkerGraphicMarkup,
@@ -215,6 +215,7 @@ export function GlobeMapLab({
   const [deviceProfile, setDeviceProfile] = useState<"standard" | "compact">("standard");
   const [status, setStatus] = useState("Globe und Kartendaten werden geladen …");
   const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
+  const [previewInfoAnchorX, setPreviewInfoAnchorX] = useState<number | null>(null);
 
   useEffect(() => {
     autoPlayRef.current = autoPlay;
@@ -545,7 +546,7 @@ export function GlobeMapLab({
       guessLabel.textContent = scenario.playerName;
       const distance = document.createElement("span");
       distance.className = "punktlandung-map-label-distance";
-      distance.textContent = `· ${distanceLabel}`;
+      distance.textContent = ` · ${distanceLabel}`;
       guessLabel.append(distance);
     }
     const targetLabelText = targetLabel?.querySelector<HTMLElement>("[data-marker-label-text]");
@@ -564,6 +565,7 @@ export function GlobeMapLab({
     targetPopupRef.current?.remove();
     targetPopupRef.current = new maplibregl.Popup({
       className: "kartenlabor-result-popup",
+      ...(previewMode ? { anchor: "bottom" as const } : {}),
       closeButton: true,
       closeOnClick: true,
       focusAfterOpen: false,
@@ -573,11 +575,12 @@ export function GlobeMapLab({
       offset: 68
     }).setDOMContent(popupContent);
     targetPopupRef.current.on("close", () => {
+      if (previewMode) setMarkerLabelVisibility("guess", true);
       const trigger = targetMarkerRef.current?.getElement();
       if (shouldRestoreResultTriggerFocus(targetInfoInputModeRef.current)) trigger?.focus();
       else trigger?.blur();
     });
-  }, []);
+  }, [previewMode]);
 
   const preloadTerrain = useCallback(async (plan: ResultCameraPlan, run: number): Promise<boolean> => {
     const map = mapRef.current;
@@ -706,7 +709,8 @@ export function GlobeMapLab({
     surfaceReadyRef.current = false;
 
     const initialPlan = buildResultCameraPlan(initialScenario.guess, initialScenario.target, {
-      compactViewport: container.clientWidth < 700
+      compactViewport: container.clientWidth < 700,
+      homePreviewDesktop: previewMode && container.clientWidth >= 700
     });
     const initialFrame = revealImmediately ? initialPlan.keyframes.at(-1)! : initialPlan.keyframes[0];
 
@@ -852,10 +856,17 @@ export function GlobeMapLab({
       guessMarkerRef.current?.getElement().style.setProperty("--marker-scale", markerScale.toFixed(3));
       targetMarkerRef.current?.getElement().style.setProperty("--marker-scale", markerScale.toFixed(3));
       updateRouteOverlay();
+      // Keep QA/diagnostic camera attributes synchronized with the actual
+      // rendered frame. React telemetry below remains throttled deliberately.
+      const center = map.getCenter();
+      container.dataset.currentZoom = map.getZoom().toFixed(4);
+      container.dataset.currentLng = center.lng.toFixed(6);
+      container.dataset.currentLat = center.lat.toFixed(6);
+      container.dataset.currentBearing = map.getBearing().toFixed(4);
+      container.dataset.currentPitch = map.getPitch().toFixed(4);
       const now = performance.now();
       if (now - lastTelemetryUpdate < 100) return;
       lastTelemetryUpdate = now;
-      const center = map.getCenter();
       setCamera({ lng: center.lng, lat: center.lat, zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() });
     };
     const enforceEmbeddedZoomFloor = () => {
@@ -913,6 +924,12 @@ export function GlobeMapLab({
         const mapSize = map.getContainer();
         if (usesCenteredResultInfoOverlay(mapSize.clientWidth, mapSize.clientHeight)) {
           targetPopupRef.current?.remove();
+          if (previewMode && mapSize.clientWidth >= 700) {
+            const labelRect = targetMarkerRef.current?.getElement().querySelector<HTMLElement>("[data-marker-label]")?.getBoundingClientRect();
+            const mapRect = mapSize.getBoundingClientRect();
+            setPreviewInfoAnchorX(labelRect ? (labelRect.left + labelRect.right) / 2 - mapRect.left - 16 : null);
+            setMarkerLabelVisibility("guess", false);
+          }
           setMobileInfoOpen(true);
           return;
         }
@@ -921,7 +938,21 @@ export function GlobeMapLab({
         if (!popup) return;
         if (popup.isOpen()) popup.remove();
         else {
+          if (previewMode) setMarkerLabelVisibility("guess", false);
           popup.setLngLat(activeScenarioRef.current.target).addTo(map);
+          if (previewMode) {
+            const popupElement = popup.getElement();
+            const targetLabel = targetMarkerRef.current?.getElement().querySelector<HTMLElement>("[data-marker-label]");
+            const popupRect = popupElement.getBoundingClientRect();
+            const labelRect = targetLabel?.getBoundingClientRect();
+            const mapRect = container.getBoundingClientRect();
+            if (labelRect) {
+              const desiredShift = (labelRect.left + labelRect.right - popupRect.left - popupRect.right) / 2;
+              const minShift = mapRect.left + 3 - popupRect.left;
+              const maxShift = mapRect.right - 3 - popupRect.right;
+              popupElement.style.marginLeft = `${Math.max(minShift, Math.min(maxShift, desiredShift)).toFixed(2)}px`;
+            }
+          }
           requestAnimationFrame(() => {
             const closeButton = container.querySelector<HTMLButtonElement>(".kartenlabor-result-popup .maplibregl-popup-close-button");
             closeButton?.setAttribute("aria-label", "Zusatzinformationen schließen");
@@ -977,7 +1008,8 @@ export function GlobeMapLab({
         if (!preparedPlan) return;
         map.resize();
         const finalContainerPlan = buildResultCameraPlan(scenario.guess, scenario.target, {
-          compactViewport: container.clientWidth < 700
+          compactViewport: container.clientWidth < 700,
+          homePreviewDesktop: previewMode && container.clientWidth >= 700
         });
         map.jumpTo(revealImmediately ? preparedPlan.keyframes.at(-1)! : finalContainerPlan.keyframes[0]);
         setMarkerVisibility("guess", revealImmediately ? !preparedPlan.targetOnlyEndComposition && !scenario.targetOnly : !scenario.targetOnly);
@@ -1051,7 +1083,8 @@ export function GlobeMapLab({
       map.resize();
       if (previewMode && surfaceReadyRef.current && map.getContainer().dataset.resultRevealPhase === "prepared") {
         const currentPlan = buildResultCameraPlan(initialScenario.guess, initialScenario.target, {
-          compactViewport: container.clientWidth < 700
+          compactViewport: container.clientWidth < 700,
+          homePreviewDesktop: previewMode && container.clientWidth >= 700
         });
         map.jumpTo(currentPlan.keyframes[0]);
         updateRouteOverlay();
@@ -1092,7 +1125,11 @@ export function GlobeMapLab({
     const start = performance.now();
     return new Promise((resolve) => {
       let previousFrame = start;
-      let timelineElapsed = 0;
+      // Kick the Home journey by a sub-pixel 0.3% step on the same commit that
+      // starts it. This prevents a busy MapLibre repaint from reading as a
+      // second static hold, while remaining below a visible handoff jump.
+      let timelineElapsed = previewMode ? duration * 0.003 : 0;
+      if (previewMode) map.jumpTo(sampleCameraTimeline(keyframes, 0.003));
       let frameCount = 0;
       let maxFrameGapMs = 0;
       let slowFrames = 0;
@@ -1120,7 +1157,7 @@ export function GlobeMapLab({
         const movingProgress = rawProgress <= initialHoldProgress
           ? 0
           : (rawProgress - initialHoldProgress) / Math.max(0.001, 1 - initialHoldProgress);
-        const progress = timelineProgress(movingProgress);
+        const progress = previewMode ? movingProgress : timelineProgress(movingProgress);
         map.jumpTo(sampleCameraTimeline(keyframes, progress));
         onProgress?.(progress);
         if (rawProgress < 1) animationFrameRef.current = requestAnimationFrame(frame);
@@ -1204,7 +1241,9 @@ export function GlobeMapLab({
     stopCurrentJourney();
     const run = journeyRunRef.current + 1; journeyRunRef.current = run;
     let plan = buildResultCameraPlan(scenario.guess, scenario.target, {
-      compactViewport: (containerRef.current?.clientWidth ?? 800) < 700, durationScale: lowPowerDeviceRef.current ? 0.86 : 1
+      compactViewport: (containerRef.current?.clientWidth ?? 800) < 700,
+      durationScale: lowPowerDeviceRef.current ? 0.86 : 1,
+      homePreviewDesktop: previewMode && (containerRef.current?.clientWidth ?? 800) >= 700
     });
     const targetOnly = scenario.targetOnly === true;
     let routeRevealed = false;
@@ -1215,12 +1254,20 @@ export function GlobeMapLab({
     let targetLabelTimer: number | undefined;
     let lastRouteUpdate = 0;
     map.getContainer().dataset.resultComposition = "pending";
-    setJourneyRunning(true); updateResultGeometry(scenario); map.jumpTo(plan.keyframes[0]);
+    setJourneyRunning(true); updateResultGeometry(scenario);
+    // The prepared Home surface is already painted at this exact start frame.
+    // Re-jumping there invalidates tiles and can stall the first visible move.
+    if (!previewMode) map.jumpTo(plan.keyframes[0]);
     setMarkerVisibility("guess", !targetOnly); setMarkerLabelVisibility("guess", !targetOnly);
     setMarkerVisibility("target", false); setMarkerLabelVisibility("target", false);
     setTargetLanding(false); setRouteVisibility(false); setRouteSettled(false); setResultRevealPhase("prepared");
-    await preloadTerrain(plan, run);
-    const preparedPlan = await preloadCameraViews(plan, run, previewMode);
+    // The preview surface has already completed terrain preparation before the
+    // poster is removed. Repeating that wait here caused up to 750ms of dead
+    // time after the handoff without improving the visible map.
+    if (!previewMode) await preloadTerrain(plan, run);
+    const preparedPlan = previewMode
+      ? (preparedEndCameraRef.current ? withResultCameraEndFrame(plan, preparedEndCameraRef.current.frame) : plan)
+      : await preloadCameraViews(plan, run, false);
     if (run !== journeyRunRef.current || !preparedPlan) return;
     plan = preparedPlan;
     map.getContainer().dataset.resultComposition = "pending";
@@ -1287,7 +1334,7 @@ export function GlobeMapLab({
             lastRouteUpdate = progress;
             setRouteDrawProgress((progress - plan.revealProgress) / Math.max(0.001, 1 - plan.revealProgress));
           }
-        }, previewMode ? 0.035 : 0);
+        }, 0);
         if (run === journeyRunRef.current && metrics.completed) {
           setStatus(`Ergebnis sichtbar · ${formatDistance(plan.distanceKm)} · Pitch ${plan.keyframes.at(-1)?.pitch ?? 0}° · Terrain ${terrainLevelRef.current && terrainLevelRef.current > 0.05 ? "aktiv" : "aus"} · ${formatTimelineMetrics(metrics)}`);
         }
@@ -1331,13 +1378,13 @@ export function GlobeMapLab({
 
   runResultJourneyRef.current = runResultJourney;
 
-  useEffect(() => {
-    if (!autoPlay || !mapReady || journeyRunning || terrainPreparing || cameraPreparing) return;
+  useLayoutEffect(() => {
+    if (!autoPlay || !mapReady || journeyRunning || (!previewMode && (terrainPreparing || cameraPreparing))) return;
     const key = `${initialScenario.id}:${initialScenario.guess.join(",")}:${initialScenario.target.join(",")}`;
     if (autoPlayKeyRef.current === key) return;
     autoPlayKeyRef.current = key;
     void runResultJourney();
-  }, [autoPlay, cameraPreparing, initialScenario, journeyRunning, mapReady, runResultJourney, terrainPreparing]);
+  }, [autoPlay, cameraPreparing, initialScenario, journeyRunning, mapReady, previewMode, runResultJourney, terrainPreparing]);
 
   const changeTerrainMode = useCallback((mode: TerrainMode) => {
     terrainPreparedRef.current = null;
@@ -1454,6 +1501,8 @@ export function GlobeMapLab({
           <div
             className={styles.mobileInfoLayer}
             data-target-label-vertical={targetMarkerRef.current?.getElement().dataset.labelVertical ?? "below"}
+            data-preview-align-target={previewMode && previewInfoAnchorX !== null ? "true" : "false"}
+            style={previewInfoAnchorX !== null ? { "--preview-info-anchor-x": `${previewInfoAnchorX}px` } as CSSProperties : undefined}
             onPointerDown={(event) => event.stopPropagation()}
           >
             <div
@@ -1477,6 +1526,7 @@ export function GlobeMapLab({
                 }}
                 onClick={() => {
                   setMobileInfoOpen(false);
+                  if (previewMode) setMarkerLabelVisibility("guess", true);
                   const trigger = targetMarkerRef.current?.getElement();
                   if (shouldRestoreResultTriggerFocus(targetInfoInputModeRef.current)) trigger?.focus();
                   else trigger?.blur();

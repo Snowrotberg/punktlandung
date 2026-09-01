@@ -18,7 +18,7 @@ const homeResultScenario: ResultCameraScenario = {
   id: "home-tiergarten-brandenburger-tor",
   label: "Startseite · Tiergarten → Brandenburger Tor",
   description: "Kurze Vorschau der Punktlandung-Ergebnisanimation",
-  playerName: "#1 Dein Tipp",
+  playerName: "Dein Tipp",
   targetName: "Brandenburger Tor",
   targetDescription: "Das Brandenburger Tor wurde zwischen 1788 und 1791 als Abschluss der Straße Unter den Linden errichtet.",
   guess: [previewGuess.lng, previewGuess.lat],
@@ -115,15 +115,12 @@ export function HomeMapPreview() {
     let cancelled = false;
     let firstFrame = 0;
     let secondFrame = 0;
-    let settleTimer: number | undefined;
     const settleLayout = async () => {
       if (document.fonts) await document.fonts.ready;
       if (cancelled) return;
       firstFrame = window.requestAnimationFrame(() => {
         secondFrame = window.requestAnimationFrame(() => {
-          settleTimer = window.setTimeout(() => {
-            if (!cancelled) setLiveReady(true);
-          }, 120);
+          if (!cancelled) setLiveReady(true);
         });
       });
     };
@@ -132,28 +129,14 @@ export function HomeMapPreview() {
       cancelled = true;
       window.cancelAnimationFrame(firstFrame);
       window.cancelAnimationFrame(secondFrame);
-      if (settleTimer !== undefined) window.clearTimeout(settleTimer);
     };
   }, [liveSurfaceReady, liveUnavailable, previewMode]);
 
   useEffect(() => {
     if (!liveReady || liveUnavailable || previewMode !== "animated") return;
-    // The poster and the already-paused Globe exchange in one paint. Movement
-    // starts only after several fully live frames, so no opacity blend can hide
-    // a geometry mismatch and the handoff itself stays motionless.
-    let firstFrame = 0;
-    let secondFrame = 0;
-    let settledTimer: number | undefined;
-    firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => {
-        settledTimer = window.setTimeout(() => setAnimationStarted(true), 320);
-      });
-    });
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
-      if (settledTimer !== undefined) window.clearTimeout(settledTimer);
-    };
+    // liveReady is set only after two complete paints of the paused Globe.
+    // Start on the following React commit instead of adding another timer.
+    setAnimationStarted(true);
   }, [liveReady, liveUnavailable, previewMode]);
 
   useLayoutEffect(() => {
@@ -233,7 +216,7 @@ export function HomeMapPreview() {
         {showCompleteFallback ? <PreviewPin actual /> : null}
         <PreviewPin />
         <span className="punktlandung-map-label punktlandung-map-label-player punktlandung-home-map-static-label is-player">
-          #1 Dein Tipp<span className="punktlandung-map-label-distance"> · {previewDistanceKm} km</span>
+          Dein Tipp<span className="punktlandung-map-label-distance"> · {previewDistanceKm} km</span>
         </span>
         {showCompleteFallback ? (
           <span className="punktlandung-map-label punktlandung-map-label-actual punktlandung-home-map-static-label is-actual">Brandenburger Tor</span>

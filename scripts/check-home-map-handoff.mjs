@@ -216,18 +216,65 @@ try {
       && initialPosterState.transitionDuration.split(",").every((duration) => Number.parseFloat(duration) === 0);
     const posterLayout = await page.locator(".punktlandung-home-map-pictures").getAttribute("data-poster-layout");
 
+    // Capture the poster and paused live frame from separate ordinary page
+    // loads. Screenshot encoding can outlast the intentionally short handoff
+    // hold; reloading avoids changing production timing merely for the test.
+    await page.goto(new URL("/", baseUrl).toString(), { waitUntil: "commit" });
+    await preview.waitFor({ state: "visible", timeout: 60_000 });
+    const handoffObserved = page.evaluate(() => new Promise((resolve) => {
+      const check = () => {
+        const preview = document.querySelector(".punktlandung-home-map-preview");
+        const poster = document.querySelector(".punktlandung-home-map-poster-wide");
+        if (preview?.getAttribute("data-animation-started") === "false"
+          && poster
+          && getComputedStyle(poster).visibility === "hidden") {
+          resolve(true);
+          return true;
+        }
+        return false;
+      };
+      if (check()) return;
+      const observer = new MutationObserver(() => {
+        if (check()) observer.disconnect();
+      });
+      observer.observe(document.documentElement, { attributes: true, childList: true, subtree: true });
+    }));
     await preview.locator("[data-surface-ready='true']").waitFor({ state: "attached", timeout: 60_000 });
-    await page.waitForFunction(() => {
-      const preview = document.querySelector(".punktlandung-home-map-preview");
-      const poster = document.querySelector(".punktlandung-home-map-poster-wide");
-      return preview?.getAttribute("data-animation-started") === "false"
-        && poster
-        && getComputedStyle(poster).visibility === "hidden";
-    }, null, { timeout: 5_000 });
+    await handoffObserved;
 
+    // Do not take a screenshot in this short real handoff window: Chromium's
+    // encoding blocks the render loop long enough to create the very delay the
+    // test is meant to measure. The ordinary page continues uninterrupted;
+    // its initial camera is sampled below. The matching live start frame is
+    // captured separately from the same Globe in poster-source mode.
+
+    await page.waitForFunction(() => document.querySelector(".punktlandung-home-map-preview")?.getAttribute("data-animation-started") === "true", null, { timeout: 5_000 });
+    await page.waitForFunction(() => {
+      const samples = window.__homeMapHandoffSamples ?? [];
+      const initial = samples.find((sample) => sample.surfaceReady && !sample.animationStarted && sample.zoom !== null);
+      return Boolean(initial && samples.some((sample) => sample.animationStarted && (
+        Math.abs(sample.zoom - initial.zoom) > 0.0001
+        || Math.abs(sample.lng - initial.lng) > 0.00001
+        || Math.abs(sample.lat - initial.lat) > 0.00001
+        || Math.abs(sample.bearing - initial.bearing) > 0.05
+        || Math.abs(sample.pitch - initial.pitch) > 0.05
+      )));
+    }, null, { timeout: 2_000 });
+    const movingPath = path.join(outDir, `${profile.name}-first-motion.png`);
+    await preview.screenshot({ path: movingPath });
+    await page.waitForTimeout(180);
+
+    const samples = await page.evaluate(() => window.__homeMapHandoffSamples);
     const pausedPath = path.join(outDir, `${profile.name}-paused-live.png`);
-    const pausedBuffer = await preview.screenshot({ path: pausedPath });
-    const pausedState = await page.evaluate(() => {
+    const sourcePage = await context.newPage();
+    await sourcePage.goto(new URL("/?renderHomeMapSource=1", baseUrl).toString(), { waitUntil: "commit" });
+    const sourcePreview = sourcePage.locator(".punktlandung-home-map-preview");
+    await sourcePreview.waitFor({ state: "visible", timeout: 60_000 });
+    await sourcePreview.locator("[data-surface-ready='true']").waitFor({ state: "attached", timeout: 60_000 });
+    await sourcePage.evaluate(async () => { if (document.fonts) await document.fonts.ready; });
+    await sourcePage.waitForTimeout(120);
+    const pausedBuffer = await sourcePreview.screenshot({ path: pausedPath });
+    const pausedState = await sourcePage.evaluate(() => {
       const preview = document.querySelector(".punktlandung-home-map-preview");
       const frame = preview?.querySelector("[data-surface-ready]");
       const relativeRect = (selector) => {
@@ -254,31 +301,15 @@ try {
         playerLabel: relativeRect("[data-result-marker-kind='guess'] [data-marker-label]")
       };
     });
-
-    await page.waitForFunction(() => document.querySelector(".punktlandung-home-map-preview")?.getAttribute("data-animation-started") === "true", null, { timeout: 5_000 });
-    await page.waitForFunction(() => {
-      const samples = window.__homeMapHandoffSamples ?? [];
-      const initial = samples.find((sample) => sample.surfaceReady && !sample.animationStarted && sample.zoom !== null);
-      return Boolean(initial && samples.some((sample) => sample.animationStarted && (
-        Math.abs(sample.zoom - initial.zoom) > 0.01
-        || Math.abs(sample.lng - initial.lng) > 0.00001
-        || Math.abs(sample.lat - initial.lat) > 0.00001
-        || Math.abs(sample.bearing - initial.bearing) > 0.05
-        || Math.abs(sample.pitch - initial.pitch) > 0.05
-      )));
-    }, null, { timeout: 2_000 });
-    const movingPath = path.join(outDir, `${profile.name}-first-motion.png`);
-    await preview.screenshot({ path: movingPath });
-    await page.waitForTimeout(180);
-
-    const samples = await page.evaluate(() => window.__homeMapHandoffSamples);
+    await sourcePage.close();
+    const mountedAt = firstTime(samples, (sample) => sample.renderMode !== null);
     const surfaceReadyAt = firstTime(samples, (sample) => sample.surfaceReady);
     const posterHiddenAt = firstTime(samples, (sample) => sample.posterVisibility === "hidden");
     const animationStartedAt = firstTime(samples, (sample) => sample.animationStarted);
     const initialCamera = samples.find((sample) => sample.surfaceReady && !sample.animationStarted && sample.zoom !== null);
     const firstMovementSample = initialCamera
       ? samples.find((sample) => sample.animationStarted && (
-          Math.abs(sample.zoom - initialCamera.zoom) > 0.01
+          Math.abs(sample.zoom - initialCamera.zoom) > 0.0001
           || Math.abs(sample.lng - initialCamera.lng) > 0.00001
           || Math.abs(sample.lat - initialCamera.lat) > 0.00001
           || Math.abs(sample.bearing - initialCamera.bearing) > 0.05
@@ -300,6 +331,9 @@ try {
       .filter(Boolean))];
     const hiddenToAnimationMs = posterHiddenAt === null || animationStartedAt === null ? null : animationStartedAt - posterHiddenAt;
     const animationToMovementMs = animationStartedAt === null || movementAt === null ? null : movementAt - animationStartedAt;
+    const mountToSurfaceMs = mountedAt === null || surfaceReadyAt === null ? null : surfaceReadyAt - mountedAt;
+    const mountToAnimationMs = mountedAt === null || animationStartedAt === null ? null : animationStartedAt - mountedAt;
+    const surfaceToMovementMs = surfaceReadyAt === null || movementAt === null ? null : movementAt - surfaceReadyAt;
     const diffPath = path.join(outDir, `${profile.name}-poster-vs-paused-diff.png`);
     const comparison = await compareImages(posterBuffer, pausedBuffer, diffPath);
     const sequencePassed = surfaceReadyAt !== null
@@ -309,10 +343,11 @@ try {
       && surfaceReadyAt <= posterHiddenAt
       && posterHiddenAt < animationStartedAt
       && animationStartedAt <= movementAt
-      && hiddenToAnimationMs >= 250
-      && hiddenToAnimationMs <= 520
+      && hiddenToAnimationMs >= 0
+      && hiddenToAnimationMs <= 120
       && animationToMovementMs >= 0
-      && animationToMovementMs <= 700;
+      && animationToMovementMs <= 180
+      && surfaceToMovementMs <= 300;
     const visualPassed = comparison.perceptualMeanDifference <= 3.5
       && comparison.perceptualChangedPixelRatio <= 0.07
       && comparison.structuralMeanDifference <= 1.5
@@ -372,19 +407,23 @@ try {
       previewCssPixels: previewSize,
       posterLayout,
       initialPosterState,
+      mountedAt,
       surfaceReadyAt,
       posterHiddenAt,
       animationStartedAt,
       movementAt,
       hiddenToAnimationMs,
       animationToMovementMs,
+      mountToSurfaceMs,
+      mountToAnimationMs,
+      surfaceToMovementMs,
       surfaceCanvasId,
       canvasIdsAfterSurface,
       pausedState,
       ...comparison,
       screenshots: { posterPath, pausedPath, movingPath, diffPath }
     });
-    console.log(`${profile.name}: structural mean ${comparison.structuralMeanDifference.toFixed(2)}, changed ${(comparison.structuralChangedPixelRatio * 100).toFixed(2)}%; perceptual ${comparison.perceptualMeanDifference.toFixed(2)} / ${(comparison.perceptualChangedPixelRatio * 100).toFixed(2)}%; density ${densityPassed ? "PASS" : "FAIL"}; direct handoff hold ${hiddenToAnimationMs?.toFixed(0) ?? "n/a"}ms, motion hold ${animationToMovementMs?.toFixed(0) ?? "n/a"}ms, surface canvases ${canvasIdsAfterSurface.join(",")} -> ${passed ? "PASS" : "FAIL"}`);
+    console.log(`${profile.name}: structural mean ${comparison.structuralMeanDifference.toFixed(2)}, changed ${(comparison.structuralChangedPixelRatio * 100).toFixed(2)}%; perceptual ${comparison.perceptualMeanDifference.toFixed(2)} / ${(comparison.perceptualChangedPixelRatio * 100).toFixed(2)}%; density ${densityPassed ? "PASS" : "FAIL"}; mount -> surface ${mountToSurfaceMs?.toFixed(0) ?? "n/a"}ms, mount -> animation ${mountToAnimationMs?.toFixed(0) ?? "n/a"}ms, surface -> motion ${surfaceToMovementMs?.toFixed(0) ?? "n/a"}ms, direct handoff hold ${hiddenToAnimationMs?.toFixed(0) ?? "n/a"}ms, motion hold ${animationToMovementMs?.toFixed(0) ?? "n/a"}ms, surface canvases ${canvasIdsAfterSurface.join(",")} -> ${passed ? "PASS" : "FAIL"}`);
     await context.close();
   }
 } finally {

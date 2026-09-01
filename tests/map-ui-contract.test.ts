@@ -104,6 +104,46 @@ test("result handoff starts motion on the frame after the prepared surface becom
   assert.match(globe, /punktlandung-result-visible-to-motion/);
 });
 
+test("home preview starts promptly from its prepared surface without changing result timing", async () => {
+  const [home, globe, camera] = await Promise.all([
+    readFile(new URL("../components/HomeMapPreview.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/GlobeMapLab.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/globeResultCamera.ts", import.meta.url), "utf8")
+  ]);
+  assert.match(home, /playerName:\s*"Dein Tipp"/);
+  assert.match(home, /liveReady is set only after two complete paints/);
+  assert.match(home, /setAnimationStarted\(true\)/);
+  assert.doesNotMatch(home, /setTimeout\(\(\) => setAnimationStarted\(true\)/);
+  assert.doesNotMatch(home, /setLiveReady\(true\)[\s\S]{0,80}120/);
+  assert.match(globe, /if \(!previewMode\) await preloadTerrain\(plan, run\)/);
+  assert.match(globe, /previewMode[\s\S]*?preparedEndCameraRef\.current[\s\S]*?: await preloadCameraViews\(plan, run, false\)/);
+  assert.match(globe, /runTimeline\(plan\.keyframes,[\s\S]*?\}, 0\)/);
+  assert.match(globe, /previewMode \? movingProgress : timelineProgress\(movingProgress\)/);
+  assert.match(globe, /!previewMode && \(terrainPreparing \|\| cameraPreparing\)/);
+  assert.match(globe, /container\.dataset\.currentZoom = map\.getZoom\(\)\.toFixed\(4\)/);
+  assert.match(globe, /if \(!previewMode\) map\.jumpTo\(plan\.keyframes\[0\]\)/);
+  assert.match(globe, /if \(previewMode\) map\.jumpTo\(sampleCameraTimeline\(keyframes, 0\.003\)\)/);
+  assert.match(globe, /homePreviewDesktop:\s*previewMode/);
+  assert.match(camera, /homeEndZoomBoost/);
+});
+
+test("home target popup and attribution use compact preview-only placement", async () => {
+  const [globe, globeCss, globals] = await Promise.all([
+    readFile(new URL("../components/GlobeMapLab.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/GlobeMapLab.module.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8")
+  ]);
+  assert.match(globe, /previewMode \? \{ anchor: "bottom" as const \} : \{\}/);
+  assert.match(globe, /desiredShift = \(labelRect\.left \+ labelRect\.right - popupRect\.left - popupRect\.right\) \/ 2/);
+  assert.match(globe, /popupElement\.style\.marginLeft/);
+  assert.match(globe, /if \(previewMode\) setMarkerLabelVisibility\("guess", false\)/);
+  assert.match(globe, /setPreviewInfoAnchorX\(labelRect \? \(labelRect\.left \+ labelRect\.right\) \/ 2 - mapRect\.left - 16 : null\)/);
+  assert.match(globeCss, /data-preview-align-target="true"/);
+  assert.match(globeCss, /data-preview-mode="true"[\s\S]*?maplibregl-popup-close-button/);
+  assert.match(globals, /\.punktlandung-home-map-preview \.punktlandung-map-attribution-panel[\s\S]*?width:\s*max-content/);
+  assert.match(globals, /\.punktlandung-home-map-preview \.punktlandung-map-attribution-sources[\s\S]*?display:\s*grid/);
+});
+
 test("shared target information keeps a 44px hit area around a compact visual close control", async () => {
   const [home, leaflet, responsive] = await Promise.all([
     readFile(new URL("../components/HomeMapPreview.tsx", import.meta.url), "utf8"),

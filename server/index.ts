@@ -6,6 +6,7 @@ import { builtInLocations, prioritizeCatalogImages } from "../data/locations";
 import { averageGuess, countryCodeFromGuess, haversineDistanceKm, scoreDistance } from "../lib/geo";
 import { filterLocationsByDifficulty } from "../lib/locationDifficulty";
 import { PLAYER_PALETTE } from "../lib/playerPalette";
+import { sanitizePlayerName } from "../lib/playerName";
 import { evaluatePlayerGuess } from "../lib/roundEvaluation";
 import { captureMatchesRoom, guessFromCapture, onlineSubmissionAuthorized, serverObservedCaptureBeforeDeadline, type GuessCapture } from "../lib/guessCapture";
 import type {
@@ -147,8 +148,7 @@ function roomCode(): string {
 }
 
 function sanitizeName(input: string): string {
-  const trimmed = input.replace(/[^\p{L}\p{N}\s_.-]/gu, "").trim();
-  return trimmed.slice(0, 18) || "Gast";
+  return sanitizePlayerName(input);
 }
 
 function clampInt(input: number | undefined, fallback: number, min: number, max?: number): number {

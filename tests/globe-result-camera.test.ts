@@ -132,6 +132,18 @@ test("result orientation chooses the viewing side from both geographic diagonal 
   assert.equal(reversedSouthWestToNorthEast.keyframes.at(-1)!.bearing, -22);
 });
 
+test("desktop home preview tightens only the short end composition", () => {
+  const guess: [number, number] = [13.3501, 52.5147];
+  const target: [number, number] = [13.3777, 52.5163];
+  const production = buildResultCameraPlan(guess, target);
+  const home = buildResultCameraPlan(guess, target, { homePreviewDesktop: true });
+
+  assert.deepEqual(home.keyframes[0], production.keyframes[0]);
+  assert.ok(home.keyframes[1].zoom > production.keyframes[1].zoom);
+  assert.ok(Math.abs(home.keyframes.at(-1)!.zoom - production.keyframes.at(-1)!.zoom - 0.28) < 0.001);
+  assert.equal(home.durationMs, production.durationMs);
+});
+
 test("result orientation preserves both diagonal rules across the antimeridian", () => {
   const northWestToSouthEast = buildResultCameraPlan([179, 14], [-178, 10]);
   const southWestToNorthEast = buildResultCameraPlan([179, 10], [-178, 14]);

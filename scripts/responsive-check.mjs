@@ -116,7 +116,7 @@ const guestPlayer = {
   localOnly: true
 };
 
-const finalTablePlayers = [hostPlayer, guestPlayer, ...Array.from({ length: 8 }, (_, index) => ({
+const finalTablePlayers = [{ ...hostPlayer, name: "Tabea" }, guestPlayer, ...Array.from({ length: 8 }, (_, index) => ({
   id: `local_${index + 3}`,
   name: `QA Spieler ${index + 3}`,
   color: ["#fb7185", "#fbbf24", "#38bdf8", "#c084fc", "#fb923c", "#2dd4bf", "#a3e635", "#f472b6"][index],
@@ -474,8 +474,8 @@ const finalTableSummary = {
   ...summary,
   results: finalTablePlayers.map((player, index) => ({
     playerId: player.id,
-    distanceKm: 12.5 + index * 38,
-    points: player.score,
+    distanceKm: index === 0 ? 0.2 : 12.5 + index * 38,
+    points: Math.round(player.score / 10),
     badge: "Nahe dran",
     eliminated: false,
     guess: {
@@ -487,6 +487,25 @@ const finalTableSummary = {
     },
     countryCorrect: false
   }))
+};
+
+const finalTableSummaries = Array.from({ length: 10 }, (_, roundIndex) => ({
+  ...finalTableSummary,
+  roundNumber: roundIndex + 1,
+  roundStartedAt: Date.now() - (10 - roundIndex) * 65_000,
+  completedAt: Date.now() - (9 - roundIndex) * 65_000,
+  results: finalTableSummary.results.map((result, playerIndex) => ({
+    ...result,
+    points: Math.max(0, result.points + ((roundIndex + playerIndex) % 3 - 1) * 35),
+    distanceKm: result.distanceKm + roundIndex * (playerIndex + 1) * 0.25
+  }))
+}));
+
+const tenPlayerResultState = {
+  settings: { localMode: "couch", localPlayerCount: 10, rounds: 10 },
+  players: finalTablePlayers,
+  guesses: finalTableSummary.results.map((result) => result.guess),
+  summaries: finalTableSummaries
 };
 
 function roomState(status, overrides = {}) {
@@ -506,7 +525,7 @@ function roomState(status, overrides = {}) {
     timedOutPlayerIds: [],
     roundEndsAt: status === "guessing" ? Date.now() + 60000 : null,
     roundStartedAt: status === "guessing" ? Date.now() - 10000 : null,
-    summaries: status === "guessing" ? [] : [finished ? finalTableSummary : summary],
+    summaries: status === "guessing" ? [] : (finished ? finalTableSummaries : [summary]),
     emojiEvents: [],
     adGateUntil: null
   };
@@ -573,6 +592,18 @@ const targets = [
     expectCloseAndReopen: true,
     expectHomeInfoTopLayer: true,
     note: "Geöffnete Zielinformation der animierten Startseitenkarte oberhalb aller Karteninhalte"
+  },
+  {
+    name: "home-kartenquellen",
+    access: "route-click",
+    path: "/",
+    resetSession: true,
+    clickSelector: ".punktlandung-home-map-preview [aria-label='Kartenquellen anzeigen']",
+    expectedText: "OpenStreetMap-Mitwirkende",
+    readySelector: ".punktlandung-home-map-preview .punktlandung-map-attribution-panel",
+    readyTimeoutMs: 40000,
+    expectMapAttributionSafe: true,
+    note: "Inhaltsbreite und rechte Verankerung der Kartenquellen auf der Startseite"
   },
   { name: "kartenlabor", access: "route", path: "/kartenlabor", expectedText: "Globe-Kartenlabor", note: "interne Globe-Testansicht" },
   {
@@ -742,6 +773,18 @@ const targets = [
     note: "abgelaufene Runde wechselt automatisch und ohne weitere Eingabe zur Auflösung"
   },
   { name: "aufloesung", access: "state", path: "/aufloesung", status: "results", readySelector: ".punktlandung-results-grid", expectResultRankMetrics: true, note: "echter URL-Pfad mit QA-Session" },
+  {
+    name: "aufloesung-10-spieler",
+    access: "state",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: tenPlayerResultState,
+    expectedText: "QA Spieler 10",
+    readySelector: ".punktlandung-results-map .punktlandung-map-pin-result[data-result-rank='10']",
+    expectDenseResultMap: true,
+    expectTenPlayerResults: true,
+    note: "Zehn Spieler bleiben in Karte, Rundenrang und Gesamtwertung kollisionsfrei und vollständig sichtbar"
+  },
   {
     name: "aufloesung-globe-ohne-tipp",
     access: "state",
@@ -969,13 +1012,40 @@ const targets = [
     readySelector: ".punktlandung-results-grid",
     note: "Ergebniszustand der letzten Runde mit erreichbarer Abschlussaktion"
   },
-  { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", readySelector: ".punktlandung-image-replay", readyImageSelector: ".punktlandung-panorama-viewport img", note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
+  { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", readySelector: ".punktlandung-image-replay", readyImageSelector: ".punktlandung-panorama-viewport img", expectReplayControlParity: true, note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
+  {
+    name: "nochmal-ansehen-10-spieler",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: tenPlayerResultState,
+    buttonText: "Bild nochmal ansehen",
+    readySelector: ".punktlandung-image-replay .punktlandung-map-pin-result[data-result-rank='10']",
+    readyImageSelector: ".punktlandung-panorama-viewport img",
+    expectDenseResultMap: true,
+    note: "Eingebettete Replay-Karte behält alle zehn Labels bereits im ruhigen Ausgangszustand"
+  },
+  {
+    name: "nochmal-ansehen-10-spieler-maximiert",
+    access: "state-click",
+    path: "/aufloesung",
+    status: "results",
+    stateOverrides: tenPlayerResultState,
+    buttonText: "Bild nochmal ansehen",
+    secondaryClickSelector: ".punktlandung-image-replay .punktlandung-guess-map-panel--closed",
+    secondaryButtonText: "Maximieren",
+    readySelector: ".punktlandung-image-replay .punktlandung-guess-map-panel--full .punktlandung-map-pin-result[data-result-rank='10']",
+    readyImageSelector: ".punktlandung-panorama-viewport img",
+    expectDenseResultMap: true,
+    note: "Maximierte Replay-Karte nutzt dieselbe deterministische Zehn-Spieler-Komposition"
+  },
   {
     name: "nochmal-ansehen-karte-maximiert",
     access: "state-click",
     path: "/aufloesung",
     status: "results",
     buttonText: "Bild nochmal ansehen",
+    secondaryClickSelector: ".punktlandung-image-replay .punktlandung-guess-map-panel--closed",
     secondaryButtonText: "Maximieren",
     readySelector: ".punktlandung-image-replay .punktlandung-guess-map-panel--full",
     readyImageSelector: ".punktlandung-panorama-viewport img",
@@ -1033,8 +1103,8 @@ const targets = [
     expectStaticReveal: true,
     note: "Bild-Replay mit langem Zielnamen, reserviertem Infozeichen und durchgehender Quellenzeile"
   },
-  { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
-  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Nicht speichern", readySelector: ".punktlandung-final-standings-grid", note: "fertige QA-Session plus Klick auf Endstand ansehen" },
+  { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
+  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Nicht speichern", readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session plus Klick auf Endstand ansehen" },
   { name: "infos", access: "route", path: "/infos", note: "echter URL-Pfad" },
   { name: "hilfe", access: "route", path: "/faq", expectedText: "Was möchtest du über Punktlandung wissen?", note: "gemeinsame Übersicht Hilfe & Infos" },
   { name: "hilfe-rankings", access: "route", path: "/faq/rankings", expectedText: "Konto, Spielverlauf und Rankings", note: "gemeinsame Konto- und Rankinghilfe" },
@@ -1479,9 +1549,20 @@ async function openTarget(page, target) {
       } else {
         await clickButtonByVisibleText(page, target.buttonText);
       }
+      if (target.secondaryClickSelector) {
+        await page.waitForTimeout(350);
+        const secondaryTarget = page.locator(target.secondaryClickSelector).first();
+        if (await secondaryTarget.isVisible().catch(() => false)) {
+          await secondaryTarget.click({ timeout: 5000 });
+        }
+      }
       if (target.secondaryButtonText) {
         await page.waitForTimeout(350);
         await clickButtonByVisibleText(page, target.secondaryButtonText);
+      }
+      if (target.tertiaryButtonText) {
+        await page.waitForTimeout(350);
+        await clickButtonByVisibleText(page, target.tertiaryButtonText);
       }
       await page.waitForTimeout(target.clickSelector ? 1200 : 700);
       if (target.expectStableMapOnPopup) {
@@ -1737,6 +1818,46 @@ async function collectLayoutMetrics(page, readySelector = null) {
     const actualLabelRect = firstVisibleRect(".punktlandung-map-label-actual");
     const playerLabelRect = firstVisibleRect(".punktlandung-map-label-player");
     const resultInfoVisuals = [popupRect, actualPinRect, playerPinRect, actualLabelRect, playerLabelRect].filter(Boolean);
+    const denseResultSurface = [
+      ...document.querySelectorAll(".punktlandung-results-map .leaflet-container, .punktlandung-image-replay .leaflet-container, .account-round-map .leaflet-container")
+    ].find(visible) ?? null;
+    const denseResultMapSafety = denseResultSurface ? (() => {
+      const mapRect = denseResultSurface.getBoundingClientRect();
+      const rectsOverlap = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+      const labels = [...denseResultSurface.querySelectorAll(".punktlandung-map-label-player, .punktlandung-map-label-actual")]
+        .filter(visible)
+        .map((element) => ({ element, rect: element.getBoundingClientRect() }));
+      const pins = [...denseResultSurface.querySelectorAll(".punktlandung-map-pin-result, .punktlandung-map-pin-actual")]
+        .filter(visible)
+        .map((element) => ({ element, rect: element.getBoundingClientRect() }));
+      const labelOverlaps = labels.flatMap((label, index) => labels.slice(index + 1)
+        .filter((other) => rectsOverlap(label.rect, other.rect))
+        .map((other) => [label.element.textContent?.trim(), other.element.textContent?.trim()]));
+      const labelPinOverlaps = labels.flatMap((label) => pins
+        .filter((pin) => rectsOverlap(label.rect, pin.rect))
+        .map((pin) => [label.element.textContent?.trim(), pin.element.getAttribute("data-result-rank") ?? "target"]));
+      const rankedPinZ = pins
+        .filter(({ element }) => element.hasAttribute("data-result-rank"))
+        .map(({ element }) => ({
+          rank: Number(element.getAttribute("data-result-rank")),
+          zIndex: Number.parseInt(getComputedStyle(element.closest(".leaflet-marker-icon")).zIndex, 10)
+        }))
+        .sort((a, b) => a.rank - b.rank);
+      const targetZ = pins.find(({ element }) => element.classList.contains("punktlandung-map-pin-actual"))?.element
+        .closest(".leaflet-marker-icon");
+      const targetZIndex = targetZ ? Number.parseInt(getComputedStyle(targetZ).zIndex, 10) : null;
+      return {
+        labelCount: labels.length,
+        playerPinCount: rankedPinZ.length,
+        labelsInside: labels.every(({ rect }) => rect.left >= mapRect.left - .25 && rect.right <= mapRect.right + .25 && rect.top >= mapRect.top - .25 && rect.bottom <= mapRect.bottom + .25),
+        labelOverlaps,
+        labelPinOverlaps,
+        rankOrderCorrect: rankedPinZ.every((pin, index) => index === 0 || pin.zIndex < rankedPinZ[index - 1].zIndex),
+        targetAbovePlayers: targetZIndex != null && rankedPinZ.every((pin) => targetZIndex > pin.zIndex),
+        rankedPinZ,
+        targetZIndex
+      };
+    })() : null;
     const actualAbovePlayer = actualPinRect && playerPinRect
       ? (actualPinRect.top + actualPinRect.bottom) / 2 < (playerPinRect.top + playerPinRect.bottom) / 2
       : null;
@@ -1784,6 +1905,8 @@ async function collectLayoutMetrics(page, readySelector = null) {
     const homeInfoContentRect = homeInfoContent?.getBoundingClientRect() ?? null;
     const homePlayerBadge = homeMapPreview?.querySelector("[data-result-marker-kind='guess'] [data-marker-label]") ?? null;
     const homePlayerBadgeRect = homePlayerBadge?.getBoundingClientRect() ?? null;
+    const homeTargetBadge = homeMapPreview?.querySelector("[data-result-marker-kind='target'] [data-marker-label]") ?? null;
+    const homeTargetBadgeRect = homeTargetBadge?.getBoundingClientRect() ?? null;
     const resultRevealContainer = globeFrame?.querySelector("[data-result-reveal-phase]") ?? null;
     const visibleResultLabels = globeFrame
       ? [...globeFrame.querySelectorAll("[data-result-marker-kind][data-visible='true'][data-label-visible='true'] [data-marker-label]")].filter(visible)
@@ -2006,7 +2129,15 @@ async function collectLayoutMetrics(page, readySelector = null) {
             && homeInfoPopupRect.right <= homeMapRect.right - 3
             && homeInfoPopupRect.top >= homeMapRect.top + 3
             && homeInfoPopupRect.bottom <= homeMapRect.bottom - 3,
-          overlapsPlayerBadge: overlaps(homeInfoPopupRect, homePlayerBadgeRect),
+          playerBadgeVisible: Boolean(homePlayerBadge && getComputedStyle(homePlayerBadge).visibility !== "hidden" && Number(getComputedStyle(homePlayerBadge).opacity) > 0.01),
+          overlapsPlayerBadge: Boolean(homePlayerBadge && getComputedStyle(homePlayerBadge).visibility !== "hidden" && Number(getComputedStyle(homePlayerBadge).opacity) > 0.01)
+            && overlaps(homeInfoPopupRect, homePlayerBadgeRect),
+          targetCenterDelta: homeTargetBadgeRect
+            ? Math.abs((homeInfoPopupRect.left + homeInfoPopupRect.right - homeTargetBadgeRect.left - homeTargetBadgeRect.right) / 2)
+            : null,
+          popupMarginLeft: homeInfoPopup instanceof HTMLElement ? homeInfoPopup.style.marginLeft : null,
+          popupClassName: homeInfoPopup instanceof HTMLElement ? homeInfoPopup.className : null,
+          popupTranslate: homeInfoPopup instanceof HTMLElement ? getComputedStyle(homeInfoPopup).translate : null,
           topLayerAtAllSamples: insetPoints.every(([x, y]) => {
             const topElement = document.elementFromPoint(x, y);
             return Boolean(topElement && homeInfoPopup.contains(topElement));
@@ -2049,6 +2180,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
             ? Math.abs(popupTipRect.bottom - actualLabelRect.top) <= 12
             : Math.abs(popupTipRect.top - actualLabelRect.bottom) <= 12
       } : null,
+      denseResultMapSafety,
       globeResultSafety: globeFrameRect ? {
         frameBounds: {
           left: globeFrameRect.left,
@@ -2185,7 +2317,7 @@ function normalizeConsoleMessages(messages) {
     if (
       /A tree hydrated but some attributes of the server rendered HTML/i.test(compact) ||
       /ERR_BLOCKED_BY_CLIENT/i.test(compact) ||
-      /WebSocket connection to ['"]ws:\/\/(?:localhost|127\.0\.0\.1):3001\/['"] failed/i.test(compact) ||
+      /WebSocket connection to ['"]ws:\/\/(?:localhost|127\.0\.0\.1|192\.168\.178\.33):3001\/['"] failed/i.test(compact) ||
       /googletagmanager\.com\/gtag\/js.*preloaded.*not used/i.test(compact) ||
       /_next\/static\/css\/.*preloaded using link preload but not used/i.test(compact) ||
       /\[Punktlandung map\].*Failed to fetch/i.test(compact) ||
@@ -2764,6 +2896,81 @@ async function runTargetViewport(browser, target, viewport) {
       }
     }
 
+    if (target.expectTenPlayerResults) {
+      const tenPlayerResults = await page.evaluate(() => {
+        const panels = [...document.querySelectorAll(".punktlandung-results-sidebar .punktlandung-results-panel")];
+        return panels.map((panel) => {
+          const list = panel.querySelector(".punktlandung-results-list");
+          const rows = [...panel.querySelectorAll(".punktlandung-results-row")];
+          const panelRect = panel.getBoundingClientRect();
+          return {
+            rows: rows.length,
+            listScrolls: Boolean(list && list.scrollHeight > list.clientHeight + 1),
+            allRowsInside: rows.every((row) => {
+              const rect = row.getBoundingClientRect();
+              return rect.top >= panelRect.top - 1 && rect.bottom <= panelRect.bottom + 1;
+            }),
+            clippedCells: rows.some((row) => [...row.querySelectorAll(".punktlandung-results-rank, .punktlandung-results-player, .punktlandung-results-secondary-metrics, .punktlandung-results-distance-primary, .punktlandung-results-points")]
+              .some((cell) => cell.scrollWidth > cell.clientWidth + 1))
+          };
+        });
+      });
+      if (tenPlayerResults.length !== 2 || tenPlayerResults.some((panel) => panel.rows !== 10)) {
+        problems.push(`Zehn-Spieler-Auflösung zeigt nicht beide vollständigen Ranglisten (${JSON.stringify(tenPlayerResults)}).`);
+      }
+      if (viewport.name === "laptop" && tenPlayerResults.some((panel) => panel.listScrolls || !panel.allRowsInside || panel.clippedCells)) {
+        problems.push(`Zehn-Spieler-Auflösung passt am Laptop nicht kollisionsfrei ohne innere Scrollliste (${JSON.stringify(tenPlayerResults)}).`);
+      }
+    }
+
+    if (target.expectReplayControlParity) {
+      const replayControls = await page.evaluate(() => {
+        const buttons = [...document.querySelectorAll(".punktlandung-image-replay :is(.punktlandung-replay-top-actions, .punktlandung-map-panel-actions) button")]
+          .filter((button) => button.getBoundingClientRect().width > 0)
+          .filter((button) => !["X", "Maximieren", "Minimieren"].includes(button.textContent?.trim() ?? ""))
+          .map((button) => {
+            const rect = button.getBoundingClientRect();
+            const style = getComputedStyle(button);
+            const content = button.firstElementChild?.getBoundingClientRect();
+            return { label: button.textContent?.trim(), height: rect.height, radius: style.borderRadius, contentOffset: content ? Math.abs((content.top + content.bottom) / 2 - (rect.top + rect.bottom) / 2) : 0 };
+          });
+        return buttons;
+      });
+      const heights = replayControls.map((button) => button.height);
+      if (replayControls.length > 0 && (replayControls.length < 2 || Math.max(...heights) - Math.min(...heights) > 1 || new Set(replayControls.map((button) => button.radius)).size > 1 || replayControls.some((button) => button.contentOffset > 1.5))) {
+        problems.push(`Replay-Aktionen haben keine gemeinsame Höhe, Rundung und optische Zentrierung (${JSON.stringify(replayControls)}).`);
+      }
+    }
+
+    if (target.expectTenPlayerFinal) {
+      const tenPlayerFinal = await page.evaluate(() => {
+        const list = document.querySelector(".punktlandung-final-table-list");
+        const rows = [...document.querySelectorAll(".punktlandung-final-table-list > .punktlandung-final-player-row")];
+        const metricValues = [...document.querySelectorAll(".punktlandung-final-player-metrics strong")];
+        const tableRect = document.querySelector(".punktlandung-final-table")?.getBoundingClientRect();
+        const saveRect = document.querySelector(".punktlandung-final-save-status")?.getBoundingClientRect();
+        const listRect = list?.getBoundingClientRect();
+        const highlightsPanelRect = document.querySelector(".punktlandung-final-highlights-panel")?.getBoundingClientRect();
+        const highlights = [...document.querySelectorAll(".punktlandung-final-highlights > .punktlandung-final-player-row")];
+        return {
+          rows: rows.length,
+          highlights: highlights.length,
+          highlightsInside: Boolean(highlightsPanelRect && highlights.every((card) => card.getBoundingClientRect().bottom <= highlightsPanelRect.bottom + 1)),
+          winner: document.querySelector(".punktlandung-final-winner-name")?.textContent?.replace(/\s+/g, " ").trim() ?? "",
+          listScrolls: Boolean(list && list.scrollHeight > list.clientHeight + 1),
+          metricsClip: metricValues.some((value) => value.scrollWidth > value.clientWidth + 1),
+          saveAfterTable: Boolean(saveRect && listRect && saveRect.top >= listRect.bottom - 1),
+          tableInside: Boolean(tableRect && rows.every((row) => row.getBoundingClientRect().bottom <= tableRect.bottom + 1))
+        };
+      });
+      if (tenPlayerFinal.rows !== 10 || tenPlayerFinal.highlights !== 6 || tenPlayerFinal.winner !== "Tabea ist der Globus-Gott" || !tenPlayerFinal.saveAfterTable) {
+        problems.push(`Zehn-Spieler-Endstand ist inhaltlich oder in seiner Reihenfolge unvollständig (${JSON.stringify(tenPlayerFinal)}).`);
+      }
+      if (viewport.name === "laptop" && (tenPlayerFinal.listScrolls || tenPlayerFinal.metricsClip || !tenPlayerFinal.tableInside || !tenPlayerFinal.highlightsInside)) {
+        problems.push(`Zehn-Spieler-Endstand passt am Laptop nicht vollständig ohne innere Scrollliste oder abgeschnittene Werte (${JSON.stringify(tenPlayerFinal)}).`);
+      }
+    }
+
     if (target.expectGuessMapCamera) {
       const map = page.locator(".punktlandung-map-test-map .leaflet-container").first();
       const mapSurface = await page.locator(".punktlandung-map-test-map[data-map-ready='true'] .maplibregl-canvas").first().evaluate((element) => {
@@ -3054,6 +3261,18 @@ async function runTargetViewport(browser, target, viewport) {
     if (globeCompositionStability) metrics.globeCompositionStability = globeCompositionStability;
     if (metrics.applicationError) problems.push("Die Ansicht zeigt einen Application error.");
     if (metrics.bodyTextLength === 0 || metrics.visibleElementCount === 0) problems.push("Der Body hat keinen sichtbaren Inhalt.");
+    if (target.expectDenseResultMap && (
+      !metrics.denseResultMapSafety
+      || metrics.denseResultMapSafety.labelCount !== 11
+      || metrics.denseResultMapSafety.playerPinCount !== 10
+      || !metrics.denseResultMapSafety.labelsInside
+      || metrics.denseResultMapSafety.labelOverlaps.length > 0
+      || metrics.denseResultMapSafety.labelPinOverlaps.length > 0
+      || !metrics.denseResultMapSafety.rankOrderCorrect
+      || !metrics.denseResultMapSafety.targetAbovePlayers
+    )) {
+      problems.push(`Die Zehn-Spieler-Kartenkomposition verletzt Label-, Safe-Area- oder Stapelregeln (${JSON.stringify(metrics.denseResultMapSafety)}).`);
+    }
     if (target.expectedText && !metrics.bodyText.includes(target.expectedText)) {
       problems.push(`Erwarteter Ansichtstext fehlt: "${target.expectedText}".`);
     }
@@ -3163,6 +3382,15 @@ async function runTargetViewport(browser, target, viewport) {
       || !metrics.homeInfoSafety?.topLayerAtAllSamples
     )) {
       problems.push(`Die Startseiten-Zielinformation liegt nicht vollständig und unverdeckt auf der obersten Kartenebene (${JSON.stringify(metrics.homeInfoSafety)}).`);
+    }
+    const homeInfoMapWidth = metrics.homeInfoSafety?.bounds?.map
+      ? metrics.homeInfoSafety.bounds.map.right - metrics.homeInfoSafety.bounds.map.left
+      : 0;
+    if (target.expectHomeInfoTopLayer && homeInfoMapWidth >= 700 && (
+      metrics.homeInfoSafety?.targetCenterDelta > 12
+      || metrics.homeInfoSafety?.overlapsPlayerBadge
+    )) {
+      problems.push(`Die Desktop-Zielinformation ist nicht am Zielbadge zentriert oder kollidiert sichtbar mit dem Tippbadge (${JSON.stringify(metrics.homeInfoSafety)}).`);
     }
     if (target.name === "home" && metrics.homeMapPreview && !metrics.homeMapPreview.visualsInside) {
       problems.push("Pins, Ellipsen oder Labels verletzen die Safe Area der Startseitenkarte.");

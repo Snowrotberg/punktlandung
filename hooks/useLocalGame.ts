@@ -6,6 +6,7 @@ import { prepareLocationImage } from "@/lib/imagePreload.client";
 import { shuffledLocationIds } from "@/lib/locationSelection";
 import { consumeSetupResumeRequest, isResumableGameStatus, shouldRestoreStoredGame, shouldStartTimerAfterImageReady } from "@/lib/gameResume.client";
 import { PLAYER_PALETTE } from "@/lib/playerPalette";
+import { sanitizeEditablePlayerName, sanitizePlayerName } from "@/lib/playerName";
 import { evaluatePlayerGuess } from "@/lib/roundEvaluation";
 import { captureMatchesRoom, guessFromCapture, type GuessCapture } from "@/lib/guessCapture";
 import { readStoredSetupSettings, writeStoredSetupSettings } from "@/lib/setupSettings.client";
@@ -324,12 +325,11 @@ function normalizeStoredRoom(room: Partial<RoomState>, fallbackHostId: string): 
 }
 
 function sanitizeName(input: string): string {
-  const trimmed = input.replace(/[^\p{L}\p{N}\s_.-]/gu, "").trim();
-  return trimmed.slice(0, 18) || "Gast";
+  return sanitizePlayerName(input);
 }
 
 function sanitizeEditableName(input: string): string {
-  return input.replace(/[^\p{L}\p{N}\s_.-]/gu, "").slice(0, 18);
+  return sanitizeEditablePlayerName(input);
 }
 
 function clampInt(input: number | undefined, fallback: number, min: number, max?: number): number {

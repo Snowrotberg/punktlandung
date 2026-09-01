@@ -15,6 +15,7 @@ import { MapLibreBaseLayer } from "@/components/MapLibreBaseLayer";
 import { MapAttributionBadge } from "@/components/MapAttributionBadge";
 import { resultWorldMinimumZoom } from "@/lib/resultMapViewport";
 import { RESULT_LABEL_VISUAL_GAP_PX, RESULT_ROUTE_DASH_GAP_PX } from "@/lib/globeResultLayout";
+import { resultLabelLaneCandidates, resultMarkerZIndex } from "@/lib/resultMapLayout";
 
 type LeafletMapProps = {
   mode: "guess" | "results";
@@ -161,10 +162,12 @@ function displayPointsForSingleWorld(points: LatLng[]): LatLng[] {
   return points.map((point) => ({ ...point, lng: normalizeLng(point.lng) }));
 }
 
-function pinIcon(color = playerColorAt(0), actual = false) {
+function pinIcon(color = playerColorAt(0), actual = false, resultRank?: number) {
+  const resultClass = resultRank == null ? "" : " punktlandung-map-pin-result";
+  const resultRankAttribute = resultRank == null ? "" : ` data-result-rank="${resultRank + 1}"`;
   return divIcon({
     className: "punktlandung-pin-icon",
-    html: `<div class="punktlandung-map-pin punktlandung-map-pin-vector${actual ? " punktlandung-map-pin-actual" : " punktlandung-map-pin-player"}" style="--pin-color:${color}"><svg viewBox="0 0 32 42" aria-hidden="true"><path class="punktlandung-map-pin-outline" fill-rule="evenodd" d="M16 42C16 42 3 24 3 15C3 6.7 8.8 1 16 1C23.2 1 29 6.7 29 15C29 24 16 42 16 42ZM16 9.75A5.25 5.25 0 1 0 16 20.25A5.25 5.25 0 1 0 16 9.75Z"/><path class="punktlandung-map-pin-fill" fill-rule="evenodd" d="M16 38C16 38 5 23 5 15C5 8.4 9.9 4 16 4C22.1 4 27 8.4 27 15C27 23 16 38 16 38ZM16 8A7 7 0 1 0 16 22A7 7 0 1 0 16 8Z"/><circle class="punktlandung-map-pin-core" cx="16" cy="15" r="7.15"/></svg></div>`,
+    html: `<div class="punktlandung-map-pin punktlandung-map-pin-vector${actual ? " punktlandung-map-pin-actual" : " punktlandung-map-pin-player"}${resultClass}"${resultRankAttribute} style="--pin-color:${color}"><svg viewBox="0 0 32 42" aria-hidden="true"><path class="punktlandung-map-pin-outline" fill-rule="evenodd" d="M16 42C16 42 3 24 3 15C3 6.7 8.8 1 16 1C23.2 1 29 6.7 29 15C29 24 16 42 16 42ZM16 9.75A5.25 5.25 0 1 0 16 20.25A5.25 5.25 0 1 0 16 9.75Z"/><path class="punktlandung-map-pin-fill" fill-rule="evenodd" d="M16 38C16 38 5 23 5 15C5 8.4 9.9 4 16 4C22.1 4 27 8.4 27 15C27 23 16 38 16 38ZM16 8A7 7 0 1 0 16 22A7 7 0 1 0 16 8Z"/><circle class="punktlandung-map-pin-core" cx="16" cy="15" r="7.15"/></svg></div>`,
     iconSize: [30, 42],
     // The player pin path is centered on x=16.  Its old x=15 anchor made
     // the pin sit one pixel to the right of its ellipse.  Keep the target's
@@ -834,8 +837,17 @@ function overlapArea(a: LabelRect, b: LabelRect) {
   return Math.max(0, width) * Math.max(0, height);
 }
 
-function labelSize(label: string, actual = false, compact = false) {
-  const maxWidth = compact ? (actual ? 168 : 160) : actual ? 286 : 244;
+function labelSize(label: string, actual = false, compact = false, dense = false) {
+  if (dense) {
+    const visibleLabel = actual ? label : label.split("·", 1)[0]?.trim() ?? label;
+    const maxWidth = actual ? 170 : 80;
+    const minWidth = actual ? 90 : 56;
+    return {
+      width: Math.min(maxWidth, Math.max(minWidth, Math.round(visibleLabel.length * (actual ? 5.4 : 5.1)) + 20)),
+      height: actual ? 18 : 14
+    };
+  }
+  const maxWidth = compact ? (actual ? 168 : 160) : actual ? 286 : 224;
   const minWidth = compact ? (actual ? 104 : 132) : actual ? 110 : 154;
   const width = Math.min(maxWidth, Math.max(minWidth, Math.round(label.length * (actual ? 9.4 : 8.2)) + 42));
   return { width, height: compact ? 40 : actual ? 46 : 44 };
@@ -1056,7 +1068,8 @@ function resultTooltipPlacement(
   const pixel = map.latLngToContainerPoint([point.lat, point.lng]);
   const size = map.getSize();
   const compact = size.x <= 520 && size.y >= size.x;
-  const dimensions = labelSize(label, actual, compact);
+  const dense = occupied.length >= 5;
+  const dimensions = labelSize(label, actual, compact, dense);
   const candidates = placementCandidates(dimensions.width, dimensions.height, actual, preferredVector, compact);
   if (preferredVector?.y) {
     const visualExtent = actual
@@ -1071,6 +1084,22 @@ function resultTooltipPlacement(
     ? candidates.filter((candidate) => Math.sign(candidate.dy) === Math.sign(preferredVector.y))
     : candidates;
   const viewportMargin = compact ? 18 : 30;
+  const rightMargin = dense
+    ? viewportMargin
+    : controlInset ? Math.min(82, Math.max(viewportMargin, size.x * 0.28)) : viewportMargin;
+  if (dense) {
+    const denseLanes = resultLabelLaneCandidates({
+      anchor: pixel,
+      viewport: { width: size.x, height: size.y },
+      label: dimensions,
+      margin: viewportMargin,
+      rightMargin,
+      preferredVerticalSide: strictVerticalSide && preferredVector?.y
+        ? Math.sign(preferredVector.y) as -1 | 1
+        : 0
+    });
+    candidates.splice(0, candidates.length, ...denseLanes);
+  }
   const pinRect: LabelRect = {
     left: pixel.x - 28,
     top: pixel.y - 56,
@@ -1100,12 +1129,15 @@ function resultTooltipPlacement(
       size.x,
       size.y,
       viewportMargin,
-      controlInset ? Math.min(82, Math.max(viewportMargin, size.x * 0.28)) : viewportMargin
+      rightMargin
     );
     const overflow = viewportOverflow(rect, size.x, size.y, viewportMargin);
     const overlap = occupied.reduce((sum, other) => sum + overlapArea(rect, other), 0);
     const pinOverlap = overlapArea(rect, pinRect);
-    const linePenalty = blockedSegments.reduce((sum, segment) => sum + rectLinePenalty(rect, segment), 0);
+    // With ten routes radiating from a tight cluster, every outer label lane
+    // can cross at least one connector. Label/label and label/pin separation
+    // is the hard contract; route crossings remain visually subordinate.
+    const linePenalty = dense ? 0 : blockedSegments.reduce((sum, segment) => sum + rectLinePenalty(rect, segment), 0);
     const anchorDistance = Math.hypot(placement.offset[0], placement.offset[1]);
     const preferredPenalty = preferredVector
       ? Math.max(0, -(placement.offset[0] * preferredVector.x + placement.offset[1] * preferredVector.y)) * (actual ? 6 : 10)
@@ -1584,7 +1616,7 @@ function ResultsMarkers({
           }
         : undefined,
       resultControlInset,
-      true
+      rankedResults.length <= 2
     );
     occupied.push(paddedRect(actualPlacement.rect, 12));
     occupied.push(paddedRect(pinBlockRect(map, displayLocation), 8));
@@ -1625,7 +1657,7 @@ function ResultsMarkers({
         false,
         preferredVector,
         resultControlInset,
-        true
+        rankedResults.length <= 2
       );
       occupied.push(paddedRect(placement.rect, 12));
       playerPlacements.set(result.playerId, placement.placement);
@@ -1659,6 +1691,7 @@ function ResultsMarkers({
           const playerLabel = `${playerLabelPrefix} · ${resultLabel}`;
           const playerLabelHtml = `${escapeHtml(playerLabelPrefix)}<span class="punktlandung-map-label-distance"> · ${escapeHtml(resultLabel)}</span>`;
           const placement = placements.players.get(result.playerId);
+          const zIndexOffset = resultMarkerZIndex(index);
 
           return (
             <Fragment key={result.playerId}>
@@ -1674,7 +1707,7 @@ function ResultsMarkers({
               )}
               {showLabels && placement ? (
                 <>
-                  <Marker position={[point.lat, point.lng]} icon={pinIcon(color)} />
+                  <Marker position={[point.lat, point.lng]} icon={pinIcon(color, false, index)} zIndexOffset={zIndexOffset} />
                   <ResultMarker
                     point={point}
                     label={playerLabel}
@@ -1683,10 +1716,11 @@ function ResultsMarkers({
                     placement={placement}
                     edgeAnchor={resultLabelLayout === "home-preview" ? "left" : undefined}
                     insetEdgeAnchor={resultLabelInset}
+                    zIndexOffset={zIndexOffset}
                   />
                 </>
               ) : (
-                <Marker position={[point.lat, point.lng]} icon={pinIcon(color)} />
+                <Marker position={[point.lat, point.lng]} icon={pinIcon(color, false, index)} zIndexOffset={zIndexOffset} />
               )}
             </Fragment>
           );
@@ -1726,7 +1760,7 @@ function ResultsMarkers({
               popupFitPoints={popupFitPoints}
               renderTargetPin
               resultControlInset={resultControlInset}
-              zIndexOffset={1000}
+              zIndexOffset={resultMarkerZIndex("target")}
             />
           </>
         ) : (
@@ -1737,7 +1771,7 @@ function ResultsMarkers({
               interactive={false}
               zIndexOffset={-900}
             />
-            <Marker position={[displayGeometry?.location.lat ?? location.lat, displayGeometry?.location.lng ?? location.lng]} icon={actualPinIcon} zIndexOffset={1000} />
+            <Marker position={[displayGeometry?.location.lat ?? location.lat, displayGeometry?.location.lng ?? location.lng]} icon={actualPinIcon} zIndexOffset={resultMarkerZIndex("target")} />
           </>
         ))}
     </>
@@ -1864,9 +1898,10 @@ export function LeafletMap({
   const guessOverviewZoom = GUESS_OVERVIEW_ZOOM;
   const guessColorIndex = playerColorIndexByColor(currentPlayerColor);
   const isGuessMap = mode === "guess";
+  const denseResultLabels = mode === "results" && (summary?.results.filter((result) => result.guess).length ?? 0) >= 8;
 
   return (
-    <div className="punktlandung-map-shell" style={playerPaletteStyle}>
+    <div className={`punktlandung-map-shell${denseResultLabels ? " is-dense-results" : ""}`} style={playerPaletteStyle}>
       <StrictSafeMapContainer
       {...(initialBounds
         ? { bounds: initialBounds, boundsOptions: { padding: [56, 56], maxZoom } }

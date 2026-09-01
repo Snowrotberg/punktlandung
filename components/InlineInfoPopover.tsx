@@ -2,7 +2,8 @@
 
 import { CircleHelp, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import styles from "./InlineInfoPopover.module.css";
 
 type InlineInfoPopoverProps = {
@@ -17,13 +18,43 @@ type InlineInfoPopoverProps = {
 
 export function InlineInfoPopover({ ariaLabel, className, align = "center", title, children, href, hrefLabel }: InlineInfoPopoverProps) {
   const [open, setOpen] = useState(false);
+  const [panelStyle, setPanelStyle] = useState<CSSProperties>();
   const panelId = useId();
   const rootRef = useRef<HTMLSpanElement>(null);
+  const panelRef = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const placePanel = () => {
+      if (window.innerWidth <= 576) {
+        setPanelStyle(undefined);
+        return;
+      }
+      const trigger = rootRef.current?.getBoundingClientRect();
+      if (!trigger) return;
+      const width = Math.min(288, window.innerWidth - 32);
+      const estimatedHeight = panelRef.current?.getBoundingClientRect().height ?? 150;
+      const left = align === "right"
+        ? Math.max(16, Math.min(window.innerWidth - width - 16, trigger.right - width))
+        : Math.max(16, Math.min(window.innerWidth - width - 16, trigger.left + trigger.width / 2 - width / 2));
+      const above = trigger.top - estimatedHeight - 8;
+      const top = above >= 16 ? above : Math.min(window.innerHeight - estimatedHeight - 16, trigger.bottom + 8);
+      setPanelStyle({ left, top: Math.max(16, top), width });
+    };
+    placePanel();
+    window.addEventListener("resize", placePanel);
+    window.addEventListener("scroll", placePanel, true);
+    return () => {
+      window.removeEventListener("resize", placePanel);
+      window.removeEventListener("scroll", placePanel, true);
+    };
+  }, [align, open]);
 
   useEffect(() => {
     if (!open) return;
     const closeOnOutsideClick = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (!rootRef.current?.contains(target) && !panelRef.current?.contains(target)) setOpen(false);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
@@ -49,8 +80,8 @@ export function InlineInfoPopover({ ariaLabel, className, align = "center", titl
       >
         <CircleHelp className={styles.questionMark} aria-hidden="true" focusable="false" />
       </button>
-      {open && (
-        <span className={styles.panel} id={panelId} role="dialog" aria-label={title}>
+      {open && createPortal(
+        <span ref={panelRef} className={styles.panel} id={panelId} role="dialog" aria-label={title} style={panelStyle}>
           <span className={styles.heading}>
             <strong>{title}</strong>
             <button type="button" onClick={() => setOpen(false)} aria-label="Hinweis schließen">
@@ -59,7 +90,8 @@ export function InlineInfoPopover({ ariaLabel, className, align = "center", titl
           </span>
           <span className={styles.copy}>{children}</span>
           {href && hrefLabel && <Link href={href} className={styles.link}>{hrefLabel}</Link>}
-        </span>
+        </span>,
+        document.body
       )}
     </span>
   );

@@ -27,6 +27,7 @@ import {
 import { prepareResultExperience } from "@/lib/resultReadiness.client";
 import { normalizeOnlineRoomCode, onlineRoomCodeValidationMessage, onlineRoomPath } from "@/lib/onlineRoomInvite";
 import type { GuessCapture } from "@/lib/guessCapture";
+import { PLAYER_NAME_MAX_LENGTH } from "@/lib/playerName";
 import { useRankedSoloGame } from "@/hooks/useRankedSoloGame";
 import { useOnlineRoomSocket } from "@/hooks/useOnlineRoomSocket";
 import type { InitialLocalGameMode } from "@/hooks/useLocalGame";
@@ -934,7 +935,7 @@ export function GameApp({
               <input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                maxLength={18}
+                maxLength={PLAYER_NAME_MAX_LENGTH}
                 className="mt-2 h-12 w-full rounded-md border-0 bg-slate-950/70 px-3.5 text-base font-black text-white outline-none ring-1 ring-slate-700 transition focus:ring-2 focus:ring-emerald-300"
               />
             </label>
@@ -1220,7 +1221,7 @@ export function GameApp({
                   <input
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    maxLength={18}
+                    maxLength={PLAYER_NAME_MAX_LENGTH}
                     className="mt-1 h-9 w-full rounded-md border-0 bg-slate-950/70 px-3.5 text-sm text-white outline-none ring-1 ring-slate-700 transition focus:ring-2 focus:ring-indigo-400 md:text-base"
                   />
                 </label>

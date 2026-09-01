@@ -1022,7 +1022,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                       resultZoomScale={replayMapFull ? 1.08 : 1.16}
                       noPan={!replayMapInteractive}
                       noZoom={!replayMapInteractive}
-                      showLabels={replayMapInteractive}
+                      showLabels
                       resizeSignal={`${replayMapSize}-${replayMapInteractive ? "interactive" : "locked"}-${showImageReplay ? "replay" : "hidden"}`}
                     />
                   ) : null}
@@ -1068,13 +1068,12 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                   <div className="mt-3 flex min-w-0 items-center gap-3">
                     <span aria-hidden="true" className="punktlandung-final-player-accent h-14 w-2 rounded-full" style={playerAccentStyle(champion?.color)} />
                     <div className="min-w-0">
-                      <p className="punktlandung-final-winner-name break-words text-[clamp(1.85rem,3.2vw,3rem)] font-black leading-[0.95] text-white">{champion?.name ?? "Niemand"}</p>
-                      <p className="mt-2 text-sm font-semibold text-emerald-300">
+                      <p className="punktlandung-final-winner-name break-words text-[clamp(1.85rem,3.2vw,3rem)] font-black leading-[0.95] text-emerald-300">
+                        {champion?.name ?? "Niemand"} {championStats?.title ? `ist ${badgeWithArticle(championStats.title).replace(/^Der /, "der ").replace(/^Die /, "die ").replace(/^Das /, "das ")}` : "ist unangefochten"}
+                      </p>
+                      <p className="mt-3 text-base font-semibold text-slate-200">
                         {champion ? `${formatPoints(champion.score)} Punkte` : "Keine Wertung"}
                         {runnerUp ? ` · ${formatPoints(lead)} Vorsprung` : ""}
-                      </p>
-                      <p className="mt-1 text-sm italic text-slate-300">
-                        {championStats?.title ? `ist ${badgeWithArticle(championStats.title)}` : "ist unangefochten"}
                       </p>
                     </div>
                   </div>
@@ -1145,58 +1144,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
           </section>
 
           <aside className="punktlandung-final-table min-h-0 rounded-md border border-slate-700/55 bg-slate-900/72 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.24)] xl:overflow-hidden">
-            <div className={`punktlandung-final-topbar mb-3 flex items-center gap-2 border-b border-slate-700/55 pb-3${accountsEnabled && !accountAuthenticated && !saveOfferDismissed ? " is-expanded-save-offer" : ""}`}>
-            {accountsEnabled && (
-              <section className="punktlandung-final-save-status min-w-0 flex-1 rounded-xl border border-emerald-300/35 bg-emerald-400/10 px-3 py-2 text-left" aria-live="polite">
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-300">{accountAuthenticated ? "Automatisch speichern" : "Spielstand mitnehmen"}</p>
-                {serverRanked && finished ? (
-                  rankedSyncStatus === "verified" ? (
-                    <p className="mt-1 text-sm font-semibold text-emerald-100">Gespeichert und fürs Ranking gewertet.</p>
-                  ) : rankedSyncStatus === "uploading" ? (
-                    <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird gerade gespeichert …</p>
-                  ) : rankedSyncStatus === "pending" ? (
-                    <p className="mt-1 text-sm font-semibold text-amber-100">Die Speicherung läuft weiter. Dein Ergebnis bleibt erhalten.</p>
-                  ) : !accountAuthenticated ? (
-                    saveOfferDismissed ? (
-                      <p className="mt-1 text-sm font-semibold text-slate-300">Nicht gespeichert.</p>
-                    ) : (
-                      <div className="mt-1 grid gap-2">
-                        <p className="text-sm font-semibold text-slate-200">Melde dich an oder erstelle ein Konto, um deine Partie zu speichern und ins Ranking aufzunehmen. Das Spielen bleibt kostenlos.</p>
-                        <div className="flex flex-wrap gap-2">
-                          <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis" onNavigate={prepareSaveAndOpenLogin}>Spielstand speichern</ButtonLink>
-                          <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
-                        </div>
-                      </div>
-                    )
-                  ) : (
-                    <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird deinem Konto hinzugefügt …</p>
-                  )
-                ) : saveState === "saved" ? (
-                  <p className="mt-1 text-sm font-semibold text-emerald-100">Gespeichert. Deine Partie erscheint jetzt im Spielverlauf.</p>
-                ) : accountAuthenticated && saveState === "saving" ? (
-                  <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird gerade automatisch gespeichert …</p>
-                ) : saveState === "auth" ? (
-                    <p className="mt-1 text-sm font-semibold text-slate-200">Melde dich an, um diese Runde dauerhaft zu speichern. <a className="text-emerald-300 underline" href="/anmelden?returnTo=%2Fendergebnis" onClick={(event) => { event.preventDefault(); prepareSaveAndOpenLogin(); }}>Jetzt anmelden</a></p>
-                ) : !accountAuthenticated && saveOfferDismissed ? (
-                  <p className="mt-1 text-sm font-semibold text-slate-300">Nicht gespeichert.</p>
-                  ) : !accountAuthenticated ? (
-                  <div className="mt-1 grid gap-2">
-                    <p className="text-sm font-semibold text-slate-200">Möchtest du diese Partie dauerhaft speichern? Das Spiel bleibt auch ohne Konto kostenlos.</p>
-                    <div className="flex flex-wrap gap-2">
-                      <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis" onNavigate={prepareSaveAndOpenLogin}>Spielstand speichern</ButtonLink>
-                      <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-slate-200">{saveState === "error" ? "Das automatische Speichern hat noch nicht geklappt." : "Ergebnisse und Punktzahl werden automatisch deinem Konto hinzugefügt."}</p>
-                    <Button tone="selected" className="min-h-9 text-xs normal-case" disabled={saveState === "saving"} onClick={saveGame}>
-                      {saveState === "saving" ? "Speichere …" : "Erneut versuchen"}
-                    </Button>
-                  </div>
-                )}
-              </section>
-            )}
+            <div className="punktlandung-final-topbar mb-3 flex items-center gap-2 border-b border-slate-700/55 pb-3">
             <div className="punktlandung-final-actions flex shrink-0 flex-wrap justify-end gap-2">
               <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setFeedbackDialogOpen(true)}>
                 <span className="punktlandung-inline-action-content"><MessageSquareText aria-hidden="true" className="h-4 w-4" /><span>Feedback geben</span></span>
@@ -1259,6 +1207,57 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 );
               })}
             </div>
+            {accountsEnabled && (
+              <section className="punktlandung-final-save-status mt-3 min-w-0 rounded-xl border border-emerald-300/35 bg-emerald-400/10 px-3 py-2 text-left" aria-live="polite">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-300">{accountAuthenticated ? "Automatisch speichern" : "Spielstand mitnehmen"}</p>
+                {serverRanked && finished ? (
+                  rankedSyncStatus === "verified" ? (
+                    <p className="mt-1 text-sm font-semibold text-emerald-100">Gespeichert und fürs Ranking gewertet.</p>
+                  ) : rankedSyncStatus === "uploading" ? (
+                    <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird gerade gespeichert …</p>
+                  ) : rankedSyncStatus === "pending" ? (
+                    <p className="mt-1 text-sm font-semibold text-amber-100">Die Speicherung läuft weiter. Dein Ergebnis bleibt erhalten.</p>
+                  ) : !accountAuthenticated ? (
+                    saveOfferDismissed ? (
+                      <p className="mt-1 text-sm font-semibold text-slate-300">Nicht gespeichert.</p>
+                    ) : (
+                      <div className="mt-1 grid gap-2">
+                        <p className="text-sm font-semibold text-slate-200">Melde dich an oder erstelle ein Konto, um deine Partie zu speichern und ins Ranking aufzunehmen. Das Spielen bleibt kostenlos.</p>
+                        <div className="flex flex-wrap gap-2">
+                          <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis" onNavigate={prepareSaveAndOpenLogin}>Spielstand speichern</ButtonLink>
+                          <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird deinem Konto hinzugefügt …</p>
+                  )
+                ) : saveState === "saved" ? (
+                  <p className="mt-1 text-sm font-semibold text-emerald-100">Gespeichert. Deine Partie erscheint jetzt im Spielverlauf.</p>
+                ) : accountAuthenticated && saveState === "saving" ? (
+                  <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird gerade automatisch gespeichert …</p>
+                ) : saveState === "auth" ? (
+                  <p className="mt-1 text-sm font-semibold text-slate-200">Melde dich an, um diese Runde dauerhaft zu speichern. <a className="text-emerald-300 underline" href="/anmelden?returnTo=%2Fendergebnis" onClick={(event) => { event.preventDefault(); prepareSaveAndOpenLogin(); }}>Jetzt anmelden</a></p>
+                ) : !accountAuthenticated && saveOfferDismissed ? (
+                  <p className="mt-1 text-sm font-semibold text-slate-300">Nicht gespeichert.</p>
+                ) : !accountAuthenticated ? (
+                  <div className="mt-1 grid gap-2">
+                    <p className="text-sm font-semibold text-slate-200">Möchtest du diese Partie dauerhaft speichern? Das Spiel bleibt auch ohne Konto kostenlos.</p>
+                    <div className="flex flex-wrap gap-2">
+                      <ButtonLink tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" href="/anmelden?returnTo=%2Fendergebnis" onNavigate={prepareSaveAndOpenLogin}>Spielstand speichern</ButtonLink>
+                      <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={() => setSaveOfferDismissed(true)}>Nicht speichern</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-200">{saveState === "error" ? "Das automatische Speichern hat noch nicht geklappt." : "Ergebnisse und Punktzahl werden automatisch deinem Konto hinzugefügt."}</p>
+                    <Button tone="selected" className="min-h-9 text-xs normal-case" disabled={saveState === "saving"} onClick={saveGame}>
+                      {saveState === "saving" ? "Speichere …" : "Erneut versuchen"}
+                    </Button>
+                  </div>
+                )}
+              </section>
+            )}
             <LegalLinks onNavigate={onDiscardSession} className="punktlandung-final-footer mt-auto border-t border-slate-700/55 pt-3" align="end" />
           </aside>
         </div>
@@ -1453,7 +1452,6 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             <h2 className="flex items-center gap-2 text-[22px] font-black leading-tight"><Trophy aria-hidden="true" className="h-5 w-5 text-emerald-300" />Gesamtwertung</h2>
             <div className="punktlandung-results-list punktlandung-results-flat-list mt-2 grid min-h-0">
               {sortedPlayers.map((player, index) => {
-                const overallTitle = overallRankingTitleFor(index, sortedPlayers.length);
                 const totalPercent = Math.max(4, Math.min(100, (player.score / Math.max(1, champion?.score ?? player.score)) * 100));
                 const playerStats = finalStats.find((stats) => stats.player.id === player.id);
                 return (
@@ -1471,20 +1469,12 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                       <span className="punktlandung-results-rank shrink-0 font-black">#{index + 1}</span>
                       <div className="punktlandung-results-identity min-w-0">
                         <span className="punktlandung-results-player min-w-0 font-black">{player.name}</span>
-                        {overallTitle ? (
-                          <span className="punktlandung-results-distance text-xs font-normal italic text-emerald-300">
-                            · {badgeWithArticle(overallTitle)}
-                          </span>
-                        ) : null}
                         {playerStats ? (
                           <span
                             className="punktlandung-results-secondary-metrics"
-                            title={`Durchschnitt: ${formatPoints(playerStats.averagePoints)} Punkte pro Runde${
-                              playerStats.averageDistanceKm === null ? "" : ` und ${formatDistance(playerStats.averageDistanceKm)} Entfernung`
-                            }`}
+                            title={playerStats.averageDistanceKm === null ? "Keine gewertete Entfernung" : `Durchschnittliche Entfernung: ${formatDistance(playerStats.averageDistanceKm)}`}
                           >
-                            · Ø {formatPoints(playerStats.averagePoints)} Pkt./R.
-                            {playerStats.averageDistanceKm === null ? null : <> · Ø {formatDistance(playerStats.averageDistanceKm)}</>}
+                            {playerStats.averageDistanceKm === null ? null : <>· Ø {formatDistance(playerStats.averageDistanceKm)}</>}
                           </span>
                         ) : null}
                       </div>

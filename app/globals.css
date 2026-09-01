@@ -7186,6 +7186,16 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   color: #cbd5e1;
 }
 
+.punktlandung-home-map-preview .punktlandung-map-attribution-panel {
+  width: max-content;
+  max-width: min(15.5rem, calc(100cqw - 14px), calc(100vw - 24px));
+}
+
+.punktlandung-home-map-preview .punktlandung-map-attribution-sources {
+  display: grid;
+  justify-items: start;
+}
+
 .leaflet-control-zoom {
   overflow: hidden;
   border: 1px solid rgba(71, 85, 105, 0.85) !important;
@@ -8663,6 +8673,8 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
   background: transparent !important;
   color: #d3deee !important;
   font-size: 0 !important;
+  top: 0.4rem !important;
+  right: 0.4rem !important;
 }
 
 .punktlandung-location-info-popup .leaflet-popup-close-button::after {
@@ -8943,6 +8955,58 @@ body .punktlandung-lobby-config-section.punktlandung-online-layout .punktlandung
 
 .punktlandung-map-pin-vector .punktlandung-map-pin-core {
   fill: #f8fafc;
+}
+
+.punktlandung-map-pin-result {
+  /* Ten nearby result pins must retain their own fill colors without ten
+     superimposed glow filters building a white-looking halo. */
+  filter: none;
+}
+
+.punktlandung-results-map .punktlandung-map-shell.is-dense-results .punktlandung-map-label,
+.punktlandung-image-replay .punktlandung-map-shell.is-dense-results .punktlandung-map-label,
+.account-round-map .punktlandung-map-shell.is-dense-results .punktlandung-map-label {
+  max-width: min(10rem, calc(100vw - 1rem)) !important;
+  padding: 0.24rem 0.4rem !important;
+  border-radius: 0.46rem !important;
+  font-size: 0.58rem !important;
+  line-height: 1.05 !important;
+}
+
+.punktlandung-results-map .punktlandung-map-shell.is-dense-results .punktlandung-map-label-player,
+.punktlandung-image-replay .punktlandung-map-shell.is-dense-results .punktlandung-map-label-player,
+.account-round-map .punktlandung-map-shell.is-dense-results .punktlandung-map-label-player {
+  max-width: 5rem !important;
+  padding: 0.12rem 0.22rem !important;
+  font-size: 0.38rem !important;
+}
+
+.punktlandung-map-shell.is-dense-results .punktlandung-map-label-actual {
+  max-width: 10.625rem !important;
+}
+
+.punktlandung-results-map .punktlandung-map-shell.is-dense-results .punktlandung-map-label-info,
+.punktlandung-image-replay .punktlandung-map-shell.is-dense-results .punktlandung-map-label-info,
+.account-round-map .punktlandung-map-shell.is-dense-results .punktlandung-map-label-info {
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-left: 0.22rem;
+  font-size: 0.55rem;
+}
+
+.punktlandung-map-shell.is-dense-results .punktlandung-map-label-distance {
+  display: none;
+}
+
+.punktlandung-image-replay .punktlandung-map-attribution-panel,
+.account-round-map .punktlandung-map-attribution-panel {
+  width: max-content;
+}
+
+.punktlandung-image-replay .punktlandung-map-attribution-sources,
+.account-round-map .punktlandung-map-attribution-sources {
+  display: grid;
+  justify-items: start;
 }
 
 .punktlandung-pin-ellipse-icon {

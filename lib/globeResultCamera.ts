@@ -259,7 +259,7 @@ function resultViewingBearing(guess: GlobeCoordinates, target: GlobeCoordinates)
 export function buildResultCameraPlan(
   guess: GlobeCoordinates,
   target: GlobeCoordinates,
-  options: { compactViewport?: boolean; durationScale?: number } = {}
+  options: { compactViewport?: boolean; durationScale?: number; homePreviewDesktop?: boolean } = {}
 ): ResultCameraPlan {
   const distanceKm = distanceBetweenCoordinatesKm(guess, target);
   const distanceClass = classifyResultDistance(distanceKm);
@@ -312,6 +312,7 @@ export function buildResultCameraPlan(
     1
   );
   const shortEndZoom = 12.35 + (9.62 - 12.35) * shortDistanceProgress;
+  const homeEndZoomBoost = options.homePreviewDesktop && distanceClass === "short" ? 0.28 : 0;
 
   const profiles = {
     short: {
@@ -362,7 +363,7 @@ export function buildResultCameraPlan(
   const endFrame: CameraKeyframe = {
     at: 1,
     center: targetOnlyEndComposition ? target : midpoint,
-    zoom: targetOnlyEndComposition ? adjustedZoom(4.15) : adjustedZoom(profile.endZoom),
+    zoom: targetOnlyEndComposition ? adjustedZoom(4.15) : adjustedZoom(profile.endZoom + homeEndZoomBoost),
     bearing: endBearing,
     pitch: targetOnlyEndComposition ? 38 : endPitch
   };
@@ -372,7 +373,7 @@ export function buildResultCameraPlan(
         {
           at: 0.44,
           center: interpolateGreatCircle(guess, target, 0.3),
-          zoom: adjustedZoom(profile.transitZoom),
+          zoom: adjustedZoom(profile.transitZoom + homeEndZoomBoost * 0.45),
           bearing: transitBearing,
           pitch: 45
         },
