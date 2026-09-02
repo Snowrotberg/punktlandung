@@ -11,6 +11,7 @@ export type AccountHistoryGame = {
   score: number | null;
   completed_at: string | null;
   integrity_status: string;
+  integrity_reasons?: string[] | null;
   planned_rounds: number | null;
   completed_rounds: number | null;
   time_limit_sec: number | null;

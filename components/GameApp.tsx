@@ -1017,6 +1017,7 @@ export function GameApp({
           canStart={Boolean(onlineGame.room)}
           onStart={handleStartRound}
           onTeam={handleSetTeam}
+          onRenamePlayer={renamePlayer}
           onLeave={handleLeaveWaitingRoom}
           onSoundToggle={toggleSound}
         />

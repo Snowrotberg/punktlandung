@@ -180,6 +180,13 @@ try {
   );
   assert.equal(resumed.state.hostId, resumedHost.hello.playerId);
 
+  const renamedHost = await sendAndWait(
+    resumedHost.socket,
+    { type: "rename_player", playerName: "Eigener Name" },
+    (message) => message.type === "room_state" && message.state.players.some((player) => player.id === resumedHost.hello.playerId && player.name === "Eigener Name")
+  );
+  assert.equal(renamedHost.state.hostPlayerName, "Eigener Name");
+
   const players = [];
   for (let index = 2; index <= 10; index += 1) {
     const peer = await connect();
@@ -260,7 +267,7 @@ try {
   oversized.socket.send(JSON.stringify({ type: "unknown", junk: "x".repeat(2_000) }));
   assert.equal((await payloadClose).code, 1009);
 
-  console.log("WebSocket hardening checks passed: origin, schema, opaque next-image prompt, 10-player room, room limit, rate limit, payload limit.");
+  console.log("WebSocket hardening checks passed: origin, schema, player rename, opaque next-image prompt, 10-player room, room limit, rate limit, payload limit.");
 } finally {
   for (const socket of sockets) {
     if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.terminate();

@@ -151,6 +151,7 @@ export type ClientMessage =
   | { type: "resume_room"; code: string; previousPlayerId: string; resumeToken: string }
   | { type: "create_solo"; playerName: string }
   | { type: "join_room"; code: string; playerName: string }
+  | { type: "rename_player"; playerName: string }
   | { type: "update_settings"; settings: Partial<GameSettings> }
   | { type: "start_round" }
   | { type: "ready_next_round" }

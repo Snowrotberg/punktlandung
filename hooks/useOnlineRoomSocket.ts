@@ -235,7 +235,10 @@ export function useOnlineRoomSocket() {
     createOnlineRoom: (options: { hostParticipation: HostParticipation; playerName?: string }) => send({ type: "create_online_room", ...options }),
     joinRoom: (code: string, playerName: string) => send({ type: "join_room", code, playerName }),
     updateSettings: (settings: Partial<GameSettings>) => send({ type: "update_settings", settings }),
-    renamePlayer: (_playerIdToRename: string, _name: string) => undefined,
+    renamePlayer: (playerIdToRename: string, name: string) => {
+      if (playerIdToRename !== playerId) return;
+      send({ type: "rename_player", playerName: name });
+    },
     startRound: () => send({ type: "start_round" }),
     readyNextRound: () => send({ type: "ready_next_round" }),
     captureGuess: (capture: GuessCapture) => send({

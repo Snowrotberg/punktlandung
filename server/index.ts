@@ -884,6 +884,10 @@ function validatedClientMessage(value: unknown): ClientMessage | null {
       return isShortString(value.code, 12) && isShortString(value.playerName, 100)
         ? { type: value.type, code: value.code, playerName: value.playerName }
         : null;
+    case "rename_player":
+      return isShortString(value.playerName, 100)
+        ? { type: value.type, playerName: value.playerName }
+        : null;
     case "update_settings": {
       const settings = validatedSettingsPatch(value.settings);
       return settings ? { type: value.type, settings } : null;
@@ -994,6 +998,15 @@ function handleMessage(client: Client, raw: string): void {
   }
 
   switch (message.type) {
+    case "rename_player": {
+      const player = room.players.find((candidate) => candidate.id === client.id);
+      if (player) {
+        player.name = sanitizeName(message.playerName);
+        if (player.isHost && room.hostParticipation === "host_player") room.hostPlayerName = player.name;
+        broadcast(room);
+      }
+      break;
+    }
     case "update_settings":
       updateSettings(client, room, message.settings);
       break;

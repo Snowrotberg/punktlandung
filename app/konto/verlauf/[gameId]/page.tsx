@@ -42,9 +42,10 @@ const categoryLabels: Record<string, string> = {
   streetview: "Straßenansichten"
 };
 
-function gameStatusLabel(status: string): string {
+function gameStatusLabel(status: string, reasons: string[]): string {
   if (status === "verified") return "Abgeschlossen und verifiziert";
   if (status === "invalid") return "Gespeichert · nicht für Rankings gewertet";
+  if (reasons.includes("local_client_result")) return "Gespeichert · nicht serverseitig verifiziert";
   return "Im Konto gespeichert · noch nicht für Rankings verifiziert";
 }
 
@@ -100,7 +101,7 @@ export default async function AccountGameDetailPage({ params }: { params: Promis
             </div>
 
             <div className={styles.metaGrid} aria-label="Partieübersicht">
-              <div><span>Status</span><strong>{gameStatusLabel(game.integrityStatus)}</strong><InlineInfoPopover align="right" className={styles.statusInfo} ariaLabel="Was bedeutet der Partiestatus?" title="Partiestatus" href="/faq/rankings" hrefLabel="Ranking-Regeln ansehen">Gespeichert bleibt die Partie immer. Öffentlich zählt sie nur vollständig abgeschlossen, technisch geprüft und mit 15, 30 oder 60 Sekunden Zeitlimit.</InlineInfoPopover></div>
+              <div><span>Status</span><strong>{gameStatusLabel(game.integrityStatus, game.integrityReasons)}</strong><InlineInfoPopover align="right" className={styles.statusInfo} ariaLabel="Was bedeutet der Partiestatus?" title="Partiestatus" href="/faq/rankings" hrefLabel="Ranking-Regeln ansehen">Gespeichert bleibt die Partie immer. Öffentlich zählt sie nur vollständig abgeschlossen, serverseitig geprüft und mit 15, 30 oder 60 Sekunden Zeitlimit.</InlineInfoPopover></div>
               <div><span>Spielzeit</span><strong>{(game.totalResponseTimeMs / 1000).toFixed(1).replace(".", ",")} s</strong></div>
               <div><span>Zeitlimit</span><strong>{game.timeLimitSec === 0 ? "Frei" : `${game.timeLimitSec ?? 60} s`}</strong></div>
               <div><span>Schwierigkeit</span><strong>{game.difficulty === "easy" ? "Leicht" : game.difficulty === "hard" ? "Schwer" : "Mittel"}</strong></div>

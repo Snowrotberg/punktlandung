@@ -1016,7 +1016,7 @@ const targets = [
     readySelector: ".punktlandung-results-grid",
     note: "Ergebniszustand der letzten Runde mit erreichbarer Abschlussaktion"
   },
-  { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", readySelector: ".punktlandung-image-replay", readyImageSelector: ".punktlandung-panorama-viewport img", expectReplayControlParity: true, note: "Ergebniszustand plus Klick auf Bild nochmal ansehen" },
+  { name: "nochmal-ansehen", access: "state-click", path: "/aufloesung", status: "results", buttonText: "Bild nochmal ansehen", readySelector: ".punktlandung-image-replay [aria-label='Interaktive 3D-Ergebniskarte'] [data-surface-ready='true']:has([data-result-composition='ready'])", readyImageSelector: ".punktlandung-panorama-viewport img", expectReplayControlParity: true, note: "Ergebniszustand plus Klick auf Bild nochmal ansehen mit vollständig vorbereitetem Globe" },
   {
     name: "nochmal-ansehen-10-spieler",
     access: "state-click",
@@ -2337,6 +2337,7 @@ function normalizeConsoleMessages(messages) {
       /ERR_BLOCKED_BY_CLIENT/i.test(compact) ||
       /WebSocket connection to ['"]ws:\/\/(?:localhost|127\.0\.0\.1|192\.168\.178\.33):3001\/['"] failed/i.test(compact) ||
       /googletagmanager\.com\/gtag\/js.*preloaded.*not used/i.test(compact) ||
+      /\/icon\.png.*preloaded using link preload but not used/i.test(compact) ||
       /_next\/static\/css\/.*preloaded using link preload but not used/i.test(compact) ||
       /\[Punktlandung map\].*Failed to fetch/i.test(compact) ||
       /Unable to load glyph range.*openfreemap\.org/i.test(compact) ||
@@ -2658,30 +2659,42 @@ async function runTargetViewport(browser, target, viewport) {
     );
 
     if (target.name === "aufloesung") {
-      const targetPin = page.locator(
-        ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-label-actual):visible"
+      await page.locator(
+        "[aria-label='Interaktive 3D-Ergebniskarte'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true'], .punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-label-actual):visible"
+      ).first().waitFor({ state: "visible", timeout: 20000 });
+      const globeTargetInfo = page.locator(
+        "[aria-label='Interaktive 3D-Ergebniskarte'] [aria-label$='Zusatzinformationen anzeigen'][data-visible='true']"
       ).first();
-      await targetPin.waitFor({ state: "visible", timeout: 10000 });
-      await targetPin.click();
-      const infoPopup = page.locator(".punktlandung-location-info-popup").filter({ visible: true }).first();
-      await infoPopup.waitFor({ state: "visible", timeout: 5000 });
-      // Opening a Leaflet popup can auto-pan the map with a short animation.
-      // Measure only after that movement has settled, otherwise the check
-      // intermittently captures the popup between its old and final position.
-      await page.waitForTimeout(450);
-      const popupPlacement = await infoPopup.evaluate((popup) => {
-        const visiblePopup = popup.querySelector(".leaflet-popup-content-wrapper") ?? popup;
-        const popupRect = visiblePopup.getBoundingClientRect();
-        const mapRect = popup.closest(".leaflet-container")?.getBoundingClientRect();
-        return mapRect ? {
-          left: popupRect.left - mapRect.left,
-          top: popupRect.top - mapRect.top,
-          right: mapRect.right - popupRect.right,
-          bottom: mapRect.bottom - popupRect.bottom
-        } : null;
-      });
-      if (!popupPlacement || Object.values(popupPlacement).some((distance) => distance < -1)) {
-        problems.push(`Zielinfo-Popover liegt außerhalb der Karte${popupPlacement ? ` (${JSON.stringify(popupPlacement)})` : ""}.`);
+      if (await globeTargetInfo.count()) {
+        await globeTargetInfo.waitFor({ state: "visible", timeout: 15000 });
+        await globeTargetInfo.click();
+        await page.locator(".punktlandung-globe-info-overlay, .kartenlabor-result-popup").filter({ visible: true }).first().waitFor({ state: "visible", timeout: 5000 });
+      } else {
+        const targetPin = page.locator(
+          ".punktlandung-results-map .leaflet-marker-icon:has(.punktlandung-map-label-actual):visible"
+        ).first();
+        await targetPin.waitFor({ state: "visible", timeout: 10000 });
+        await targetPin.click();
+        const infoPopup = page.locator(".punktlandung-location-info-popup").filter({ visible: true }).first();
+        await infoPopup.waitFor({ state: "visible", timeout: 5000 });
+        // Opening a Leaflet popup can auto-pan the map with a short animation.
+        // Measure only after that movement has settled, otherwise the check
+        // intermittently captures the popup between its old and final position.
+        await page.waitForTimeout(450);
+        const popupPlacement = await infoPopup.evaluate((popup) => {
+          const visiblePopup = popup.querySelector(".leaflet-popup-content-wrapper") ?? popup;
+          const popupRect = visiblePopup.getBoundingClientRect();
+          const mapRect = popup.closest(".leaflet-container")?.getBoundingClientRect();
+          return mapRect ? {
+            left: popupRect.left - mapRect.left,
+            top: popupRect.top - mapRect.top,
+            right: mapRect.right - popupRect.right,
+            bottom: mapRect.bottom - popupRect.bottom
+          } : null;
+        });
+        if (!popupPlacement || Object.values(popupPlacement).some((distance) => distance < -1)) {
+          problems.push(`Zielinfo-Popover liegt außerhalb der Karte${popupPlacement ? ` (${JSON.stringify(popupPlacement)})` : ""}.`);
+        }
       }
     }
 

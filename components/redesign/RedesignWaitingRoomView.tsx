@@ -8,6 +8,7 @@ import { TriangleIcon } from "@/components/TriangleIcon";
 import { categoryOptions } from "@/lib/categories";
 import { onlineRoomInviteUrl } from "@/lib/onlineRoomInvite";
 import { playerColorAt } from "@/lib/playerPalette";
+import { PLAYER_NAME_MAX_LENGTH, sanitizeEditablePlayerName } from "@/lib/playerName";
 import type { GameSettings, HostParticipation, Player, TeamId } from "@/types/game";
 import {
   PlayerAvatar,
@@ -34,6 +35,7 @@ type Props = {
   canStart: boolean;
   onStart: () => void;
   onTeam: (team: TeamId) => void;
+  onRenamePlayer: (playerId: string, name: string) => void;
   onLeave: () => void;
   onSoundToggle: () => void;
 };
@@ -60,6 +62,7 @@ export function RedesignWaitingRoomView({
   canStart,
   onStart,
   onTeam,
+  onRenamePlayer,
   onLeave,
   onSoundToggle
 }: Props) {
@@ -169,7 +172,10 @@ export function RedesignWaitingRoomView({
                 {players.length === 0 ? <p className={styles.empty}>Noch niemand ist beigetreten.</p> : players.map((player, index) => (
                   <article key={player.id} className={styles.playerRow}>
                     <PlayerAvatar name={player.name} playerIndex={index} color={playerColorAt(index)} />
-                    <div className={styles.playerName}><strong>{player.name}</strong><small>{player.isHost ? "Host" : player.team === "aurora" ? "Team Rot" : "Team Blau"}</small></div>
+                    <div className={styles.playerName}>
+                      {player.id === meId ? <EditablePlayerName player={player} onRenamePlayer={onRenamePlayer} /> : <strong>{player.name}</strong>}
+                      <small>{player.isHost ? "Host" : player.team === "aurora" ? "Team Rot" : "Team Blau"}</small>
+                    </div>
                     {settings.mode === "duel" && player.id === meId ? (
                       <div className={styles.teamButtons}>
                         <button data-active={player.team === "aurora" || undefined} onClick={() => onTeam("aurora")}>Rot</button>
@@ -193,5 +199,35 @@ export function RedesignWaitingRoomView({
         </RedesignShell>
       </div>
     </main>
+  );
+}
+
+function EditablePlayerName({ player, onRenamePlayer }: { player: Player; onRenamePlayer: (playerId: string, name: string) => void }) {
+  const [draft, setDraft] = useState(player.name);
+
+  useEffect(() => setDraft(player.name), [player.name]);
+
+  const commit = () => {
+    const next = draft.trim() || player.name;
+    setDraft(next);
+    if (next !== player.name) onRenamePlayer(player.id, next);
+  };
+
+  return (
+    <input
+      className={styles.playerNameInput}
+      value={draft}
+      maxLength={PLAYER_NAME_MAX_LENGTH}
+      aria-label="Deinen Spielernamen ändern"
+      onChange={(event) => setDraft(sanitizeEditablePlayerName(event.target.value))}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") event.currentTarget.blur();
+        if (event.key === "Escape") {
+          setDraft(player.name);
+          event.currentTarget.blur();
+        }
+      }}
+    />
   );
 }

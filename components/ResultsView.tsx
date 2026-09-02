@@ -403,7 +403,7 @@ function writeStoredFinalSurface(room: RoomState, showFinal: boolean): void {
   }
 }
 
-export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBackToLobby, onRestart, onDiscardSession, redesign = false, accountsEnabled = false, accountAuthenticated = false, serverRanked = false, rankedGameId = null, rankedSyncStatus = "secured", pendingUploadCount = 0, initialSurface }: ResultsViewProps) {
+export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBackToLobby, onRestart, onLeave, onDiscardSession, redesign = false, accountsEnabled = false, accountAuthenticated = false, serverRanked = false, rankedGameId = null, rankedSyncStatus = "secured", pendingUploadCount = 0, initialSurface }: ResultsViewProps) {
   const { playSuccess } = useSound();
   const revealed = true;
   const [nowTick, setNowTick] = useState(Date.now());
@@ -446,8 +446,6 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   );
   const globeScenario = useMemo<ResultCameraScenario | null>(() => {
     if (!summary || !location) return null;
-    if (room.kind !== "solo" || room.settings.localMode !== "solo" || room.settings.localPlayerCount !== 1) return null;
-    if (ranked.length !== 1) return null;
     const primaryResult = ranked.find((result) => result.playerId === meId) ?? ranked[0];
     if (!primaryResult) return null;
     const player = playerFor(canonicalPlayers, primaryResult.playerId);
@@ -464,7 +462,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
       target: [location.lng, location.lat],
       targetOnly
     };
-  }, [canonicalPlayers, location, meId, ranked, room.kind, room.settings.localMode, room.settings.localPlayerCount, summary]);
+  }, [canonicalPlayers, location, meId, ranked, summary]);
   const [resultSurfaceReady, setResultSurfaceReady] = useState(false);
 
   useEffect(() => {
@@ -491,7 +489,8 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
     writeStoredFinalSurface(room, false);
     setShowFinalStandings(false);
   };
-  const meStats = finalStats.find((entry) => entry.player.id === meId) ?? finalStats[0] ?? null;
+  const meStats = finalStats.find((entry) => entry.player.id === meId)
+    ?? (room.kind === "solo" ? finalStats[0] ?? null : null);
   const buildSaveInput = (): SaveCompletedGameInput | null => {
     if (!meStats || !room.summaries.length) return null;
     return {
@@ -591,8 +590,10 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   };
   const isFlagRound = location?.category === "flags";
   const landingHits = useMemo(
-    () => ranked.filter((result) => result.guess && (result.distanceKm <= punktlandungDistanceKm || result.countryCorrect)),
-    [ranked]
+    () => meId
+      ? ranked.filter((result) => result.playerId === meId && result.guess && (result.distanceKm <= punktlandungDistanceKm || result.countryCorrect))
+      : [],
+    [meId, ranked]
   );
   const landingLabel = landingHits.some((result) => result.countryCorrect) && location ? landingLabelsByCategory[location.category] : "Unter 500 m";
   const hasModePanel = room.settings.mode === "crew" || room.settings.mode === "duel";
@@ -869,9 +870,13 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 />
                 {finished ? (
                   showFinalStandings ? (
-                    <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-12 text-xs normal-case" disabled={!isHost} onClick={onRestart}>
-                      Neue Partie
-                    </Button>
+                    isHost ? (
+                      <Button sound="select" tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-12 text-xs normal-case" onClick={onRestart}>
+                        Neue Partie
+                      </Button>
+                    ) : (
+                      <Button tone="ghost" className="punktlandung-command-button min-h-12 text-xs normal-case" onClick={onLeave}>Raum verlassen</Button>
+                    )
                   ) : (
                     <Button
                       sound="select"
@@ -909,7 +914,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 ? "border-emerald-300/85 bg-emerald-400/18 text-emerald-100"
                 : "border-slate-500/70 bg-slate-950/58 text-slate-100 hover:border-emerald-300/80 hover:bg-slate-900/86"
             }`}
-            title={replayChromeSuppressed ? "Einblendungen wieder anzeigen" : "Einblendungen für 5 Sekunden ausblenden"}
+            data-tooltip={replayChromeSuppressed ? "Einblendungen wieder anzeigen" : "Einblendungen für 5 Sekunden ausblenden"}
           >
             <span className="punktlandung-focus-tab-content">
               <span className="punktlandung-focus-tab-text">{replayChromeSuppressed ? "Einblenden" : "Bild frei"}</span>
@@ -961,9 +966,13 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                   </Button>
                   {finished ? (
                     showFinalStandings ? (
-                      <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button punktlandung-primary-action min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" disabled={!isHost} onClick={onRestart}>
-                        Neue Partie
-                      </Button>
+                      isHost ? (
+                        <Button sound="select" tone="selected" className="punktlandung-replay-map-next punktlandung-map-primary-button punktlandung-primary-action min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" onClick={onRestart}>
+                          Neue Partie
+                        </Button>
+                      ) : (
+                        <Button tone="ghost" className="punktlandung-replay-map-next punktlandung-map-secondary-button min-h-10 w-fit min-w-[6.75rem] px-3 py-2 text-xs normal-case sm:min-h-11 sm:text-sm" onClick={onLeave}>Raum verlassen</Button>
+                      )
                     ) : (
                       <Button
                         sound="select"
@@ -1149,9 +1158,15 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
               <ButtonLink tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" href="/rankings">
                 <span className="punktlandung-inline-action-content"><Award aria-hidden="true" className="h-4 w-4" /><span>Rankings</span></span>
               </ButtonLink>
-              <Button tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" disabled={!isHost} onClick={onRestart}>
-                <span className="punktlandung-inline-action-content"><RotateCcw aria-hidden="true" className="h-4 w-4" /><span>Neue Partie</span></span>
-              </Button>
+              {isHost ? (
+                <Button tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" onClick={onRestart}>
+                  <span className="punktlandung-inline-action-content"><RotateCcw aria-hidden="true" className="h-4 w-4" /><span>Neue Partie</span></span>
+                </Button>
+              ) : (
+                <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={onLeave}>
+                  <span className="punktlandung-inline-action-content"><TriangleIcon direction="left" className="h-4 w-4" /><span>Raum verlassen</span></span>
+                </Button>
+              )}
             </div>
             </div>
             <div className="punktlandung-final-table-heading flex flex-wrap items-end justify-between gap-2">
@@ -1205,7 +1220,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             </div>
             {accountsEnabled && (
               <section className="punktlandung-final-save-status mt-3 min-w-0 rounded-xl border border-emerald-300/35 bg-emerald-400/10 px-3 py-2 text-left" aria-live="polite">
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-300">{accountAuthenticated ? "Automatisch speichern" : "Spielstand mitnehmen"}</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-300">{accountAuthenticated || saveState === "saved" ? "Automatisch speichern" : "Spielstand mitnehmen"}</p>
                 {serverRanked && finished ? (
                   rankedSyncStatus === "verified" ? (
                     <p className="mt-1 text-sm font-semibold text-emerald-100">Gespeichert und fürs Ranking gewertet.</p>
@@ -1229,7 +1244,11 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                     <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird deinem Konto hinzugefügt …</p>
                   )
                 ) : saveState === "saved" ? (
-                  <p className="mt-1 text-sm font-semibold text-emerald-100">Gespeichert. Deine Partie erscheint jetzt im Spielverlauf.</p>
+                  <p className="mt-1 text-sm font-semibold text-emerald-100">
+                    {room.kind === "online" || room.kind === "party"
+                      ? "Im Spielverlauf gespeichert. Für Rankings zählen derzeit nur servergeprüfte Einzelpartien."
+                      : "Gespeichert. Deine Partie erscheint jetzt im Spielverlauf."}
+                  </p>
                 ) : accountAuthenticated && saveState === "saving" ? (
                   <p className="mt-1 text-sm font-semibold text-slate-200">Deine Partie wird gerade automatisch gespeichert …</p>
                 ) : saveState === "auth" ? (

@@ -50,9 +50,10 @@ const historySortOptions: Array<[AccountHistorySort, string]> = [
   ["score", "Höchste Gesamtpunktzahl"]
 ];
 
-function gameStatusLabel(status: string): string | null {
+function gameStatusLabel(status: string, reasons: string[] | null | undefined): string | null {
   if (status === "verified") return null;
   if (status === "invalid") return "Gespeichert · nicht für Rankings gewertet";
+  if (reasons?.includes("local_client_result")) return "Gespeichert · nicht serverseitig verifiziert";
   return "Im Konto gespeichert · noch nicht für Rankings verifiziert";
 }
 
@@ -63,7 +64,7 @@ export default async function AccountHistoryPage({ searchParams }: { searchParam
   const context = await getSupabaseAccountContext();
   if (!context) redirect(`/anmelden?returnTo=${encodeURIComponent(`/konto/verlauf?category=${selectedCategory}&sort=${selectedSort}`)}`);
   const [admin, isAdmin] = [createSupabaseAdminClient(), await isAdminAccount(context.identity.account.accountId)];
-  const { data: games } = await admin.from("ranked_games").select("game_id, category, score, completed_at, integrity_status, planned_rounds, completed_rounds, time_limit_sec, difficulty, no_zoom, total_response_time_ms").eq("account_id", context.identity.account.accountId).eq("status", "completed").order("completed_at", { ascending: false }).limit(500);
+  const { data: games } = await admin.from("ranked_games").select("game_id, category, score, completed_at, integrity_status, integrity_reasons, planned_rounds, completed_rounds, time_limit_sec, difficulty, no_zoom, total_response_time_ms").eq("account_id", context.identity.account.accountId).eq("status", "completed").order("completed_at", { ascending: false }).limit(500);
   const completedGames = (games ?? []) as AccountHistoryGame[];
   const visibleGames = filterAndSortAccountHistory(completedGames, selectedCategory, selectedSort);
   const verifiedCount = completedGames.filter((game) => game.integrity_status === "verified").length;
@@ -91,7 +92,7 @@ export default async function AccountHistoryPage({ searchParams }: { searchParam
         const comparison = accountHistoryComparisonValue(game);
         const time = game.time_limit_sec === 0 ? "Ohne Zeitlimit" : `${game.time_limit_sec ?? 60} s`;
         const difficulty = difficultyLabel[game.difficulty === "easy" || game.difficulty === "hard" ? game.difficulty : "medium"];
-        const status = gameStatusLabel(game.integrity_status);
+        const status = gameStatusLabel(game.integrity_status, game.integrity_reasons);
         return <li key={game.game_id} className={styles.game}><Link href={`/konto/verlauf/${encodeURIComponent(game.game_id)}`} className={styles.gameLink}>
           <strong className={styles.gameScore}>{(game.score ?? 0).toLocaleString("de-DE")} <span>Punkte</span></strong>
           <span className={styles.gameFacts}>
