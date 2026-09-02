@@ -16,15 +16,17 @@ export const RESULT_MAP_CONTROL_LABELS = {
 
 const RESULT_EDGE_INSET_PX = 20;
 const RESULT_CONTROL_RAIL_PX = 72;
+const RESULT_COMPACT_CONTROL_RAIL_PX = 96;
 
 export const RESULT_ROUTE_DASH_GAP_PX = 9;
 export const RESULT_LABEL_VISUAL_GAP_PX = 10;
 
 export function resultSafeRect(width: number, height: number): ResultScreenRect {
+  const controlRail = width <= 480 ? RESULT_COMPACT_CONTROL_RAIL_PX : RESULT_CONTROL_RAIL_PX;
   return {
     left: RESULT_EDGE_INSET_PX,
     top: RESULT_EDGE_INSET_PX,
-    right: Math.max(RESULT_EDGE_INSET_PX, width - RESULT_CONTROL_RAIL_PX),
+    right: Math.max(RESULT_EDGE_INSET_PX, width - controlRail),
     bottom: Math.max(RESULT_EDGE_INSET_PX, height - RESULT_EDGE_INSET_PX)
   };
 }

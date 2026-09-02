@@ -18812,13 +18812,40 @@ body .punktlandung-game-shell .punktlandung-game-back-button-inner > * {
   position: fixed;
   z-index: 90;
   inset: 0;
+  display: grid;
   overflow: hidden;
-  background: #020617;
+  place-items: center;
+  padding: 1rem;
+  background: #070e1b;
 }
 
-.punktlandung-result-preparing-surface .punktlandung-panorama-viewport {
-  position: absolute;
-  inset: 0;
+.punktlandung-result-preparing-card {
+  display: grid;
+  width: min(24rem, 100%);
+  justify-items: center;
+  gap: .55rem;
+  padding: 1.5rem;
+  border: 1px solid rgb(94 231 189 / .35);
+  border-radius: 1rem;
+  color: #e2e8f0;
+  background: rgb(14 25 42 / .94);
+  text-align: center;
+}
+
+.punktlandung-result-preparing-card svg {
+  width: 2rem;
+  height: 2rem;
+  color: #5ee7bd;
+}
+
+.punktlandung-result-preparing-card strong {
+  color: #f8fafc;
+  font-size: 1rem;
+}
+
+.punktlandung-result-preparing-card span {
+  color: #a8b4c5;
+  font-size: .82rem;
 }
 
 .punktlandung-results-distance-primary {

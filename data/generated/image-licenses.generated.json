@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-28T08:37:14.174Z",
-  "rawCatalogFileCount": 3567,
-  "imageCount": 3562,
+  "generatedAt": "2026-09-02T08:59:23.587Z",
+  "rawCatalogFileCount": 3566,
+  "imageCount": 3561,
   "unavailableImageCount": 2,
   "entries": [
     {
@@ -41743,19 +41743,6 @@
       "license": "CC BY-SA 4.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
       "sourceUrl": "https://commons.wikimedia.org/wiki/File:Una_marcha_de_color_por_las_calles_de_Lima.jpg",
-      "categories": [
-        "capitals"
-      ],
-      "locationCount": 1
-    },
-    {
-      "catalogFileName": "Under a Roof in Quito.jpg",
-      "fileName": "Under a Roof in Quito.jpg",
-      "availability": "available",
-      "artist": "https://www.flickr.com/photos/133530809@N08/31130640562/",
-      "license": "CC BY-SA 2.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
-      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Under_a_Roof_in_Quito.jpg",
       "categories": [
         "capitals"
       ],

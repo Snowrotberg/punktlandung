@@ -31,6 +31,7 @@ import { useSound } from "./SoundProvider";
 import redesignStyles from "./redesign/RedesignResultsView.module.css";
 import { loadRankedGamePlacement, saveCompletedGame, type SaveCompletedGameInput } from "@/app/endergebnis/actions";
 import type { RankedGamePlacement } from "@/lib/rankedPlacement";
+import { loadPlacementAfterVerification } from "@/lib/rankedPlacementRetry";
 import { enqueueCompletedGameSave, flushCompletedGameSaves } from "@/lib/completedGameSaveQueue.client";
 import type { RankedSyncStatus } from "@/hooks/useRankedSoloGame";
 import { enqueueRankedGameClaim } from "@/lib/rankedGameClaimQueue.client";
@@ -237,10 +238,6 @@ function formatPercent(value: number): string {
 function formatSeconds(seconds: number | null): string {
   if (seconds === null || !Number.isFinite(seconds)) return "-";
   return `${Math.round(seconds)} s`;
-}
-
-function roundsPlayedLabel(rounds: number): string {
-  return `${rounds} ${rounds === 1 ? "Runde" : "Runden"}`;
 }
 
 function formatGuessTime(milliseconds: number | undefined): string | null {
@@ -569,7 +566,10 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
     if (placementRequestRef.current === rankedGameId) return;
     placementRequestRef.current = rankedGameId;
     let active = true;
-    void loadRankedGamePlacement(rankedGameId).then((result) => {
+    void loadPlacementAfterVerification(
+      () => loadRankedGamePlacement(rankedGameId),
+      { cancelled: () => !active }
+    ).then((result) => {
       if (active) setRankedPlacement(result.ok ? result.placement : null);
     });
     return () => {
@@ -776,13 +776,11 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
     <main className={`punktlandung-results-shell h-dvh overflow-x-hidden overflow-y-auto bg-slate-950 p-2 text-slate-50 md:p-4 xl:overflow-hidden ${redesign ? redesignStyles.redesign : ""}`}>
       {!showImageReplay && (!finished || !showFinalStandings) && globeScenario && !globeUnavailable && !resultSurfaceReady ? (
         <div className="punktlandung-result-preparing-surface" aria-label="Kartenauflösung wird vorbereitet" aria-busy="true">
-          <PanoramaViewer
-            location={location}
-            settings={room.settings}
-            isHost={isHost}
-            onSkipLocation={() => undefined}
-            chromeHidden
-          />
+          <div className="punktlandung-result-preparing-card">
+            <MapPin aria-hidden="true" />
+            <strong>Auflösung wird vorbereitet</strong>
+            <span>Karte und Animationslinie werden geladen …</span>
+          </div>
         </div>
       ) : null}
       {showLanding && landingHits.length > 0 && (
@@ -1080,10 +1078,6 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                 </div>
 
                 <div className="punktlandung-final-summary-column min-w-0">
-                  <p className="punktlandung-final-rounds-played mb-2 inline-flex w-full items-center justify-end gap-2 text-sm font-semibold text-slate-300">
-                    <RotateCcw aria-hidden="true" className="h-4 w-4 text-indigo-300" />
-                    {roundsPlayedLabel(completedRounds)} gespielt
-                  </p>
                   <div className="punktlandung-final-summary-metrics grid grid-cols-2 gap-2">
                   <div className="rounded-md bg-slate-950/52 p-3 ring-1 ring-slate-700/70">
                     <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-indigo-300"><Gauge aria-hidden="true" className="h-4 w-4 shrink-0" />Punkte je Runde</p>
@@ -1152,7 +1146,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
               <Button tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" onClick={showResolutionSurface}>
                 <span className="punktlandung-inline-action-content"><Images aria-hidden="true" className="h-4 w-4" /><span>Letzte Auflösung</span></span>
               </Button>
-              <BackButton className="punktlandung-optical-arrow-left min-h-11" disabled={!isHost} onClick={handleBackToLobby} label="Zurück zu den Spieleinstellungen" />
+              <ButtonLink tone="ghost" className="punktlandung-command-button min-h-11 text-xs normal-case" href="/rankings">
+                <span className="punktlandung-inline-action-content"><Award aria-hidden="true" className="h-4 w-4" /><span>Rankings</span></span>
+              </ButtonLink>
               <Button tone="selected" className="punktlandung-command-button punktlandung-primary-action min-h-11 text-xs normal-case" disabled={!isHost} onClick={onRestart}>
                 <span className="punktlandung-inline-action-content"><RotateCcw aria-hidden="true" className="h-4 w-4" /><span>Neue Partie</span></span>
               </Button>
@@ -1160,7 +1156,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             </div>
             <div className="punktlandung-final-table-heading flex flex-wrap items-end justify-between gap-2">
               <h2 className="flex items-center gap-2 text-[24px] font-black leading-tight"><Award aria-hidden="true" className="h-6 w-6 text-emerald-300" />Finaltabelle</h2>
-              <p className="text-xs font-semibold text-slate-400">{finalStats.length} gewertet</p>
+              <p className="text-xs font-semibold text-slate-400">{finalStats.length} Spieler gewertet</p>
             </div>
             <div className={`punktlandung-final-table-list mt-3 grid gap-1.5${finalStats.length >= 6 ? " is-dense" : ""}`}>
               {finalStats.map((stat) => {

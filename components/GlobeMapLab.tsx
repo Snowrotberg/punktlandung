@@ -684,7 +684,7 @@ export function GlobeMapLab({
     // The preview poster is removed as soon as surface-ready is reported. Even
     // in the fast path, wait for the returned start camera to be painted again;
     // otherwise the crossfade can reveal the blank frame left by the warm-up.
-    await waitForTiles(fast ? 1_200 : embedded ? 350 : 800);
+    await waitForTiles(fast ? (embedded ? 300 : 1_200) : embedded ? 350 : 800);
     const ready = run === journeyRunRef.current;
     if (ready) { cameraPreparedRef.current = key; setCameraPreparing(false); }
     return ready ? preparedPlan : null;
@@ -1003,7 +1003,7 @@ export function GlobeMapLab({
         await preloadTerrain(plan, preparationRun);
         // A static replay is constructed at its final camera already. Repeating
         // the animated end-view warm-up only delays the visible replay map.
-        const preparedPlan = !revealImmediately ? await preloadCameraViews(plan, preparationRun, previewMode) : plan;
+        const preparedPlan = !revealImmediately ? await preloadCameraViews(plan, preparationRun, previewMode || embedded) : plan;
         if (!mapRef.current || preparationRun !== journeyRunRef.current) return;
         if (!preparedPlan) return;
         map.resize();

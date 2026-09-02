@@ -12,6 +12,7 @@ import {
   Globe2,
   Landmark,
   ListOrdered,
+  KeyRound,
   MapPin,
   Mountain,
   RotateCcw,
@@ -291,19 +292,19 @@ export function RedesignSetupView({
               {isOnline && (
                 <div className={styles.onlineEntry}>
                   <div className={styles.controlGroup}>
-                    <label>Hostrolle</label>
+                    <label className={styles.controlLabel}><Crown aria-hidden="true" />Hostrolle</label>
                     <div className={styles.twoOptions}>
                       <button data-active={hostParticipation === "host_player" || undefined} onClick={() => onHostParticipationChange?.("host_player", playerName)}>Host spielt mit</button>
                       <button data-active={hostParticipation === "host_only" || undefined} onClick={() => onHostParticipationChange?.("host_only")}>Nur moderieren</button>
                     </div>
                   </div>
                   <form action="/online-modus" method="get" className={styles.joinCodeForm}>
-                    <label htmlFor="online-room-code">Raum beitreten</label>
+                    <label className={styles.controlLabel} htmlFor="online-room-code"><KeyRound aria-hidden="true" />Raum beitreten</label>
                     <div className={styles.joinCodeField}>
-                      <input key={joinCode || "empty"} id="online-room-code" name="room" defaultValue={joinCode} required minLength={6} maxLength={6} pattern="[A-HJ-NP-Z2-9]{6}" title="Ein Raumcode besteht aus 6 Zeichen." autoComplete="off" autoCapitalize="characters" spellCheck={false} aria-invalid={Boolean(joinCodeError)} aria-describedby="online-room-code-hint" placeholder="Raumcode" />
+                      <input key={joinCode || "empty"} id="online-room-code" name="room" defaultValue={joinCode} required minLength={6} maxLength={6} pattern="[A-HJ-NP-Z2-9]{6}" title="Ein Raumcode besteht aus 6 Zeichen." autoComplete="off" autoCapitalize="characters" spellCheck={false} aria-invalid={Boolean(joinCodeError)} aria-describedby={joinCodeError ? "online-room-code-hint" : undefined} placeholder="Raumcode" />
                       <button type="submit">Beitreten</button>
                     </div>
-                    <small id="online-room-code-hint" role={joinCodeError ? "alert" : undefined}>{joinCodeError ?? "6 Zeichen · ohne Leerzeichen"}</small>
+                    {joinCodeError ? <small id="online-room-code-hint" role="alert">{joinCodeError}</small> : null}
                   </form>
                 </div>
               )}

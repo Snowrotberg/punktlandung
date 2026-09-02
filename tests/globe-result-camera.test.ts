@@ -26,17 +26,17 @@ test("result camera keeps exact antipodes finite and drawable", () => {
   assert.deepEqual(plan.keyframes.at(-1)!.center, target);
 });
 
-test("target-only end composition switches exactly at eighty percent of the maximum great-circle distance", () => {
+test("target-only end composition switches exactly at sixty-eight percent of the maximum great-circle distance", () => {
   assert.ok(Math.abs(MAX_GREAT_CIRCLE_DISTANCE_KM - Math.PI * 6_371.0088) < 1e-9);
-  assert.ok(Math.abs(TARGET_ONLY_END_DISTANCE_KM - MAX_GREAT_CIRCLE_DISTANCE_KM * 0.8) < 1e-9);
-  const below = buildResultCameraPlan([0, 0], [143.9, 0]);
-  const above = buildResultCameraPlan([0, 0], [144.1, 0]);
+  assert.ok(Math.abs(TARGET_ONLY_END_DISTANCE_KM - MAX_GREAT_CIRCLE_DISTANCE_KM * 0.68) < 1e-9);
+  const below = buildResultCameraPlan([0, 0], [122.3, 0]);
+  const above = buildResultCameraPlan([0, 0], [122.5, 0]);
   assert.equal(below.targetOnlyEndComposition, false);
   assert.equal(below.guessHideProgress, null);
   assert.equal(above.targetOnlyEndComposition, true);
   assert.equal(above.guessHideProgress, 0.88);
   assert.deepEqual(above.keyframes[0].center, [0, 0]);
-  assert.deepEqual(above.keyframes.at(-1)!.center, [144.1, 0]);
+  assert.deepEqual(above.keyframes.at(-1)!.center, [122.5, 0]);
 });
 
 test("target-only transition is stable immediately below, at and above the established threshold", () => {
@@ -80,15 +80,16 @@ test("long result plans keep the globe large and reduce pullback for nearer inte
   assert.ok(fourteenThousandKm.keyframes.at(-1)!.pitch < 14);
 });
 
-test("15,000 km plans flatten and pull back without location-specific exceptions", () => {
+test("15,000 km plans use the generic target-only end composition without location-specific exceptions", () => {
   const plan = buildResultCameraPlan([45, 0], [-180, 0]);
   const end = plan.keyframes.at(-1)!;
 
   assert.equal(plan.distanceClass, "long");
   assert.ok(plan.distanceKm > 14_900 && plan.distanceKm < 15_100);
-  assert.ok(end.zoom <= 1.4, `expected extreme end zoom <= 1.4, received ${end.zoom}`);
-  assert.equal(end.pitch, 0);
-  assert.ok(Math.abs(Math.abs(end.center[0]) - 112.5) < 0.01);
+  assert.equal(plan.targetOnlyEndComposition, true);
+  assert.deepEqual(end.center, [-180, 0]);
+  assert.equal(end.zoom, 4.15);
+  assert.equal(end.pitch, 38);
 });
 
 test("long-distance camera geometry changes continuously around the antimeridian", () => {

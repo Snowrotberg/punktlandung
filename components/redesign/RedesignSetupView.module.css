@@ -726,6 +726,12 @@
   text-transform: uppercase;
 }
 
+.joinCodeField input::placeholder {
+  font-size: .72rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .joinCodeField input:focus-visible {
   position: relative;
   z-index: 1;

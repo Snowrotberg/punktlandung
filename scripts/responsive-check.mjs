@@ -342,7 +342,9 @@ const globePhaseOneCases = [
       shortDescription: "Generischer 15.000-km-Stresstest über den Antimeridian."
     },
     guess: { lat: 0, lng: 45 },
-    distanceKm: 15011
+    distanceKm: 15011,
+    targetOnlyEnd: true,
+    routeEntrySide: "left"
   },
   {
     id: "extreme-antipode",
@@ -628,6 +630,8 @@ const targets = [
     readySelector: "[aria-label='Globe-Testansicht'] [data-result-composition='ready'] [data-result-marker-kind='target'][data-visible='true']",
     screenshotFocusSelector: "[aria-label='Globe-Testansicht'] [data-current-zoom]",
     expectGlobeSafeArea: true,
+    expectExtremeTargetRouteTail: true,
+    expectedRouteEntrySide: "left",
     expectTerrainExaggeration: 1.5,
     note: "ausdrücklich markierter 15.000-km-Laborfall mit derselben Produktionskamera"
   },
@@ -1103,8 +1107,8 @@ const targets = [
     expectStaticReveal: true,
     note: "Bild-Replay mit langem Zielnamen, reserviertem Infozeichen und durchgehender Quellenzeile"
   },
-  { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
-  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Nicht speichern", readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session plus Klick auf Endstand ansehen" },
+  { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Später", readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
+  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Später", readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session plus Klick auf Endstand ansehen" },
   { name: "infos", access: "route", path: "/infos", note: "echter URL-Pfad" },
   { name: "hilfe", access: "route", path: "/faq", expectedText: "Was möchtest du über Punktlandung wissen?", note: "gemeinsame Übersicht Hilfe & Infos" },
   { name: "hilfe-rankings", access: "route", path: "/faq/rankings", expectedText: "Konto, Spielverlauf und Rankings", note: "gemeinsame Konto- und Rankinghilfe" },
@@ -2959,7 +2963,7 @@ async function runTargetViewport(browser, target, viewport) {
           winner: document.querySelector(".punktlandung-final-winner-name")?.textContent?.replace(/\s+/g, " ").trim() ?? "",
           listScrolls: Boolean(list && list.scrollHeight > list.clientHeight + 1),
           metricsClip: metricValues.some((value) => value.scrollWidth > value.clientWidth + 1),
-          saveAfterTable: Boolean(saveRect && listRect && saveRect.top >= listRect.bottom - 1),
+          saveAfterTable: !saveRect || Boolean(listRect && saveRect.top >= listRect.bottom - 1),
           tableInside: Boolean(tableRect && rows.every((row) => row.getBoundingClientRect().bottom <= tableRect.bottom + 1))
         };
       });

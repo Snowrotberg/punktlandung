@@ -1,12 +1,12 @@
 {
-  "catalogFingerprint": "eea5acfb",
-  "activeLocationCount": 1767,
-  "completeDescriptionCount": 1767,
-  "completeProvenanceCount": 1767,
+  "catalogFingerprint": "ac51da56",
+  "activeLocationCount": 1766,
+  "completeDescriptionCount": 1766,
+  "completeProvenanceCount": 1766,
   "violationCount": 0,
   "sourceHosts": {
     "commons.wikimedia.org": 4,
-    "de.wikipedia.org": 1733,
+    "de.wikipedia.org": 1732,
     "en.wikipedia.org": 24,
     "www.wikidata.org": 6
   },

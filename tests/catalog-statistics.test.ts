@@ -29,9 +29,9 @@ test("historically played admin images retain exact license entries", () => {
 });
 
 test("license catalogue deduplicates raw aliases and resolves every available entry completely", () => {
-  assert.equal(licenseCatalog.rawCatalogFileCount, 3567);
-  assert.equal(licenseCatalog.imageCount, 3562);
-  assert.equal(licenseCatalog.entries.length, 3562);
+  assert.equal(licenseCatalog.rawCatalogFileCount, 3566);
+  assert.equal(licenseCatalog.imageCount, 3561);
+  assert.equal(licenseCatalog.entries.length, 3561);
   assert.equal(licenseCatalog.unavailableImageCount, 2);
   assert.equal(licenseCatalog.entries.reduce((count, entry) => count + Math.max(0, (entry.catalogFileNames?.length ?? 1) - 1), 0), 5);
   assert.equal(licenseCatalog.entries.filter((entry) =>
@@ -68,7 +68,7 @@ test("active catalog has enough unique tasks for every category and difficulty",
   assert.equal(statistics.missingLicenseImages, 0);
   assert.ok(statistics.licensedImages >= 1750);
   assert.equal(statistics.missingInventoryLicenseImages, 0);
-  assert.equal(statistics.inventoryLicensedImages, 3560);
+  assert.equal(statistics.inventoryLicensedImages, 3559);
   assert.equal(statistics.unavailableInventoryImages, 2);
 
   for (const category of statistics.categories) {
@@ -88,6 +88,7 @@ test("manually quarantined conflict and weapon imagery is never playable", () =>
     "capitals-mogadischu-q2449",
     "capitals-manila-q1461-curated-9766taytay-rizal-roads-landmarks-buildings-11-jp",
     "capitals-manila-q1461-curated-south-view-from-lrt-1-doroteo-jose-station-manil",
+    "capitals-quito-q2900-curated-under-a-roof-in-quito-jpg",
     "capitals-sarajevo-q11194-curated-sarajevo-debelo-brdo-7-jpg",
     "cities-bachmut-q706857",
     "cities-slowjansk-q33581",

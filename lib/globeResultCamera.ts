@@ -109,7 +109,11 @@ export const RESULT_CAMERA_SCENARIOS: ResultCameraScenario[] = [
 
 export const EARTH_RADIUS_KM = 6_371.0088;
 export const MAX_GREAT_CIRCLE_DISTANCE_KM = Math.PI * EARTH_RADIUS_KM;
-export const TARGET_ONLY_END_DISTANCE_KM = MAX_GREAT_CIRCLE_DISTANCE_KM * 0.8;
+// Past roughly two thirds of the maximum great-circle distance, fitting both
+// endpoints leaves too little screen space for marker labels and map controls
+// on a portrait phone. End on the target from 68% onward; the route still
+// communicates the travelled relationship during the animation.
+export const TARGET_ONLY_END_DISTANCE_KM = MAX_GREAT_CIRCLE_DISTANCE_KM * 0.68;
 
 export function usesTargetOnlyEndComposition(distanceKm: number): boolean {
   return distanceKm >= TARGET_ONLY_END_DISTANCE_KM;

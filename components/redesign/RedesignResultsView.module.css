@@ -922,14 +922,24 @@
     max-width: calc(100vw - 1.1rem) !important;
   }
 
+  .redesign :global(.punktlandung-image-replay) {
+    display: flex !important;
+    flex-direction: column;
+    gap: .75rem;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding: calc(.75rem + max(0px, env(safe-area-inset-top))) .75rem calc(.75rem + max(0px, env(safe-area-inset-bottom)));
+  }
+
   .redesign :global(.punktlandung-image-replay .punktlandung-replay-header) {
     align-items: stretch !important;
     display: flex !important;
     flex-direction: column !important;
     gap: .65rem !important;
-    left: .75rem !important;
-    right: .75rem !important;
-    top: calc(.75rem + max(0px, env(safe-area-inset-top))) !important;
+    inset: auto !important;
+    order: 1;
+    position: relative !important;
+    width: 100%;
   }
 
   .redesign :global(.punktlandung-image-replay .punktlandung-replay-info) {
@@ -949,6 +959,26 @@
     grid-column: 1 / -1;
   }
 
+  .redesign :global(.punktlandung-image-replay .punktlandung-replay-viewer) {
+    inset: auto !important;
+    order: 2;
+    position: relative !important;
+    flex: 0 0 min(48svh, 30rem);
+    min-height: 20rem;
+    overflow: hidden !important;
+    border-radius: 1rem;
+  }
+
+  .redesign :global(.punktlandung-image-replay .punktlandung-replay-viewer .punktlandung-panorama-viewport) {
+    inset: 0 !important;
+  }
+
+  .redesign :global(.punktlandung-image-replay .punktlandung-source-chip--detail) {
+    bottom: .55rem !important;
+    max-width: calc(100% - 1rem) !important;
+    transform: translateX(-50%) !important;
+  }
+
   .redesign :global(.punktlandung-image-replay .punktlandung-guess-map-panel--full) {
     bottom: .75rem !important;
     left: .75rem !important;
@@ -959,7 +989,14 @@
 
   .redesign :global(.punktlandung-image-replay .punktlandung-guess-map-panel--closed),
   .redesign :global(.punktlandung-image-replay .punktlandung-guess-map-panel--open) {
-    height: min(38svh, 21rem) !important;
+    inset: auto !important;
+    order: 3;
+    position: relative !important;
+    flex: 0 0 min(42svh, 23rem);
+    height: min(42svh, 23rem) !important;
+    min-height: 19rem;
+    width: 100% !important;
+    transform: none !important;
   }
 
   .redesign :global(.punktlandung-results-mobile-actions) {
@@ -1009,11 +1046,20 @@
   .redesign :global(.punktlandung-final-standings-grid) {
     display: flex !important;
     flex-direction: column;
+    gap: .75rem !important;
+    background-color: var(--pl-result-bg) !important;
+    background-image: none !important;
   }
 
   .redesign :global(.punktlandung-final-left),
   .redesign :global(.punktlandung-final-table) {
     display: contents !important;
+  }
+
+  .redesign :global(.punktlandung-final-table) {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .redesign :global(.punktlandung-final-hero) { order: 1; }
@@ -1024,7 +1070,7 @@
     border: 1px solid var(--pl-result-line);
     border-bottom: 0;
     border-radius: 1rem 1rem 0 0;
-    background: var(--pl-result-surface);
+    background: #0e192a;
   }
   .redesign :global(.punktlandung-final-table-list) {
     order: 3;
@@ -1033,9 +1079,34 @@
     border: 1px solid var(--pl-result-line);
     border-top: 0;
     border-radius: 0 0 1rem 1rem;
-    background: var(--pl-result-surface);
+    background: #0e192a;
   }
   .redesign :global(.punktlandung-final-highlights-panel) { order: 4; }
+
+  .redesign :global(.punktlandung-final-winner-card),
+  .redesign :global(.punktlandung-final-table-list > .punktlandung-final-player-row),
+  .redesign :global(.punktlandung-final-highlights .punktlandung-final-player-row) {
+    background: #08101d !important;
+  }
+
+  .redesign :global(.punktlandung-final-highlights-panel) {
+    padding: .85rem !important;
+  }
+
+  .redesign :global(.punktlandung-final-highlights) {
+    gap: .55rem !important;
+    margin-top: .65rem !important;
+  }
+
+  .redesign :global(.punktlandung-final-highlights .punktlandung-final-player-row) {
+    min-height: 0 !important;
+    align-content: start;
+    padding: .75rem .8rem .7rem 1rem !important;
+  }
+
+  .redesign :global(.punktlandung-final-highlights .punktlandung-final-player-row > p:nth-of-type(3)) {
+    min-height: 0 !important;
+  }
   .redesign :global(.punktlandung-final-topbar) {
     order: 5;
     margin-top: 0;
