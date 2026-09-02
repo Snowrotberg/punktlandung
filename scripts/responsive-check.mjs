@@ -1108,7 +1108,7 @@ const targets = [
     note: "Bild-Replay mit langem Zielnamen, reserviertem Infozeichen und durchgehender Quellenzeile"
   },
   { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
-  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Später", readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session plus Klick auf Endstand ansehen" },
+  { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonTexts: ["Nicht speichern", "Später"], readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session plus Klick auf Endstand ansehen" },
   { name: "infos", access: "route", path: "/infos", note: "echter URL-Pfad" },
   { name: "hilfe", access: "route", path: "/faq", expectedText: "Was möchtest du über Punktlandung wissen?", note: "gemeinsame Übersicht Hilfe & Infos" },
   { name: "hilfe-rankings", access: "route", path: "/faq/rankings", expectedText: "Konto, Spielverlauf und Rankings", note: "gemeinsame Konto- und Rankinghilfe" },
@@ -1642,8 +1642,22 @@ async function openTarget(page, target) {
       if (target.hoverSelector && await page.locator(".punktlandung-map-action-tooltip:visible").count()) {
         throw new Error("Kartenhinweis bleibt trotz bereits geöffneter Zusatzinformation sichtbar.");
       }
-      if (target.dismissButtonText) {
-        await clickButtonByVisibleText(page, target.dismissButtonText);
+      const dismissButtonTexts = target.dismissButtonTexts ?? (target.dismissButtonText ? [target.dismissButtonText] : []);
+      if (dismissButtonTexts.length) {
+        let visibleDismissButton = null;
+        for (let attempt = 0; attempt < 24 && !visibleDismissButton; attempt += 1) {
+          for (const label of dismissButtonTexts) {
+            if (await page.getByRole("button", { name: label, exact: true }).first().isVisible().catch(() => false)) {
+              visibleDismissButton = label;
+              break;
+            }
+          }
+          if (!visibleDismissButton) await page.waitForTimeout(250);
+        }
+        if (!visibleDismissButton) {
+          throw new Error(`Keines der erwarteten Klickziele gefunden: ${dismissButtonTexts.join(" / ")}`);
+        }
+        await clickButtonByVisibleText(page, visibleDismissButton);
         await page.waitForTimeout(250);
       }
     }
