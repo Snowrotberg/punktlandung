@@ -1,7 +1,7 @@
 .redesign {
   --pl-result-bg: #070e1b;
-  --pl-result-surface: rgb(14 25 42 / 0.9);
-  --pl-result-surface-soft: rgb(18 31 51 / 0.76);
+  --pl-result-surface: rgb(14 25 42 / 0.7);
+  --pl-result-surface-soft: rgb(18 31 51 / 0.64);
   --pl-result-line: rgb(48 66 91 / 0.72);
   --pl-result-mint: #5ee7bd;
   --pl-result-violet: #938cff;
@@ -142,7 +142,7 @@
   border: 1px solid var(--pl-result-line) !important;
   border-radius: 0.7rem !important;
   padding-inline: 1rem 0.9rem !important;
-  background: rgb(8 16 29 / 0.58);
+  background: rgb(8 16 29 / 0.96);
   box-shadow: none !important;
 }
 
@@ -397,7 +397,7 @@
 }
 
 .redesign :global(.punktlandung-final-winner-card) {
-  background: rgb(7 16 28 / 0.64) !important;
+  background: rgb(7 16 28 / 0.96) !important;
   box-shadow: none !important;
 }
 
@@ -415,7 +415,7 @@
 }
 
 .redesign :global(.punktlandung-final-highlights .punktlandung-final-player-row) {
-  background: rgb(8 16 29 / 0.58) !important;
+  background: rgb(8 16 29 / 0.96) !important;
   box-shadow: none !important;
 }
 
@@ -423,7 +423,7 @@
   position: relative;
   padding: 0.8rem 0.9rem 0.75rem 1rem !important;
   border-radius: 0.7rem !important;
-  background: rgb(8 16 29 / 0.58) !important;
+  background: rgb(8 16 29 / 0.96) !important;
   box-shadow: none !important;
 }
 
@@ -473,6 +473,12 @@
 
 .redesign :global(.punktlandung-final-save-status) {
   border-radius: 0.75rem !important;
+}
+
+.redesign :global(.punktlandung-final-save-status .punktlandung-command-button) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .redesign :global(.punktlandung-final-topbar.is-expanded-save-offer) {
@@ -812,7 +818,7 @@
   }
 }
 
-@media (min-width: 64rem) and (max-width: 89.999rem) {
+@media (min-width: 64rem) and (max-width: 90rem) {
   .redesign :global(.punktlandung-final-table-list.is-dense > .punktlandung-final-player-row) {
     grid-template-columns: minmax(15rem, 1.35fr) minmax(8rem, 0.72fr) minmax(7rem, 0.68fr);
   }
@@ -1046,8 +1052,7 @@
     display: flex !important;
     flex-direction: column;
     gap: .75rem !important;
-    background-color: var(--pl-result-bg) !important;
-    background-image: none !important;
+    background: transparent !important;
   }
 
   .redesign :global(.punktlandung-final-left),
@@ -1069,7 +1074,7 @@
     border: 1px solid var(--pl-result-line);
     border-bottom: 0;
     border-radius: 1rem 1rem 0 0;
-    background: #0e192a;
+    background: rgb(14 25 42 / .7);
   }
   .redesign :global(.punktlandung-final-table-list) {
     order: 3;
@@ -1078,7 +1083,7 @@
     border: 1px solid var(--pl-result-line);
     border-top: 0;
     border-radius: 0 0 1rem 1rem;
-    background: #0e192a;
+    background: rgb(14 25 42 / .7);
   }
   .redesign :global(.punktlandung-final-highlights-panel) { order: 4; }
 
@@ -1219,7 +1224,7 @@
 /* Ten-player scoreboards at the canonical laptop size must remain a single
  * overview: compact rows, no nested list scrolling, and every score signal on
  * one line. */
-@media (min-width: 64rem) and (max-width: 89.999rem) and (min-height: 42rem) {
+@media (min-width: 64rem) and (max-width: 90rem) and (min-height: 42rem) {
   .redesign :global(.punktlandung-results-sidebar .punktlandung-results-panel) {
     max-height: none;
   }
@@ -1247,7 +1252,7 @@
 
   .redesign :global(.punktlandung-results-sidebar .punktlandung-results-round-grid),
   .redesign :global(.punktlandung-results-sidebar .punktlandung-results-total-row) {
-    grid-template-columns: minmax(0, 1fr) minmax(8.75rem, 0.82fr) !important;
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 1fr) !important;
     column-gap: 0.42rem !important;
     row-gap: 0 !important;
   }
@@ -1270,8 +1275,7 @@
   }
 
   .redesign :global(.punktlandung-results-sidebar .punktlandung-results-secondary-metrics) {
-    display: inline;
-    font-size: 0.55rem;
+    display: none;
   }
 
   .redesign :global(.punktlandung-results-sidebar .punktlandung-results-scoreline) {

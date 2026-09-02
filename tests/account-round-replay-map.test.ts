@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { accountRoundMapMounts, buildAccountRoundReplayMap } from "../lib/accountRoundReplayMap";
 import { resultWorldMinimumZoom } from "../lib/resultMapViewport";
@@ -75,4 +76,11 @@ test("compact account replays may zoom out fractionally without changing normal 
   assert.ok(resultWorldMinimumZoom(319, true) > 0);
   assert.ok(resultWorldMinimumZoom(319, true) < 1);
   assert.equal(resultWorldMinimumZoom(319, false), 1);
+});
+
+test("account replay maps allow panning and expose the shared north reset", async () => {
+  const source = await readFile(new URL("../components/AccountRoundMap.tsx", import.meta.url), "utf8");
+  assert.match(source, /noPan=\{false\}/);
+  assert.match(source, /aria-label="Karte nach Norden ausrichten und Ergebnis einpassen"/);
+  assert.match(source, /onClick=\{\(\) => setMapReadyVersion/);
 });

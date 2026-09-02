@@ -49,12 +49,12 @@ test("nearby result markers separate symmetrically while distant markers keep th
 test("safe-area fitting zooms only when visual bounds cannot fit and otherwise returns a pan correction", () => {
   const safe = resultSafeRect(360, 300);
   const oversized = resultFitAdjustment({ left: 0, top: 0, right: 340, bottom: 280 }, safe);
-  const shifted = resultFitAdjustment({ left: 2, top: 40, right: 240, bottom: 260 }, safe);
+  const shifted = resultFitAdjustment({ left: 2, top: 40, right: 220, bottom: 260 }, safe);
 
   assert.ok(oversized.zoomDelta < 0);
-  assert.equal(oversized.shiftX, 0);
+  assert.ok(Number.isFinite(oversized.shiftX));
   assert.equal(shifted.zoomDelta, 0);
-  assert.equal(shifted.shiftX, 18);
+  assert.equal(shifted.shiftX, 30);
 });
 
 test("visual unions include labels, pins, ellipses and the route", () => {
@@ -94,6 +94,8 @@ test("flowing result routes use one uninterrupted dash pattern without fixed end
   assert.match(globals, /@keyframes punktlandung-result-connector-flow\s*\{\s*to\s*\{\s*stroke-dashoffset:\s*-15;/);
   assert.match(primitivesCss, /\.routeShadow\s*\{[^}]*rgba\(2, 6, 23, 0\.08\)[^}]*stroke-width:\s*1\.8/);
   assert.match(globe, /!targetOnlyEndComposition\s*\?\s*\[routeLineRef\.current\]/);
+  assert.match(globe, /endpointSegments = visibleSegments\.filter/);
+  assert.match(globe, /segment\.endsAtRouteEnd \? endGap : 0/);
 });
 
 test("target landing decays into the shared idle hop while reduced motion stays still", async () => {

@@ -46,7 +46,7 @@ const historyCategoryFilters: Array<[AccountHistoryCategory, string]> = [
 
 const historySortOptions: Array<[AccountHistorySort, string]> = [
   ["latest", "Neueste"],
-  ["average", "Bester Partiedurchschnitt"],
+  ["average", "Bester Ø pro Runde"],
   ["score", "Höchste Gesamtpunktzahl"]
 ];
 
@@ -78,7 +78,7 @@ export default async function AccountHistoryPage({ searchParams }: { searchParam
     <div className={styles.narrowShell}><h1 className={styles.subpageTitle}>Spielverlauf</h1><p className={styles.panelIntro}>Deine abgeschlossenen Partien mit Punkten, Einstellungen und Ranglistenstatus.</p>
       <div className={`${styles.statsGrid} ${styles.historyStats}`} aria-label="Verlaufsstatistik"><div className={styles.stat}><strong>{completedGames.length}</strong><span>gespeicherte Partien</span></div><div className={styles.stat}><strong>{verifiedCount}</strong><span className={styles.statLabelWithHelp}>für Rankings gewertet<InlineInfoPopover align="right" className={styles.historyInfo} ariaLabel="Welche Partien werden für Rankings gewertet?" title="Für Rankings gewertet" href="/faq/rankings" hrefLabel="Ranking-Regeln ansehen">Öffentlich zählen vollständig abgeschlossene, technisch geprüfte Partien mit festem Zeitlimit von 15, 30 oder 60 Sekunden. Auffällige Ergebnisse können nachträglich entfernt werden.</InlineInfoPopover></span></div><div className={styles.stat}><strong>{totalRounds ? Math.round(totalScore / totalRounds).toLocaleString("de-DE") : "–"}</strong><span>Ø Punkte/Runde</span></div><div className={styles.stat}><strong>{totalScore.toLocaleString("de-DE")}</strong><span>Punkte im Verlauf</span></div></div>
       {categoryBest.length > 0 && <section className={`${styles.panel} ${styles.categoryBestPanel}`}><h2>Beste Ø-Punkte nach Kategorie</h2><p className={styles.panelMeta}>Der beste Rundendurchschnitt je gespeicherter Kategorie – unabhängig von der Partielänge.</p><ul className={styles.insightList}>{categoryBest.map(([category, score]) => <li key={category}><span>{categoryLabels[category] ?? category}</span><strong>{score.toLocaleString("de-DE")} / Runde</strong></li>)}</ul></section>}
-      <section className={`${styles.panel} ${styles.historyListPanel}`}><h2>Gespeicherte Partien</h2><p className={styles.panelMeta}>Filtere deine abgeschlossenen Partien nach Kategorie. „Bester Partiedurchschnitt“ vergleicht die durchschnittlichen Punkte pro Runde einer vollständigen Partie, nicht die beste Einzelrunde.</p>
+      <section className={`${styles.panel} ${styles.historyListPanel}`}><h2>Gespeicherte Partien</h2><p className={styles.panelMeta}>Filtere deine abgeschlossenen Partien nach Kategorie. „Bester Ø pro Runde“ bleibt bei unterschiedlich langen Partien aussagekräftig; „Höchste Gesamtpunktzahl“ bevorzugt dagegen Partien mit mehr Runden.</p>
         <div className={styles.historyControls}>
           <nav className={styles.historyControlGroup} aria-label="Partien nach Kategorie filtern"><span className={styles.historyControlLabel}>Kategorie</span><div className={styles.historyFilterLinks}>{historyCategoryFilters.map(([value, label]) => <Link key={value} href={`/konto/verlauf?category=${value}&sort=${selectedSort}`} data-active={selectedCategory === value}>{label}</Link>)}</div></nav>
           <nav className={styles.historyControlGroup} aria-label="Partien sortieren"><span className={styles.historyControlLabel}>Sortierung</span><div className={styles.historyFilterLinks}>{historySortOptions.map(([value, label]) => <Link key={value} href={`/konto/verlauf?category=${selectedCategory}&sort=${value}`} data-active={selectedSort === value}>{label}</Link>)}</div></nav>
@@ -94,7 +94,7 @@ export default async function AccountHistoryPage({ searchParams }: { searchParam
         const difficulty = difficultyLabel[game.difficulty === "easy" || game.difficulty === "hard" ? game.difficulty : "medium"];
         const status = gameStatusLabel(game.integrity_status, game.integrity_reasons);
         return <li key={game.game_id} className={styles.game}><Link href={`/konto/verlauf/${encodeURIComponent(game.game_id)}`} className={styles.gameLink}>
-          <strong className={styles.gameScore}>{(game.score ?? 0).toLocaleString("de-DE")} <span>Punkte</span></strong>
+          <time className={styles.gameDate} dateTime={game.completed_at ?? undefined}>{game.completed_at ? new Date(game.completed_at).toLocaleDateString("de-DE") : "Ohne Datum"}</time>
           <span className={styles.gameFacts}>
             <span className={styles.gameCategory}>{categoryLabels[game.category] ?? game.category}</span>
             <span>{rounds} Runden</span>
@@ -105,7 +105,7 @@ export default async function AccountHistoryPage({ searchParams }: { searchParam
           <span className={styles.gameRanking} title="Für faire Ranglisten aus Punkten pro Runde und den gewählten Spieleinstellungen berechnet.">
             {comparison !== null ? <><strong>{comparison.toLocaleString("de-DE")}</strong> gewichtete Pkt./Runde</> : status}
           </span>
-          <time className={styles.gameDate} dateTime={game.completed_at ?? undefined}>{game.completed_at ? new Date(game.completed_at).toLocaleDateString("de-DE") : ""}</time>
+          <strong className={styles.gameScore}><span>Gesamt </span>{(game.score ?? 0).toLocaleString("de-DE")} <span>Punkte</span></strong>
           <i className={styles.gameArrow} aria-hidden="true">›</i>
         </Link></li>;
       })}</ul></>}</section>

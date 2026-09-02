@@ -14,9 +14,9 @@ export const RESULT_MAP_CONTROL_LABELS = {
   compassRestore: "Gedrehte Ansicht wiederherstellen"
 } as const;
 
-const RESULT_EDGE_INSET_PX = 20;
-const RESULT_CONTROL_RAIL_PX = 72;
-const RESULT_COMPACT_CONTROL_RAIL_PX = 96;
+const RESULT_EDGE_INSET_PX = 32;
+const RESULT_CONTROL_RAIL_PX = 84;
+const RESULT_COMPACT_CONTROL_RAIL_PX = 104;
 
 export const RESULT_ROUTE_DASH_GAP_PX = 9;
 export const RESULT_LABEL_VISUAL_GAP_PX = 10;

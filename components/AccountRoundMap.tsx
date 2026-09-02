@@ -8,6 +8,7 @@ import {
   type AccountRoundReplayMap
 } from "@/lib/accountRoundReplayMap";
 import type { GeoLocation, RoundResult } from "@/types/game";
+import { Navigation } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./AccountRoundVisual.module.css";
 
@@ -89,17 +90,28 @@ function ReplayMap({
   const [mapReadyVersion, setMapReadyVersion] = useState(0);
 
   return (
-    <GuessMap
-      mode="results"
-      summary={replayMap.summary}
-      players={replayMap.players}
-      noPan
-      noZoom={false}
-      resultControlInset
-      resultLabelLayout="account-history"
-      animateResultConnector
-      resizeSignal={mapReadyVersion}
-      onBaseMapReady={() => setMapReadyVersion((version) => version + 1)}
-    />
+    <div className={styles.replayMapShell}>
+      <GuessMap
+        mode="results"
+        summary={replayMap.summary}
+        players={replayMap.players}
+        noPan={false}
+        noZoom={false}
+        resultControlInset
+        resultLabelLayout="account-history"
+        animateResultConnector
+        resizeSignal={mapReadyVersion}
+        onBaseMapReady={() => setMapReadyVersion((version) => version + 1)}
+      />
+      <button
+        type="button"
+        className={styles.northControl}
+        aria-label="Karte nach Norden ausrichten und Ergebnis einpassen"
+        data-tooltip="Nach Norden ausrichten"
+        onClick={() => setMapReadyVersion((version) => version + 1)}
+      >
+        <Navigation aria-hidden="true" />
+      </button>
+    </div>
   );
 }

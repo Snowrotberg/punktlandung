@@ -1,7 +1,7 @@
 "use client";
 
 import maplibregl from "maplibre-gl";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { MapAttributionBadge } from "@/components/MapAttributionBadge";
 import {
   resultMarkerGraphicMarkup,
@@ -163,6 +163,9 @@ export function GlobeMapLab({
   onAnimationComplete,
   onUnavailable
 }: GlobeMapLabProps = {}) {
+  const overlayId = useId().replace(/:/g, "");
+  const routeGradientId = `kartenlabor-result-gradient-${overlayId}`;
+  const routeRevealId = `kartenlabor-result-reveal-${overlayId}`;
   const initialScenario = resultScenario ?? RESULT_CAMERA_SCENARIOS[0];
   const availableScenarios = resultScenario ? [resultScenario] : RESULT_CAMERA_SCENARIOS;
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -309,20 +312,27 @@ export function GlobeMapLab({
       }
       currentSegment = [];
     };
+    const maximumProjectedStep = Math.max(180, Math.max(overlay.clientWidth, overlay.clientHeight) * 0.65);
     points.forEach((point, index) => {
       if (!visibility[index]) {
         finishSegment(index - 1);
         return;
       }
+      const previousPoint = currentSegment.at(-1);
+      if (previousPoint && Math.hypot(point.x - previousPoint.x, point.y - previousPoint.y) > maximumProjectedStep) {
+        finishSegment(index - 1);
+      }
       if (!currentSegment.length) segmentStartIndex = index;
       currentSegment.push(point);
     });
     finishSegment(points.length - 1);
-    const trimmedSegments = visibleSegments
-      .map((segment, index) => trimProjectedRoute(
+    const endpointSegments = visibleSegments.filter((segment) => segment.startsAtRouteStart || segment.endsAtRouteEnd);
+    const drawableSegments = endpointSegments.length > 0 ? endpointSegments : visibleSegments;
+    const trimmedSegments = drawableSegments
+      .map((segment) => trimProjectedRoute(
         segment.points,
-        index === 0 ? startGap : 0,
-        index === visibleSegments.length - 1 ? endGap : 0
+        segment.startsAtRouteStart ? startGap : 0,
+        segment.endsAtRouteEnd ? endGap : 0
       ))
       .filter((segment) => segment.length >= 2);
     const commands: string[] = [];
@@ -1477,15 +1487,15 @@ export function GlobeMapLab({
         {!embedded && (cameraPreparing || terrainPreparing) ? <div className={styles.preloadVeil}>Zielregion und Kartendaten werden vorbereitet …</div> : null}
         <svg ref={routeOverlayRef} className={styles.routeOverlay} aria-hidden="true">
           <defs>
-            <linearGradient ref={routeGradientRef} id="kartenlabor-result-gradient" gradientUnits="userSpaceOnUse">
+            <linearGradient ref={routeGradientRef} id={routeGradientId} gradientUnits="userSpaceOnUse">
               <stop offset="0" stopColor="#f43f7a" /><stop offset="0.52" stopColor="#a78bfa" /><stop offset="1" stopColor="#5ee7bd" />
             </linearGradient>
-            <mask id="kartenlabor-result-reveal" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
+            <mask id={routeRevealId} maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
               <path ref={routeClipRef} className={styles.routeClip} />
             </mask>
           </defs>
-            <path ref={routeShadowRef} className={styles.routeShadow} mask="url(#kartenlabor-result-reveal)" />
-            <path ref={routeLineRef} className={`${styles.routeLine} ${resultRouteLineClassName}`} data-result-route="connection" mask="url(#kartenlabor-result-reveal)" />
+            <path ref={routeShadowRef} className={styles.routeShadow} mask={`url(#${routeRevealId})`} />
+            <path ref={routeLineRef} className={`${styles.routeLine} ${resultRouteLineClassName}`} data-result-route="connection" mask={`url(#${routeRevealId})`} style={{ stroke: `url(#${routeGradientId})` }} />
           </svg>
         {!embedded ? <div className={styles.mapPresets} aria-label="Globe-Kamerapresets">
           {Object.values(CAMERA_PRESETS).map((preset) => (

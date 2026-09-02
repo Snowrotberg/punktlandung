@@ -7,7 +7,8 @@
 .brand { text-decoration: none; }
 .toplinks { align-items: center; display: flex; gap: 1rem; }
 .toplink { min-height: 2.5rem; }
-.shell { width: 100%; max-width: 80rem; min-height: 0; margin: 0 auto; padding: clamp(1rem, 2vw, 1.8rem) var(--pl-content-inset); flex: 1; overflow: auto; scrollbar-color: color-mix(in srgb, var(--pl-mint) 45%, var(--pl-line)) transparent; scrollbar-width: thin; }
+.shell { width: 100%; min-height: 0; flex: 1; overflow: auto; scrollbar-color: color-mix(in srgb, var(--pl-mint) 45%, var(--pl-line)) transparent; scrollbar-width: thin; }
+.shellInner { width: 100%; max-width: 80rem; margin: 0 auto; padding: clamp(1rem, 2vw, 1.8rem) var(--pl-content-inset); }
 .headerRow { align-items: end; display: flex; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.25rem; }
 .backLink { color: #cbd5e1; display: inline-block; font-size: .82rem; font-weight: 800; margin-bottom: .7rem; text-decoration: none; }
 .backLink:hover { color: var(--pl-mint); }
@@ -57,5 +58,5 @@
 @media (min-width: 80rem) { .page { height: 100dvh; overflow: hidden; } .frame { height: calc(100dvh - clamp(1.5rem, 2vw, 4rem)); min-height: 0; grid-template-columns: clamp(9rem, 12vw, 30rem) minmax(0, 1fr) clamp(9rem, 12vw, 30rem); } .rail { display: block; min-height: 0; width: auto; } .app { height: 100%; overflow: hidden; } }
 @media (max-width: 60rem) { .roundCard { grid-template-columns: 4rem minmax(0, 1fr); } .roundResult { border-left: 0; border-top: 1px solid #26354a; grid-column: 2; padding: .75rem 0 0; } .roundVisuals { grid-column: 2; grid-template-columns: 1fr; } .learningGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 48rem) { .headerRow { align-items: start; flex-direction: column; } .scoreCard { align-self: flex-start; min-width: calc((100% - .65rem) / 2); max-width: 100%; text-align: left; width: fit-content; } .metaGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 30rem) { .page { padding: 0; } .shell { padding-inline: 1rem; } .scoreCard { min-width: calc((100% - .5rem) / 2); } .metaGrid { gap: .5rem; } .roundCard { gap: .65rem; grid-template-columns: 1fr; } .roundResult, .roundVisuals { grid-column: auto; } .panelHeading { align-items: start; flex-direction: column; } .learningGrid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 30rem) { .page { padding: 0; } .shellInner { padding-inline: 1rem; } .scoreCard { min-width: calc((100% - .5rem) / 2); } .metaGrid { gap: .5rem; } .roundCard { gap: .65rem; grid-template-columns: 1fr; } .roundResult, .roundVisuals { grid-column: auto; } .panelHeading { align-items: start; flex-direction: column; } .learningGrid { grid-template-columns: 1fr 1fr; } }
 @media (orientation: landscape) and (min-width: 40rem) and (max-width: 79.999rem) and (max-height: 40rem) { .page { min-height: 100dvh; padding: 0; } .frame, .app { min-height: 100dvh; } }

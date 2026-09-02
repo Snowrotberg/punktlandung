@@ -78,9 +78,10 @@ test("the account header flyout exposes the current account destination", async 
 
 test("history names points-per-round and total-score sorting unambiguously", async () => {
   const source = await read("app/konto/verlauf/page.tsx");
-  assert.match(source, /Bester Partiedurchschnitt/);
+  assert.match(source, /Bester Ø pro Runde/);
   assert.match(source, /Höchste Gesamtpunktzahl/);
-  assert.match(source, /nicht die beste Einzelrunde/);
+  assert.match(source, /unterschiedlich langen Partien aussagekräftig/);
+  assert.match(source, /bevorzugt dagegen Partien mit mehr Runden/);
   assert.doesNotMatch(source, /\["average", "Beste Ø-Punkte"\]/);
   assert.match(source, /category=\$\{value\}&sort=\$\{selectedSort\}/);
   assert.match(source, /category=\$\{selectedCategory\}&sort=\$\{value\}/);

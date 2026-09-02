@@ -57,7 +57,8 @@ test("GameApp prewarms the result map without replacing the active transition su
   assert.match(readiness, /punktlandung-result-prewarm-\$\{status\}/);
   assert.match(readiness, /punktlandung-result-prewarm-settled/);
   assert.match(results, /punktlandung-submit-to-result-ui/);
-  assert.match(results, /Ergebnis, Punkte und Navigation sind bereits verfügbar\./);
-  assert.match(styles, /\.punktlandung-result-preparing-surface\s*\{[^}]*position:\s*absolute/s);
+  assert.match(results, /setShowFinalStandings\(initialSurface === "final" \|\| readStoredFinalSurface\(room\)\)/);
+  assert.doesNotMatch(results, /Karte wird vorbereitet|punktlandung-result-preparing-surface/);
+  assert.doesNotMatch(styles, /\.punktlandung-result-preparing-surface\s*\{/);
   assert.match(responsiveCheck, /submitToUiMs > 500/);
 });

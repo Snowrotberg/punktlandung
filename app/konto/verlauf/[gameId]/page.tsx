@@ -88,6 +88,7 @@ export default async function AccountGameDetailPage({ params }: { params: Promis
           <SectionNavigation section="account" admin={isAdmin} />
 
           <div className={styles.shell}>
+            <div className={styles.shellInner}>
             <div className={styles.headerRow}>
               <div>
                 <Link href="/konto/verlauf" className={styles.backLink}>← Spielverlauf</Link>
@@ -157,6 +158,7 @@ export default async function AccountGameDetailPage({ params }: { params: Promis
                 </ol>
               )}
             </section>
+            </div>
           </div>
           <RedesignFooter className={styles.footer}><LegalLinks includeInfos align="end" /></RedesignFooter>
         </RedesignShell>

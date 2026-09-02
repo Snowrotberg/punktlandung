@@ -209,9 +209,7 @@
   display: none;
 }
 
-.routeLine {
-  stroke: url(#kartenlabor-result-gradient);
-}
+.routeLine { fill: none; }
 
 .routeShadow[data-target-only-end="true"] {
   opacity: 0;
@@ -587,8 +585,8 @@
 }
 
 .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button) {
-  top: 0.2rem;
-  right: 0.2rem;
+  top: 0.4rem;
+  right: 0.4rem;
   display: grid;
   width: 2.75rem;
   height: 2.75rem;
@@ -606,8 +604,8 @@
 }
 
 .mapFrame[data-preview-mode="true"] :global(.kartenlabor-result-popup .maplibregl-popup-close-button) {
-  top: 0.05rem;
-  right: 0.05rem;
+  top: 0.4rem;
+  right: 0.4rem;
 }
 
 .mapFrame :global(.kartenlabor-result-popup .maplibregl-popup-close-button::after) {

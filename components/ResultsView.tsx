@@ -672,13 +672,13 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   useEffect(() => {
     setShowLanding(false);
     setShowImageReplay(false);
-    setShowFinalStandings(readStoredFinalSurface(room));
+    setShowFinalStandings(initialSurface === "final" || readStoredFinalSurface(room));
     setFeedbackDialogOpen(false);
     setReplayMapSize("closed");
     setReplayChromeHidden(false);
     setReplayChromeHoverHidden(false);
     setGlobeUnavailable(false);
-  }, [room.code, room.status, summary?.roundNumber, summary?.completedAt]);
+  }, [initialSurface, room.code, room.status, summary?.roundNumber, summary?.completedAt]);
 
   useEffect(() => {
     setResultAnimationComplete(!globeScenario);
@@ -1075,7 +1075,9 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                     <span aria-hidden="true" className="punktlandung-final-player-accent h-14 w-2 rounded-full" style={playerAccentStyle(champion?.color)} />
                     <div className="min-w-0">
                       <p className="punktlandung-final-winner-name break-words text-[clamp(1.85rem,3.2vw,3rem)] font-black leading-[0.95] text-emerald-300">
-                        {champion?.name ?? "Niemand"} {championStats?.title ? `ist ${badgeWithArticle(championStats.title).replace(/^Der /, "der ").replace(/^Die /, "die ").replace(/^Das /, "das ")}` : "ist unangefochten"}
+                        {finalStats.length === 1
+                          ? `${champion?.name ?? "Spieler"} · dein Endstand`
+                          : `${champion?.name ?? "Niemand"} ${championStats?.title ? `ist ${badgeWithArticle(championStats.title).replace(/^Der /, "der ").replace(/^Die /, "die ").replace(/^Das /, "das ")}` : "gewinnt die Partie"}`}
                       </p>
                       <p className="mt-3 text-base font-semibold text-slate-200">
                         {champion ? `${formatPoints(champion.score)} Punkte` : "Keine Wertung"}
@@ -1338,15 +1340,6 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             ) : (
               <GuessMap mode="results" players={canonicalPlayers} summary={summary} guesses={room.guesses} noPan={false} noZoom={false} />
             )}
-            {globeScenario && !globeUnavailable && !resultSurfaceReady ? (
-              <div className="punktlandung-result-preparing-surface" aria-label="Kartenauflösung wird vorbereitet" aria-busy="true">
-                <div className="punktlandung-result-preparing-card">
-                  <MapPin aria-hidden="true" />
-                  <strong>Karte wird vorbereitet</strong>
-                  <span>Ergebnis, Punkte und Navigation sind bereits verfügbar.</span>
-                </div>
-              </div>
-            ) : null}
           </div>
 
           <div className="punktlandung-results-mobile-actions grid grid-cols-3 gap-2 sm:hidden">
@@ -1492,17 +1485,15 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                       <span className="punktlandung-results-rank shrink-0 font-black">#{index + 1}</span>
                       <div className="punktlandung-results-identity min-w-0">
                         <span className="punktlandung-results-player min-w-0 font-black">{player.name}</span>
-                        {playerStats ? (
-                          <span
-                            className="punktlandung-results-secondary-metrics"
-                            title={playerStats.averageDistanceKm === null ? "Keine gewertete Entfernung" : `Durchschnittliche Entfernung: ${formatDistance(playerStats.averageDistanceKm)}`}
-                          >
-                            {playerStats.averageDistanceKm === null ? null : <>· Ø {formatDistance(playerStats.averageDistanceKm)}</>}
-                          </span>
-                        ) : null}
                       </div>
                     </div>
                     <div className="punktlandung-results-scoreline min-w-0">
+                      <span
+                        className="punktlandung-results-distance-primary"
+                        title={playerStats?.averageDistanceKm == null ? "Keine gewertete Entfernung" : `Durchschnittliche Entfernung: ${formatDistance(playerStats.averageDistanceKm)}`}
+                      >
+                        {playerStats?.averageDistanceKm == null ? "Keine Entfernung" : `Ø ${formatDistance(playerStats.averageDistanceKm)}`}
+                      </span>
                       <div className="punktlandung-results-scorebar h-2 min-w-[64px] overflow-hidden rounded-sm bg-slate-800">
                         <div
                           className="h-full rounded-sm"
@@ -1514,7 +1505,10 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
                           }}
                         />
                       </div>
-                      <span className="punktlandung-results-points shrink-0 text-right font-black text-emerald-300">{player.score}</span>
+                      <span className="punktlandung-results-points shrink-0 text-right text-emerald-300">
+                        <strong>{player.score}</strong>
+                        <small>Gesamt</small>
+                      </span>
                     </div>
                   </div>
                 );
