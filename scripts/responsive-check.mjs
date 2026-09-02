@@ -1107,7 +1107,7 @@ const targets = [
     expectStaticReveal: true,
     note: "Bild-Replay mit langem Zielnamen, reserviertem Infozeichen und durchgehender Quellenzeile"
   },
-  { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Später", readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
+  { name: "endergebnis-gast", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session mit sichtbarem Anmelde- und Speicherangebot" },
   { name: "endergebnis", access: "state-click", path: "/endergebnis", status: "finished", buttonText: "Endstand ansehen", dismissButtonText: "Später", readySelector: ".punktlandung-final-standings-grid", expectTenPlayerFinal: true, note: "fertige QA-Session plus Klick auf Endstand ansehen" },
   { name: "infos", access: "route", path: "/infos", note: "echter URL-Pfad" },
   { name: "hilfe", access: "route", path: "/faq", expectedText: "Was möchtest du über Punktlandung wissen?", note: "gemeinsame Übersicht Hilfe & Infos" },
