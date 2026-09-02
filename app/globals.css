@@ -18809,13 +18809,13 @@ body .punktlandung-game-shell .punktlandung-game-back-button-inner > * {
 }
 
 .punktlandung-result-preparing-surface {
-  position: fixed;
-  z-index: 90;
+  position: absolute;
+  z-index: 20;
   inset: 0;
   display: grid;
   overflow: hidden;
   place-items: center;
-  padding: 1rem;
+  padding: .75rem;
   background: #070e1b;
 }
 

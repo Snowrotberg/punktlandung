@@ -2078,6 +2078,7 @@ async function collectLayoutMetrics(page, readySelector = null) {
       bodyHeight: body?.scrollHeight ?? 0,
       horizontalOverflow: Math.max(doc.scrollWidth, body?.scrollWidth ?? 0) > viewportWidth + 2,
       resultPerformance: {
+        submitToUiMs: performance.getEntriesByName("punktlandung-submit-to-result-ui", "measure").at(-1)?.duration ?? null,
         submitToSurfaceMs: performance.getEntriesByName("punktlandung-submit-to-result-surface", "measure").at(-1)?.duration ?? null,
         submitToMotionMs: performance.getEntriesByName("punktlandung-submit-to-result-motion", "measure").at(-1)?.duration ?? null,
         visibleToMotionMs: performance.getEntriesByName("punktlandung-result-visible-to-motion", "measure").at(-1)?.duration ?? null,
@@ -2508,7 +2509,8 @@ async function runTargetViewport(browser, target, viewport) {
 
     if (target.expectResultPerformance) {
       await page.waitForFunction(() => (
-        performance.getEntriesByName("punktlandung-submit-to-result-surface", "measure").length > 0
+        performance.getEntriesByName("punktlandung-submit-to-result-ui", "measure").length > 0
+        && performance.getEntriesByName("punktlandung-submit-to-result-surface", "measure").length > 0
         && performance.getEntriesByName("punktlandung-submit-to-result-motion", "measure").length > 0
       ), null, { timeout: 15_000 });
     }
@@ -3480,10 +3482,14 @@ async function runTargetViewport(browser, target, viewport) {
     }
     if (target.expectResultPerformance && (
       !metrics.resultPerformance.prewarmReady
+      || !Number.isFinite(metrics.resultPerformance.submitToUiMs)
       || !Number.isFinite(metrics.resultPerformance.submitToSurfaceMs)
       || !Number.isFinite(metrics.resultPerformance.submitToMotionMs)
     )) {
       problems.push(`Prewarm oder Übergangsmessung der Auflösung fehlt (${JSON.stringify(metrics.resultPerformance)}).`);
+    }
+    if (target.expectResultPerformance && metrics.resultPerformance.submitToUiMs > 500) {
+      problems.push(`Die Ergebnisoberfläche erschien erst nach ${Math.round(metrics.resultPerformance.submitToUiMs)} ms (Ziel: höchstens 500 ms).`);
     }
     const strictPopupEdge = viewport.width > 480;
     if (target.name.startsWith("aufloesung-zielinfo") && (

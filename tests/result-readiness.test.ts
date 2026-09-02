@@ -40,11 +40,15 @@ test("readiness distinguishes a complete prewarm from an explicitly degraded one
   assert.equal(resultExperienceReadinessStatus({ mapRuntime: "ready", mapStyle: "degraded" }), "degraded");
 });
 
-test("GameApp prewarms without replacing the active transition surface", async () => {
-  const [game, readiness] = await Promise.all([
+test("GameApp prewarms the result map without replacing the active transition surface", async () => {
+  const [game, readiness, results, styles, responsiveCheck] = await Promise.all([
     readFile(new URL("../components/GameApp.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../lib/resultReadiness.client.ts", import.meta.url), "utf8")
+    readFile(new URL("../lib/resultReadiness.client.ts", import.meta.url), "utf8"),
+    readFile(new URL("../components/ResultsView.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/responsive-check.mjs", import.meta.url), "utf8")
   ]);
+  assert.match(game, /import \{ ResultsView \} from "\.\/ResultsView"/);
   assert.match(game, /prepareResultExperience\(\)/);
   assert.doesNotMatch(game, /resultTransitionPending|synchronizedGameplayRoute/);
   assert.doesNotMatch(game, /<GameplayRestoringView requiredStatus="results" preparing \/>/);
@@ -52,4 +56,8 @@ test("GameApp prewarms without replacing the active transition surface", async (
   assert.doesNotMatch(game, /router\.replace\(gameplayRoute\)/);
   assert.match(readiness, /punktlandung-result-prewarm-\$\{status\}/);
   assert.match(readiness, /punktlandung-result-prewarm-settled/);
+  assert.match(results, /punktlandung-submit-to-result-ui/);
+  assert.match(results, /Ergebnis, Punkte und Navigation sind bereits verfügbar\./);
+  assert.match(styles, /\.punktlandung-result-preparing-surface\s*\{[^}]*position:\s*absolute/s);
+  assert.match(responsiveCheck, /submitToUiMs > 500/);
 });

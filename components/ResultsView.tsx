@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   Activity,
   Award,
@@ -465,6 +465,14 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
   }, [canonicalPlayers, location, meId, ranked, summary]);
   const [resultSurfaceReady, setResultSurfaceReady] = useState(false);
 
+  useLayoutEffect(() => {
+    performance.clearMarks("punktlandung-result-ui");
+    performance.mark("punktlandung-result-ui");
+    if (!performance.getEntriesByName("punktlandung-result-submit", "mark").length) return;
+    performance.clearMeasures("punktlandung-submit-to-result-ui");
+    performance.measure("punktlandung-submit-to-result-ui", "punktlandung-result-submit", "punktlandung-result-ui");
+  }, [globeScenario?.id]);
+
   useEffect(() => {
     setResultSurfaceReady(!globeScenario);
   }, [globeScenario]);
@@ -775,15 +783,6 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
 
   return (
     <main className={`punktlandung-results-shell h-dvh overflow-x-hidden overflow-y-auto bg-slate-950 p-2 text-slate-50 md:p-4 xl:overflow-hidden ${redesign ? redesignStyles.redesign : ""}`}>
-      {!showImageReplay && (!finished || !showFinalStandings) && globeScenario && !globeUnavailable && !resultSurfaceReady ? (
-        <div className="punktlandung-result-preparing-surface" aria-label="Kartenauflösung wird vorbereitet" aria-busy="true">
-          <div className="punktlandung-result-preparing-card">
-            <MapPin aria-hidden="true" />
-            <strong>Auflösung wird vorbereitet</strong>
-            <span>Karte und Animationslinie werden geladen …</span>
-          </div>
-        </div>
-      ) : null}
       {showLanding && landingHits.length > 0 && (
         <div
           aria-live="polite"
@@ -1323,7 +1322,7 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             </div>
           </div>
 
-          <div className="punktlandung-results-map min-h-0 overflow-hidden rounded-md bg-slate-900 shadow-[0_22px_58px_rgba(0,0,0,0.28)] ring-1 ring-slate-700/70">
+          <div className="punktlandung-results-map relative min-h-0 overflow-hidden rounded-md bg-slate-900 shadow-[0_22px_58px_rgba(0,0,0,0.28)] ring-1 ring-slate-700/70">
             {globeScenario && !globeUnavailable ? (
               <GlobeResultMap
                 key={globeScenario.id}
@@ -1339,6 +1338,15 @@ export function ResultsView({ room, isHost, meId, onNext, onReadyNextRound, onBa
             ) : (
               <GuessMap mode="results" players={canonicalPlayers} summary={summary} guesses={room.guesses} noPan={false} noZoom={false} />
             )}
+            {globeScenario && !globeUnavailable && !resultSurfaceReady ? (
+              <div className="punktlandung-result-preparing-surface" aria-label="Kartenauflösung wird vorbereitet" aria-busy="true">
+                <div className="punktlandung-result-preparing-card">
+                  <MapPin aria-hidden="true" />
+                  <strong>Karte wird vorbereitet</strong>
+                  <span>Ergebnis, Punkte und Navigation sind bereits verfügbar.</span>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="punktlandung-results-mobile-actions grid grid-cols-3 gap-2 sm:hidden">
